@@ -1,0 +1,675 @@
+id: ch2-forms
+title: "کار با فرم‌ها (Forms)"
+slides: "JS in HTML، اسلاید ۳۵"
+lesson: |
+  فرم‌ها (form) راه اصلی گرفتن اطلاعات از کاربرند: ورود به سایت، جست‌وجو، ثبت‌نام، نوشتن نظر و… . نقش JavaScript این است که مقدارها را **بخواند**، **بررسی کند** (اعتبارسنجی یا validation)، به کاربر **بازخورد** بدهد و نگذارد صفحه بی‌دلیل دوباره بارگذاری شود. اسلاید ۳۵ همین را در شش نکته می‌گوید:
+
+  1. به عنصرهای فرم با `getElementById` یا `querySelector` دسترسی پیدا کن.
+  2. ورودی کاربر را با `.value` بخوان؛ برای checkbox و radio از `.checked` استفاده کن.
+  3. برای تعامل لحظه‌ای، رویدادهای `submit` یا `input` را وصل کن.
+  4. با `event.preventDefault()` جلوی بارگذاری دوباره‌ی صفحه هنگام submit را بگیر.
+  5. ورودی کاربر را **قبل از پردازش** اعتبارسنجی کن.
+  6. با متدهای DOM بازخورد پویا نشان بده.
+
+  ::: analogy
+  فرم مثل برگه‌ای است که مشتری در بانک پر می‌کند. JavaScript کارمند باجه است: برگه را **قبل از** فرستادن به اتاق پشتی (سرور) نگاه می‌کند، اگر جایی خالی یا غلط باشد همان‌جا به مشتری تذکر می‌دهد و اگر همه‌چیز درست بود کار را ادامه می‌دهد. اما بانک عاقل در اتاق پشتی هم برگه را دوباره بررسی می‌کند؛ چون ممکن است کسی از کنار باجه رد شده باشد!
+  :::
+
+  ### یک فرم نمونه
+
+  ```html
+  <form id="signup">
+    <input type="text" id="username" name="username" placeholder="Username">
+    <input type="number" id="age" name="age" value="20">
+    <input type="email" id="email" name="email">
+    <label><input type="checkbox" id="terms" name="terms"> I accept the terms</label>
+    <label><input type="radio" name="plan" value="free" checked> Free</label>
+    <label><input type="radio" name="plan" value="pro"> Pro</label>
+    <select id="city" name="city">
+      <option value="thr">Tehran</option>
+      <option value="isf">Isfahan</option>
+    </select>
+    <textarea id="bio" name="bio"></textarea>
+    <button type="submit" id="submitBtn">Sign up</button>
+    <p id="feedback"></p>
+  </form>
+  ```
+
+  ### ۱) دسترسی به عنصرهای فرم
+
+  ```js
+  const form = document.getElementById("signup");
+  const username = document.getElementById("username");
+  const email = document.querySelector("#email");
+  const terms = document.querySelector('input[name="terms"]');   // attribute selector
+
+  // background: form.elements holds every control of the form, by name or id
+  const city = form.elements.city;        // same as form.elements["city"]
+  console.log(form.elements.length);      // number of controls inside the form
+  ```
+
+  `form.elements` (مجموعه‌ی همه‌ی کنترل‌های یک فرم) همان شاخه‌ی `forms → elements` در نمودار اسلاید ۱۲ است؛ `document.forms` هم فهرست همه‌ی فرم‌های صفحه را دارد.
+
+  ### ۲) خواندن مقدارها: `.value` و `.checked`
+
+  | کنترل | چه چیزی را بخوانیم؟ | نمونه‌ی نتیجه |
+  |---|---|---|
+  | `<input type="text">` و `<textarea>` | `.value` | `"ali"` |
+  | `<input type="number">` | `.value` (**رشته!**) | `"20"` |
+  | `<select>` | `.value` = مقدار `value` گزینه‌ی انتخاب‌شده | `"isf"` |
+  | checkbox | `.checked` | `true` یا `false` |
+  | radio | `.checked` هر کدام، یا پیدا کردن گزینه‌ی تیک‌خورده | `"free"` |
+
+  #### `.value` همیشه رشته است
+
+  ```js
+  const age = document.getElementById("age");   // <input type="number" value="20">
+  console.log(age.value + 1);           // "201" -> string concatenation!
+  console.log(Number(age.value) + 1);   // 21
+  console.log(age.valueAsNumber + 1);   // 21 (only for number and date inputs)
+  ```
+
+  حتی وقتی `type="number"` است، `.value` رشته برمی‌گرداند. قبل از هر محاسبه با `Number()` تبدیلش کن؛ و یادت باشد `Number("")` برابر `0` و `Number("abc")` برابر `NaN` (Not a Number؛ «عدد نیست») است. پس **اول خالی بودن** را بررسی کن.
+
+  #### checkbox: وضعیت در `.checked` است
+
+  `.checked` یک مقدار بولی است: تیک خورده `true`، نخورده `false`. `.value` یک checkbox به‌طور پیش‌فرض رشته‌ی `"on"` است، **چه تیک خورده باشد چه نه**؛ پس هیچ‌وقت وضعیت را از `.value` نخوان.
+
+  #### radio: یک گروه، یک انتخاب
+
+  radioهایی که `name` یکسان دارند یک گروه‌اند و در هر لحظه فقط **یکی** از آن‌ها می‌تواند انتخاب شده باشد. برای پیدا کردن گزینه‌ی انتخاب‌شده از شبه‌کلاس `:checked` در CSS استفاده می‌کنیم:
+
+  ```js
+  const chosen = document.querySelector('input[name="plan"]:checked');
+  console.log(chosen ? chosen.value : "nothing selected");   // "free"
+  ```
+
+  اگر هیچ گزینه‌ای انتخاب نشده باشد `chosen` برابر `null` است و `chosen.value` خطای `TypeError` می‌دهد؛ به همین دلیل اول `null` بودن را بررسی کرده‌ایم.
+
+  ### ۳) رویدادهای فرم: `submit`، `input` و `change`
+
+  | رویداد | روی چه چیزی؟ | کِی رخ می‌دهد؟ |
+  |---|---|---|
+  | `submit` | خودِ `<form>` | وقتی فرم ارسال می‌شود: کلیک روی دکمه‌ی ارسال یا زدن Enter داخل یک کادر متن |
+  | `input` | کنترل‌ها | با **هر** تغییر مقدار: تایپ هر حرف، پاک کردن، paste |
+  | `change` | کنترل‌ها | وقتی تغییر «نهایی» شد: در کادر متن وقتی کاربر از کادر خارج شود (blur) و مقدار عوض شده باشد؛ در checkbox، radio و select بلافاصله بعد از انتخاب |
+
+  listener رویداد `submit` را به **فرم** وصل کن، نه به دکمه: رویداد `submit` روی خودِ فرم رخ می‌دهد (`event.target` آن فرم است)، همه‌ی راه‌های ارسال را پوشش می‌دهد و جایی است که `preventDefault()` جلوی ارسال را می‌گیرد. listener `submit` روی دکمه هرگز اجرا نمی‌شود.
+
+  برای بازخورد لحظه‌ای از `input` استفاده کن؛ مثلاً یک شمارنده‌ی کاراکتر:
+
+  ```js
+  const bio = document.getElementById("bio");
+  const counter = document.getElementById("counter");   // e.g. <span id="counter"></span>
+  bio.addEventListener("input", () => {
+    counter.textContent = bio.value.length + " / 100";
+  });
+  ```
+
+  ### ۴) جلوگیری از reload با `preventDefault`
+
+  رفتار پیش‌فرض مرورگر هنگام submit این است که داده‌ها را به آدرسِ attribute `action` فرم (یا اگر نبود، به همان صفحه) بفرستد و **صفحه‌ی جدیدی بار کند**. یعنی صفحه دوباره بارگذاری (reload) می‌شود و همه‌ی متغیرهای JavaScript و پیام‌هایی که در DOM نشان داده بودیم از بین می‌روند. همان‌طور که در درس شیء رویداد دیدیم، `event.preventDefault()` رفتار پیش‌فرض را لغو می‌کند تا خودمان داده را با JavaScript پردازش کنیم:
+
+  ```js
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();   // stop the page reload
+    console.log("Form handled by JavaScript");
+  });
+  ```
+
+  ### ۵ و ۶) اعتبارسنجی قبل از پردازش و بازخورد پویا
+
+  قاعده‌های رایج اعتبارسنجی: حذف فاصله‌های اول و آخر با `trim()`، بررسی خالی بودن، طول، یک بررسی ساده‌ی ایمیل، و بازه‌ی عدد. اگر چیزی غلط بود پیام بده و با `return` از ادامه‌ی کار جلوگیری کن:
+
+  ```js
+  const feedback = document.getElementById("feedback");
+
+  function showMessage(text, isError) {
+    feedback.textContent = text;                    // dynamic feedback with the DOM
+    feedback.classList.toggle("error", isError);
+    feedback.classList.toggle("success", !isError);
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = username.value.trim();
+    const mail = email.value.trim();
+    const ageNum = Number(age.value);
+
+    if (name === "") {
+      showMessage("Username is required", true);
+      return;
+    }
+    if (name.length < 3) {
+      showMessage("Username must be at least 3 characters", true);
+      return;
+    }
+    if (!mail.includes("@") || !mail.includes(".")) {
+      showMessage("Please enter a valid email", true);
+      return;
+    }
+    if (age.value === "" || ageNum < 1) {
+      showMessage("Please enter your age", true);
+      return;
+    }
+    if (!terms.checked) {
+      showMessage("Please accept the terms", true);
+      return;
+    }
+    showMessage("Welcome, " + name + "!", false);
+    form.reset();   // clear the form for the next user
+  });
+  ```
+
+  بازخورد پویا فقط پیام نیست؛ مثلاً می‌شود دکمه‌ی ارسال را تا وقتی قوانین پذیرفته نشده غیرفعال نگه داشت:
+
+  ```js
+  const submitBtn = document.getElementById("submitBtn");
+  submitBtn.disabled = true;
+  terms.addEventListener("change", () => {
+    submitBtn.disabled = !terms.checked;   // enable only when the box is checked
+  });
+  ```
+
+  #### ابزارهای خودِ HTML و یک هشدار امنیتی
+
+  attributeهایی مثل `required` (اجباری)، `minlength`، `maxlength`، `min`، `max` و `type="email"` را مرورگر **قبل از** رخ دادن `submit` بررسی می‌کند؛ اگر کاربر با دکمه یا Enter فرم را بفرستد و یکی از این قیدها رعایت نشده باشد، مرورگر پیام خودش را نشان می‌دهد و رویداد `submit` اصلاً رخ نمی‌دهد. اعتبارسنجی با JavaScript قاعده‌ها و پیام‌های دلخواه را اضافه می‌کند. اما یادت باشد: اعتبارسنجی سمت کاربر فقط برای **راحتی کاربر** است و کاربرِ بدخواه می‌تواند دورش بزند؛ سرور **همیشه** باید داده را دوباره بررسی کند.
+
+  #### `form.reset()` و زمانِ خواندن مقدار
+
+  `form.reset()` همه‌ی کنترل‌ها را به **مقدار اولیه**‌شان برمی‌گرداند؛ یعنی همان مقدار attribute `value` یا `checked` نوشته‌شده در HTML، نه لزوماً خالی (در فرم نمونه، `age` دوباره `"20"` می‌شود).
+
+  مقدار را **داخل** listener بخوان، نه یک بار هنگام بارگذاری صفحه:
+
+  ```js
+  const cityName = document.getElementById("cityName").value;   // read ONCE at load: ""
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    console.log(cityName);   // always the old (empty) value, never what the user typed
+  });
+  ```
+
+  ::: tip
+  - هر چیزی که از `.value` می‌آید رشته است؛ برای حساب و مقایسه‌ی عددی `Number()` را فراموش نکن.
+  - وضعیت checkbox و radio را با `.checked` بخوان؛ گزینه‌ی انتخاب‌شده‌ی یک گروه radio را با `querySelector('input[name="..."]:checked')`.
+  - `submit` روی فرم + `preventDefault()` + اعتبارسنجی + پیام با `textContent` و `classList` = الگوی استاندارد کار با فرم.
+  - `input` برای واکنش لحظه‌ای و `change` برای وقتی که انتخاب کاربر نهایی شد.
+  :::
+
+  ::: trap
+  - `"2" + "3"` می‌شود `"23"`، نه `5`؛ مقدار دو کادر را بدون `Number()` جمع نکن.
+  - `Number("")` برابر `0` است، پس کادر خالی بدون بررسی، «صفر» حساب می‌شود.
+  - `.value` یک checkbox همیشه `"on"` است، چه تیک خورده باشد چه نه.
+  - اگر هیچ radioی انتخاب نشده باشد، `querySelector('...:checked')` مقدار `null` می‌دهد و `.value` روی آن `TypeError` است.
+  - listener `submit` را به دکمه وصل نکن؛ رویداد `submit` روی فرم رخ می‌دهد.
+  - بدون `preventDefault()` صفحه reload می‌شود و پیام‌ها و داده‌های JavaScript از بین می‌روند.
+  - مقداری که بیرون از listener (هنگام بارگذاری) خوانده شده، با تایپ کاربر به‌روز نمی‌شود.
+  - `form.reset()` به مقدار attribute `value` برمی‌گرداند، نه لزوماً به رشته‌ی خالی.
+  :::
+
+  ::: summary
+  پیدا کن (`getElementById`/`querySelector`/`form.elements`) ← بخوان (`.value` رشته‌ای، `.checked` بولی) ← در `submit` فرم `preventDefault()` کن ← با `trim` و شرط‌ها اعتبارسنجی کن ← با DOM پیام بده. `input` = هر تغییر، `change` = تغییر نهایی. اعتبارسنجی مرورگر برای راحتی است و سرور هم باید بررسی کند.
+  :::
+questions:
+  - level: easy
+    stem: کاربر در کادر زیر عدد ۵ را تایپ می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <input id="age" type="number">
+    code: |
+      const age = document.getElementById("age");
+      age.addEventListener("input", () => {
+        console.log(typeof age.value, age.value);
+      });
+    events:
+      - { type: input, target: "#age", value: "5" }
+    options:
+      - out: "number 5"
+      - out: "string 5"
+      - out: "number NaN"
+      - out: "undefined 5"
+    answer: 2
+    explain: |
+      property `value` در **همه‌ی** کادرهای ورودی، حتی با `type="number"`، رشته برمی‌گرداند؛ پس نوع آن `string` و مقدارش `"5"` است (`console.log` رشته را بدون نقل‌قول چاپ می‌کند). `type="number"` فقط شکل کادر و نوع کاراکترهای مجاز را تعیین می‌کند. گزینه‌های ۱ و ۳ فکر کرده‌اند مقدار عدد است و گزینه‌ی ۴ تصور کرده `value` تعریف نشده است.
+
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <input id="a" value="2">
+      <input id="b" value="3">
+    code: |
+      const a = document.getElementById("a").value;
+      const b = document.getElementById("b").value;
+      console.log(a + b, Number(a) + Number(b));
+    options:
+      - out: "5 5"
+      - out: "23 23"
+      - out: "23 5"
+      - out: "5 23"
+    answer: 3
+    explain: |
+      `a` و `b` رشته‌اند (`"2"` و `"3"`)، پس `+` آن‌ها را به هم می‌چسباند: `"23"`. بعد از تبدیل با `Number()` جمع واقعی انجام می‌شود: `5`. گزینه‌ی ۱ فراموش کرده `.value` رشته است، گزینه‌ی ۲ فکر کرده `Number()` اثری ندارد و گزینه‌ی ۴ جای دو نتیجه را برعکس کرده است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <input id="price" value="">
+      <input id="qty" type="number" value="3">
+    code: |
+      const price = Number(document.getElementById("price").value);
+      const qty = document.getElementById("qty").value;
+      console.log(price, qty * 2, qty + 2);
+    options:
+      - out: "0 6 32"
+      - out: "NaN 6 32"
+      - out: "0 6 5"
+      - out: "NaN 6 5"
+    answer: 1
+    explain: |
+      کادر `price` خالی است و `Number("")` برابر `0` می‌شود (نه `NaN`)؛ این دام باعث می‌شود کادر خالی بی‌صدا «صفر» حساب شود. `qty` رشته‌ی `"3"` است: عملگر `*` آن را به عدد تبدیل می‌کند (`6`) ولی `+` با رشته، چسباندن انجام می‌دهد (`"32"`). گزینه‌های ۲ و ۴ فکر کرده‌اند رشته‌ی خالی `NaN` می‌شود و گزینه‌های ۳ و ۴ `qty` را عدد فرض کرده‌اند.
+
+  - level: easy
+    stem: برای فهمیدن این‌که کاربر یک checkbox را تیک زده است یا نه، کدام را باید خواند؟
+    options:
+      - '`checkbox.value`'
+      - '`checkbox.selected`'
+      - '`checkbox.checked()`'
+      - '`checkbox.checked`'
+    answer: 4
+    explain: |
+      `checked` یک **property بولی** است: تیک خورده `true` و نخورده `false`. گزینه‌ی ۱ غلط است چون `.value` یک checkbox به‌طور پیش‌فرض همیشه `"on"` است، گزینه‌ی ۲ مال گزینه‌های `<option>` در `<select>` است و گزینه‌ی ۳ غلط است چون `checked` تابع نیست و صدا زدنش خطای `TypeError` می‌دهد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟ (کاربر هنوز به checkbox دست نزده است.)
+    check: dom-output
+    html: |
+      <input type="checkbox" id="agree">
+    code: |
+      const agree = document.getElementById("agree");
+      console.log(agree.value, agree.checked);
+    options:
+      - out: "false false"
+      - out: "on false"
+      - out: "on true"
+      - out: "undefined false"
+    answer: 2
+    explain: |
+      وقتی برای checkbox attribute `value` ننوشته باشیم، `.value` آن رشته‌ی پیش‌فرض `"on"` است و ربطی به تیک خوردن ندارد؛ وضعیت واقعی در `.checked` است که این‌جا `false` است. گزینه‌ی ۱ فکر کرده `.value` وضعیت را نشان می‌دهد، گزینه‌ی ۳ از `"on"` نتیجه گرفته که تیک خورده و گزینه‌ی ۴ تصور کرده checkbox مقداری ندارد.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <input type="radio" name="plan" value="free" checked>
+      <input type="radio" name="plan" value="pro">
+    code: |
+      const first = document.querySelector('input[name="plan"]:checked');
+      console.log(first.value);
+      document.querySelector('input[value="pro"]').checked = true;
+      console.log(document.querySelector('input[name="plan"]:checked').value);
+      console.log(document.querySelectorAll('input[name="plan"]:checked').length);
+    options:
+      - out: ["free", "pro", "1"]
+      - out: ["free", "pro", "2"]
+      - out: ["on", "on", "1"]
+      - out: ["free", "free", "1"]
+    answer: 1
+    explain: |
+      ابتدا گزینه‌ی `free` انتخاب شده است. radioهای هم‌نام یک گروه‌اند و فقط **یکی** از آن‌ها می‌تواند انتخاب باشد؛ پس با تیک خوردن `pro`، تیک `free` خودبه‌خود برداشته می‌شود. حالا گزینه‌ی انتخاب‌شده `pro` است و تعداد انتخاب‌شده‌ها ۱. گزینه‌ی ۲ رفتار checkbox را به radio نسبت داده، گزینه‌ی ۳ مقدار پیش‌فرض `"on"` را در نظر گرفته (ولی این radioها `value` دارند) و گزینه‌ی ۴ تغییر انتخاب را ندیده است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (کاربر هیچ گزینه‌ای را انتخاب نکرده است.)
+    check: dom-output
+    html: |
+      <input type="radio" name="size" value="S">
+      <input type="radio" name="size" value="M">
+    code: |
+      const chosen = document.querySelector('input[name="size"]:checked');
+      console.log(chosen);
+      console.log(chosen.value);
+    options:
+      - out: ["undefined", "undefined"]
+      - out: ["null", "undefined"]
+      - out: ["null", "!! TypeError"]
+      - out: ["S", "S"]
+    answer: 3
+    explain: |
+      هیچ radioی تیک نخورده، پس `querySelector` چیزی پیدا نمی‌کند و `null` برمی‌گرداند. خواندن `.value` از `null` خطای `TypeError` می‌دهد؛ برای همین باید اول بررسی کرد: `chosen ? chosen.value : "..."`. گزینه‌های ۱ و ۲ فکر کرده‌اند خواندن property از `null` بی‌خطر است و گزینه‌ی ۴ اولین radio را به‌طور خودکار انتخاب‌شده فرض کرده است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <select id="city">
+        <option value="thr">Tehran</option>
+        <option value="isf" selected>Isfahan</option>
+      </select>
+      <textarea id="bio">Hello</textarea>
+    code: |
+      const city = document.getElementById("city");
+      const bio = document.getElementById("bio");
+      console.log(city.value, bio.value.length);
+    options:
+      - out: "Isfahan 5"
+      - out: "thr 5"
+      - out: "isf undefined"
+      - out: "isf 5"
+    answer: 4
+    explain: |
+      `.value` یک `<select>` برابر attribute `value` گزینه‌ی **انتخاب‌شده** است (`isf`)، نه متن نمایش‌داده‌شده‌ی آن (`Isfahan`). `.value` یک `<textarea>` متن داخلش است (`"Hello"` با طول ۵). گزینه‌ی ۱ متن گزینه را با مقدار آن اشتباه گرفته، گزینه‌ی ۲ همیشه گزینه‌ی اول را انتخاب‌شده فرض کرده و گزینه‌ی ۳ تصور کرده `textarea` مثل `input` ویژگی `value` ندارد.
+
+  - level: easy
+    stem: کدام رویداد با **هر بار** تغییر محتوای یک کادر متن (مثلاً با تایپ هر حرف) رخ می‌دهد؟
+    options:
+      - '`input`'
+      - '`change`'
+      - '`submit`'
+      - '`load`'
+    answer: 1
+    explain: |
+      رویداد `input` با هر تغییر مقدار (تایپ، پاک کردن، paste) رخ می‌دهد و برای بازخورد لحظه‌ای مناسب است. `change` در کادر متن فقط وقتی رخ می‌دهد که تغییر نهایی شود (کاربر از کادر خارج شود)، `submit` هنگام ارسال فرم و `load` هنگام بارگذاری کامل صفحه رخ می‌دهد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <input id="name">
+    code: |
+      const nameInput = document.getElementById("name");
+      nameInput.addEventListener("input", () => console.log("input:", nameInput.value));
+      nameInput.addEventListener("change", () => console.log("change:", nameInput.value));
+    events:
+      - { type: input, target: "#name", value: "A" }
+      - { type: input, target: "#name", value: "Al" }
+      - { type: input, target: "#name", value: "Ali" }
+      - { type: change, target: "#name" }
+    eventsNote: 'کاربر حرف‌های `A`، `l` و `i` را یکی‌یکی تایپ می‌کند و سپس روی جای دیگری از صفحه کلیک می‌کند تا کادر از حالت انتخاب خارج شود.'
+    options:
+      - out: ["input: Ali", "change: Ali"]
+      - out: ["input: A", "input: Al", "input: Ali", "change: Ali"]
+      - out: ["change: A", "change: Al", "change: Ali", "input: Ali"]
+      - out: ["input: A", "change: A", "input: Al", "change: Al", "input: Ali", "change: Ali"]
+    answer: 2
+    explain: |
+      `input` با **هر** حرف یک بار اجرا می‌شود (سه بار)، ولی `change` در کادر متن فقط یک بار و وقتی رخ می‌دهد که کاربر کادر را ترک کند و مقدار نهایی شود. گزینه‌ی ۱ فکر کرده `input` فقط یک بار در پایان تایپ رخ می‌دهد، گزینه‌ی ۳ نقش دو رویداد را برعکس کرده و گزینه‌ی ۴ تصور کرده `change` هم با هر حرف اجرا می‌شود.
+
+  - level: easy
+    stem: رویداد `submit` روی کدام عنصر **رخ می‌دهد** (یعنی `event.target` آن کدام عنصر است)؟
+    options:
+      - دکمه‌ی ارسال (`<button>`)
+      - شیء `window`
+      - خودِ عنصر `<form>`
+      - هر یک از `<input>`های داخل فرم
+    answer: 3
+    explain: |
+      رویداد `submit` روی خودِ **فرم** رخ می‌دهد، چه کاربر روی دکمه‌ی ارسال کلیک کند و چه داخل یک کادر Enter بزند؛ پس listener آن را به `<form>` وصل می‌کنیم و `preventDefault()` را همان‌جا صدا می‌زنیم. دکمه فقط ارسال را **شروع** می‌کند (رویداد `click` مال دکمه است)؛ `window` و کادرهای ورودی هم هدف این رویداد نیستند.
+
+  - level: hard
+    stem: کاربر فرم زیر را ارسال می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <form id="f">
+        <input id="user" value="ali">
+        <button id="go">Go</button>
+      </form>
+    code: |
+      document.getElementById("go").addEventListener("submit", (e) => {
+        e.preventDefault();
+        console.log("button handler");
+      });
+      document.getElementById("f").addEventListener("submit", () => {
+        console.log("form handler");
+      });
+    events:
+      - { type: submit, target: "#f", reportDefault: true }
+    eventsNote: 'رویداد `submit` روی فرم رخ می‌دهد. در خروجی، سطر `[default runs]` یعنی رفتار پیش‌فرض (ارسال فرم و بارگذاری دوباره‌ی صفحه) **لغو نشده** و `[default prevented]` یعنی لغو شده است.'
+    options:
+      - out: ["button handler", "form handler", "[default prevented]"]
+      - out: ["button handler", "[default prevented]"]
+      - out: ["form handler", "[default prevented]"]
+      - out: ["form handler", "[default runs]"]
+    answer: 4
+    explain: |
+      رویداد `submit` روی **فرم** رخ می‌دهد و از فرم به سمت بالا (اجداد) حرکت می‌کند، نه به سمت فرزندانی مثل دکمه؛ پس listener دکمه هرگز اجرا نمی‌شود و `preventDefault()` آن هم صدا زده نمی‌شود. فقط `form handler` چاپ می‌شود و صفحه reload خواهد شد. گزینه‌های ۱ و ۲ فکر کرده‌اند listener دکمه اجرا می‌شود و گزینه‌ی ۳ لغو شدن رفتار پیش‌فرض را از listener فرم انتظار داشته که `preventDefault()` ندارد.
+
+  - level: easy
+    stem: در listener رویداد `submit` یک فرم، دستور `event.preventDefault()` چه می‌کند؟
+    options:
+      - همه‌ی کادرهای فرم را خالی می‌کند.
+      - جلوی رفتار پیش‌فرض مرورگر، یعنی ارسال فرم و بارگذاری دوباره‌ی صفحه، را می‌گیرد تا خودمان داده را با JavaScript پردازش کنیم.
+      - کادرهای فرم را به‌طور خودکار اعتبارسنجی می‌کند.
+      - جلوی اجرای listenerهای دیگرِ همین فرم را می‌گیرد.
+    answer: 2
+    explain: |
+      رفتار پیش‌فرض submit فرستادن داده و بار کردن صفحه‌ی جدید (reload) است؛ `preventDefault()` فقط همین رفتار پیش‌فرض را لغو می‌کند. خالی کردن کادرها کار `form.reset()` است، اعتبارسنجی را خودمان (یا attributeهایی مثل `required`) انجام می‌دهیم و جلوگیری از اجرای listenerهای دیگر کار `stopImmediatePropagation()` است، نه `preventDefault()`.
+
+  - level: medium
+    stem: کاربر فرم زیر را ارسال می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <form id="search">
+        <input name="q" value="js">
+        <button>Search</button>
+      </form>
+    code: |
+      const form = document.getElementById("search");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        console.log("searching for", form.elements.q.value);
+      });
+    events:
+      - { type: submit, target: "#search", reportDefault: true }
+    eventsNote: 'سطر `[default runs]` یعنی رفتار پیش‌فرض (ارسال و reload) لغو نشده و `[default prevented]` یعنی لغو شده است.'
+    options:
+      - out: ["searching for js", "[default prevented]"]
+      - out: ["searching for js", "[default runs]"]
+      - out: ["[default prevented]"]
+      - out: ["searching for undefined", "[default prevented]"]
+    answer: 1
+    explain: |
+      `form.elements.q` کنترلی است که `name="q"` دارد و مقدارش `"js"` است. چون `preventDefault()` صدا زده شده، رفتار پیش‌فرض لغو می‌شود و صفحه reload نمی‌شود. گزینه‌ی ۲ اثر `preventDefault()` را ندیده، گزینه‌ی ۳ فکر کرده listener اجرا نمی‌شود و گزینه‌ی ۴ تصور کرده `form.elements` کنترل‌ها را با `name` پیدا نمی‌کند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <form id="signup">
+        <input id="username" value="   ">
+        <p id="msg"></p>
+        <button>Sign up</button>
+      </form>
+    code: |
+      const form = document.getElementById("signup");
+      const msg = document.getElementById("msg");
+      function show(text) {
+        msg.textContent = text;
+        console.log(text);
+      }
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const username = document.getElementById("username").value.trim();
+        if (username === "") {
+          show("Username is required");
+          return;
+        }
+        if (username.length < 3) {
+          show("Too short");
+          return;
+        }
+        show("Welcome, " + username + "!");
+      });
+    events:
+      - { type: submit, target: "#signup" }
+      - { type: input, target: "#username", value: " al " }
+      - { type: submit, target: "#signup" }
+      - { type: input, target: "#username", value: "  sara " }
+      - { type: submit, target: "#signup" }
+    eventsNote: 'کاربر سه بار فرم را ارسال می‌کند: بار اول با همان مقدار اولیه (سه فاصله)، بار دوم بعد از نوشتن `" al "` و بار سوم بعد از نوشتن `"  sara "` در کادر (نقل‌قول‌ها فقط برای نشان دادن فاصله‌ها هستند).'
+    options:
+      - out: ["Username is required", "Welcome, al!", "Welcome, sara!"]
+      - out: ["Username is required", "Username is required", "Welcome, sara!"]
+      - out: ["Username is required", "Too short", "Welcome, sara!"]
+      - out: ["Too short", "Too short", "Welcome, sara!"]
+    answer: 3
+    explain: |
+      `trim()` فاصله‌های اول و آخر را حذف می‌کند. بار اول سه فاصله به رشته‌ی خالی تبدیل می‌شود: `Username is required`. بار دوم `" al "` به `"al"` با طول ۲ تبدیل می‌شود: `Too short`. بار سوم `"sara"` می‌ماند و پیام خوش‌آمد چاپ می‌شود. گزینه‌ی ۱ طول را قبل از `trim` حساب کرده، گزینه‌ی ۲ فکر کرده `" al "` خالی حساب می‌شود و گزینه‌ی ۴ رشته‌ی فقط-فاصله را «کوتاه» دانسته، نه خالی.
+
+  - level: hard
+    stem: کاربر `Tehran` را در کادر تایپ می‌کند و سپس فرم را ارسال می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <form id="f">
+        <input id="city">
+        <button>Save</button>
+      </form>
+    code: |
+      const city = document.getElementById("city").value;
+      document.getElementById("f").addEventListener("submit", (e) => {
+        e.preventDefault();
+        console.log("City: " + city);
+      });
+    events:
+      - { type: input, target: "#city", value: "Tehran" }
+      - { type: submit, target: "#f" }
+    options:
+      - out: "City: undefined"
+      - out: "City: null"
+      - out: "City: Tehran"
+      - out: "City:"
+    answer: 4
+    explain: |
+      مقدار کادر فقط **یک بار** و هنگام بارگذاری صفحه خوانده و در `city` ذخیره شده است؛ آن موقع کادر خالی بود، پس `city` رشته‌ی خالی `""` است و تایپ بعدی کاربر آن را عوض نمی‌کند. خروجی `"City: "` است (با یک فاصله‌ی نامرئی در انتها). گزینه‌ی ۳ نتیجه‌ی کد درست است، یعنی وقتی `.value` داخل listener خوانده شود؛ گزینه‌های ۱ و ۲ فکر کرده‌اند مقدار کادر خالی `undefined` یا `null` است، در حالی که رشته‌ی خالی است.
+
+  - level: medium
+    stem: کاربر ابتدا `Hello` و سپس، با ادامه‌ی تایپ، `Hello world!` را در کادر می‌نویسد. در پایان کد `console.log(left.textContent, left.className);` اجرا می‌شود. خروجی آن کدام است؟
+    check: dom-output
+    html: |
+      <textarea id="tweet"></textarea>
+      <span id="left">10</span>
+    code: |
+      const tweet = document.getElementById("tweet");
+      const left = document.getElementById("left");
+      tweet.addEventListener("input", () => {
+        const remaining = 10 - tweet.value.length;
+        left.textContent = remaining;
+        left.classList.toggle("over", remaining < 0);
+      });
+    events:
+      - { type: input, target: "#tweet", value: "Hello" }
+      - { type: input, target: "#tweet", value: "Hello world!" }
+    after: |
+      console.log(left.textContent, left.className);
+    options:
+      - out: "-2 over"
+      - out: "5"
+      - out: "-2"
+      - out: "12 over"
+    answer: 1
+    explain: |
+      listener با هر تغییر اجرا می‌شود و آخرین بار طول متن ۱۲ است؛ پس `10 - 12` برابر `-2` نوشته می‌شود. چون `remaining < 0` درست است، `toggle` با آرگومان دوم `true` کلاس `over` را **اضافه** می‌کند. گزینه‌ی ۲ فقط اثر اولین تایپ را دیده، گزینه‌ی ۳ نقش `force` در `toggle` را نادیده گرفته و گزینه‌ی ۴ طول متن را به‌جای «باقی‌مانده» نوشته است.
+
+  - level: medium
+    stem: کاربر یک بار تیک checkbox را می‌زند و بعد دوباره آن را برمی‌دارد. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <form>
+        <input type="checkbox" id="terms">
+        <button id="send" disabled>Send</button>
+      </form>
+    code: |
+      const terms = document.getElementById("terms");
+      const send = document.getElementById("send");
+      terms.addEventListener("change", () => {
+        send.disabled = !terms.checked;
+        console.log(send.disabled);
+      });
+    events:
+      - { type: change, target: "#terms", checked: true }
+      - { type: change, target: "#terms", checked: false }
+    options:
+      - out: ["true", "false"]
+      - out: ["false", "true"]
+      - out: ["false", "false"]
+      - out: ["on", "off"]
+    answer: 2
+    explain: |
+      در checkbox رویداد `change` بلافاصله بعد از هر تیک زدن یا برداشتن رخ می‌دهد. بار اول `checked` برابر `true` است، پس `disabled = !true = false` (دکمه فعال می‌شود)؛ بار دوم `checked` برابر `false` است و دکمه دوباره غیرفعال می‌شود (`true`). گزینه‌ی ۱ علامت `!` را نادیده گرفته، گزینه‌ی ۳ فکر کرده دکمه بعد از فعال شدن فعال می‌ماند و گزینه‌ی ۴ مقدار `value` را با وضعیت اشتباه گرفته است.
+
+  - level: medium
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      function validateEmail(value) {
+        const email = value.trim();
+        if (email === "") return "Email is required";
+        if (!email.includes("@") || !email.includes(".")) return "Invalid email";
+        return "OK";
+      }
+      console.log(validateEmail("   "));
+      console.log(validateEmail("ali@mail"));
+      console.log(validateEmail(" ali@mail.com "));
+    options:
+      - out: ["Invalid email", "Invalid email", "OK"]
+      - out: ["Email is required", "OK", "OK"]
+      - out: ["Email is required", "Invalid email", "OK"]
+      - out: ["Email is required", "Invalid email", "Invalid email"]
+    answer: 3
+    explain: |
+      رشته‌ی اول بعد از `trim()` خالی است. رشته‌ی دوم `@` دارد ولی نقطه ندارد؛ چون شرط با `||` نوشته شده، نبودنِ **یکی** از این دو برای «نامعتبر» بودن کافی است. رشته‌ی سوم بعد از حذف فاصله‌های اطراف، هر دو را دارد و `OK` است. گزینه‌ی ۱ `trim` را نادیده گرفته، گزینه‌ی ۲ فکر کرده داشتن `@` کافی است و گزینه‌ی ۴ فاصله‌های اطراف رشته‌ی سوم را مشکل‌ساز دانسته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <form id="f">
+        <input id="nameInput" value="guest">
+      </form>
+    code: |
+      const form = document.getElementById("f");
+      const nameInput = document.getElementById("nameInput");
+      nameInput.value = "Sara";
+      form.reset();
+      console.log(nameInput.value === "" ? "(empty)" : nameInput.value);
+    options:
+      - out: "(empty)"
+      - out: "Sara"
+      - out: "undefined"
+      - out: "guest"
+    answer: 4
+    explain: |
+      `form.reset()` هر کنترل را به **مقدار اولیه**‌اش برمی‌گرداند و مقدار اولیه همان attribute `value` در HTML (`"guest"`) است؛ پس نتیجه لزوماً کادر خالی نیست. گزینه‌ی ۱ فکر کرده `reset` همه‌چیز را خالی می‌کند، گزینه‌ی ۲ تصور کرده `reset` روی مقدارهای تغییرکرده با JavaScript اثری ندارد و گزینه‌ی ۳ هم بی‌پایه است، چون `.value` همیشه یک رشته است.
+
+  - level: medium
+    stem: کدام جمله درباره‌ی فرم‌ها **نادرست** است؟
+    options:
+      - '`.value` یک `<input type="number">` همیشه رشته است.'
+      - رویداد `submit` روی خودِ عنصر `<form>` رخ می‌دهد.
+      - رویداد `input` هنگام تایپ، با هر تغییر محتوای کادر رخ می‌دهد.
+      - اعتبارسنجی با JavaScript در مرورگر برای امنیت کافی است و لازم نیست سرور داده را دوباره بررسی کند.
+    answer: 4
+    explain: |
+      اعتبارسنجی سمت کاربر فقط برای **راحتی کاربر** است؛ هر کسی می‌تواند JavaScript صفحه را خاموش کند یا داده را مستقیم برای سرور بفرستد، پس سرور همیشه باید دوباره بررسی کند. بنابراین گزینه‌ی ۴ نادرست است. سه جمله‌ی دیگر رفتار واقعی مرورگر را توصیف می‌کنند.
+
+  - level: easy
+    stem: 'کاربر در کادر `ageInput` عدد ۲۰ را وارد کرده است. در جای خالی `const next = ______(ageInput.value) + 1;` کدام گزینه قرار گیرد تا `next` برابر **عدد** ۲۱ شود؟'
+    check: claims
+    setup: |
+      const ageInput = { value: "20" };
+    options:
+      - text: '`Number`'
+        expr: Number(ageInput.value) + 1
+        equals: "21"
+      - text: '`String`'
+        expr: String(ageInput.value) + 1
+        equals: "21"
+      - text: '`Boolean`'
+        expr: Boolean(ageInput.value) + 1
+        equals: "21"
+      - text: '`typeof`'
+        expr: typeof(ageInput.value) + 1
+        equals: "21"
+    answer: 1
+    explain: |
+      `.value` رشته‌ی `"20"` است و `Number("20")` آن را به عدد ۲۰ تبدیل می‌کند؛ بعد `20 + 1` برابر ۲۱ می‌شود. با `String` همان رشته می‌ماند و نتیجه `"201"` است، `Boolean("20")` برابر `true` است و `true + 1` می‌شود ۲، و `typeof` رشته‌ی `"string"` را می‌دهد که با ۱ به `"string1"` تبدیل می‌شود.
