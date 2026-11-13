@@ -1,0 +1,944 @@
+id: ch1-promises
+title: "Promise"
+slides: "Introduction to JS، اسلاید ۵۵"
+lesson: |
+  ### Promise چیست؟
+  در درس قبل دیدیم که JavaScript برای کارهای زمان‌بر (مثل گرفتن داده از سرور یا صبر کردن برای یک تایمر) منتظر نمی‌ماند و به جای آن یک **callback** (تابعی که به تابع دیگر می‌دهیم تا بعداً صدا زده شود) ثبت می‌کند. مشکل این بود که وقتی چند کار ناهمگام پشت سر هم داریم، callbackها داخل هم می‌روند و کد شکل یک هرم تودرتو پیدا می‌کند (**callback hell**). اسلاید ۵۵ روش دوم را معرفی می‌کند: **Promise** (به معنای «قول» یا «وعده»).
+
+  ::: analogy
+  به یک فست‌فود می‌روی و ساندویچ سفارش می‌دهی. صندوق‌دار تو را جلوی پیشخوان نگه نمی‌دارد تا ساندویچ آماده شود؛ یک **رسید** با شماره‌ی سفارش به تو می‌دهد. این رسید خودِ ساندویچ نیست، **قولِ** ساندویچ است. تو می‌روی می‌نشینی و با دوستت حرف می‌زنی (برنامه به بقیه‌ی کارهایش می‌رسد). بعداً یکی از دو اتفاق می‌افتد: شماره‌ات را صدا می‌زنند و ساندویچ را تحویل می‌گیری (**fulfilled**)، یا می‌گویند «ببخشید، نان تمام شد» (**rejected**). تا وقتی هیچ‌کدام رخ نداده، سفارش «در انتظار» است (**pending**). و اگر آشپزخانه سفارشت را گم کند، شاید **هیچ‌وقت** صدایت نزنند!
+  :::
+
+  اسلاید ۵۵ می‌گوید: «A `Promise` represents a value that may arrive now, later, or never»؛ یعنی یک Promise **نماینده‌ی مقداری است که ممکن است همین حالا، بعداً یا هرگز به دست برسد**. از نظر فنی، Promise یک **شیء** (object) است که نتیجه‌ی نهاییِ یک کار ناهمگام را در خودش نگه می‌دارد. به جای اینکه callback را به تابعِ زمان‌بر بدهیم، آن تابع یک Promise به ما **برمی‌گرداند** و ما روی همین Promise مشخص می‌کنیم که وقتی نتیجه آمد چه کنیم.
+
+  ### سه وضعیت (state) یک Promise
+  | وضعیت | معنی | در مثال فست‌فود |
+  |---|---|---|
+  | `pending` | در انتظار؛ هنوز نتیجه‌ای در کار نیست | ساندویچ در حال آماده شدن است |
+  | `fulfilled` | کار با موفقیت تمام شد و Promise یک **مقدار** (value) دارد | ساندویچ تحویل شد |
+  | `rejected` | کار شکست خورد و Promise یک **دلیل** (reason، معمولاً یک خطا) دارد | «نان تمام شد!» |
+
+  به Promiseی که دیگر pending نیست (یعنی fulfilled یا rejected شده) **settled** (تعیین‌تکلیف‌شده) می‌گویند. تغییر وضعیت فقط از یکی از این دو مسیر ممکن است:
+
+  ```text
+  pending --resolve(value)--> fulfilled   (final: never changes again)
+  pending --reject(reason)--> rejected    (final: never changes again)
+  ```
+
+  ::: warning اسلاید ۵۵ را درست بخوان
+  اسلاید ۵۵ وضعیت‌ها را به شکل «pending → fulfilled → rejected» نوشته است. این **یک دنباله نیست**! Promise از `pending` شروع می‌شود و فقط **یک بار** به `fulfilled` **یا** به `rejected` می‌رود و از آن به بعد برای همیشه همان‌جا می‌ماند. هیچ Promiseی از fulfilled به rejected (یا برعکس) نمی‌رود و به pending هم برنمی‌گردد.
+  :::
+
+  ### ساختن Promise: `new Promise((resolve, reject) => …)`
+  کد اسلاید ۵۵ را خط به خط بخوانیم:
+
+  ```js title=promises.js
+  const fetchData = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve("Data received!");
+      // reject("Error occurred!");
+    }, 1000);
+  });
+
+  fetchData
+    .then(result => console.log(result))   // "Data received!" (after 1 sec)
+    .catch(error => console.log(error));
+  ```
+
+  - `new Promise(...)` یک Promise تازه می‌سازد. تابعی که به آن می‌دهیم **executor** (تابع اجراکننده) نام دارد.
+  - JavaScript دو تابع آماده به executor می‌دهد: `resolve` برای اعلام **موفقیت** (همراه با مقدار) و `reject` برای اعلام **شکست** (همراه با دلیل). این دو اسم قراردادی‌اند، ولی همه همین‌ها را می‌نویسند.
+  - داخل executor یک تایمر ۱۰۰۰ میلی‌ثانیه‌ای (۱ ثانیه) گذاشته‌ایم. بعد از ۱ ثانیه `resolve("Data received!")` اجرا می‌شود و Promise از `pending` به `fulfilled` با مقدار `"Data received!"` می‌رود.
+  - `.then(result => console.log(result))` یعنی «هر وقت fulfilled شد، این تابع را با مقدارش صدا بزن». خروجی بعد از حدود ۱ ثانیه: `Data received!`
+  - `.catch(error => console.log(error))` یعنی «اگر rejected شد، این تابع را با دلیلش صدا بزن». در این اجرا اصلاً صدا زده نمی‌شود.
+
+  حالا اگر خط `resolve` را کامنت کنیم و `reject` را از کامنت دربیاوریم، Promise بعد از ۱ ثانیه **rejected** می‌شود، تابعِ داخل `.then` کنار گذاشته می‌شود و `.catch` پیام را چاپ می‌کند:
+
+  ```js
+  const fetchData = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // resolve("Data received!");
+      reject("Error occurred!");
+    }, 1000);
+  });
+
+  fetchData
+    .then(result => console.log(result))   // skipped
+    .catch(error => console.log(error));   // "Error occurred!"
+  ```
+
+  ::: note `fetchData` در اسلاید ۵۵ تابع نیست!
+  در کد اسلاید ۵۵، `fetchData` خودِ **شیء Promise** است، نه یک تابع؛ کارِ داخل آن (تایمر) همان لحظه‌ی ساخته شدن شروع شده است. برای همین می‌نویسیم `fetchData.then(...)`؛ نوشتن `fetchData()` خطای `TypeError: fetchData is not a function` می‌دهد. روش رایج‌تر این است که **تابعی بنویسیم که Promise برگرداند**؛ این‌طوری هر بار صدا زدنش یک کار تازه را شروع می‌کند:
+
+  ```js
+  function fetchData() {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve("Data received!"), 1000);
+    });
+  }
+
+  fetchData().then((result) => console.log(result)); // "Data received!"
+  ```
+  :::
+
+  ### گرفتن نتیجه: `.then()`، `.catch()` و `.finally()`
+  روی هر Promise سه متد اصلی داریم:
+
+  | متد | کِی اجرا می‌شود؟ | چه چیزی دریافت می‌کند؟ |
+  |---|---|---|
+  | `.then(fn)` | وقتی Promise **fulfilled** شود | مقدار (value) |
+  | `.catch(fn)` | وقتی Promise **rejected** شود (یا در مرحله‌های قبلیِ زنجیره خطایی رخ دهد) | دلیل (reason، معمولاً شیء خطا) |
+  | `.finally(fn)` | در **هر دو** حالت، بعد از settled شدن | هیچ آرگومانی |
+
+  `finally` برای کارهای «جمع‌وجور کردن» است؛ مثلاً مخفی کردن آیکون «در حال بارگذاری» که چه موفق شویم چه شکست بخوریم باید انجام شود:
+
+  ```js
+  function loadUser(ok) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (ok) resolve({ name: "Sara" });
+        else reject(new Error("User not found"));
+      }, 500);
+    });
+  }
+
+  console.log("Loading...");
+  loadUser(true)
+    .then((user) => console.log("Hello,", user.name))
+    .catch((err) => console.log("Failed:", err.message))
+    .finally(() => console.log("Hide spinner"));
+  // Loading...
+  // Hello, Sara
+  // Hide spinner
+  ```
+
+  با `loadUser(false)` خروجی این می‌شود: `Loading...`، `Failed: User not found` و `Hide spinner`. دقت کن که `finally` مقدار یا خطا را **تغییر نمی‌دهد** و فقط آن را دست‌نخورده به مرحله‌ی بعد می‌دهد؛ حتی اگر داخلش چیزی `return` کنی، نادیده گرفته می‌شود.
+
+  ### چهار قانون مهم که تست‌ها از آن‌ها طرح می‌شوند
+
+  #### قانون ۱: executor همان لحظه و همگام اجرا می‌شود
+  ```js
+  console.log("1: before");
+  const p = new Promise((resolve) => {
+    console.log("2: inside executor");
+    resolve("done");
+  });
+  p.then((value) => console.log("4: then got", value));
+  console.log("3: after");
+  // 1: before
+  // 2: inside executor
+  // 3: after
+  // 4: then got done
+  ```
+  executor **بلافاصله** و به صورت همگام (synchronous) اجرا می‌شود. «ناهمگام» فقط کارهایی است که داخلش منتظر چیزی می‌مانند (مثل `setTimeout`) و callbackهای `then`، `catch` و `finally`.
+
+  #### قانون ۲: فقط اولین `resolve` یا `reject` حساب می‌شود
+  ```js
+  const p = new Promise((resolve, reject) => {
+    resolve("first");
+    reject("second");   // ignored: the promise is already settled
+    resolve("third");   // ignored
+    console.log("executor keeps running");
+  });
+  p.then((v) => console.log("then:", v)).catch((e) => console.log("catch:", e));
+  // executor keeps running
+  // then: first
+  ```
+  Promise فقط یک بار settled می‌شود. ضمناً `resolve` مثل `return` نیست: کدِ بعد از آن هم اجرا می‌شود؛ فقط دیگر وضعیت Promise عوض نمی‌شود.
+
+  #### قانون ۳: callbackهای `then` همیشه ناهمگام اجرا می‌شوند
+  حتی اگر Promise **از قبل** fulfilled شده باشد، تابع داخل `.then` فوراً اجرا نمی‌شود؛ اول کدهای همگامِ فعلی تمام می‌شوند:
+
+  ```js
+  const ready = Promise.resolve("X"); // already fulfilled
+  ready.then((v) => console.log(v));
+  console.log("Y");
+  // Y
+  // X
+  ```
+  `Promise.resolve(v)` میان‌بُری برای ساختن Promiseی است که از همان اول با مقدار `v` fulfilled شده است و `Promise.reject(e)` Promiseی می‌سازد که از همان اول با دلیل `e` rejected شده است. دلیل دقیق قانون ۳ (صف microtask) را در درس «Event loop و ترتیب اجرای کدهای همگام و ناهمگام» می‌بینیم.
+
+  #### قانون ۴: `throw` داخل executor
+  اگر executor به صورت **همگام** خطا `throw` کند، Promise خودکار rejected می‌شود. ولی خطایی که **بعداً** داخل callbackِ `setTimeout` پرتاب شود، دیگر به Promise ربطی ندارد و یک خطای مدیریت‌نشده است؛ آنجا باید `reject` را صدا بزنی:
+
+  ```js
+  const p1 = new Promise(() => {
+    throw new Error("sync error"); // becomes a rejection
+  });
+  p1.catch((e) => console.log("caught:", e.message)); // caught: sync error
+
+  const p2 = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // throw new Error("late error"); // NOT caught by p2.catch: it crashes the program!
+      reject(new Error("late error"));  // the correct way
+    }, 100);
+  });
+  p2.catch((e) => console.log("caught:", e.message)); // caught: late error
+  ```
+
+  ### زنجیره‌ی Promise (Promise chaining)
+  راز قدرت Promise این است: **هر `.then()` (و هر `.catch()` و `.finally()`) یک Promise جدید برمی‌گرداند**. پس می‌توان پشت سرش دوباره `.then` نوشت و یک **زنجیره** (chain) ساخت. قاعده‌های زنجیره:
+
+  1. هر چیزی که callbackِ یک `then` با `return` برگرداند، ورودیِ `then` بعدی می‌شود.
+  2. اگر چیزی برنگرداند، `then` بعدی `undefined` می‌گیرد.
+  3. اگر یک **Promise** برگرداند، زنجیره **منتظر آن می‌ماند** و `then` بعدی مقدارِ نهایی آن را می‌گیرد (نه خودِ Promise را).
+  4. اگر خطایی `throw` شود (یا یک Promiseِ rejected برگردانده شود)، `then`های بعدی **کنار گذاشته می‌شوند** و اجرا به نزدیک‌ترین `catch` می‌پرد.
+  5. `catch` خطا را مدیریت می‌کند و هر چیزی که برگرداند، زنجیره با همان مقدار **ادامه می‌یابد** (دوباره در مسیر موفقیت هستیم).
+
+  ```js
+  Promise.resolve(2)
+    .then((x) => x * 10)                   // returns 20
+    .then((x) => {
+      console.log("got", x);               // got 20
+      // no return here: the next then receives undefined
+    })
+    .then((x) => console.log("then got", x)) // then got undefined
+    .then(() => {
+      throw new Error("boom");             // jump to the nearest catch
+    })
+    .then(() => console.log("skipped"))    // never runs
+    .catch((err) => {
+      console.log("caught:", err.message); // caught: boom
+      return "recovered";
+    })
+    .then((x) => console.log("after catch:", x)); // after catch: recovered
+  ```
+
+  و قاعده‌ی ۳ (برگرداندن Promise از داخل `then`):
+
+  ```js
+  function wait(ms, value) {
+    return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+  }
+
+  wait(500, 1)
+    .then((x) => wait(500, x + 1)) // returns a Promise: the chain waits for it
+    .then((x) => console.log(x));   // 2 (after about 1 second), not a Promise
+  ```
+
+  ### از callback hell به زنجیره‌ی Promise
+  فرض کن باید سه کار ناهمگام را پشت سر هم انجام دهیم: کاربر را بگیریم، بعد سفارش‌هایش را و بعد قیمت کل را حساب کنیم. با callback:
+
+  ```js
+  function getUser(id, callback) {
+    setTimeout(() => callback({ id: id, name: "Sara" }), 300);
+  }
+  function getOrders(user, callback) {
+    setTimeout(() => callback(["book", "pen"]), 300);
+  }
+  function getPrice(orders, callback) {
+    setTimeout(() => callback(orders.length * 50), 300);
+  }
+
+  getUser(1, (user) => {
+    getOrders(user, (orders) => {
+      getPrice(orders, (price) => {
+        console.log("Total:", price); // Total: 100
+      });
+    });
+  });
+  ```
+
+  هر مرحله یک سطح تودرتوتر است. حالا همان کار با Promise؛ هر تابع به جای گرفتن callback، یک Promise **برمی‌گرداند**:
+
+  ```js
+  function getUser(id) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve({ id: id, name: "Sara" }), 300);
+    });
+  }
+  function getOrders(user) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(["book", "pen"]), 300);
+    });
+  }
+  function getPrice(orders) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(orders.length * 50), 300);
+    });
+  }
+
+  getUser(1)
+    .then((user) => getOrders(user))
+    .then((orders) => getPrice(orders))
+    .then((price) => console.log("Total:", price)) // Total: 100
+    .catch((err) => console.log("Something failed:", err));
+  ```
+
+  کد **صاف** شد (به جای هرم، یک ستون)، هر مرحله در یک خط است و فقط **یک `.catch()`** در انتها خطای هر سه مرحله را می‌گیرد. این همان جمله‌ی اسلاید ۵۵ است: «Avoids deep nesting from callbacks».
+
+  ### `Promise.all` و `Promise.race`
+  گاهی چند کار مستقل داریم که می‌توانند **هم‌زمان** پیش بروند. این دو متد (که در اسلایدهای ۵۸ تا ۶۰ هم به کار رفته‌اند) آرایه‌ای از Promiseها می‌گیرند و یک Promise برمی‌گردانند:
+
+  ```js
+  function task(name, ms) {
+    return new Promise((resolve) => setTimeout(() => resolve(name), ms));
+  }
+
+  Promise.all([task("A", 300), task("B", 100), task("C", 200)])
+    .then((results) => console.log(results)); // [ 'A', 'B', 'C' ] (after about 300 ms)
+  ```
+
+  ```js
+  Promise.race([task("A", 300), task("B", 100), task("C", 200)])
+    .then((first) => console.log(first)); // B (after about 100 ms)
+  ```
+
+  | | `Promise.all([...])` | `Promise.race([...])` |
+  |---|---|---|
+  | کِی settled می‌شود؟ | وقتی **همه** fulfilled شوند، یا به محض اینکه **یکی** rejected شود | به محض اینکه **اولین** Promise settled شود (موفق یا ناموفق) |
+  | نتیجه | آرایه‌ی مقدارها **به ترتیب آرایه‌ی ورودی** (نه به ترتیب تمام شدن) | مقدار یا خطای همان اولین |
+  | زمان کل (وقتی کارها هم‌زمان‌اند) | به اندازه‌ی **کندترین** کار، نه مجموع زمان‌ها | به اندازه‌ی **سریع‌ترین** کار |
+
+  اگر یکی از عضوها rejected شود، `Promise.all` **بلافاصله** با همان دلیل rejected می‌شود و منتظر بقیه نمی‌ماند (البته بقیه‌ی کارها متوقف نمی‌شوند؛ فقط نتیجه‌شان نادیده گرفته می‌شود). عضوهایی هم که Promise نیستند (مثل `"B"` یا `42`) همان‌طور در نتیجه قرار می‌گیرند:
+
+  ```js
+  Promise.all([task("A", 300), Promise.reject(new Error("B failed")), task("C", 100)])
+    .then((results) => console.log("results:", results))
+    .catch((err) => console.log("error:", err.message)); // error: B failed
+
+  Promise.all([task("A", 100), "B", 42])
+    .then((results) => console.log(results)); // [ 'A', 'B', 42 ]
+  ```
+
+  ::: info بیشتر بدانیم
+  دو متد مشابه دیگر هم هست که در اسلایدها نیامده‌اند: `Promise.allSettled` (منتظر همه می‌ماند و نتیجه‌ی تک‌تک را، موفق یا ناموفق، گزارش می‌کند) و `Promise.any` (اولین Promiseِ **موفق** را برمی‌گرداند).
+  :::
+
+  ### BEST PRACTICE: همیشه `.catch()` بگذار
+  اسلاید ۵۵ تأکید می‌کند: «Always add `.catch()` to handle errors; unhandled rejections can crash apps». یعنی اگر Promiseی rejected شود و هیچ `.catch()`ی برایش نباشد (به این وضعیت **unhandled rejection** یعنی «ردشدنِ مدیریت‌نشده» می‌گویند)، برنامه ممکن است از کار بیفتد:
+
+  ```js
+  const p = new Promise((resolve, reject) => {
+    setTimeout(() => reject("Error occurred!"), 1000);
+  });
+
+  p.then((result) => console.log(result)); // no .catch() here!
+  setTimeout(() => console.log("still alive"), 2000);
+  ```
+
+  - در **Node.js**: بعد از ۱ ثانیه برنامه با خطای `UnhandledPromiseRejection` متوقف می‌شود (crash) و `still alive` هرگز چاپ نمی‌شود.
+  - در **مرورگر**: صفحه بسته نمی‌شود، ولی خطای قرمز `Uncaught (in promise) Error occurred!` در کنسول می‌آید و خطا بی‌جواب می‌ماند.
+
+  دقت کن که `.then(...)` به‌تنهایی خطا را مدیریت **نمی‌کند**؛ چون `.then` یک Promise جدید برمی‌گرداند که آن هم rejected می‌شود و کسی آن را catch نکرده است. راه درست: یک `.catch()` در انتهای زنجیره.
+
+  ::: tip نکته
+  - `.then`، `.catch` و `.finally` **همیشه** یک Promise **جدید** برمی‌گردانند؛ برای همین زنجیره ساخته می‌شود.
+  - داخل `then` اگر آکولاد `{ }` گذاشتی، `return` را فراموش نکن؛ وگرنه مرحله‌ی بعدیِ زنجیره `undefined` می‌گیرد. (`x => x * 2` خودش مقدار را برمی‌گرداند، ولی `x => { x * 2; }` برنمی‌گرداند.)
+  - یک `.catch()` در انتهای زنجیره خطای **هر** مرحله‌ی قبل از خودش را می‌گیرد؛ لازم نیست برای هر مرحله جدا catch بنویسی.
+  - در `Promise.all` ترتیب نتیجه‌ها **همیشه** ترتیب آرایه‌ی ورودی است.
+  :::
+
+  ::: trap دام تستی
+  - `.then(console.log("done"))` اشتباه است: `console.log("done")` **همان لحظه** اجرا می‌شود و حاصلش (`undefined`) به `then` داده می‌شود که آن را نادیده می‌گیرد. باید یک **تابع** بدهی: `.then(() => console.log("done"))`.
+  - `resolve` اجرای executor را متوقف نمی‌کند؛ مثل `return` نیست.
+  - executor همگام اجرا می‌شود؛ فقط callbackهای `then`، `catch` و `finally` ناهمگام‌اند (حتی اگر Promise از قبل settled باشد).
+  - Promise فقط یک بار settled می‌شود؛ `resolve` یا `reject`های بعدی بی‌اثرند.
+  - `throw` داخل callbackِ `setTimeout` (درون executor) به `catch` نمی‌رسد؛ آنجا `reject` را صدا بزن.
+  :::
+
+  ::: summary
+  - Promise یعنی شیئی برای مقداری که «الان، بعداً یا هرگز» می‌رسد. وضعیت‌ها: اول `pending` و بعد **فقط یک بار** `fulfilled` یا `rejected`.
+  - ساختن: `new Promise((resolve, reject) => { ... })`؛ گرفتن نتیجه: `.then()` برای موفقیت، `.catch()` برای خطا و `.finally()` برای هر دو.
+  - هر `.then` یک Promise جدید می‌سازد: مقدارِ برگردانده‌شده به مرحله‌ی بعد می‌رود، Promiseِ برگردانده‌شده باعث صبر می‌شود و `throw` اجرا را به `catch` می‌برد.
+  - `Promise.all`: منتظر همه (نتیجه به ترتیب ورودی؛ با اولین شکست rejected می‌شود). `Promise.race`: اولینِ settled شده.
+  - همیشه `.catch()` بگذار؛ unhandled rejection در Node.js برنامه را crash می‌کند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۵، یک `Promise` در JavaScript نماینده‌ی چیست؟
+    options:
+      - 'تابعی که همیشه دقیقاً بعد از یک ثانیه اجرا می‌شود'
+      - 'مقداری که ممکن است همین حالا، بعداً یا هرگز به دست برسد'
+      - 'یک رشته‌ی اجرایی (thread) جداگانه که کد را موازی با برنامه‌ی اصلی اجرا می‌کند'
+      - 'متغیری که مقدارش بعد از تعریف هرگز تغییر نمی‌کند'
+    answer: 2
+    explain: |
+      اسلاید ۵۵ دقیقاً همین را می‌گوید: «A Promise represents a value that may arrive now, later, or never». گزینه‌ی ۱ غلط است؛ Promise تابع نیست و زمان ثابتی ندارد (۱ ثانیه فقط زمانِ تایمرِ مثال اسلاید بود). گزینه‌ی ۳ غلط است؛ JavaScript تک‌رشته‌ای (single-threaded) است و Promise هیچ thread جدیدی نمی‌سازد. گزینه‌ی ۴ ویژگی `const` را با Promise قاطی کرده است.
+
+  - level: easy
+    stem: |
+      کدام گزینه درباره‌ی وضعیت‌های (state) یک Promise **درست** است؟
+    options:
+      - 'Promise همیشه به ترتیب از pending به fulfilled و سپس به rejected می‌رود'
+      - 'یک Promiseِ fulfilled اگر بعداً خطایی رخ دهد، به rejected تغییر می‌کند'
+      - 'Promise در وضعیت pending شروع می‌شود و فقط یک بار به fulfilled یا rejected می‌رود و دیگر تغییر نمی‌کند'
+      - 'Promise بعد از rejected شدن دوباره به pending برمی‌گردد تا کار را تکرار کند'
+    answer: 3
+    explain: |
+      Promise از `pending` شروع می‌شود و فقط یک بار settled می‌شود: **یا** fulfilled **یا** rejected؛ بعد از آن هرگز تغییر نمی‌کند. گزینه‌ی ۱ برداشتِ غلط از فلش‌های اسلاید ۵۵ است (آن فلش‌ها دنباله نیستند). گزینه‌ی ۲ غلط است، چون Promiseِ fulfilled دیگر rejected نمی‌شود (خطای بعدی فقط Promise جدیدی را که `then` می‌سازد rejected می‌کند). گزینه‌ی ۴ هم غلط است؛ Promise به pending برنمی‌گردد و کاری را تکرار نمی‌کند.
+
+  - level: easy
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «طبق اسلاید ۵۵، برای گرفتن نتیجه‌ی موفقِ یک Promise از ...... و برای مدیریت خطای آن از ...... استفاده می‌کنیم.»
+    options:
+      - '`.catch()` و `.then()`'
+      - '`.resolve()` و `.reject()`'
+      - '`.finally()` و `.catch()`'
+      - '`.then()` و `.catch()`'
+    answer: 4
+    explain: |
+      اسلاید ۵۵: «Use `.then()` for success, `.catch()` for errors». گزینه‌ی ۱ جای دو متد را عوض کرده است. `resolve` و `reject` (گزینه‌ی ۲) توابعی هستند که داخل executor برای **اعلام** نتیجه صدا زده می‌شوند، نه برای گرفتنِ آن. `.finally()` (گزینه‌ی ۳) در هر دو حالت اجرا می‌شود و هیچ مقداری دریافت نمی‌کند.
+
+  - level: easy
+    stem: |
+      خروجی کد اسلاید ۵۵ (کد زیر) کدام است؟
+    check: output
+    code: |
+      const fetchData = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve("Data received!");
+          // reject("Error occurred!");
+        }, 1000);
+      });
+
+      fetchData
+        .then(result => console.log(result))
+        .catch(error => console.log(error));
+    options:
+      - out: "Data received!"
+      - out: "Error occurred!"
+      - out: ["Data received!", "Error occurred!"]
+      - out: "Promise { <pending> }"
+    answer: 1
+    explain: |
+      بعد از ۱ ثانیه `resolve("Data received!")` اجرا می‌شود، Promise fulfilled می‌شود و تابعِ داخل `.then` مقدار را چاپ می‌کند. خط `reject` کامنت است و اجرا نمی‌شود، پس `.catch` کاری نمی‌کند (گزینه‌های ۲ و ۳ غلط‌اند؛ تازه اگر `reject` هم بعد از `resolve` اجرا می‌شد، بی‌اثر بود، چون Promise فقط یک بار settled می‌شود). گزینه‌ی ۴ غلط است، چون `result` مقدارِ نهاییِ Promise است، نه خودِ Promise.
+
+  - level: easy
+    stem: |
+      در کد اسلاید ۵۵، خط `resolve` را کامنت و خط `reject` را از حالت کامنت خارج کرده‌ایم. خروجی کدام است؟
+    check: output
+    code: |
+      const fetchData = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // resolve("Data received!");
+          reject("Error occurred!");
+        }, 1000);
+      });
+
+      fetchData
+        .then(result => console.log(result))
+        .catch(error => console.log(error));
+    options:
+      - out: "Data received!"
+      - out: ["Data received!", "Error occurred!"]
+      - out: "Error occurred!"
+      - out: "!! UnhandledPromiseRejection"
+    answer: 3
+    explain: |
+      این بار فقط `reject("Error occurred!")` اجرا می‌شود؛ Promise rejected می‌شود، تابعِ داخل `.then` کنار گذاشته می‌شود و `.catch` دلیل را چاپ می‌کند: `Error occurred!`. گزینه‌های ۱ و ۲ فرض کرده‌اند `.then` هم اجرا می‌شود. گزینه‌ی ۴ غلط است، چون این rejection با `.catch` مدیریت شده و برنامه crash نمی‌کند.
+
+  - level: easy
+    stem: |
+      توصیه‌ی BEST PRACTICE اسلاید ۵۵ درباره‌ی Promiseها کدام است؟
+    options:
+      - 'همیشه `.catch()` اضافه کن، چون rejectionهای مدیریت‌نشده می‌توانند برنامه را از کار بیندازند (crash)'
+      - 'به جای Promise از callbackهای تودرتو استفاده کن تا کد خواناتر شود'
+      - 'هیچ‌وقت داخل executor از `setTimeout` استفاده نکن'
+      - 'همیشه بعد از `resolve` یک `reject` هم صدا بزن تا هر دو حالت پوشش داده شود'
+    answer: 1
+    explain: |
+      BEST PRACTICE اسلاید ۵۵: «Always add `.catch()` to handle errors; unhandled rejections can crash apps». گزینه‌ی ۲ برعکسِ هدف Promise است (Promise آمده تا تودرتو شدنِ callbackها را از بین ببرد). گزینه‌ی ۳ بی‌پایه است؛ خودِ اسلاید داخل executor از `setTimeout` استفاده کرده است. گزینه‌ی ۴ هم بی‌معناست، چون فقط اولین `resolve` یا `reject` اثر دارد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۵، مزیت اصلی Promise نسبت به callbackها چیست؟
+    options:
+      - 'کد را چندرشته‌ای (multi-threaded) می‌کند تا سریع‌تر اجرا شود'
+      - 'از تودرتو شدنِ عمیقِ callbackها جلوگیری می‌کند و مرحله‌ها با `.then()` پشت سر هم زنجیر می‌شوند'
+      - 'کد ناهمگام را همگام می‌کند و برنامه تا آماده شدن نتیجه متوقف می‌ماند'
+      - 'دیگر به مدیریت خطا نیازی نیست، چون Promise هیچ‌وقت شکست نمی‌خورد'
+    answer: 2
+    explain: |
+      اسلاید ۵۵: «Avoids deep nesting from callbacks»؛ به جای هرمِ تودرتو، مرحله‌ها با `.then()` پشت سر هم زنجیر می‌شوند. Promise کد را چندرشته‌ای نمی‌کند (گزینه‌ی ۱)، برنامه را متوقف یا همگام نمی‌کند (گزینه‌ی ۳) و می‌تواند شکست بخورد (rejected)، پس مدیریت خطا همچنان لازم است (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      تابعی که به `new Promise(...)` می‌دهیم (executor) چه زمانی اجرا می‌شود؟
+    options:
+      - 'وقتی برای اولین بار `.then()` روی Promise صدا زده شود'
+      - 'بعد از اینکه همه‌ی کدهای همگامِ برنامه تمام شد'
+      - 'فقط وقتی `resolve` صدا زده شود'
+      - 'بلافاصله و به صورت همگام، همان لحظه‌ای که `new Promise` اجرا می‌شود'
+    answer: 4
+    explain: |
+      executor همان لحظه‌ی `new Promise(...)` و به صورت همگام اجرا می‌شود؛ فقط callbackهای `then`، `catch` و `finally` ناهمگام‌اند. Promise منتظر صدا زدنِ `.then()` نمی‌ماند (گزینه‌ی ۱)؛ مثلاً در کد اسلاید ۵۵ تایمر همان لحظه‌ی ساختن Promise شروع می‌شود. گزینه‌ی ۲ ویژگی callbackهای `then` را به executor نسبت داده و گزینه‌ی ۳ برعکس است: `resolve` را خودِ executor صدا می‌زند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log("A");
+      const p = new Promise((resolve) => {
+        console.log("B");
+        resolve("C");
+      });
+      p.then((value) => console.log(value));
+      console.log("D");
+    options:
+      - out: ["A", "B", "C", "D"]
+      - out: ["A", "D", "B", "C"]
+      - out: ["A", "B", "D", "C"]
+      - out: ["A", "D", "C", "B"]
+    answer: 3
+    explain: |
+      `A` همگام چاپ می‌شود. executor هم همان لحظه و همگام اجرا می‌شود و `B` را چاپ می‌کند؛ `resolve("C")` فقط وضعیت را fulfilled می‌کند. callbackِ داخل `then` ناهمگام است، پس اول بقیه‌ی کد همگام (`D`) و بعد `C` چاپ می‌شود. گزینه‌ی ۱ فرض کرده `then` فوراً اجرا می‌شود؛ گزینه‌های ۲ و ۴ فکر کرده‌اند خودِ executor هم ناهمگام است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p = Promise.resolve("X");
+      p.then((v) => console.log(v));
+      console.log("Y");
+    options:
+      - out: ["Y", "X"]
+      - out: ["X", "Y"]
+      - out: ["Y"]
+      - out: ["Promise { 'X' }", "Y"]
+    answer: 1
+    explain: |
+      `Promise.resolve("X")` یک Promiseِ از قبل fulfilled می‌سازد، اما callbackِ داخل `then` باز هم ناهمگام است و بعد از تمام شدن کدهای همگام اجرا می‌شود؛ پس اول `Y` و بعد `X`. گزینه‌ی ۲ فرض کرده چون Promise آماده است، `then` فوراً اجرا می‌شود؛ گزینه‌ی ۳ فکر کرده `then` روی Promiseِ آماده اصلاً اجرا نمی‌شود؛ گزینه‌ی ۴ خودِ Promise را چاپ‌شده فرض کرده، در حالی که `v` مقدارِ آن است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.resolve(2)
+        .then((x) => x * 3)
+        .then((x) => { x + 1; })
+        .then((x) => console.log(x));
+    options:
+      - out: "7"
+      - out: "6"
+      - out: "NaN"
+      - out: "undefined"
+    answer: 4
+    explain: |
+      `then` اول مقدار `6` را برمی‌گرداند (arrow function بدون آکولاد، خودش return دارد). `then` دوم آکولاد دارد ولی `return` ندارد؛ `x + 1` حساب می‌شود اما برگردانده نمی‌شود، پس ورودیِ مرحله‌ی بعد `undefined` است. گزینه‌ی ۱ وجود return را فرض کرده؛ گزینه‌ی ۲ فکر کرده مقدار قبلی دست‌نخورده رد می‌شود؛ گزینه‌ی ۳ از محاسبه‌ای مثل `undefined + 1` آمده، ولی چنین محاسبه‌ای اینجا چاپ نمی‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.resolve(1)
+        .then((x) => {
+          throw new Error("boom");
+        })
+        .then((x) => console.log("A", x))
+        .catch((e) => {
+          console.log("B", e.message);
+          return 10;
+        })
+        .then((x) => console.log("C", x));
+    options:
+      - out: ["A 1", "C 10"]
+      - out: ["B boom"]
+      - out: ["B boom", "C 10"]
+      - out: ["A undefined", "B boom", "C 10"]
+    answer: 3
+    explain: |
+      `throw` در `then` اول، Promiseِ آن مرحله را rejected می‌کند؛ `then` دوم (که فقط برای مسیر موفقیت است) کنار گذاشته می‌شود و اجرا به `catch` می‌رسد: `B boom`. `catch` مقدار `10` را برمی‌گرداند، پس زنجیره دوباره در مسیر موفقیت است و `then` آخر `C 10` را چاپ می‌کند. گزینه‌ی ۲ فکر کرده بعد از `catch` زنجیره تمام می‌شود؛ گزینه‌ی ۴ فکر کرده `then` بعد از خطا هم اجرا می‌شود؛ گزینه‌ی ۱ خطا را کلاً نادیده گرفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.reject(new Error("fail"))
+        .finally(() => console.log("cleanup"))
+        .catch((e) => console.log("caught:", e.message));
+    options:
+      - out: ["cleanup", "caught: fail"]
+      - out: ["caught: fail"]
+      - out: ["caught: fail", "cleanup"]
+      - out: ["cleanup"]
+    answer: 1
+    explain: |
+      `finally` در هر دو حالت (موفق و ناموفق) اجرا می‌شود، پس اول `cleanup` چاپ می‌شود. سپس `finally` همان خطا را دست‌نخورده به مرحله‌ی بعد می‌دهد و `catch` آن را می‌گیرد: `caught: fail`. گزینه‌ی ۲ فکر کرده `finally` فقط در موفقیت اجرا می‌شود؛ گزینه‌ی ۳ ترتیب زنجیره را برعکس خوانده (`finally` زودتر نوشته شده)؛ گزینه‌ی ۴ فکر کرده `finally` خطا را «مصرف» می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function wait(ms, value) {
+        return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+      }
+
+      wait(100, 1)
+        .then((x) => wait(100, x + 1))
+        .then((x) => console.log("got", x));
+    options:
+      - out: "got Promise { <pending> }"
+      - out: "got 1"
+      - out: "got undefined"
+      - out: "got 2"
+    answer: 4
+    explain: |
+      وقتی callbackِ یک `then` خودش یک Promise برمی‌گرداند، زنجیره منتظر آن می‌ماند و `then` بعدی **مقدار نهایی** آن را می‌گیرد: در مرحله‌ی اول `x` برابر `1` است، `wait(100, 2)` برگردانده می‌شود و بعد از حدود ۱۰۰ میلی‌ثانیه‌ی دیگر `got 2` چاپ می‌شود. گزینه‌ی ۱ فکر کرده خودِ Promise به مرحله‌ی بعد می‌رسد؛ گزینه‌ی ۲ مقدار مرحله‌ی اول را دست‌نخورده فرض کرده؛ گزینه‌ی ۳ فکر کرده arrow function چیزی برنمی‌گرداند، در حالی که بدون آکولاد، return خودکار است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function task(name, ms) {
+        return new Promise((resolve) => setTimeout(() => resolve(name), ms));
+      }
+
+      Promise.all([task("A", 300), task("B", 100), task("C", 200)])
+        .then((results) => console.log(results));
+    options:
+      - out: "[ 'B', 'C', 'A' ]"
+      - out: "[ 'A', 'B', 'C' ]"
+      - out: "B"
+      - out: "[ 'B' ]"
+    answer: 2
+    explain: |
+      `Promise.all` منتظر می‌ماند تا هر سه fulfilled شوند (حدود ۳۰۰ میلی‌ثانیه، یعنی زمانِ کندترین کار) و آرایه‌ی نتیجه را **به ترتیب آرایه‌ی ورودی** می‌سازد، نه به ترتیب تمام شدن. پس با اینکه B زودتر از همه تمام شده، نتیجه `[ 'A', 'B', 'C' ]` است. گزینه‌ی ۱ ترتیب تمام شدن را در نظر گرفته؛ گزینه‌های ۳ و ۴ رفتار `Promise.race` را به `Promise.all` نسبت داده‌اند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function task(name, ms) {
+        return new Promise((resolve) => setTimeout(() => resolve(name), ms));
+      }
+
+      Promise.race([task("A", 300), task("B", 100), task("C", 200)])
+        .then((winner) => console.log(winner));
+    options:
+      - out: "A"
+      - out: "[ 'A', 'B', 'C' ]"
+      - out: "B"
+      - out: "[ 'B', 'C', 'A' ]"
+    answer: 3
+    explain: |
+      `Promise.race` با **اولین** Promiseی که settled شود settled می‌شود. B با ۱۰۰ میلی‌ثانیه زودتر از همه تمام می‌شود، پس `B` چاپ می‌شود. گزینه‌ی ۱ فکر کرده اولین عضوِ آرایه برنده است؛ گزینه‌های ۲ و ۴ رفتار `Promise.all` را فرض کرده‌اند، در حالی که `race` آرایه برنمی‌گرداند.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const fetchData = new Promise((resolve) => {
+        setTimeout(() => resolve("Data received!"), 100);
+      });
+
+      fetchData().then((result) => console.log(result));
+    options:
+      - line: 1
+      - line: 5
+      - line: 2
+      - line: 0
+    answer: 2
+    explain: |
+      `fetchData` یک **شیء Promise** است، نه تابع؛ پس `fetchData()` در خط ۵ خطای `TypeError: fetchData is not a function` می‌دهد. خط ۱ درست است و همان لحظه Promise را می‌سازد؛ خط ۲ هم یک تایمر معمولی است. اگر مثل اسلاید ۵۵ می‌نوشتیم `fetchData.then(...)`، کد بدون خطا `Data received!` را چاپ می‌کرد (پس گزینه‌ی ۴ هم غلط است).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p1 = Promise.resolve(1);
+      const p2 = p1.then((x) => x + 1);
+      console.log(p1 === p2);
+      p2.then((x) => console.log(x));
+    options:
+      - out: ["true", "2"]
+      - out: ["false", "1"]
+      - out: ["true", "1"]
+      - out: ["false", "2"]
+    answer: 4
+    explain: |
+      `.then` همیشه یک Promise **جدید** برمی‌گرداند، پس `p1 === p2` برابر `false` است. `p1` با `1` fulfilled است و `p2` با مقداری که callback برمی‌گرداند، یعنی `2`. گزینه‌های ۱ و ۳ فکر کرده‌اند `then` همان Promise قبلی را برمی‌گرداند؛ گزینه‌ی ۲ فکر کرده `p2` همان مقدارِ `p1` را دارد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.resolve("ok")
+        .catch(() => "recovered")
+        .then((v) => console.log(v));
+    options:
+      - out: "ok"
+      - out: "recovered"
+      - out: "undefined"
+      - out: ["recovered", "ok"]
+    answer: 1
+    explain: |
+      Promise fulfilled است، پس `catch` (که فقط برای حالت rejected است) کنار گذاشته می‌شود و مقدار `"ok"` دست‌نخورده به `then` می‌رسد. گزینه‌ی ۲ فکر کرده `catch` همیشه اجرا می‌شود؛ گزینه‌ی ۳ فکر کرده رد شدن از کنار `catch` مقدار را از بین می‌برد؛ گزینه‌ی ۴ هم `catch` را بی‌دلیل اجرا کرده است.
+
+  - level: medium
+    stem: |
+      سه تابع زیر هر کدام یک Promise برمی‌گردانند (نسخه‌ی Promiseیِ کدی که با callback به شکل callback hell نوشته شده بود). کدام گزینه دقیقاً `Total: 100` را چاپ می‌کند؟
+    check: option-output
+    expect: "Total: 100"
+    code: |
+      function getUser(id) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve({ id: id, name: "Sara" }), 50);
+        });
+      }
+      function getOrders(user) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(["book", "pen"]), 50);
+        });
+      }
+      function getPrice(orders) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(orders.length * 50), 50);
+        });
+      }
+    prelude: |
+      function getUser(id) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve({ id: id, name: "Sara" }), 50);
+        });
+      }
+      function getOrders(user) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(["book", "pen"]), 50);
+        });
+      }
+      function getPrice(orders) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(orders.length * 50), 50);
+        });
+      }
+    options:
+      - code: |
+          getUser(1)
+            .then((user) => getOrders(user))
+            .then((orders) => getPrice(orders))
+            .then((price) => console.log("Total:", price));
+      - code: |
+          getUser(1)
+            .then((user) => { getOrders(user); })
+            .then((orders) => getPrice(orders))
+            .then((price) => console.log("Total:", price));
+      - code: |
+          const user = getUser(1);
+          const orders = getOrders(user);
+          const price = getPrice(orders);
+          console.log("Total:", price);
+      - code: |
+          getUser(1)
+            .then((user) => getOrders(user))
+            .then((orders) => console.log("Total:", getPrice(orders)));
+    answer: 1
+    explain: |
+      در گزینه‌ی ۱ هر مرحله Promiseِ مرحله‌ی بعد را **برمی‌گرداند**، پس زنجیره منتظر هر کدام می‌ماند و در انتها `price` عدد `100` است (۲ سفارش × ۵۰). در گزینه‌ی ۲ به خاطر آکولاد، `getOrders(user)` برگردانده نمی‌شود؛ مرحله‌ی بعد `undefined` می‌گیرد و `orders.length` داخل تایمر خطای `TypeError` می‌دهد. در گزینه‌ی ۳ هیچ صبری در کار نیست و متغیرها خودِ Promiseها هستند؛ چاپ می‌شود `Total: Promise { <pending> }`. در گزینه‌ی ۴ هم `getPrice(orders)` یک Promise است و بدون `then` یا صبر، همان `Promise { <pending> }` چاپ می‌شود.
+
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی `Promise.all` **نادرست** است؟
+    options:
+      - 'آرایه‌ی نتیجه به ترتیب آرایه‌ی ورودی است، نه به ترتیب تمام شدن کارها'
+      - 'اگر یکی از Promiseها rejected شود، `Promise.all` بلافاصله با همان دلیل rejected می‌شود'
+      - 'اگر عضوی از آرایه Promise نباشد (مثلاً عدد `42`)، همان مقدار در آرایه‌ی نتیجه قرار می‌گیرد'
+      - 'کارها را یکی‌یکی اجرا می‌کند: کار دوم فقط بعد از تمام شدن کار اول شروع می‌شود'
+    answer: 4
+    explain: |
+      گزینه‌ی ۴ نادرست است: `Promise.all` خودش کاری را «اجرا» نمی‌کند؛ کارها از لحظه‌ی ساخته شدنِ Promiseهایشان شروع شده‌اند و هم‌زمان پیش می‌روند. برای همین زمان کل به اندازه‌ی کندترین کار است، نه مجموع زمان‌ها. سه گزینه‌ی دیگر رفتارهای واقعی `Promise.all` هستند: ترتیبِ نتیجه همان ترتیب ورودی است (گزینه‌ی ۱)، با اولین شکست rejected می‌شود (گزینه‌ی ۲) و مقدارهای غیر Promise را همان‌طور در نتیجه می‌گذارد (گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p = new Promise((resolve, reject) => {
+        resolve("first");
+        reject("second");
+        console.log("still running");
+        resolve("third");
+      });
+
+      p.then((v) => console.log("then:", v))
+        .catch((e) => console.log("catch:", e));
+    options:
+      - out: "then: first"
+      - out: ["still running", "then: first"]
+      - out: ["still running", "catch: second"]
+      - out: ["still running", "then: third"]
+    answer: 2
+    explain: |
+      فقط اولین فراخوانی، یعنی `resolve("first")`، اثر دارد؛ `reject("second")` و `resolve("third")` نادیده گرفته می‌شوند، چون Promise قبلاً settled شده است. اما `resolve` اجرای executor را متوقف نمی‌کند، پس `still running` (همگام) چاپ می‌شود و بعد `then: first`. گزینه‌ی ۱ فکر کرده `resolve` مثل `return` عمل می‌کند؛ گزینه‌ی ۳ فکر کرده `reject` بعدی وضعیت را عوض می‌کند؛ گزینه‌ی ۴ فکر کرده آخرین `resolve` برنده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.resolve("data")
+        .finally((v) => {
+          console.log("finally:", v);
+          return "changed";
+        })
+        .then((v) => console.log("then:", v));
+    options:
+      - out: ["finally: data", "then: changed"]
+      - out: ["finally: undefined", "then: data"]
+      - out: ["finally: data", "then: data"]
+      - out: ["finally: undefined", "then: changed"]
+    answer: 2
+    explain: |
+      callbackِ `finally` هیچ آرگومانی دریافت نمی‌کند، پس `v` در آن `undefined` است. مقدارِ برگردانده‌شده از `finally` هم نادیده گرفته می‌شود و مقدار اصلی (`"data"`) دست‌نخورده به `then` بعدی می‌رسد. گزینه‌های ۱ و ۳ فرض کرده‌اند `finally` مقدار را می‌گیرد؛ گزینه‌های ۱ و ۴ فکر کرده‌اند `return` در `finally` مثل `return` در `then` مقدار را عوض می‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p = new Promise((resolve) => {
+        setTimeout(() => resolve("ok"), 100);
+      });
+
+      p.then(console.log("done"));
+      console.log("end");
+    options:
+      - out: ["end", "done"]
+      - out: ["end", "ok"]
+      - out: ["done", "end"]
+      - out: ["end", "done", "ok"]
+    answer: 3
+    explain: |
+      به `then` باید یک **تابع** داد. اینجا `console.log("done")` همان لحظه (همگام) اجرا می‌شود، `done` را چاپ می‌کند و حاصلش، یعنی `undefined`، به `then` داده می‌شود که آن را نادیده می‌گیرد. بعد `end` چاپ می‌شود و وقتی Promise بعد از ۱۰۰ میلی‌ثانیه fulfilled می‌شود، هیچ تابعی برای چاپ کردن `ok` وجود ندارد. گزینه‌های ۱ و ۴ فکر کرده‌اند `done` بعد از fulfilled شدن چاپ می‌شود؛ گزینه‌ی ۲ فکر کرده مقدار Promise خودبه‌خود چاپ می‌شود. شکل درست: `p.then(() => console.log("done"))`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.resolve(1)
+        .then((x) => x + 1)
+        .then((x) => Promise.reject(x * 10))
+        .then((x) => console.log("then", x))
+        .catch((e) => {
+          console.log("catch", e);
+          return e + 1;
+        })
+        .then((x) => console.log("then2", x))
+        .finally(() => console.log("finally"));
+    options:
+      - out: ["then 20", "then2 21", "finally"]
+      - out: ["catch 20", "finally"]
+      - out: ["catch 2", "then2 3", "finally"]
+      - out: ["catch 20", "then2 21", "finally"]
+    answer: 4
+    explain: |
+      اول `1 + 1 = 2`. مرحله‌ی بعد `Promise.reject(2 * 10)` را برمی‌گرداند، یعنی Promiseی rejected با دلیل `20`؛ پس `then` بعدی کنار گذاشته می‌شود و `catch` دلیل را می‌گیرد: `catch 20`. `catch` مقدار `21` را برمی‌گرداند و زنجیره در مسیر موفقیت ادامه می‌یابد: `then2 21`. در آخر `finally` اجرا می‌شود. گزینه‌ی ۱ فکر کرده برگرداندنِ Promiseِ rejected مثل برگرداندن یک مقدار معمولی است؛ گزینه‌ی ۲ فکر کرده بعد از `catch` زنجیره تمام می‌شود؛ گزینه‌ی ۳ ضرب در ۱۰ را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      در **Node.js**، خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p = new Promise((resolve, reject) => {
+        setTimeout(() => reject("Error occurred!"), 100);
+      });
+
+      p.then((result) => console.log(result));
+      setTimeout(() => console.log("still alive"), 500);
+    options:
+      - out: "still alive"
+      - out: "!! UnhandledPromiseRejection"
+      - out: ["Error occurred!", "still alive"]
+      - out: ["still alive", "!! UnhandledPromiseRejection"]
+    answer: 2
+    explain: |
+      Promise بعد از ۱۰۰ میلی‌ثانیه rejected می‌شود. `.then` فقط برای موفقیت است و Promise جدیدی که برمی‌گرداند هم rejected می‌شود؛ هیچ `.catch()`ی هم وجود ندارد، پس یک **unhandled rejection** رخ می‌دهد و Node.js برنامه را همان لحظه (حدود ۱۰۰ میلی‌ثانیه) متوقف می‌کند و تایمر ۵۰۰ میلی‌ثانیه‌ای هرگز اجرا نمی‌شود. این همان هشدار BEST PRACTICE اسلاید ۵۵ است. گزینه‌ی ۱ فکر کرده rejection بی‌صدا نادیده گرفته می‌شود؛ گزینه‌ی ۳ فکر کرده `then` خطا را چاپ می‌کند؛ گزینه‌ی ۴ زمان crash را اشتباه گرفته است. (در مرورگر صفحه crash نمی‌کند: پیام `Uncaught (in promise)` در کنسول می‌آید و `still alive` هم چاپ می‌شود؛ برای همین محیط را Node.js گفته‌ایم.)
+
+  - level: hard
+    stem: |
+      در **Node.js**، خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          throw new Error("late");
+        }, 100);
+      });
+
+      p.catch((e) => console.log("caught:", e.message));
+      setTimeout(() => console.log("after"), 200);
+    options:
+      - out: ["caught: late", "after"]
+      - out: "caught: late"
+      - out: "after"
+      - out: "!! Error"
+    answer: 4
+    explain: |
+      executor فقط خطاهای **همگامِ** خودش را به rejection تبدیل می‌کند. اینجا `throw` بعداً و داخل callbackِ `setTimeout` اجرا می‌شود؛ آن لحظه کار executor مدت‌هاست تمام شده و Promise هیچ خبری از این خطا ندارد. پس خطا مدیریت‌نشده (uncaught) است و Node.js برنامه را در ۱۰۰ میلی‌ثانیه متوقف می‌کند: نه `caught` چاپ می‌شود و نه `after`. گزینه‌های ۱ و ۲ فکر کرده‌اند `catch` این خطا را می‌گیرد؛ گزینه‌ی ۳ فکر کرده خطا بی‌اثر است. راه درست این است که به جای `throw` بنویسیم `reject(new Error("late"))`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p = new Promise((resolve) => {
+        console.log("start");
+        throw new Error("sync boom");
+        resolve("never");
+      });
+
+      p.then((v) => console.log("then:", v))
+        .catch((e) => console.log("catch:", e.message));
+      console.log("end");
+    options:
+      - out: ["start", "end", "catch: sync boom"]
+      - out: ["start", "!! Error"]
+      - out: ["start", "catch: sync boom", "end"]
+      - out: ["end", "start", "catch: sync boom"]
+    answer: 1
+    explain: |
+      executor همگام اجرا می‌شود: `start` چاپ می‌شود و بعد `throw` رخ می‌دهد. خطای همگامِ داخل executor برنامه را متوقف نمی‌کند؛ JavaScript آن را می‌گیرد و Promise را rejected می‌کند (`resolve("never")` هم دیگر اجرا نمی‌شود). کد همگام ادامه می‌یابد و `end` چاپ می‌شود؛ سپس callbackِ `catch` (که ناهمگام است) اجرا می‌شود: `catch: sync boom`. گزینه‌ی ۲ فکر کرده `throw` در executor برنامه را crash می‌کند؛ گزینه‌ی ۳ فکر کرده `catch` همگام اجرا می‌شود؛ گزینه‌ی ۴ فکر کرده خودِ executor ناهمگام است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function task(name, ms, fail) {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            console.log(name, "finished");
+            if (fail) reject(new Error(name + " failed"));
+            else resolve(name);
+          }, ms);
+        });
+      }
+
+      Promise.all([task("A", 300), task("B", 100, true), task("C", 200)])
+        .then((results) => console.log("results:", results))
+        .catch((err) => console.log("error:", err.message));
+    options:
+      - out: ["B finished", "C finished", "A finished", "error: B failed"]
+      - out: ["B finished", "error: B failed"]
+      - out: ["B finished", "error: B failed", "C finished", "A finished"]
+      - out: ["A finished", "B finished", "C finished", "error: B failed"]
+    answer: 3
+    explain: |
+      هر سه تایمر هم‌زمان شروع شده‌اند. در ۱۰۰ میلی‌ثانیه B تمام و rejected می‌شود و `Promise.all` **بلافاصله** rejected می‌شود: `error: B failed` (منتظر بقیه نمی‌ماند). اما `Promise.all` کارهای دیگر را لغو نمی‌کند؛ تایمرهای C و A ادامه می‌دهند و در ۲۰۰ و ۳۰۰ میلی‌ثانیه پیامشان را چاپ می‌کنند (نتیجه‌شان فقط نادیده گرفته می‌شود). گزینه‌ی ۱ فکر کرده `Promise.all` تا آخر صبر می‌کند؛ گزینه‌ی ۲ فکر کرده بقیه‌ی کارها متوقف می‌شوند؛ گزینه‌ی ۴ ترتیب آرایه را با ترتیب زمانی قاطی کرده است.
+
+  - level: hard
+    stem: |
+      کدام گزینه **درست** است؟
+    options:
+      - 'اگر callbackِ داخل `.then()` یک Promise برگرداند، `.then` بعدی منتظر آن می‌ماند و مقدار نهایی‌اش را دریافت می‌کند'
+      - '`.then()` همان Promiseی را برمی‌گرداند که روی آن صدا زده شده است'
+      - 'callbackِ داخل `.finally()` مقدار Promise را به عنوان آرگومان دریافت می‌کند'
+      - 'اگر Promise از قبل fulfilled شده باشد، callbackِ داخل `.then()` همگام و فوراً اجرا می‌شود'
+    answer: 1
+    explain: |
+      گزینه‌ی ۱ قاعده‌ی «برگرداندن Promise در زنجیره» است: زنجیره صبر می‌کند و مرحله‌ی بعد مقدار نهایی را می‌گیرد، نه خودِ Promise را. گزینه‌ی ۲ غلط است؛ هر `.then()` یک Promise **جدید** می‌سازد و برای همین زنجیره ممکن است. گزینه‌ی ۳ غلط است؛ `finally` هیچ آرگومانی نمی‌گیرد. گزینه‌ی ۴ هم غلط است؛ callbackهای `then` همیشه ناهمگام‌اند و بعد از تمام شدن کدهای همگامِ فعلی اجرا می‌شوند.
