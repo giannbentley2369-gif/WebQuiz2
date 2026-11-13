@@ -1,0 +1,772 @@
+id: ch1-arrow-functions
+title: "Function declaration در برابر Arrow function"
+slides: "Introduction to JS، اسلایدهای ۳۴ تا ۳۶"
+lesson: |
+  در درس قبل تابع را با کلمه‌ی کلیدی `function` تعریف کردیم. اسلایدهای ۳۴ تا ۳۶ دو روش اصلی تعریف تابع را کنار هم می‌گذارند: **روش اول: function declaration** (اعلان تابع) و **روش دوم: arrow function** (تابع پیکانی، با علامت `=>`). مثل نوشتن یک پیام به دو شکل است: یک نامه‌ی رسمی کامل و یک پیامک کوتاه. هر دو پیام را می‌رسانند، ولی قواعدشان کمی فرق دارد و همین فرق‌ها سؤال‌های امتحانی را می‌سازند.
+
+  ### روش اول: Function declaration (اسلاید ۳۴)
+
+  - روش **کلاسیک** تعریف تابع است.
+  - با کلمه‌ی کلیدی **`function`** شروع می‌شود.
+  - می‌توان آن را **قبل یا بعد از** خط تعریفش صدا زد، چون **hoisted** است.
+  - زیرنویس اسلاید: «Remember, this can be hoisted!» (یادت باشد این یکی hoist می‌شود!)
+
+  ```js title=fn.js
+  function add(a, b) {
+    return a + b;
+  }
+
+  console.log(add(2, 3)); // 5
+  ```
+
+  صدا زدن **قبل از** خط تعریف هم بی‌دردسر کار می‌کند:
+
+  ```js
+  console.log(add(2, 3)); // 5 (works: function declarations are hoisted)
+
+  function add(a, b) {
+    return a + b;
+  }
+  ```
+
+  **hoisting** (بالا بردن اعلان‌ها به ابتدای محدوده) یعنی موتور JavaScript قبل از اجرای خط‌به‌خط، کل کد را یک دور مرور می‌کند و هر function declaration را **کامل** (نام و بدنه) از همان ابتدای محدوده‌اش آماده می‌کند. نتیجه این است که کد طوری اجرا می‌شود که انگار تابع بالای فایل نوشته شده است. قوانین کامل hoisting برای `var`، `let`، `const` و `class` را در درس «Hoisting و TDZ» می‌بینیم؛ اینجا فقط تفاوت دو روش تعریف تابع مهم است.
+
+  ### روش دوم: Arrow function در ES6 (اسلاید ۳۵)
+
+  - در **ES6** (یعنی JavaScript مدرن؛ نام دیگرش ES2015) معرفی شد.
+  - نحو (syntax) **کوتاه‌تری** دارد و اغلب برای **توابع کوچک و سریع** به کار می‌رود.
+  - **hoist نمی‌شود**: باید **قبل از استفاده** تعریف شود.
+  - زیرنویس اسلاید: «Remember, this **cannot** be hoisted!» (یادت باشد این یکی hoist **نمی‌شود**!)
+
+  ```js title=fn.js
+  const multiply = (a, b) => {
+    return a * b;
+  };
+
+  console.log(multiply(4, 5)); // 20
+  ```
+
+  اینجا خبری از کلمه‌ی `function` نیست: اول فهرست پارامترها `(a, b)`، بعد علامت **`=>`** (پیکان، که به آن «fat arrow» هم می‌گویند) و بعد بدنه می‌آید. خودِ تابع اسمی ندارد و در متغیر `multiply` ذخیره شده است؛ یعنی arrow function نوعی function expression است (درس قبل) و با نام متغیرش صدا زده می‌شود.
+
+  حالا اگر arrow function را **قبل از** تعریفش صدا بزنیم چه می‌شود؟
+
+  ```js
+  console.log(multiply(4, 5)); // ReferenceError: Cannot access 'multiply' before initialization
+
+  const multiply = (a, b) => {
+    return a * b;
+  };
+  ```
+
+  و اگر همان arrow function را در یک `var` ریخته باشیم:
+
+  ```js
+  console.log(multiply(4, 5)); // TypeError: multiply is not a function
+
+  var multiply = (a, b) => a * b;
+  ```
+
+  چرا دو خطای متفاوت؟ در هر دو حالت **خودِ تابع** فقط وقتی ساخته می‌شود که اجرا به خط `=>` برسد؛ قبل از آن فقط **نام متغیر** وجود دارد:
+
+  - متغیر `const` (و `let`) تا رسیدن به خط تعریفش «مقداردهی‌نشده» است و هر دسترسی به آن `ReferenceError` (خطای ارجاع) می‌دهد. به این بازه **TDZ** (Temporal Dead Zone، یعنی «منطقه‌ی مرده‌ی زمانی») می‌گویند.
+  - متغیر `var` از همان ابتدا با مقدار `undefined` وجود دارد؛ پس `multiply(4, 5)` یعنی صدا زدن `undefined` که `TypeError: multiply is not a function` (خطای نوع) می‌دهد.
+
+  همین قاعده برای function expressionِ معمولی (`const f = function () {};`) هم برقرار است؛ hoisting کامل فقط مال **function declaration** است. جزئیات بیشتر در درس «Hoisting و TDZ».
+
+  ### شکل‌های مختلف نوشتن arrow function
+
+  | حالت | مثال | قاعده |
+  |---|---|---|
+  | بدنه‌ی بلوکی (block body) | `(a, b) => { return a * b; }` | `return` صریح لازم است. |
+  | بدنه‌ی مختصر (concise body) | `(a, b) => a * b` | **return ضمنی** (implicit return): مقدار عبارت خودکار برمی‌گردد. |
+  | یک پارامتر | `x => x * 2` | پرانتز اختیاری است. |
+  | بدون پارامتر | `() => "Hi!"` | پرانتز خالی اجباری است. |
+  | برگرداندن object | `() => ({ a: 1 })` | object باید داخل پرانتز باشد. |
+
+  ```js
+  const square = x => x * x;             // one parameter: parentheses are optional
+  const sayHi = () => "Hi!";             // no parameters: empty () is required
+  const add = (a, b) => a + b;           // concise body: the value is returned automatically
+  const addBlock = (a, b) => { a + b; }; // block body without return: returns undefined
+
+  console.log(square(4));      // 16
+  console.log(sayHi());        // Hi!
+  console.log(add(2, 3));      // 5
+  console.log(addBlock(2, 3)); // undefined
+  ```
+
+  دو یا چند پارامتر **همیشه** پرانتز می‌خواهند: `const f = a, b => a + b;` خطای `SyntaxError` (خطای نحوی) می‌دهد و شکل درست `const f = (a, b) => a + b;` است.
+
+  #### دام برگرداندن object
+
+  ```js
+  const makeUser = () => { name: "Ali" };    // { } is read as a block, not as an object!
+  const makeUser2 = () => ({ name: "Ali" }); // ( ) makes it an object literal
+
+  console.log(makeUser());  // undefined
+  console.log(makeUser2()); // { name: 'Ali' }
+  ```
+
+  در اولی، JavaScript آکولاد `{` بعد از `=>` را شروع **بدنه‌ی بلوکی** می‌داند، نه object. داخل این بلوک، `name:` یک «برچسب» (label، یک ویژگی کم‌کاربرد زبان) حساب می‌شود و `"Ali"` یک عبارت بی‌اثر است. چون `return`ی در کار نیست، نتیجه `undefined` است. پرانتز دور object به JavaScript می‌فهماند که این یک **مقدار** است.
+
+  #### arrow function برای callbackهای کوتاه
+
+  جای درخشش arrow function، callbackهای کوتاه است (callback یعنی تابعی که به تابع دیگر پاس داده می‌شود):
+
+  ```js
+  function applyToFive(fn) {
+    return fn(5);
+  }
+
+  console.log(applyToFive(x => x * 10));                     // 50
+  console.log(applyToFive(function (x) { return x * 10; })); // 50 (same thing, longer)
+  ```
+
+  ### مقایسه‌ی روش اول و دوم (اسلاید ۳۶)
+
+  - Function: با کلمه‌ی کلیدی `function` تعریف می‌شود.
+  - Arrow: نحو **کوتاه‌تر** با `=>`.
+  - Functionها **hoist می‌شوند** (قبل از تعریف قابل‌استفاده‌اند).
+  - Arrowها **hoist نمی‌شوند**.
+  - Functionها **`this` مخصوص خودشان** را دارند؛ arrowها `this` را **به ارث می‌برند** (بعداً بیشتر می‌گوییم!).
+
+  | ویژگی | Function declaration | Arrow function |
+  |---|---|---|
+  | نحو | `function add(a, b) { ... }` | `const add = (a, b) => ...` |
+  | از چه زمانی؟ | از اولین نسخه‌ی زبان | ES6 (ES2015) |
+  | صدا زدن قبل از خط تعریف | مجاز (hoisted) | خطا (hoist نمی‌شود) |
+  | return ضمنی | ندارد؛ همیشه `return` لازم است | در بدنه‌ی مختصر دارد |
+  | `this` | مخصوص خودش؛ به نحوه‌ی صدا زدن بستگی دارد | از کد بیرونی به ارث می‌برد |
+  | شیء `arguments` | دارد | ندارد |
+  | استفاده با `new` | مجاز | `TypeError` |
+
+  #### `this` در یک نگاه
+
+  `this` (به معنی «این») کلمه‌ی ویژه‌ای است که داخل یک تابع به «objectی که تابع برایش کار می‌کند» اشاره می‌کند. در یک تابع معمولی که به شکل `user.regular()` صدا زده شود، `this` همان objectِ قبل از نقطه یعنی `user` است. arrow function اما `this` مخصوص خودش را ندارد و آن را از کدِ اطرافش (جایی که نوشته شده) قرض می‌گیرد:
+
+  ```js
+  const user = {
+    username: "Sara",
+    regular: function () {
+      return this.username;     // own this: the object before the dot (user)
+    },
+    arrow: () => this.username, // inherited this: from the code around the object
+  };
+
+  console.log(user.regular()); // Sara
+  console.log(user.arrow());   // undefined
+  ```
+
+  arrow در سطح بالای فایل نوشته شده است (آکولادهای object محدوده‌ی جدیدی برای `this` نمی‌سازند)، پس `this` آن همان `this` سطح بالاست، نه `user`: در یک فایل Node.js یک object خالی (`{}`) و در اسکریپت معمولی مرورگر شیء `window`. هیچ‌کدام `username` ندارند و نتیجه `undefined` است. قاعده‌ی عملی: **برای متدی که با `this` کار می‌کند از arrow function استفاده نکن.** همه‌ی قوانین `this` را در درس «کلمه‌ی کلیدی this» می‌خوانیم.
+
+  #### شیء `arguments`
+
+  هر تابع معمولی یک شیء پنهان به نام `arguments` دارد که **همه‌ی** آرگومان‌های فرستاده‌شده (حتی آرگومان‌های اضافه) را مثل یک آرایه نگه می‌دارد. arrow function این شیء را ندارد:
+
+  ```js
+  function countArgs() {
+    return arguments.length; // how many arguments were passed?
+  }
+  console.log(countArgs(1, 2, 3)); // 3
+
+  const arrowCount = () => arguments.length;
+  // In a browser: arrowCount(1, 2, 3) -> ReferenceError: arguments is not defined
+  ```
+
+  arrow function، درست مثل `this`، `arguments` تابع معمولیِ دربرگیرنده‌اش را می‌بیند:
+
+  ```js
+  function outer() {
+    const inner = () => arguments[0]; // the arguments of outer, not of inner
+    return inner("x");
+  }
+  console.log(outer("a")); // a
+  ```
+
+  ::: info
+  Node.js هر فایل CommonJS (فایل `.js` معمولی) را پشت پرده داخل یک تابع می‌پیچد. برای همین اگر در سطح بالای یک فایل Node.js داخل arrow function از `arguments` استفاده کنی، خطا نمی‌گیری و به آرگومان‌های همان تابعِ پنهان می‌رسی. در مرورگر همین کد `ReferenceError` می‌دهد.
+  :::
+
+  #### arrow function و `new`
+
+  قبل از آمدن `class` در ES6، با یک تابع معمولی و کلمه‌ی `new` object می‌ساختند (به چنین تابعی constructor یا «سازنده» می‌گویند؛ کلاس‌ها را در درس «کلاس‌ها» می‌بینیم). arrow function نمی‌تواند constructor باشد:
+
+  ```js
+  function Car(model) {
+    this.model = model;
+  }
+  const Bike = (model) => {
+    this.model = model;
+  };
+
+  const c = new Car("Pride");
+  console.log(c.model);        // Pride
+  const b = new Bike("Honda"); // TypeError: Bike is not a constructor
+  ```
+
+  ### میم اسلاید ۳۶: سه درجه‌ی «شیک بودن»
+
+  میم پوی کت‌وشلواری این بار سه روش ساختن و صدا زدن یک تابع (خالی) را رتبه‌بندی می‌کند.
+
+  **۱. پوی معمولی با پیراهن قرمز:** function declaration و بعد صدا زدنش.
+
+  ```js
+  function foo() {
+    //
+  }
+  foo();
+  ```
+
+  **۲. پوی کت‌وشلواری:** arrow function در یک `const` و بعد صدا زدنش.
+
+  ```js
+  const foo = () => {
+    //
+  }
+  foo();
+  ```
+
+  **۳. شیک‌ترین پو (با کلاه، عینک تک‌چشمی و سبیل):** تابعی که همان لحظه‌ی تعریف صدا زده می‌شود.
+
+  ```js
+  (() => {
+    //
+  })();
+  ```
+
+  هر سه کد بدون خطا اجرا می‌شوند و چون بدنه‌ها خالی‌اند، خروجی‌ای ندارند. شوخی میم: هر چه کوتاه‌تر و «مدرن‌تر»، شیک‌تر!
+
+  ### IIFE چیست؟
+
+  **IIFE** (Immediately Invoked Function Expression، یعنی «عبارت تابعی که بلافاصله صدا زده می‌شود») تابعی است که **تعریف می‌شود و همان لحظه اجرا می‌شود**:
+
+  ```js
+  (() => {
+    console.log("I run immediately!");
+  })();
+
+  (function () {
+    console.log("Classic IIFE");
+  })();
+  // I run immediately!
+  // Classic IIFE
+  ```
+
+  - پرانتز اول `( ... )` تابع را در بر می‌گیرد و آن را به یک **عبارت** (expression، تکه‌کدی که مقدار دارد) تبدیل می‌کند.
+  - `()` آخر همان تابع را **فوراً صدا می‌زند**.
+
+  چرا پرانتز دور تابع لازم است؟ اگر خطی با کلمه‌ی `function` شروع شود، JavaScript آن را function declaration می‌داند که **نام** می‌خواهد و نمی‌شود همان‌جا صدایش زد؛ `function () { ... }();` خطای `SyntaxError` می‌دهد. پرانتز این ابهام را برطرف می‌کند. (شکل `(function () { ... }());` که `()` داخل پرانتز بیرونی آمده هم درست است.)
+
+  چرا از IIFE استفاده می‌کنند؟
+
+  1. **ساختن محدوده‌ی (scope) خصوصی**: متغیرهای داخل IIFE بیرون آن وجود ندارند؛ پس محدوده‌ی سراسری (global) را شلوغ نمی‌کنند و با نام‌های کدهای دیگر تداخل پیدا نمی‌کنند. این کاربرد قبل از ES6 که فقط `var` داشتیم حیاتی بود (درس «مشکلات var»).
+  2. اجرای یک کد راه‌اندازی (setup) **فقط یک بار**، بدون اینکه نام تازه‌ای به محدوده اضافه شود.
+  3. حساب کردن یک مقدار در همان‌جا.
+
+  ```js
+  const result = ((a, b) => a * b)(3, 4);
+  console.log(result); // 12
+
+  (() => {
+    const secret = 42;              // exists only inside the IIFE
+    console.log("inside:", secret); // inside: 42
+  })();
+  console.log(typeof secret);       // undefined (secret does not exist out here)
+  ```
+
+  ### کِی کدام را استفاده کنیم؟
+
+  - **function declaration**: برای توابع اصلی و نام‌دار برنامه؛ وقتی می‌خواهی تابع را هر جای فایل (حتی قبل از تعریفش) صدا بزنی؛ وقتی `this` مخصوص تابع، `arguments` یا `new` لازم داری.
+  - **arrow function**: برای توابع کوتاه و callbackها (مثل `applyToFive(x => x * 10)`)؛ وقتی می‌خواهی `this` از بیرون به ارث برسد.
+  - arrow function **نه**: برای متد objectی که با `this` کار می‌کند، برای constructor (با `new`) و وقتی به `arguments` نیاز داری.
+
+  ::: tip
+  - پرانتز دور پارامتر arrow فقط وقتی **دقیقاً یک** پارامتر ساده داری اختیاری است؛ بدون پارامتر `()` و با دو پارامتر یا بیشتر `(a, b)` لازم است.
+  - بدنه‌ی مختصر (بدون آکولاد) مقدارش را خودکار برمی‌گرداند؛ بدنه‌ی بلوکی (با آکولاد) `return` صریح می‌خواهد.
+  - برای برگرداندن object از بدنه‌ی مختصر، آن را داخل پرانتز بگذار: `() => ({ a: 1 })`.
+  - IIFE یعنی `(() => { ... })();` یا `(function () { ... })();`: تعریف و اجرا در یک قدم، همراه با یک محدوده‌ی خصوصی.
+  :::
+
+  ::: trap
+  - صدا زدن arrow functionی که در `const` (یا `let`) ذخیره شده، قبل از خط تعریفش `ReferenceError: Cannot access ... before initialization` می‌دهد، نه `undefined`. اگر در `var` ذخیره شده باشد، `TypeError: ... is not a function` می‌گیری.
+  - `typeof` روی یک function declaration قبل از خط تعریفش `"function"` است، ولی روی arrow functionِ ذخیره‌شده در `var` برابر `"undefined"`.
+  - `() => { a: 1 }` مقدار `undefined` برمی‌گرداند، نه object!
+  - `(a, b) => { a + b }` هم `undefined` برمی‌گرداند؛ آکولاد یعنی بدنه‌ی بلوکی و `return` لازم است.
+  - arrow function به‌عنوان متد object: `this` داخل آن، آن object نیست.
+  - `new` روی arrow function خطای `TypeError: ... is not a constructor` می‌دهد و arrow function شیء `arguments` مخصوص خودش را ندارد.
+  - `function () { ... }();` بدون پرانتز دور تابع، `SyntaxError` می‌دهد.
+  :::
+
+  ::: summary
+  - روش اول (function declaration): کلاسیک، با `function`؛ hoist می‌شود و قبل و بعد از تعریف قابل صدا زدن است: «Remember, this can be hoisted!»
+  - روش دوم (arrow function): از ES6، کوتاه‌تر با `=>`، برای توابع سریع؛ hoist نمی‌شود و باید قبل از استفاده تعریف شود: «Remember, this cannot be hoisted!»
+  - تابع معمولی `this` و `arguments` مخصوص خودش را دارد و با `new` کار می‌کند؛ arrow function `this` (و `arguments`) را از بیرون به ارث می‌برد و constructor نیست.
+  - IIFE یعنی `(() => { })();`: تابعی که همان لحظه اجرا می‌شود و محدوده‌ی خصوصی می‌سازد.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلایدهای ۳۴ تا ۳۶، کدام جمله درست است؟
+    options:
+      - 'هر دو روش hoist می‌شوند و می‌توان هر دو را قبل از خط تعریفشان صدا زد.'
+      - 'function declaration hoist می‌شود، ولی arrow function hoist نمی‌شود و باید قبل از استفاده تعریف شود.'
+      - 'arrow function hoist می‌شود، ولی function declaration نه.'
+      - 'هیچ‌کدام hoist نمی‌شوند.'
+    answer: 2
+    explain: |
+      زیرنویس اسلاید ۳۴ می‌گوید «Remember, this can be hoisted!» و زیرنویس اسلاید ۳۵ می‌گوید «Remember, this cannot be hoisted!»؛ اسلاید ۳۶ هم همین را جمع‌بندی می‌کند: functionها hoist می‌شوند و arrowها نه. گزینه‌ی ۳ دقیقاً برعکس است و گزینه‌های ۱ و ۴ تفاوت دو روش را نادیده گرفته‌اند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(add(2, 3));
+
+      function add(a, b) {
+        return a + b;
+      }
+    options:
+      - out: "undefined"
+      - out: "!! ReferenceError"
+      - out: "!! TypeError"
+      - out: "5"
+    answer: 4
+    explain: |
+      function declaration **hoist** می‌شود: موتور قبل از اجرای خط ۱ تابع `add` را کامل (با بدنه‌اش) آماده کرده است؛ پس صدا زدن آن قبل از خط تعریف، `5` را چاپ می‌کند. `ReferenceError` (گزینه‌ی ۲) مخصوص متغیرهای `let`/`const` قبل از تعریف است و `TypeError` (گزینه‌ی ۳) وقتی رخ می‌دهد که یک `var` با مقدار `undefined` را مثل تابع صدا بزنیم. گزینه‌ی ۱ هم فکر کرده تابع هنوز بدنه ندارد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۵، arrow function در کدام نسخه‌ی ECMAScript به زبان اضافه شد؟
+    options:
+      - 'ES1 (سال ۱۹۹۷)'
+      - 'ES5 (سال ۲۰۰۹)'
+      - 'ES6 (ES2015)'
+      - 'ES2017'
+    answer: 3
+    explain: |
+      اسلاید ۳۵: «Introduced in ES6 (modern JS)». ES6 همان ES2015 است؛ بزرگ‌ترین به‌روزرسانی زبان که `let`، `const` و arrow function را آورد. ES1 اولین استاندارد بود، ES5 هنوز arrow function نداشت و ES2017 بعدها `async`/`await` را اضافه کرد.
+
+  - level: easy
+    stem: |
+      میم پو در اسلاید ۳۶ سه روش ساختن و صدا زدن تابع را از «ساده» به «شیک» مرتب کرده است. ترتیب درست کدام است؟
+    options:
+      - 'function declaration، سپس arrow function در یک `const`، سپس IIFE'
+      - 'IIFE، سپس arrow function در یک `const`، سپس function declaration'
+      - 'arrow function در یک `const`، سپس function declaration، سپس IIFE'
+      - 'function declaration، سپس IIFE، سپس arrow function در یک `const`'
+    answer: 1
+    explain: |
+      پنل اول (پوی ساده) `function foo() {} foo();` است، پنل دوم (پوی کت‌وشلواری) `const foo = () => {}; foo();` و پنل سوم (شیک‌ترین پو) `(() => {})();` یعنی IIFE. بقیه‌ی گزینه‌ها ترتیب پنل‌ها را به هم ریخته‌اند.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۶، جای خالی را پر کن: «Functionها `this` مخصوص خودشان را دارند، ولی arrowها `this` را ______»
+    options:
+      - 'همیشه برابر خودِ تابع قرار می‌دهند.'
+      - 'هر بار به یک object تازه وصل می‌کنند.'
+      - 'فقط هنگام استفاده با `new` می‌سازند.'
+      - 'از کدِ بیرونی (جایی که نوشته شده‌اند) به ارث می‌برند.'
+    answer: 4
+    explain: |
+      اسلاید ۳۶: «Functions have their own `this`; arrows **inherit** `this`». arrow function هیچ `this` مخصوص خودش ندارد و همان `this` محیطی را می‌بیند که در آن نوشته شده است. هیچ‌کدام از گزینه‌های ۱ تا ۳ درست نیست؛ به‌خصوص arrow function اصلاً با `new` کار نمی‌کند.
+
+  - level: easy
+    stem: |
+      کد `(() => { /* ... */ })();` در سومین پنل میم اسلاید ۳۶ چیست؟
+    options:
+      - 'یک function declaration که hoist می‌شود.'
+      - 'یک خطای نحوی، چون تابع اسم ندارد.'
+      - 'یک IIFE: تابعی که همان لحظه‌ی تعریف، صدا زده (اجرا) می‌شود.'
+      - 'یک arrow function که تعریف می‌شود ولی هیچ‌وقت اجرا نمی‌شود.'
+    answer: 3
+    explain: |
+      پرانتز اول arrow function را به یک عبارت تبدیل می‌کند و `()` آخر بلافاصله صدایش می‌زند؛ به این الگو IIFE (Immediately Invoked Function Expression) می‌گویند. این کد declaration نیست (رد گزینه‌ی ۱)، چون داخل پرانتز است اسم لازم ندارد و خطا نمی‌دهد (رد گزینه‌ی ۲) و به خاطر `()` آخر حتماً اجرا می‌شود (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      در کدام حالت می‌توان پرانتز دور پارامترهای یک arrow function را حذف کرد؟
+    options:
+      - 'وقتی تابع هیچ پارامتری ندارد.'
+      - 'وقتی تابع دقیقاً یک پارامتر ساده دارد؛ مثل `x => x * 2`.'
+      - 'وقتی تابع دو پارامتر دارد.'
+      - 'همیشه؛ پرانتز در arrow function کاملاً اختیاری است.'
+    answer: 2
+    explain: |
+      فقط با **یک** پارامتر ساده می‌شود پرانتز را حذف کرد. تابع بدون پارامتر حتماً `()` می‌خواهد (مثل `() => "Hi!"`؛ رد گزینه‌ی ۱) و دو پارامتر یا بیشتر هم باید داخل پرانتز باشند (`(a, b) => a + b`؛ رد گزینه‌های ۳ و ۴).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const double = x => x * 2;
+      const hello = () => "hello";
+      console.log(double(7), hello());
+    options:
+      - out: "14 undefined"
+      - out: "!! SyntaxError"
+      - out: "NaN hello"
+      - out: "14 hello"
+    answer: 4
+    explain: |
+      هر دو arrow function بدنه‌ی مختصر (بدون آکولاد) دارند، پس مقدارشان **خودکار** برمی‌گردد (implicit return): `double(7)` برابر `14` و `hello()` برابر `"hello"`. حذف پرانتز دور تنها پارامتر `x` و `()` خالی برای تابع بدون پارامتر هر دو مجازند (رد گزینه‌ی ۲). گزینه‌ی ۱ فکر کرده بدون `return` چیزی برنمی‌گردد و گزینه‌ی ۳ تصور کرده `x` مقدار نگرفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(multiply(4, 5));
+
+      const multiply = (a, b) => {
+        return a * b;
+      };
+    options:
+      - out: "20"
+      - out: "undefined"
+      - out: "!! TypeError"
+      - out: "!! ReferenceError"
+    answer: 4
+    explain: |
+      arrow function hoist نمی‌شود و `multiply` یک `const` است که تا رسیدن به خط تعریفش در TDZ قرار دارد؛ پس خط ۱ خطای `ReferenceError: Cannot access 'multiply' before initialization` می‌دهد. گزینه‌ی ۱ رفتار function declaration را فرض کرده است. `undefined` و `TypeError` (گزینه‌های ۲ و ۳) مربوط به حالتی است که تابع در `var` ذخیره شده باشد.
+
+  - level: medium
+    stem: |
+      کدام arrow function با `function (a, b) { return a * b; }` معادل است؛ یعنی اگر آن را در `const multiply = ______;` بگذاریم، دستور `console.log(multiply(4, 5))` عدد `20` را چاپ می‌کند؟
+    check: option-output
+    expect: "20"
+    options:
+      - text: '`(a, b) => a * b`'
+        code: 'const multiply = (a, b) => a * b; console.log(multiply(4, 5));'
+      - text: '`(a, b) -> a * b`'
+        code: 'const multiply = (a, b) -> a * b; console.log(multiply(4, 5));'
+      - text: '`(a, b) => { a * b }`'
+        code: 'const multiply = (a, b) => { a * b }; console.log(multiply(4, 5));'
+      - text: '`a, b => a * b`'
+        code: 'const multiply = a, b => a * b; console.log(multiply(4, 5));'
+    answer: 1
+    explain: |
+      بدنه‌ی مختصر `a * b` بدون آکولاد مقدارش را خودکار برمی‌گرداند؛ پس گزینه‌ی ۱ دقیقاً همان تابع است. `->` نحو Java است و در JavaScript `SyntaxError` می‌دهد (گزینه‌ی ۲). در گزینه‌ی ۳ آکولاد بدنه‌ی بلوکی می‌سازد و بدون `return` نتیجه `undefined` است. در گزینه‌ی ۴ دو پارامتر بدون پرانتز آمده‌اند که `SyntaxError` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const add = (a, b) => { a + b };
+      const sub = (a, b) => a - b;
+      console.log(add(5, 3), sub(5, 3));
+    options:
+      - out: "8 2"
+      - out: "undefined 2"
+      - out: "8 undefined"
+      - out: "!! SyntaxError"
+    answer: 2
+    explain: |
+      `add` بدنه‌ی بلوکی دارد (آکولاد) و `return` ندارد، پس `undefined` برمی‌گرداند؛ `sub` بدنه‌ی مختصر دارد و `5 - 3` یعنی `2` را خودکار برمی‌گرداند. گزینه‌ی ۱ فکر کرده آکولاد هم return ضمنی دارد و گزینه‌ی ۳ قاعده را برعکس فهمیده است. هر دو تعریف از نظر نحوی درست‌اند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log(square(3));
+      console.log(cube(2));
+      function square(n) {
+        return n * n;
+      }
+      const cube = (n) => n ** 3;
+    options:
+      - line: 1
+      - line: 6
+      - line: 2
+      - line: 0
+    answer: 3
+    explain: |
+      `square` یک function declaration است و hoist می‌شود؛ پس خط ۱ بدون مشکل `9` را چاپ می‌کند (رد گزینه‌ی ۱). `cube` یک arrow function در `const` است و در خط ۲ هنوز در TDZ قرار دارد؛ خطای `ReferenceError: Cannot access 'cube' before initialization` همین‌جا رخ می‌دهد و اجرا متوقف می‌شود. خط ۶ خودش مشکلی ندارد (رد گزینه‌ی ۲) و گزینه‌ی ۴ فکر کرده هر دو تابع hoist می‌شوند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const result = ((a, b) => a * b)(3, 4);
+      console.log(result);
+      (function () {
+        console.log("IIFE ran");
+      })();
+    options:
+      - out: ["12", "IIFE ran"]
+      - out: ["!! SyntaxError"]
+      - out: ["12"]
+      - out: ["undefined", "IIFE ran"]
+    answer: 1
+    explain: |
+      هر دو، IIFE هستند: تابع داخل پرانتز تعریف و با `()` بعدی فوراً اجرا می‌شود. اولی با `3` و `4` صدا زده می‌شود و `12` را برمی‌گرداند که در `result` ذخیره می‌شود. دومی هم بلافاصله `IIFE ran` را چاپ می‌کند (رد گزینه‌ی ۳). نحو هر دو درست است (رد گزینه‌ی ۲) و arrow function با بدنه‌ی مختصر مقدارش را برمی‌گرداند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      مهم‌ترین دلیل استفاده از IIFE (مثل `(() => { ... })();`) چیست؟
+    options:
+      - 'ساختن یک محدوده‌ی (scope) خصوصی تا متغیرهای داخلش به بیرون درز نکنند و محدوده‌ی سراسری را شلوغ نکنند.'
+      - 'اینکه تابع hoist شود و بتوان آن را قبل از تعریف صدا زد.'
+      - 'اینکه تابع به‌طور خودکار هر چند ثانیه یک بار اجرا شود.'
+      - 'اینکه بتوان تابع را بعداً با نامش بارها صدا زد.'
+    answer: 1
+    explain: |
+      IIFE یک بار و همان لحظه اجرا می‌شود و متغیرهایش فقط داخل خودش زنده‌اند؛ این راهی کلاسیک برای جلوگیری از آلودگی محدوده‌ی سراسری (به‌خصوص در دوران `var`) است. IIFE ربطی به hoisting ندارد (رد گزینه‌ی ۲)، تکرار زمان‌دار کار `setInterval` است نه IIFE (رد گزینه‌ی ۳) و چون نامی در محدوده ثبت نمی‌کند، نمی‌شود بعداً دوباره صدایش زد (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      کدام تعریف arrow function خطای نحوی (`SyntaxError`) می‌دهد؟
+    check: option-throws
+    errorName: SyntaxError
+    options:
+      - text: '`const f = x => x + 1;`'
+        code: 'const f = x => x + 1; console.log(f(1));'
+      - text: '`const f = () => 1;`'
+        code: 'const f = () => 1; console.log(f());'
+      - text: '`const f = x, y => x + y;`'
+        code: 'const f = x, y => x + y; console.log(f(1, 2));'
+      - text: '`const f = (x, y) => { return x + y; };`'
+        code: 'const f = (x, y) => { return x + y; }; console.log(f(1, 2));'
+    answer: 3
+    explain: |
+      دو پارامتر حتماً باید داخل پرانتز باشند؛ در گزینه‌ی ۳ موتور `x, y => ...` را درست نمی‌فهمد و `SyntaxError` می‌دهد. گزینه‌ی ۱ یک پارامتر بدون پرانتز دارد که مجاز است، گزینه‌ی ۲ تابع بدون پارامتر با `()` خالی است و گزینه‌ی ۴ شکل کامل با بدنه‌ی بلوکی و `return` است؛ هر سه درست‌اند.
+
+  - level: medium
+    stem: |
+      کدام جمله درباره‌ی arrow function **نادرست** است؟
+    options:
+      - 'arrow functionی که بدنه‌ی بلوکی `{ }` دارد، مقدار آخرین عبارتش را خودکار برمی‌گرداند.'
+      - 'arrow function شیء `arguments` مخصوص خودش را ندارد.'
+      - 'arrow function را نمی‌توان با `new` صدا زد.'
+      - 'در arrow functionی که دقیقاً یک پارامتر ساده دارد، پرانتز دور پارامتر اختیاری است.'
+    answer: 1
+    explain: |
+      return ضمنی فقط در **بدنه‌ی مختصر** (بدون آکولاد) وجود دارد؛ با آکولاد باید `return` را صریح نوشت، وگرنه نتیجه `undefined` است. پس گزینه‌ی ۱ نادرست است. سه جمله‌ی دیگر درست‌اند: arrow شیء `arguments` ندارد، با `new` خطای `TypeError: ... is not a constructor` می‌دهد و با یک پارامتر ساده، پرانتز اختیاری است.
+
+  - level: medium
+    stem: |
+      در کدام موقعیت **نباید** از arrow function استفاده کرد و تابع معمولی (`function`) لازم است؟
+    options:
+      - 'متد یک object که باید با `this` به همان object دسترسی داشته باشد.'
+      - 'یک تابع کوتاه یک‌خطی که عددی را دو برابر می‌کند.'
+      - 'تابعی که هیچ پارامتری ندارد.'
+      - 'callbackی که به تابع دیگری پاس داده می‌شود و فقط یک مقدار حساب می‌کند.'
+    answer: 1
+    explain: |
+      arrow function `this` مخصوص خودش را ندارد و آن را از بیرون به ارث می‌برد؛ پس در متدی که با `this` کار می‌کند، `this` به object اشاره نمی‌کند. توابع کوتاه، توابع بدون پارامتر (`() => ...`) و callbackهای ساده دقیقاً جاهایی هستند که arrow function انتخاب خوبی است (رد گزینه‌های ۲ تا ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟ (در Node.js و در اسکریپت معمولی مرورگر نتیجه یکسان است.)
+    check: output
+    code: |
+      const user = {
+        username: "Sara",
+        regular: function () {
+          return this.username;
+        },
+        arrow: () => this.username,
+      };
+      console.log(user.regular());
+      console.log(user.arrow());
+    options:
+      - out: ["Sara", "Sara"]
+      - out: ["Sara", "undefined"]
+      - out: ["undefined", "Sara"]
+      - out: ["Sara", "!! TypeError"]
+    answer: 2
+    explain: |
+      تابع معمولی `this` مخصوص خودش را دارد و در `user.regular()` برابر `user` است: `Sara`. arrow function `this` را از کد بیرونی به ارث می‌برد؛ اینجا سطح بالای فایل (در Node.js یک object خالی و در مرورگر `window`) که `username` ندارد، پس `undefined` چاپ می‌شود و خطایی رخ نمی‌دهد (رد گزینه‌ی ۴). گزینه‌ی ۱ فکر کرده arrow هم `this` را object قبل از نقطه می‌گیرد و گزینه‌ی ۳ قاعده را برعکس کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const add = (a) => (b) => a + b;
+      console.log(add(2)(3));
+      const add5 = add(5);
+      console.log(add5(10));
+    options:
+      - out: ["!! SyntaxError"]
+      - out: ["NaN", "NaN"]
+      - out: ["!! TypeError"]
+      - out: ["5", "15"]
+    answer: 4
+    explain: |
+      `add` یک arrow function است که با بدنه‌ی مختصر **یک arrow function دیگر** برمی‌گرداند. `add(2)` تابع `b => 2 + b` را می‌دهد و `(3)` همان را صدا می‌زند: `5`. `add(5)` تابعی می‌سازد که `a = 5` را نگه داشته و `add5(10)` برابر `15` است. دو `=>` پشت سر هم نحو درستی است (رد گزینه‌ی ۱)، تابع برگشتی واقعاً تابع است (رد گزینه‌ی ۳) و `a` بعد از پایان `add` از بین نمی‌رود (رد گزینه‌ی ۲).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      (() => {
+        const secret = 42;
+        console.log("inside:", secret);
+      })();
+      console.log(typeof secret);
+    options:
+      - out: ["inside: 42", "number"]
+      - out: ["inside: 42", "!! ReferenceError"]
+      - out: ["inside: 42", "undefined"]
+      - out: ["!! SyntaxError"]
+    answer: 3
+    explain: |
+      IIFE فوراً اجرا می‌شود و `inside: 42` را چاپ می‌کند. `secret` فقط داخل همان تابع وجود دارد، پس بیرون از آن تعریف نشده است (رد گزینه‌ی ۱). `typeof` روی نامی که اصلاً تعریف نشده خطا نمی‌دهد و `"undefined"` برمی‌گرداند (رد گزینه‌ی ۲؛ استفاده‌ی مستقیم مثل `console.log(secret)` بود که `ReferenceError` می‌داد). نحو IIFE هم درست است (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(multiply(4, 5));
+      var multiply = (a, b) => a * b;
+    options:
+      - out: "20"
+      - out: "NaN"
+      - out: "!! ReferenceError"
+      - out: "!! TypeError"
+    answer: 4
+    explain: |
+      متغیر `var` hoist می‌شود و از ابتدا مقدار `undefined` دارد، ولی خودِ arrow function فقط وقتی ساخته و در آن ریخته می‌شود که اجرا به خط ۲ برسد. پس در خط ۱ داریم `undefined(4, 5)` که خطای `TypeError: multiply is not a function` می‌دهد. `ReferenceError` (گزینه‌ی ۳) برای حالت `const`/`let` است، گزینه‌ی ۱ رفتار function declaration را فرض کرده و گزینه‌ی ۲ تصور کرده تابع اجرا می‌شود ولی با پارامترهای بی‌مقدار.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const makeUser = () => { name: "Ali" };
+      const makeUser2 = () => ({ name: "Ali" });
+      console.log(makeUser());
+      console.log(makeUser2());
+    options:
+      - out: ["{ name: 'Ali' }", "{ name: 'Ali' }"]
+      - out: ["undefined", "{ name: 'Ali' }"]
+      - out: ["!! SyntaxError"]
+      - out: ["Ali", "{ name: 'Ali' }"]
+    answer: 2
+    explain: |
+      در `makeUser`، آکولاد بعد از `=>` شروع **بدنه‌ی بلوکی** است، نه object؛ `name:` یک label (برچسب) و `"Ali"` یک عبارت بی‌اثر است و بدون `return` نتیجه `undefined` می‌شود. این کد از نظر نحوی مجاز است (رد گزینه‌ی ۳). در `makeUser2` پرانتز دور آکولاد آن را به یک object تبدیل می‌کند که با return ضمنی برمی‌گردد. گزینه‌ی ۱ آکولاد را object فرض کرده و گزینه‌ی ۴ فکر کرده مقدار برچسب برمی‌گردد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(typeof greet);
+      console.log(typeof welcome);
+      function greet() {}
+      var welcome = () => {};
+    options:
+      - out: ["function", "function"]
+      - out: ["undefined", "undefined"]
+      - out: ["function", "!! ReferenceError"]
+      - out: ["function", "undefined"]
+    answer: 4
+    explain: |
+      `greet` یک function declaration است و کامل hoist می‌شود، پس از همان خط ۱ نوعش `"function"` است. `welcome` یک `var` است که hoist می‌شود ولی تا خط ۴ مقدارش `undefined` است؛ تابع arrow هنوز ساخته نشده، پس `typeof` برابر `"undefined"` است (رد گزینه‌ی ۱). گزینه‌ی ۳ فکر کرده `var` هم مثل `let`/`const` در TDZ است و گزینه‌ی ۲ hoisting کامل function declaration را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      کدام یک از کدهای زیر خطای نحوی (`SyntaxError`) می‌دهد؟
+    check: option-throws
+    errorName: SyntaxError
+    options:
+      - code: '(function () { console.log("hi"); })();'
+      - code: 'function () { console.log("hi"); }();'
+      - code: '(() => { console.log("hi"); })();'
+      - code: '(function () { console.log("hi"); }());'
+    answer: 2
+    explain: |
+      خطی که با کلمه‌ی `function` شروع شود، function declaration حساب می‌شود؛ declaration نام می‌خواهد و نمی‌شود همان‌جا با `()` صدایش زد، پس گزینه‌ی ۲ خطای `SyntaxError: Function statements require a function name` می‌دهد. در گزینه‌های ۱، ۳ و ۴ تابع داخل پرانتز آمده و به یک عبارت تبدیل شده است؛ هر سه IIFEهای درستی هستند و `hi` را چاپ می‌کنند (در گزینه‌ی ۴ فقط جای `()` داخل پرانتز بیرونی است).
+
+  - level: hard
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی `Ali` باشد؟
+    check: option-output
+    expect: "Ali"
+    code: |
+      const toObj = (name) => ______;
+      console.log(toObj("Ali").name);
+    options:
+      - text: '`{ name: name }`'
+        code: 'const toObj = (name) => { name: name }; console.log(toObj("Ali").name);'
+      - text: '`return { name: name }`'
+        code: 'const toObj = (name) => return { name: name }; console.log(toObj("Ali").name);'
+      - text: '`({ name: name })`'
+        code: 'const toObj = (name) => ({ name: name }); console.log(toObj("Ali").name);'
+      - text: '`{ return name; }`'
+        code: 'const toObj = (name) => { return name; }; console.log(toObj("Ali").name);'
+    answer: 3
+    explain: |
+      برای برگرداندن object از بدنه‌ی مختصر باید آن را داخل پرانتز گذاشت (گزینه‌ی ۳). در گزینه‌ی ۱ آکولاد بدنه‌ی بلوکی است و تابع `undefined` برمی‌گرداند؛ خواندن `.name` از `undefined` خطای `TypeError` می‌دهد. در گزینه‌ی ۲، `return` بدون آکولاد بعد از `=>` مجاز نیست و `SyntaxError` می‌گیریم. گزینه‌ی ۴ رشته‌ی `"Ali"` را برمی‌گرداند و رشته ویژگی `name` ندارد، پس `undefined` چاپ می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر **در مرورگر** (یک اسکریپت معمولی `<script>`) چیست؟
+    check: dom-output
+    code: |
+      function regular() {
+        return arguments.length;
+      }
+      const arrow = () => arguments.length;
+      console.log(regular(1, 2, 3));
+      console.log(arrow(1, 2, 3));
+    options:
+      - out: ["3", "!! ReferenceError"]
+      - out: ["3", "3"]
+      - out: ["3", "0"]
+      - out: ["!! ReferenceError"]
+    answer: 1
+    explain: |
+      تابع معمولی شیء `arguments` مخصوص خودش را دارد و `3` را برمی‌گرداند. arrow function چنین شیئی ندارد و در سطح بالای اسکریپت مرورگر هم تابع معمولیِ دربرگیرنده‌ای نیست که `arguments` را از آن به ارث ببرد؛ پس `ReferenceError: arguments is not defined` می‌گیریم. گزینه‌های ۲ و ۳ فکر کرده‌اند arrow هم `arguments` دارد و گزینه‌ی ۴ مشکل را به تابع معمولی هم نسبت داده است. (در سطح بالای یک فایل Node.js نتیجه فرق می‌کند، چون Node.js فایل را داخل یک تابع پنهان می‌پیچد.)
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function outer() {
+        const inner = () => arguments[0];
+        return inner("x", "y");
+      }
+      console.log(outer("a", "b"));
+    options:
+      - out: "x"
+      - out: "a"
+      - out: "undefined"
+      - out: "!! ReferenceError"
+    answer: 2
+    explain: |
+      arrow function شیء `arguments` مخصوص خودش را ندارد و، مثل `this`، آن را از تابع معمولیِ دربرگیرنده یعنی `outer` به ارث می‌برد. پس `arguments[0]` اولین آرگومان `outer` یعنی `"a"` است، نه `"x"` (رد گزینه‌ی ۱). چون `outer` یک تابع معمولی است، `arguments` وجود دارد و خطایی رخ نمی‌دهد (رد گزینه‌های ۳ و ۴).
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      function Car(model) {
+        this.model = model;
+      }
+      const Bike = (model) => {
+        this.model = model;
+      };
+      const c = new Car("Pride");
+      console.log(c.model);
+      const b = new Bike("Honda");
+      console.log(b.model);
+    options:
+      - line: 5
+      - line: 7
+      - line: 9
+      - line: 0
+    answer: 3
+    explain: |
+      تابع معمولی `Car` می‌تواند با `new` به‌عنوان constructor استفاده شود؛ پس خط ۷ درست است و خط ۸ `Pride` را چاپ می‌کند. arrow function نمی‌تواند constructor باشد و خط ۹ خطای `TypeError: Bike is not a constructor` می‌دهد. خط ۵ هیچ‌وقت اجرا نمی‌شود، چون بدنه‌ی `Bike` اصلاً صدا زده نمی‌شود (رد گزینه‌ی ۱).
