@@ -1,0 +1,746 @@
+id: ch3-ts-modules
+title: "ماژول‌ها (Modules)"
+slides: "NodeJS & TS، اسلاید ۲۳"
+lesson: |
+  ### چرا به ماژول نیاز داریم؟
+
+  در اسلاید ۳ (محدودیت‌های JavaScript) دیدیم که JavaScript اولیه «سیستم ماژول درست‌وحسابی نداشت». یعنی چه؟ در صفحه‌های وب قدیمی همه‌ی کدها با تگ‌های `<script>` معمولی به صفحه وصل می‌شدند و **همه‌شان یک scope سراسری (global) مشترک** داشتند؛ متغیری که یک اسکریپت تعریف می‌کرد در اسکریپت بعدی هم دیده می‌شد و اگر دو اسکریپت یک اسم را تعریف می‌کردند، با هم تداخل پیدا می‌کردند:
+
+  ```html
+  <script>
+    let counter = 1;
+    console.log("first", counter);   // first 1
+  </script>
+  <script>
+    let counter = 2;                 // SyntaxError: Identifier 'counter' has already been declared
+    console.log("second", counter);  // never runs
+  </script>
+  <script>
+    console.log("third", counter);   // third 1 (the first script's variable is global)
+  </script>
+  ```
+
+  ::: analogy
+  فرض کن همه‌ی اعضای یک خانواده‌ی پرجمعیت در **یک اتاق** زندگی کنند: وسایل همه قاطی می‌شود و اگر دو نفر یک اسم روی وسیله‌شان بنویسند، دعوا می‌شود. ماژول‌ها به هر فایل یک **اتاق جدا با در بسته** می‌دهند: هر چیزی داخل اتاق خصوصی است، مگر این‌که خودت آن را دمِ در بگذاری (**export**) تا دیگران بتوانند برش دارند (**import**).
+  :::
+
+  ### ماژول چیست؟ (اسلاید ۲۳)
+
+  اسلاید ۲۳ شش نکته دارد:
+
+  1. **A module is simply a file that has imports or exports**: ماژول یعنی **فایلی که import یا export دارد**.
+  2. TypeScript (و JavaScript مدرن) از **ES module system** استفاده می‌کند؛ یعنی **ES Modules** یا **ESM** (سیستم ماژول استاندارد خودِ JavaScript که از ES2015 یا همان ES6 به زبان اضافه شد).
+  3. **هر فایل scope خصوصی (private) خودش را دارد**؛ متغیرها و تابع‌هایش به‌طور پیش‌فرض بیرون دیده نمی‌شوند.
+  4. با **export** چیزی را برای فایل‌های دیگر قابل دیدن می‌کنی.
+  5. با **import** از کدِ فایل‌های دیگر استفاده می‌کنی.
+  6. **انواع export**: Named Exports (نام‌دار)، Default Export (پیش‌فرض) و Mixed Exports (ترکیبی).
+
+  #### فایل بدون import/export: «script»
+
+  TypeScript فایلی را که هیچ `import` یا `export`ی ندارد **script** (اسکریپت سراسری) حساب می‌کند؛ متغیرهای سطح بالای همه‌ی scriptها در یک scope مشترک قرار می‌گیرند. پس اگر این دو فایل را با هم کامپایل کنیم:
+
+  ```ts title=a.ts
+  let counter = 1;
+  ```
+
+  ```ts title=b.ts
+  let counter = 2;
+  ```
+
+  `tsc` (با تنظیم رایج `--module esnext`) خطای تعریف دوباره می‌دهد:
+
+  ```text
+  a.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'counter'.
+  b.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'counter'.
+  ```
+
+  اگر به آخر هر دو فایل `export {};` (یک export خالی) اضافه کنیم، هر فایل **ماژول** می‌شود، scope خصوصی خودش را می‌گیرد و خطا از بین می‌رود.
+
+  ::: info بیشتر بدانیم
+  بعضی تنظیمات tsc این تشخیص را عوض می‌کنند؛ مثلاً با `"module": "nodenext"`، TypeScript هر فایلی را (حتی بدون import/export) ماژول حساب می‌کند. ولی قاعده‌ی کلی و تعریف اسلاید همان «فایلِ دارای import یا export» است.
+  :::
+
+  ### ۱) Named export (export نام‌دار)
+
+  هر چیزی را که جلویش `export` بنویسی، **با همان اسم** صادر می‌شود. یک فایل می‌تواند **هر تعداد** export نام‌دار داشته باشد:
+
+  ```ts title=math.ts
+  export const PI = 3.14;
+  export function add(a: number, b: number): number {
+    return a + b;
+  }
+  const secret = 42; // not exported: private to this file
+  export function useSecret(): number {
+    return secret;
+  }
+  ```
+
+  در فایل دیگر، export نام‌دار را **داخل آکولاد `{ }` و دقیقاً با همان اسم** import می‌کنیم. اگر اسم دیگری بخواهی، از **`as`** استفاده کن:
+
+  ```ts
+  import { PI, add } from "./math.js";
+  import { add as sum } from "./math.js";   // rename while importing
+  ```
+
+  می‌توان exportها را آخر فایل هم به‌صورت فهرست نوشت و حتی هنگام export اسم را عوض کرد: `export { shout, whisper as quiet };`.
+
+  `secret` export نشده، پس **خصوصی** است: `useSecret()` (که داخل همان فایل است) به آن دسترسی دارد، ولی هیچ فایل دیگری نه.
+
+  ### ۲) Default export (export پیش‌فرض)
+
+  هر فایل می‌تواند **حداکثر یک** export پیش‌فرض داشته باشد؛ معمولاً «چیز اصلی» آن فایل:
+
+  ```ts title=logger.ts
+  export default function log(message: string): void {
+    console.log(`[LOG] ${message}`);
+  }
+  ```
+
+  export پیش‌فرض **بدون آکولاد** و **با هر اسمی که دوست داری** import می‌شود:
+
+  ```ts
+  import log from "./logger.js";
+  import printer from "./logger.js";   // same function, different local name
+  ```
+
+  - دو `export default` در یک فایل مجاز نیست (TypeScript خطا می‌دهد و Node هم هنگام بارگذاری `SyntaxError: Duplicate export of 'default'` می‌دهد).
+  - بعد از `export default` یک **عبارت** (مقدار، تابع یا کلاس) می‌آید، نه تعریف متغیر:
+
+  ```ts
+  export default const settings = { port: 3000 }; // Error TS1109: Expression expected.
+  ```
+
+  ```ts
+  const settings = { port: 3000 };
+  export default settings;   // OK: export an existing value
+  ```
+
+  ### ۳) Mixed exports (export ترکیبی)
+
+  یک فایل می‌تواند هم یک export پیش‌فرض و هم چند export نام‌دار داشته باشد:
+
+  ```ts title=shapes.ts
+  export default class Circle {
+    radius: number;
+    constructor(radius: number) {
+      this.radius = radius;
+    }
+  }
+  export function area(c: Circle): number {
+    return Math.round(Math.PI * c.radius * c.radius);
+  }
+  ```
+
+  هنگام import، **اول پیش‌فرض (بدون آکولاد)، بعد ویرگول، بعد نام‌دارها داخل آکولاد**: `import Circle, { area } from "./shapes.js";`
+
+  ### `import * as`: همه‌ی exportها در یک شیء
+
+  `import * as MathUtils from "./math.js";` همه‌ی exportهای نام‌دار را در یک شیء به اسم `MathUtils` جمع می‌کند (به آن **namespace import** می‌گویند): `MathUtils.PI` و `MathUtils.add(2, 3)`. چیزهای export‌نشده (مثل `secret`) در این شیء هم نیستند (`MathUtils.secret` در TypeScript خطای TS2339 دارد و در JavaScript برابر `undefined` است). اگر فایل export پیش‌فرض داشته باشد، با اسم `default` در همین شیء می‌آید.
+
+  ### مثال کامل
+
+  ```ts title=main.ts
+  import { PI, add, useSecret } from "./math.js";
+  import log from "./logger.js";
+  import Circle, { area } from "./shapes.js";
+  import * as MathUtils from "./math.js";
+  import { add as sum } from "./math.js";
+  import printer from "./logger.js";
+
+  log(`PI = ${PI}`);
+  log(`add(2, 3) = ${add(2, 3)}`);
+  log(`sum(4, 5) = ${sum(4, 5)}`);
+  log(`MathUtils.PI = ${MathUtils.PI}`);
+  log(`useSecret() = ${useSecret()}`);
+  log(`area = ${area(new Circle(2))}`);
+  printer("default import can use any name");
+  ```
+
+  خروجی اجرای `main` بعد از کامپایل:
+
+  ```text
+  [LOG] PI = 3.14
+  [LOG] add(2, 3) = 5
+  [LOG] sum(4, 5) = 9
+  [LOG] MathUtils.PI = 3.14
+  [LOG] useSecret() = 42
+  [LOG] area = 13
+  [LOG] default import can use any name
+  ```
+
+  و این‌ها اشتباه‌های رایج import با خطای TypeScript هر کدام‌اند:
+
+  ```ts title=wrong.ts
+  import { secret } from "./math.js";   // Error TS2459: 'secret' is declared locally, but it is not exported
+  import { missing } from "./math.js";  // Error TS2305: Module has no exported member 'missing'
+  import { log } from "./logger.js";    // Error TS2614: no exported member 'log'. Did you mean 'import log from'?
+  import add from "./math.js";          // Error TS2613: Module has no default export
+  ```
+
+  | نوع | در فایل مبدأ | در فایل مقصد |
+  |---|---|---|
+  | Named | `export const PI = 3.14;` | `import { PI } from "./math.js";` |
+  | Named با اسم جدید | (همان) | `import { add as sum } from "./math.js";` |
+  | Default | `export default function log() {}` | `import log from "./logger.js";` (هر اسمی) |
+  | Mixed | یک default + چند named | `import Circle, { area } from "./shapes.js";` |
+  | همه با هم | (هر نوع) | `import * as MathUtils from "./math.js";` |
+
+  ::: tip نکته: پسوند `.js` در import فایل‌های TypeScript
+  در مثال‌ها فایل `math.ts` است ولی می‌نویسیم `from "./math.js"`. دلیلش این است که بعد از کامپایل، فایلی که واقعاً اجرا و import می‌شود `math.js` است و `tsc` خودش می‌فهمد منظور `math.ts` است. در بعضی پروژه‌ها (مثلاً با bundler) نوشتن پسوند لازم نیست.
+  :::
+
+  ::: trap دام تستی: آکولاد یا بدون آکولاد؟
+  - export **پیش‌فرض** ← **بدون** آکولاد و با **هر** اسمی: `import log from ...`
+  - export **نام‌دار** ← **با** آکولاد و با **همان** اسم (یا `as`): `import { add } from ...`
+  - `import { log } from "./logger.js"` برای یک export پیش‌فرض خطای TS2614 و `import add from "./math.js"` برای فایلی که پیش‌فرض ندارد خطای TS2613 می‌دهد.
+  :::
+
+  ### ماژول‌ها هنگام اجرا: چهار واقعیت مهم
+
+  ```js title=counter.mjs
+  console.log("counter.mjs runs");
+  export let count = 0;
+  export function increment() {
+    count++;
+  }
+  ```
+
+  ```js title=helper.mjs
+  import { increment } from "./counter.mjs";
+  console.log("helper.mjs runs");
+  increment();
+  ```
+
+  ```js title=app.mjs
+  console.log("app starts");
+  import "./helper.mjs";
+  import { count, increment } from "./counter.mjs";
+  increment();
+  console.log("count =", count);
+  ```
+
+  اجرای `node app.mjs` چاپ می‌کند:
+
+  ```text
+  counter.mjs runs
+  helper.mjs runs
+  app starts
+  count = 2
+  ```
+
+  1. **importها اول اجرا می‌شوند:** مهم نیست خط import کجای فایل باشد؛ همه‌ی ماژول‌های import‌شده **قبل از** کدِ خودِ فایل اجرا می‌شوند. برای همین `app starts` سوم چاپ شد.
+  2. **هر ماژول فقط یک بار اجرا می‌شود:** `counter.mjs` را هم `helper.mjs` و هم `app.mjs` import کرده‌اند، ولی فقط یک بار اجرا شد و هر دو **یک نسخه‌ی مشترک** از `count` را می‌بینند.
+  3. **import زنده ولی فقط‌خواندنی است:** `count` در `app.mjs` مقدار به‌روز (`2`) را نشان می‌دهد، چون هر دو `increment` روی همان متغیر اثر گذاشته‌اند. اما خودِ import کننده نمی‌تواند به آن مقدار بدهد: `count = 5` در `app.mjs` خطای `TypeError: Assignment to constant variable.` می‌دهد (و در TypeScript خطای TS2632).
+  4. **اسم اشتباه، یعنی هیچ خطی اجرا نمی‌شود:** اگر چیزی را import کنی که export نشده (مثلاً `import { decrement } from "./counter.mjs"`)، Node قبل از اجرای حتی یک خط، `SyntaxError: The requested module './counter.mjs' does not provide an export named 'decrement'` می‌دهد.
+
+  کد ESM همیشه در **strict mode** اجرا می‌شود و `this` در سطح بالای یک ماژول `undefined` است.
+
+  ### CommonJS در برابر ES Modules در Node.js
+
+  Node.js قبل از استاندارد شدن ESM، سیستم ماژول خودش را داشت به اسم **CommonJS** که هنوز در خیلی از پروژه‌ها و پکیج‌ها دیده می‌شود. در CommonJS با `module.exports` صادر و با تابع `require()` وارد می‌کنیم:
+
+  ```js title=calc.cjs
+  function add(a, b) {
+    return a + b;
+  }
+  const secret = 42; // not exported
+  module.exports = { add, PI: 3.14 };
+  ```
+
+  ```js title=index.cjs
+  const { add, PI } = require("./calc.cjs");
+  const calc = require("./calc.cjs");
+  console.log(add(2, 3), PI, calc.secret); // 5 3.14 undefined
+  ```
+
+  | | CommonJS | ES Modules (ESM) |
+  |---|---|---|
+  | صادر کردن | `module.exports = ...` | `export` / `export default` |
+  | وارد کردن | `require("./x")` | `import ... from "./x.js"` |
+  | در Node چه فایلی؟ | `.cjs`، یا `.js` وقتی `package.json` فیلد `"type": "module"` ندارد | `.mjs`، یا `.js` وقتی `package.json` فیلد `"type": "module"` دارد |
+  | در مرورگر | پشتیبانی نمی‌شود | `<script type="module">` |
+  | strict mode | فقط با `"use strict"` | همیشه |
+
+  برای این‌که فایل‌های `.js` یک پروژه‌ی Node.js به‌صورت ESM اجرا شوند، در `package.json` می‌نویسیم:
+
+  ```json
+  {
+    "name": "my-app",
+    "type": "module"
+  }
+  ```
+
+  در یک فایل ESM تابع `require` وجود ندارد: نوشتن `require("fs")` در یک فایل `.mjs` خطای `ReferenceError: require is not defined in ES module scope` می‌دهد. (نسخه‌های جدید Node.js اگر در یک فایل `.js` بدون فیلد `"type"` دستور import/export ببینند، خودشان آن را ESM اجرا می‌کنند؛ ولی بهتر است همیشه صریحاً `"type": "module"` یا `.mjs` را به کار ببری.)
+
+  ### `<script type="module">` در مرورگر
+
+  در مرورگر هم برای استفاده از `import`/`export` باید به تگ script بگوییم که ماژول است:
+
+  ```html
+  <script type="module" src="main.js"></script>
+  ```
+
+  چنین اسکریپتی scope خصوصی خودش را دارد (متغیرهای سطح بالایش روی `window` نمی‌روند)، همیشه strict است، به‌طور خودکار مثل `defer` بعد از ساخته شدن کامل HTML اجرا می‌شود، و فقط وقتی صفحه از طریق یک سرور (http) باز شود کار می‌کند؛ باز کردن مستقیم فایل با `file://` معمولاً به خاطر قوانین امنیتی (CORS) خطا می‌دهد.
+
+  ::: trap دام تستی: ترتیب اجرا
+  اگر در وسط فایل `console.log("start")` و بعد از آن یک `import` بنویسی، باز هم ماژول import‌شده **قبل از** `start` اجرا می‌شود؛ importها همیشه اول بارگذاری و اجرا می‌شوند.
+  :::
+
+  ::: summary
+  - ماژول = فایلی که `import` یا `export` دارد؛ هر ماژول scope خصوصی دارد. فایل بدون import/export یک script با scope مشترک است (TS2451 برای اسم تکراری).
+  - Named: `export const x` ← `import { x } from` (همان اسم، یا `as`). Default: حداکثر یکی ← `import anyName from`. Mixed: `import Def, { named } from`. همه: `import * as NS from`.
+  - خطاها: TS2459 (export نشده)، TS2305 (وجود ندارد)، TS2614 (پیش‌فرض با آکولاد)، TS2613 (فایل پیش‌فرض ندارد).
+  - هنگام اجرا: importها اول اجرا می‌شوند، هر ماژول یک بار اجرا می‌شود، importها فقط‌خواندنی‌اند، اسم export اشتباه یعنی `SyntaxError` قبل از اجرا.
+  - CommonJS: `require` و `module.exports` (`.cjs`). ESM در Node: `"type": "module"` یا `.mjs`؛ در مرورگر: `<script type="module">`.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۳، کدام فایل یک **ماژول** است؟
+    options:
+      - 'فایلی که فقط `let total = 0;` و یک تابع معمولی دارد.'
+      - 'فایلی که یک کلاس تعریف کرده، ولی هیچ `import` یا `export`ی ندارد.'
+      - 'فایلی که حداقل یک `import` یا `export` دارد.'
+      - 'هر فایلی که با تگ `<script>` معمولی به صفحه‌ی HTML وصل شده باشد.'
+    answer: 3
+    explain: |
+      اسلاید ۲۳ می‌گوید «A module is simply a file that has imports or exports»؛ پس فقط فایلی که `import` یا `export` دارد ماژول است. فایل‌های گزینه‌های ۱ و ۲ هیچ import/exportی ندارند، پس script حساب می‌شوند (داشتن کلاس یا تابع چیزی را عوض نمی‌کند). `<script>` معمولی هم دقیقاً حالت قدیمی و غیرماژولی است؛ برای ماژول در مرورگر باید `type="module"` نوشت.
+  - level: easy
+    stem: |
+      یک فایل حداکثر چند **export پیش‌فرض** (`export default`) می‌تواند داشته باشد؟
+    options:
+      - 'حداکثر یکی'
+      - 'هر تعداد که بخواهیم'
+      - 'دقیقاً یکی؛ فایلی که export پیش‌فرض ندارد ماژول حساب نمی‌شود'
+      - 'دو تا: یکی برای تابع‌ها و یکی برای کلاس‌ها'
+    answer: 1
+    explain: |
+      «پیش‌فرض» یعنی «چیز اصلی فایل»، پس فقط **یکی** می‌تواند باشد؛ دو `export default` در یک فایل هم در TypeScript خطا دارد و هم در Node هنگام بارگذاری `SyntaxError: Duplicate export of 'default'` می‌دهد. ولی داشتنش اجباری نیست: فایلی که فقط export نام‌دار دارد هم ماژول است (گزینه‌ی ۳ غلط). export نام‌دار است که هر تعدادی می‌تواند باشد (گزینه‌ی ۲)، و نوع چیزی که export می‌شود قاعده را عوض نمی‌کند (گزینه‌ی ۴).
+  - level: easy
+    stem: |
+      فایل `utils.ts` تابعی به اسم `formatDate` دارد. برای این‌که فایل `app.ts` بتواند از آن استفاده کند، چه باید کرد؟
+    options:
+      - 'کافی است در `app.ts` بنویسیم `import { formatDate } from "./utils.js";`؛ در `utils.ts` کاری لازم نیست.'
+      - 'تابع را با `var` تعریف کنیم تا سراسری (global) شود.'
+      - 'جلوی تابع کلیدواژه‌ی `public` بنویسیم.'
+      - 'در `utils.ts` تابع را `export` کنیم و در `app.ts` آن را `import` کنیم.'
+    answer: 4
+    explain: |
+      طبق اسلاید ۲۳، هر فایل scope خصوصی دارد؛ چیزی بیرون دیده می‌شود که **export** شده باشد و فایل دیگر با **import** از آن استفاده می‌کند. فقط import کردن کافی نیست، چون چیزی که export نشده قابل import نیست (خطای TS2459؛ گزینه‌ی ۱). `var` در یک ماژول سراسری نمی‌شود (گزینه‌ی ۲)، و `public` یک access modifier کلاس است و برای تابع‌های سطح فایل معنایی ندارد (گزینه‌ی ۳).
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۳، TypeScript و JavaScript مدرن از کدام سیستم ماژول استفاده می‌کنند؟
+    options:
+      - 'CommonJS با `require` و `module.exports`'
+      - 'ES Modules با `import` و `export`'
+      - 'هیچ سیستم ماژولی ندارند و همه‌ی فایل‌ها یک scope مشترک دارند'
+      - 'فقط متغیرهای سراسری روی شیء `window`'
+    answer: 2
+    explain: |
+      اسلاید ۲۳: «TypeScript (and modern JavaScript) uses the ES module system»؛ یعنی ES Modules با `import`/`export`، که از ES2015 استاندارد خودِ زبان است. CommonJS (گزینه‌ی ۱) سیستم قدیمی‌تر خودِ Node.js است، نه استاندارد زبان. گزینه‌های ۳ و ۴ هم همان وضعیت قدیمی بدون ماژول را توصیف می‌کنند که ماژول‌ها برای حل آن آمدند.
+  - level: easy
+    stem: |
+      با اجرای `node main.mjs` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      math.mjs: |
+        export const PI = 3.14;
+        export function double(x) {
+          return x * 2;
+        }
+      logger.mjs: |
+        export default function log(message) {
+          console.log("[LOG] " + message);
+        }
+      main.mjs: |
+        import { PI, double } from "./math.mjs";
+        import log from "./logger.mjs";
+        log(double(PI));
+    entry: main.mjs
+    options:
+      - out: "6.28"
+      - out: "[LOG] NaN"
+      - out: "[LOG] 6.28"
+      - out: ["!! SyntaxError"]
+    answer: 3
+    explain: |
+      `PI` و `double` export نام‌دارند و با آکولاد و همان اسم import شده‌اند؛ `log` export پیش‌فرض است و بدون آکولاد import شده؛ پس همه‌چیز درست است و `log(6.28)` متن `[LOG] 6.28` را چاپ می‌کند. گزینه‌ی ۱ فراموش کرده خروجی از تابع `log` (با پیشوند `[LOG]`) می‌گذرد، گزینه‌ی ۲ فکر کرده مقدار `PI` به فایل دیگر نمی‌رسد و گزینه‌ی ۴ فکر کرده ترکیب import نام‌دار و پیش‌فرض خطاست.
+  - level: easy
+    stem: |
+      فایل `shapes.ts` یک export پیش‌فرض (کلاس `Circle`) و یک export نام‌دار (تابع `area`) دارد. کدام دستور import هر دو را **درست** وارد می‌کند؟
+    options:
+      - '`import { Circle, area } from "./shapes.js";`'
+      - '`import { area }, Circle from "./shapes.js";`'
+      - '`import Circle, area from "./shapes.js";`'
+      - '`import Circle, { area } from "./shapes.js";`'
+    answer: 4
+    explain: |
+      در Mixed exports، **اول** export پیش‌فرض بدون آکولاد و **بعد** exportهای نام‌دار داخل آکولاد می‌آیند: `import Circle, { area } from ...`. گزینه‌ی ۱ پیش‌فرض را داخل آکولاد گذاشته و خطای TS2614 می‌گیرد (چون `Circle` export نام‌دار نیست). گزینه‌ی ۲ ترتیب را برعکس کرده و گزینه‌ی ۳ آکولاد export نام‌دار را جا انداخته؛ هر دو خطای نحوی دارند.
+  - level: medium
+    stem: |
+      این دو فایل با هم کامپایل می‌شوند. خطای کامپایل در کدام خط است؟
+    check: tsc-line
+    files:
+      math.ts: |
+        export const PI = 3.14;
+        export function add(a: number, b: number): number {
+          return a + b;
+        }
+        const secret = 42;
+      main.ts: |
+        import { PI } from "./math.js";
+        import { add } from "./math.js";
+        import { secret } from "./math.js";
+        console.log(PI, add(1, 2), secret);
+    options:
+      - line: "math.ts:5"
+      - line: "main.ts:1"
+      - line: "main.ts:3"
+      - line: "main.ts:4"
+    answer: 3
+    explain: |
+      `secret` در `math.ts` بدون `export` تعریف شده، پس در scope خصوصی همان فایل می‌ماند. import کردن آن در خط ۳ `main.ts` خطای **TS2459** (`Module '"./math.js"' declares 'secret' locally, but it is not exported`) می‌دهد. تعریف `secret` در `math.ts` (خط ۵) کاملاً مجاز است؛ متغیرِ خصوصی داشتن ایرادی ندارد. خط ۴ هم خطای جداگانه‌ای گزارش نمی‌کند، چون مشکل همان import است.
+  - level: medium
+    stem: |
+      این دو فایل با هم کامپایل می‌شوند. خطای کامپایل در کدام خط است؟
+    check: tsc-line
+    files:
+      logger.ts: |
+        export default function log(message: string): void {
+          console.log(`[LOG] ${message}`);
+        }
+      main.ts: |
+        import { log } from "./logger.js";
+        import printer from "./logger.js";
+        import write from "./logger.js";
+        printer("a");
+        write("b");
+    options:
+      - line: "main.ts:1"
+      - line: "main.ts:2"
+      - line: "main.ts:3"
+      - line: 0
+    answer: 1
+    explain: |
+      `log` در `logger.ts` export **پیش‌فرض** است (اسم `log` فقط اسم داخلی تابع است)، پس باید بدون آکولاد import شود. `import { log }` در خط ۱ دنبال یک export نام‌دار به اسم `log` می‌گردد و خطای **TS2614** (`Did you mean to use 'import log from "./logger.js"' instead?`) می‌دهد. خطوط ۲ و ۳ درست‌اند: export پیش‌فرض را می‌توان با **هر** اسمی (`printer` یا `write`) import کرد.
+  - level: medium
+    stem: |
+      این دو فایل با هم کامپایل می‌شوند. خطای کامپایل در کدام خط است؟
+    check: tsc-line
+    files:
+      math.ts: |
+        export const PI = 3.14;
+        export function add(a: number, b: number): number {
+          return a + b;
+        }
+      main.ts: |
+        import * as M from "./math.js";
+        import add from "./math.js";
+        import { PI as pi } from "./math.js";
+        console.log(M.PI, pi);
+    options:
+      - line: "main.ts:1"
+      - line: "main.ts:2"
+      - line: "main.ts:3"
+      - line: 0
+    answer: 2
+    explain: |
+      `math.ts` فقط export نام‌دار دارد و هیچ `export default`ی ندارد؛ پس `import add from` (بدون آکولاد = import پیش‌فرض) در خط ۲ خطای **TS2613** (`Module has no default export. Did you mean to use 'import { add } ...'`) می‌دهد. خط ۱ همه‌ی exportها را در شیء `M` جمع می‌کند و خط ۳ یک export نام‌دار را با `as` تغییر نام داده است؛ هر دو درست‌اند.
+  - level: medium
+    stem: |
+      این دو فایل با هم کامپایل می‌شوند. خطای کامپایل در کدام خط است؟
+    check: tsc-line
+    files:
+      math.ts: |
+        export const PI = 3.14;
+        export function add(a: number, b: number): number {
+          return a + b;
+        }
+      main.ts: |
+        import { add as plus } from "./math.js";
+        import * as M from "./math.js";
+        import { PI, subtract } from "./math.js";
+        console.log(plus(1, 2), PI, M.add(3, 4));
+    options:
+      - line: "main.ts:1"
+      - line: "main.ts:2"
+      - line: "main.ts:3"
+      - line: "main.ts:4"
+    answer: 3
+    explain: |
+      `math.ts` اصلاً چیزی به اسم `subtract` ندارد (نه export‌شده و نه خصوصی)، پس import آن در خط ۳ خطای **TS2305** (`Module '"./math.js"' has no exported member 'subtract'`) می‌دهد؛ همین خط `PI` را درست import می‌کند ولی یک اسم اشتباه کافی است. خط ۱ اسم `add` را با `as` به `plus` تغییر داده، خط ۲ همه‌ی exportها را در `M` جمع کرده و خط ۴ از هر سه درست استفاده می‌کند.
+  - level: medium
+    stem: |
+      با اجرای `node main.mjs` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      math.mjs: |
+        export const PI = 3.14;
+        export function add(a, b) {
+          return a + b;
+        }
+        const secret = 42;
+        export function useSecret() {
+          return secret;
+        }
+      main.mjs: |
+        import * as MathUtils from "./math.mjs";
+        import { add as sum } from "./math.mjs";
+        console.log(MathUtils.PI, sum(4, 5));
+        console.log(MathUtils.useSecret(), MathUtils.secret);
+    entry: main.mjs
+    options:
+      - out: ["3.14 9", "42 42"]
+      - out: ["3.14 9", "!! ReferenceError"]
+      - out: ["undefined 9", "42 undefined"]
+      - out: ["3.14 9", "42 undefined"]
+    answer: 4
+    explain: |
+      `MathUtils` شیئی است که فقط exportهای `math.mjs` را دارد: `MathUtils.PI` برابر `3.14` است و `sum` همان `add` با اسم جدید است (`9`). `useSecret()` چون داخل همان فایل تعریف شده به `secret` دسترسی دارد و `42` برمی‌گرداند، ولی `secret` export نشده و در `MathUtils` نیست؛ خواندن property ناموجود از یک شیء `undefined` می‌دهد، نه `ReferenceError` (گزینه‌ی ۲). گزینه‌ی ۱ فکر کرده چیزهای export‌نشده هم دیده می‌شوند.
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی CommonJS و ES Modules در Node.js **درست** است؟
+    options:
+      - '`require` و `module.exports` مربوط به سیستم ES Modules هستند.'
+      - 'با نوشتن `"type": "module"` در `package.json` (یا استفاده از پسوند `.mjs`)، فایل‌ها به‌صورت ES Module اجرا می‌شوند.'
+      - 'پسوند `.cjs` یعنی فایل حتماً به‌صورت ES Module اجرا می‌شود.'
+      - 'در یک ES Module می‌توان بدون هیچ تنظیمی از `require` استفاده کرد.'
+    answer: 2
+    explain: |
+      در Node.js فایل `.mjs` همیشه ESM است و فایل `.js` وقتی ESM است که `package.json` فیلد `"type": "module"` داشته باشد. `require`/`module.exports` مال **CommonJS** هستند (گزینه‌ی ۱ غلط) و `.cjs` دقیقاً یعنی «این فایل CommonJS است» (گزینه‌ی ۳ غلط). در یک ES Module تابع `require` اصلاً تعریف نشده و صدا زدنش `ReferenceError` می‌دهد (گزینه‌ی ۴ غلط).
+  - level: medium
+    stem: |
+      با اجرای `node main.cjs` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      math.cjs: |
+        function add(a, b) {
+          return a + b;
+        }
+        const PI = 3.14;
+        const secret = 42;
+        module.exports = { add, PI };
+      main.cjs: |
+        const { add, PI } = require("./math.cjs");
+        const math = require("./math.cjs");
+        console.log(add(2, 3), math.PI, math.secret);
+    entry: main.cjs
+    options:
+      - out: "5 3.14 undefined"
+      - out: "5 3.14 42"
+      - out: "23 3.14 undefined"
+      - out: ["!! ReferenceError"]
+    answer: 1
+    explain: |
+      در CommonJS هر چیزی که در `module.exports` بگذاری صادر می‌شود و `require` همان شیء را برمی‌گرداند. `add(2, 3)` عدد `5` است (هر دو عدد هستند، پس الحاق رشته‌ای رخ نمی‌دهد)، `math.PI` برابر `3.14` است و `secret` چون در `module.exports` نیست، روی شیء وجود ندارد و `undefined` می‌دهد. CommonJS هم مثل ESM به هر فایل scope خصوصی می‌دهد، و در فایل `.cjs` تابع `require` کاملاً تعریف‌شده است (گزینه‌ی ۴ غلط).
+  - level: medium
+    stem: |
+      با اجرای `node main.mjs`، اولین خطا در کدام خط رخ می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    files:
+      math.mjs: |
+        export const PI = 3.14;
+      main.mjs: |
+        import { PI } from "./math.mjs";
+        const fs = require("fs");
+        console.log(PI);
+    entry: main.mjs
+    options:
+      - line: "main.mjs:1"
+      - line: "main.mjs:2"
+      - line: "main.mjs:3"
+      - line: 0
+    answer: 2
+    explain: |
+      `main.mjs` یک ES Module است و در ESM تابع `require` (که مال CommonJS است) وجود ندارد؛ پس خط ۲ خطای `ReferenceError: require is not defined in ES module scope` می‌دهد. import خط ۱ کاملاً درست است و خط ۳ اصلاً به اجرا نمی‌رسد. در ESM باید نوشت `import fs from "fs";`.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      export default const settings = { port: 3000 };
+      export const host = "localhost";
+      export function url(): string {
+        return host;
+      }
+    options:
+      - line: 1
+      - line: 2
+      - line: 3
+      - line: 0
+    answer: 1
+    explain: |
+      بعد از `export default` باید یک **عبارت** (مقدار، تابع یا کلاس) بیاید، نه تعریف متغیر با `const`؛ پس خط ۱ خطای **TS1109** (`Expression expected`) می‌دهد. راه درست: `const settings = { port: 3000 }; export default settings;` یا مستقیماً `export default { port: 3000 };`. خطوط ۲ و ۳ exportهای نام‌دار کاملاً درستی هستند؛ داشتن default و named با هم (mixed) هم مشکلی ندارد.
+  - level: hard
+    stem: |
+      با اجرای `node main.mjs` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      counter.mjs: |
+        console.log("counter.mjs runs");
+        export let count = 0;
+        export function increment() {
+          count++;
+        }
+      a.mjs: |
+        import { increment } from "./counter.mjs";
+        console.log("a.mjs runs");
+        increment();
+      main.mjs: |
+        console.log("main starts");
+        import "./a.mjs";
+        import { count, increment } from "./counter.mjs";
+        increment();
+        console.log("count =", count);
+    entry: main.mjs
+    options:
+      - out: ["main starts", "counter.mjs runs", "a.mjs runs", "count = 2"]
+      - out: ["counter.mjs runs", "a.mjs runs", "counter.mjs runs", "main starts", "count = 1"]
+      - out: ["counter.mjs runs", "a.mjs runs", "main starts", "count = 1"]
+      - out: ["counter.mjs runs", "a.mjs runs", "main starts", "count = 2"]
+    answer: 4
+    explain: |
+      سه قاعده: (۱) importها **قبل از** کدِ خودِ فایل اجرا می‌شوند، پس با این‌که `console.log("main starts")` خط اول است، سوم چاپ می‌شود (گزینه‌ی ۱ غلط). (۲) `counter.mjs` با وجود دو بار import شدن **فقط یک بار** اجرا می‌شود و همه یک نسخه‌ی مشترک از آن را می‌بینند (گزینه‌ی ۲ غلط). (۳) importها **زنده**‌اند: `a.mjs` یک بار و `main.mjs` یک بار `increment` را صدا زده‌اند و `count` در `main.mjs` مقدار به‌روز `2` را نشان می‌دهد، نه یک کپی قدیمی (گزینه‌ی ۳ غلط).
+  - level: hard
+    stem: |
+      با اجرای `node main.mjs` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      counter.mjs: |
+        export let count = 0;
+        export function increment() {
+          count++;
+        }
+      main.mjs: |
+        import { count, increment } from "./counter.mjs";
+        increment();
+        console.log("before", count);
+        count = 5;
+        console.log("after", count);
+    entry: main.mjs
+    options:
+      - out: ["before 0", "after 5"]
+      - out: ["before 1", "after 5"]
+      - out: ["before 1", "!! TypeError"]
+      - out: ["before 0", "!! TypeError"]
+    answer: 3
+    explain: |
+      `increment()` خودِ متغیر `count` را در `counter.mjs` زیاد می‌کند و چون import زنده است، `main.mjs` مقدار `1` را می‌بیند (گزینه‌های ۱ و ۴ فکر کرده‌اند import یک کپی ثابت است). ولی import از دید فایلِ وارد‌کننده **فقط‌خواندنی** است، مثل یک `const`: `count = 5` خطای `TypeError: Assignment to constant variable.` می‌دهد و خط آخر اجرا نمی‌شود (گزینه‌ی ۲ غلط). در TypeScript همین خط خطای TS2632 دارد.
+  - level: hard
+    stem: |
+      با اجرای `node main.mjs` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      counter.mjs: |
+        export let count = 0;
+        export function increment() {
+          count++;
+        }
+      main.mjs: |
+        console.log("start");
+        import { decrement } from "./counter.mjs";
+        console.log("end");
+    entry: main.mjs
+    options:
+      - out: ["!! SyntaxError"]
+      - out: ["start", "!! SyntaxError"]
+      - out: ["start", "!! ReferenceError"]
+      - out: ["start", "end"]
+    answer: 1
+    explain: |
+      Node قبل از اجرای **هر** خطی، همه‌ی importها را به exportها وصل می‌کند (linking). چون `counter.mjs` چیزی به اسم `decrement` export نکرده، همان مرحله با `SyntaxError: The requested module './counter.mjs' does not provide an export named 'decrement'` شکست می‌خورد و حتی `start` هم چاپ نمی‌شود (گزینه‌های ۲ و ۳ غلط). import اشتباه بی‌صدا نادیده گرفته هم نمی‌شود (گزینه‌ی ۴ غلط).
+  - level: hard
+    stem: |
+      با اجرای `node main.mjs`، خطا در کدام خط گزارش می‌شود؟
+    check: error-line
+    errorName: SyntaxError
+    files:
+      logger.mjs: |
+        export default function log(msg) {
+          console.log(msg);
+        }
+        export default function warn(msg) {
+          console.log("WARN: " + msg);
+        }
+      main.mjs: |
+        import log from "./logger.mjs";
+        log("hi");
+    entry: main.mjs
+    options:
+      - line: "main.mjs:1"
+      - line: "main.mjs:2"
+      - line: "logger.mjs:1"
+      - line: "logger.mjs:4"
+    answer: 4
+    explain: |
+      هر فایل حداکثر **یک** export پیش‌فرض دارد. وقتی Node فایل `logger.mjs` را بارگذاری می‌کند، به `export default` دوم (خط ۴) که می‌رسد خطای `SyntaxError: Duplicate export of 'default'` می‌دهد؛ مشکل در خودِ `logger.mjs` است، نه در import `main.mjs` (گزینه‌های ۱ و ۲). خط ۱ `logger.mjs` اولین و تنها export پیش‌فرض مجاز است (گزینه‌ی ۳). چون فایل اصلاً بارگذاری نمی‌شود، `hi` هم چاپ نمی‌شود.
+  - level: hard
+    stem: |
+      دو فایل زیر هیچ `import` یا `export`ی ندارند و با دستور `tsc --strict --module esnext a.ts b.ts` با هم کامپایل می‌شوند. نتیجه چیست؟
+    files:
+      a.ts: |
+        let counter = 1;
+      b.ts: |
+        let counter = 2;
+    manual: "سامانه‌ی بررسی خودکار به هر فایل TypeScript بدون import/export یک `export {}` اضافه می‌کند و با `--module nodenext` (که هر فایل را ماژول حساب می‌کند) کامپایل می‌کند؛ پس این حالت قابل بررسی خودکار نیست. با `tsc --strict --target es2022 --module esnext a.ts b.ts` (TypeScript 7.0.2) به‌صورت دستی بررسی شد: خطای TS2451 در هر دو فایل؛ با افزودن `export {};` خطا از بین رفت."
+    options:
+      - 'هیچ خطایی رخ نمی‌دهد، چون هر فایل scope خصوصی خودش را دارد.'
+      - 'خطایی در کامپایل رخ نمی‌دهد و فقط هنگام اجرا `ReferenceError` می‌گیریم.'
+      - 'خطای TS2451 (تعریف دوباره‌ی متغیر `counter`) گزارش می‌شود، چون فایل‌های بدون import/export «script» هستند و scope مشترک دارند.'
+      - 'خطایی رخ نمی‌دهد و مقدار `counter` در فایل دوم، بی‌صدا مقدار فایل اول را عوض می‌کند.'
+    answer: 3
+    explain: |
+      طبق اسلاید ۲۳ «ماژول فایلی است که import یا export دارد»؛ این دو فایل هیچ‌کدام را ندارند، پس **script** هستند و متغیرهای سطح بالایشان در یک scope مشترک قرار می‌گیرند. دو `let` با یک اسم در یک scope مجاز نیست و `tsc` روی هر دو فایل خطای **TS2451** (`Cannot redeclare block-scoped variable 'counter'`) می‌دهد. scope خصوصی (گزینه‌ی ۱) فقط وقتی برقرار است که فایل‌ها ماژول باشند، مثلاً با افزودن `export {};`. گزینه‌های ۲ و ۴ هم غلط‌اند چون خطا همان موقع کامپایل گرفته می‌شود و `let` اجازه‌ی تعریف دوباره نمی‌دهد.
+  - level: hard
+    stem: |
+      این دو فایل با هم کامپایل می‌شوند. خطای کامپایل در کدام خط است؟
+    check: tsc-line
+    files:
+      math.ts: |
+        export const PI = 3.14;
+        export function add(a: number, b: number): number {
+          return a + b;
+        }
+        const secret = 42;
+        export function useSecret(): number {
+          return secret;
+        }
+      main.ts: |
+        import * as M from "./math.js";
+        console.log(M.PI);
+        console.log(M.add(2, 3));
+        console.log(M.useSecret());
+        console.log(M.secret);
+    options:
+      - line: "math.ts:5"
+      - line: "main.ts:1"
+      - line: "main.ts:4"
+      - line: "main.ts:5"
+    answer: 4
+    explain: |
+      `import * as M` فقط exportها را در شیء `M` جمع می‌کند. `secret` export نشده، پس `M.secret` در خط ۵ خطای **TS2339** (`Property 'secret' does not exist on type 'typeof import(...)'`) می‌دهد. `M.useSecret()` در خط ۴ مجاز است، چون خودِ تابع export شده و داخل فایل خودش به `secret` دسترسی دارد. تعریف `secret` در `math.ts` هم خطا نیست؛ فقط خصوصی است.
+  - level: hard
+    stem: |
+      در مرورگر، صفحه‌ی زیر سه تگ `<script>` معمولی (غیر ماژول) دارد. در کنسول چه چیزی چاپ می‌شود؟
+    check: dom-output
+    html: |
+      <script>
+        let counter = 1;
+        console.log("first", counter);
+      </script>
+      <script>
+        let counter = 2;
+        console.log("second", counter);
+      </script>
+      <script>
+        console.log("third", counter);
+      </script>
+    options:
+      - out: ["first 1", "second 2", "third 2"]
+      - out: ["first 1", "!! SyntaxError", "third 1"]
+      - out: ["first 1", "second 2", "!! ReferenceError"]
+      - out: ["first 1", "!! SyntaxError"]
+    answer: 2
+    explain: |
+      اسکریپت‌های معمولی ماژول نیستند و همه یک scope سراسری مشترک دارند. اسکریپت دوم دوباره `let counter` تعریف می‌کند و **کل آن اسکریپت** با `SyntaxError: Identifier 'counter' has already been declared` اجرا نمی‌شود. خطای یک اسکریپت بقیه را متوقف نمی‌کند (گزینه‌ی ۴ غلط)، و اسکریپت سوم `counter` سراسری اسکریپت اول را می‌بیند: `third 1`. گزینه‌های ۱ و ۳ فرض کرده‌اند هر اسکریپت scope خصوصی دارد، که فقط برای ماژول‌ها (مثلاً `<script type="module">`) درست است.
