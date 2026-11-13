@@ -1,0 +1,610 @@
+id: ch1-variables
+title: "متغیرها: let، const و var"
+slides: "Introduction to JS، اسلایدهای ۲۳ و ۲۴"
+lesson: |
+  فرض کن در آشپزخانه چند ظرف داری و روی هر کدام یک برچسب چسبانده‌ای: «شکر»، «نمک»، «برنج». هر وقت شکر لازم داشته باشی، سراغ ظرفی می‌روی که برچسب «شکر» دارد. در برنامه‌نویسی، **متغیر (variable)** دقیقاً همین ظرف برچسب‌دار است: یک **نام** دارد (برچسب) و یک **مقدار** (چیزی که داخلش ریخته‌ایم).
+
+  اسلاید ۲۳ همین را این‌طور می‌گوید:
+
+  - متغیرها **ظرف‌هایی برای نگه‌داری داده** هستند (Variables are containers for storing data).
+  - با یکی از سه کلمه‌ی کلیدی `let`، `const` یا کلمه‌ی قدیمی‌تر `var` تعریف می‌شوند.
+  - `let` برای **مقدارهای قابل‌تغییر** است و `const` برای **مقدارهای ثابت** (که نمی‌شود دوباره به آن‌ها مقدار داد).
+  - `var` **قدیمی (outdated)** و **function-scoped** (محدوده‌اش کل تابع است، نه یک بلوک) است و نباید در کد مدرن از آن استفاده کرد.
+  - متغیرها به ما اجازه می‌دهند داده‌ها را بارها **استفاده** و **دست‌کاری** کنیم.
+
+  ### تعریف، انتساب و مقداردهی اولیه
+
+  ```js
+  let city;                // declaration: a box named "city" is created (value: undefined)
+  city = "Tehran";         // assignment: put a value into the box
+  let year = 2026;         // declaration + initialization in one line
+  console.log(city, year); // Tehran 2026
+  ```
+
+  این سه اصطلاح را از هم جدا کن:
+
+  | اصطلاح | یعنی چه؟ | مثال |
+  |---|---|---|
+  | **declaration** (اعلان یا تعریف) | ساختن متغیر و انتخاب نام برای آن | `let city;` |
+  | **assignment** (انتساب) | ریختن یک مقدار در متغیر با عملگر `=` | `city = "Tehran";` |
+  | **initialization** (مقداردهی اولیه) | تعریف و اولین انتساب، با هم در یک خط | `let year = 2026;` |
+
+  اگر متغیری را تعریف کنی ولی مقداری در آن نریزی، مقدارش `undefined` (یعنی «هنوز مقدار نگرفته») است:
+
+  ```js
+  let score;
+  console.log(score); // undefined
+  score = 10;
+  console.log(score); // 10
+  ```
+
+  ### `let`: متغیرِ قابل‌تغییر
+
+  با `let` متغیری می‌سازی که هر وقت خواستی می‌توانی مقدار تازه‌ای در آن بریزی. به این کار **reassignment** (انتساب دوباره) می‌گویند. این کد اسلاید ۲۴ است:
+
+  ```js title=letconst.js
+  let age = 21;
+
+  age = 22;  // works
+
+  const pi = 3.14;
+
+  pi = 3.1415;  // error
+  ```
+
+  خط `age = 22` بی‌دردسر اجرا می‌شود، ولی خط آخر در Node.js و Chrome این خطا را می‌دهد و برنامه همان‌جا متوقف می‌شود:
+
+  ```text
+  TypeError: Assignment to constant variable.
+  ```
+
+  ### `const`: متغیرِ ثابت
+
+  `const` (مخفف constant یعنی «ثابت») متغیری می‌سازد که **بعد از مقداردهی، دیگر نمی‌شود به آن مقدار تازه داد**. هر تلاشی برای انتساب دوباره، چه با `=` و چه با `+=` یا `++`، خطای **`TypeError`** (خطای نوع) می‌دهد.
+
+  دو قانون مهم `const`:
+
+  1. **باید همان لحظه‌ی تعریف مقدار بگیرد.** چون بعداً نمی‌شود به آن مقدار داد، تعریفِ خالیِ آن بی‌معنی است:
+
+     ```js
+     const z; // SyntaxError: Missing initializer in const declaration
+     ```
+
+     این خطا از نوع **`SyntaxError`** (خطای نحوی یا دستوری) است و **قبل از اجرای برنامه** پیدا می‌شود؛ یعنی وقتی در یک فایل باشد، **هیچ خطی از آن فایل اجرا نمی‌شود**، حتی خط‌های قبل از آن.
+
+  2. **فقط «اتصال» ثابت است، نه محتوای شیء.** اگر در یک `const` یک شیء (object) یا آرایه (array) بگذاری، نمی‌توانی متغیر را به شیء یا آرایه‌ی دیگری وصل کنی، ولی **می‌توانی محتوای همان شیء را تغییر دهی**:
+
+     ```js
+     const user = { name: "Ali" };
+     user.name = "Sara";   // OK: we change the content of the same object
+     const nums = [1, 2];
+     nums.push(3);         // OK: nums is now [1, 2, 3]
+     nums = [4, 5];        // TypeError: Assignment to constant variable.
+     ```
+
+  ::: analogy
+  `const` مثل برچسبی است که با چسب قطره‌ای روی یک جعبه چسبانده شده: دیگر نمی‌توانی آن را بکَنی و روی جعبه‌ی دیگری بزنی (انتساب دوباره ممنوع است)، ولی اگر جعبه در داشته باشد (شیء یا آرایه)، هنوز می‌توانی وسایل داخلش را جابه‌جا کنی.
+  :::
+
+  ### دموی کنسول اسلاید ۲۳
+
+  در اسلاید ۲۳ این دستورها یکی‌یکی در کنسول Firefox تایپ شده‌اند. علامت `»` یعنی چیزی که ما تایپ کردیم و `←` یعنی مقداری که کنسول به‌عنوان «نتیجه‌ی آن دستور» نشان می‌دهد:
+
+  ```text
+  » let a = 12
+  ← undefined
+  » const b = 13
+  ← undefined
+  » b = 12
+  Uncaught TypeError: invalid assignment to const 'b'
+  » a = "Hello!"
+  ← "Hello!"
+  » console.log(a)
+    Hello!
+  ← undefined
+  ```
+
+  بیا خط‌به‌خط بخوانیم:
+
+  - `let a = 12` و `const b = 13`: یک **تعریف** مقداری تولید نمی‌کند، پس کنسول `undefined` نشان می‌دهد. این یعنی «این دستور نتیجه‌ای نداشت»، **نه** این‌که مقدار `a` برابر `undefined` شده باشد. مقدار `a` همان `12` است.
+  - `b = 12`: انتساب دوباره به یک `const`، پس `TypeError`. در Firefox (موتور SpiderMonkey) متن پیام `invalid assignment to const 'b'` است و در Chrome و Node.js (موتور V8) `Assignment to constant variable.`. **متن پیام به موتور بستگی دارد، ولی نوع خطا همیشه `TypeError` است.**
+  - `a = "Hello!"`: هر **انتساب** خودش یک عبارت (expression، یعنی تکه‌کدی که مقدار دارد) است و مقدارش همان چیزی است که منتسب شد؛ برای همین کنسول `"Hello!"` را نشان می‌دهد. این خط ضمناً نشان می‌دهد متغیر `let` که تا الان عدد بود، حالا رشته (string) شده است.
+  - `console.log(a)`: متن `Hello!` را **چاپ** می‌کند و چون خود `console.log` چیزی برنمی‌گرداند، بعدش `undefined` می‌آید.
+
+  ::: note
+  کنسول مرورگر هر خط را جداگانه اجرا می‌کند؛ برای همین بعد از خطای خط سوم، دستورهای بعدی هم اجرا شدند. اما اگر همین پنج خط را در **یک فایل** بنویسی و با Node.js اجرا کنی، برنامه روی خط `b = 12` متوقف می‌شود و خط‌های بعدی اصلاً اجرا نمی‌شوند.
+  :::
+
+  ### `var`: روش قدیمی (پیش‌نمایش)
+
+  قبل از ES6 (سال ۲۰۱۵) تنها راه تعریف متغیر `var` بود. اسلاید ۲۳ می‌گوید `var` قدیمی و **function-scoped** است؛ یعنی محدوده‌ی (scope) آن کل تابع است، نه بلوک `{ }`. فعلاً همین دو رفتار عجیبش را بدان:
+
+  ```js
+  var color = "red";
+  var color = "blue";  // var allows redeclaration: no error
+  console.log(color);  // blue
+
+  {
+    var leaked = "I escape the block";
+  }
+  console.log(leaked); // I escape the block (var ignores { } blocks)
+  ```
+
+  جزئیات کامل مشکلات `var` و **hoisting** (بالا بردن اعلان‌ها به ابتدای محدوده) را در درس‌های «Scope»، «مشکلات var» و «Hoisting و TDZ» می‌بینیم.
+
+  ### `let` و `const` هر دو block-scoped هستند (پیش‌نمایش)
+
+  اسلاید ۲۴ می‌گوید `let` و `const` هر دو **block-scoped** هستند؛ یعنی فقط داخل همان `{ ... }` (بلوکی) که در آن تعریف شده‌اند وجود دارند. بیرون از بلوک، استفاده از آن‌ها خطای `ReferenceError` (خطای ارجاع به متغیری که وجود ندارد) می‌دهد:
+
+  ```js
+  {
+    let inside = "hi";
+    console.log(inside); // hi
+  }
+  console.log(inside);   // ReferenceError: inside is not defined
+  ```
+
+  ### تعریف دوباره (redeclaration) در برابر انتساب دوباره (reassignment)
+
+  این دو را با هم قاطی نکن. **انتساب دوباره** یعنی ریختن مقدار تازه در متغیری که از قبل هست (`x = 2`). **تعریف دوباره** یعنی نوشتن دوباره‌ی `let x` یا `const x` برای نامی که در همان محدوده از قبل تعریف شده است.
+
+  | | `let` | `const` | `var` |
+  |---|---|---|---|
+  | انتساب دوباره (`x = 2`) | مجاز | `TypeError` | مجاز |
+  | تعریف دوباره در همان محدوده | `SyntaxError` | `SyntaxError` | مجاز (بی‌صدا) |
+  | مقدار دادن هنگام تعریف | اختیاری | **اجباری** | اختیاری |
+  | محدوده (scope) | بلوک `{ }` | بلوک `{ }` | تابع |
+
+  ```js
+  let total = 5;
+  total = 10;     // reassignment: fine
+  let total = 20; // redeclaration: SyntaxError: Identifier 'total' has already been declared
+  ```
+
+  ### قوانین نام‌گذاری متغیرها
+
+  - نام می‌تواند از **حروف**، **رقم‌ها**، `$` و `_` ساخته شود: `price`، `$price`، `_count`، `item2`.
+  - نام **نمی‌تواند با رقم شروع شود**: `2ndPlace` غلط است.
+  - فاصله و خط تیره مجاز نیست: `user name` و `first-name` غلط‌اند (خط تیره همان عملگر منها است!).
+  - **کلمه‌های رزروشده (reserved words)** مثل `class`، `const`، `function`، `return`، `if`، `new` و `typeof` را نمی‌توان نام متغیر گذاشت.
+  - JavaScript **به بزرگی و کوچکی حروف حساس است (case-sensitive)**: `userName` و `username` دو متغیر کاملاً جدا هستند.
+  - **قرارداد (convention)**: در JavaScript نام متغیرها را به سبک **camelCase** می‌نویسیم؛ کلمه‌ی اول با حرف کوچک و هر کلمه‌ی بعدی با حرف بزرگ شروع می‌شود: `firstName`، `totalPrice`، `isLoggedIn`. سبک `PascalCase` (مثل `TotalPrice`) معمولاً برای نام کلاس‌ها است و `snake_case` (مثل `total_price`) سبک رایج Python است. این‌ها خطا نمی‌دهند؛ فقط قرارداد نیستند.
+
+  ### Dynamic typing (نوع‌دهی پویا): پیش‌نمایش
+
+  در زبان‌هایی مثل Java یا C باید نوع متغیر را بنویسی (`int x = 5;`) و بعداً نمی‌توانی در آن رشته بریزی. در JavaScript متغیرها **نوع ثابت ندارند**؛ نوع به **مقدار** تعلق دارد، نه به متغیر. همان متغیر `let` می‌تواند اول عدد و بعد رشته باشد:
+
+  ```js
+  let data = 42;
+  console.log(typeof data); // number
+  data = "forty-two";
+  console.log(typeof data); // string
+  ```
+
+  (عملگر `typeof` نوع یک مقدار را به‌صورت یک رشته برمی‌گرداند؛ در درس بعد کامل با آن آشنا می‌شویم.)
+
+  ### بهترین روش (BEST PRACTICE)
+
+  بنر اسلاید ۲۴ می‌گوید: **به‌طور پیش‌فرض از `const` استفاده کن و فقط وقتی به انتساب دوباره نیاز داری، سراغ `let` برو.** از `var` هم در کد جدید استفاده نکن. این‌طوری اگر جایی به‌اشتباه به متغیری مقدار تازه بدهی، همان لحظه خطا می‌گیری و باگ پنهان نمی‌ماند.
+
+  ::: warning
+  هیچ‌وقت متغیر را بدون `let`/`const` به کار نبر. اگر بنویسی `total = 5` و `total` قبلاً تعریف نشده باشد، در حالت عادی (sloppy) بی‌صدا یک متغیر سراسری (global) ساخته می‌شود و در حالت `"use strict"` خطای `ReferenceError` می‌گیری. خط `a = "Hello!"` در اسلاید ۲۳ مشکلی ندارد، چون `a` قبلاً با `let` تعریف شده بود.
+  :::
+
+  ::: tip
+  - `const` یعنی «انتساب دوباره ممنوع»، نه «محتوای تغییرناپذیر». `push` روی آرایه‌ی `const` و تغییر ویژگی شیء `const` کاملاً مجاز است.
+  - هر چیزی که مقدار تازه‌ای در متغیر می‌ریزد انتساب دوباره است: `x = ...`، `x += 1`، `x++`. همه‌ی این‌ها روی `const` خطای `TypeError` می‌دهند.
+  - متغیری که فقط تعریف شده و مقدار نگرفته `undefined` است. این برای `let` و `var` ممکن است، ولی `const` بدون مقدار اصلاً مجاز نیست.
+  :::
+
+  ::: trap
+  - «تعریف `const` بدون مقدار» و «تعریف دوباره‌ی `let`/`const` در همان محدوده» از نوع **`SyntaxError`** هستند و چون قبل از اجرا کشف می‌شوند، **هیچ خطی از آن فایل اجرا نمی‌شود**، حتی `console.log`های قبل از آن. ولی «انتساب دوباره به `const`» از نوع **`TypeError`** است و در **زمان اجرا** رخ می‌دهد؛ پس خط‌های قبل از آن اجرا شده‌اند و خروجی‌شان چاپ شده است.
+  - `undefined`ی که کنسول بعد از `let a = 12` نشان می‌دهد نتیجه‌ی **دستور** است، نه مقدار `a`.
+  - متن پیام خطا در موتورهای مختلف فرق دارد (`invalid assignment to const 'b'` در Firefox و `Assignment to constant variable.` در Chrome و Node.js)؛ در تست‌ها به **نوع خطا** یعنی `TypeError` دقت کن.
+  - `let x` داخل یک بلوک جدید `{ }` تعریف دوباره حساب نمی‌شود؛ آن یک متغیر **جدید و جدا** در محدوده‌ی همان بلوک است.
+  :::
+
+  ::: summary
+  - متغیر یعنی ظرف داده با یک نام. تعریف با `const` (پیش‌فرض)، `let` (وقتی مقدار عوض می‌شود) و `var` (قدیمی؛ استفاده نکن).
+  - `let`: انتساب دوباره مجاز. `const`: انتساب دوباره `TypeError` و مقداردهی هنگام تعریف اجباری (وگرنه `SyntaxError`).
+  - `let` و `const` block-scoped هستند و تعریف دوباره‌شان در همان محدوده `SyntaxError` است؛ `var` تابع‌محور است و تعریف دوباره را اجازه می‌دهد.
+  - نام‌ها: حرف، رقم، `$` و `_`؛ بدون رقم در ابتدا؛ حساس به حروف بزرگ و کوچک؛ بدون کلمه‌های رزروشده؛ به سبک camelCase.
+  :::
+questions:
+  - level: easy
+    stem: |
+      کدام کلمه‌ی کلیدی متغیری می‌سازد که **نمی‌توان** به آن مقدار تازه‌ای منتسب کرد؟
+    options:
+      - '`let`'
+      - '`var`'
+      - '`final`'
+      - '`const`'
+    answer: 4
+    explain: |
+      `const` (مخفف constant) انتساب دوباره را ممنوع می‌کند و هر تلاشی برای آن خطای `TypeError` می‌دهد. `let` و `var` هر دو اجازه می‌دهند بعداً مقدار تازه‌ای در متغیر بریزیم. `final` کلمه‌ی کلیدی زبان Java است و در JavaScript وجود ندارد؛ `final x = 1` خطای `SyntaxError` می‌دهد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۳، کدام توصیف درباره‌ی `var` درست است؟
+    options:
+      - 'قدیمی است، function-scoped است و بهتر است در کد مدرن از آن استفاده نشود.'
+      - 'جدیدترین روش تعریف متغیر است که در ES6 به زبان اضافه شد.'
+      - 'مثل `const` است و نمی‌توان به آن مقدار تازه داد.'
+      - 'block-scoped است و فقط داخل `{ ... }` وجود دارد.'
+    answer: 1
+    explain: |
+      اسلاید ۲۳ درباره‌ی `var` می‌گوید: outdated (قدیمی)، function-scoped و «در کد مدرن از آن پرهیز کن». گزینه‌ی ۲ برعکس است: `let` و `const` در ES6 آمدند و `var` از اول زبان وجود داشت. گزینه‌ی ۳ غلط است چون `var` انتساب دوباره (و حتی تعریف دوباره) را اجازه می‌دهد. گزینه‌ی ۴ ویژگی `let` و `const` است، نه `var`.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let age = 21;
+      age = 22;
+      age = age + 1;
+      console.log(age);
+    options:
+      - out: "23"
+      - out: "21"
+      - out: "22"
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      متغیر `let` قابل انتساب دوباره است: اول `21`، بعد `22` و در خط سوم مقدار فعلی (`22`) با ۱ جمع می‌شود و حاصل یعنی `23` دوباره در `age` ریخته می‌شود. گزینه‌ی ۴ مخصوص `const` است و گزینه‌های ۲ و ۳ فرض کرده‌اند انتساب‌های بعدی اثری ندارند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let score;
+      console.log(score);
+      score = 10;
+      console.log(score);
+    options:
+      - out: ["undefined", "10"]
+      - out: ["null", "10"]
+      - out: ["0", "10"]
+      - out: ["!! ReferenceError"]
+    answer: 1
+    explain: |
+      متغیری که تعریف شده ولی هنوز مقدار نگرفته، مقدارش `undefined` است؛ بعد از `score = 10` مقدارش `10` می‌شود. `null` را JavaScript خودش در متغیر نمی‌گذارد (آن را برنامه‌نویس عمداً می‌گذارد) و مقدار پیش‌فرض `0` هم مخصوص زبان‌هایی مثل Java است. `ReferenceError` فقط برای متغیری است که اصلاً تعریف نشده باشد.
+
+  - level: easy
+    stem: |
+      کد زیر (همان کد اسلاید ۲۴) در Node.js اجرا می‌شود. کدام خط خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      let age = 21;
+      age = 22;
+      const pi = 3.14;
+      pi = 3.1415;
+      console.log(age, pi);
+    options:
+      - line: 2
+      - line: 4
+      - line: 5
+      - line: 0
+    answer: 2
+    explain: |
+      خط ۴ تلاش می‌کند به `pi` که با `const` تعریف شده مقدار تازه بدهد، پس `TypeError: Assignment to constant variable.` رخ می‌دهد و برنامه متوقف می‌شود. خط ۲ مشکلی ندارد چون `age` با `let` تعریف شده است. خط ۵ هرگز اجرا نمی‌شود، چون برنامه قبلاً روی خط ۴ متوقف شده است.
+
+  - level: easy
+    stem: |
+      طبق «BEST PRACTICE» اسلاید ۲۴، کدام روش برای تعریف متغیرها توصیه می‌شود؟
+    options:
+      - 'همیشه `let`، چون انعطاف بیشتری دارد.'
+      - 'به‌طور پیش‌فرض `const` و فقط وقتی انتساب دوباره لازم است `let`.'
+      - 'همیشه `var`، چون در همه‌ی مرورگرها کار می‌کند.'
+      - '`const` فقط برای ثابت‌های ریاضی مثل عدد پی، و `let` برای بقیه‌ی متغیرها.'
+    answer: 2
+    explain: |
+      متن بنر اسلاید ۲۴: «Use `const` by default, switch to `let` when reassignment is needed». با این روش اگر جایی به‌اشتباه مقدار متغیری را عوض کنی، فوراً `TypeError` می‌گیری. گزینه‌ی ۱ این محافظت را از بین می‌برد، گزینه‌ی ۳ خلاف توصیه‌ی اسلاید ۲۳ (پرهیز از `var`) است و گزینه‌ی ۴ کاربرد `const` را بی‌دلیل محدود می‌کند؛ هر متغیری که قرار نیست دوباره مقدار بگیرد باید `const` باشد.
+
+  - level: medium
+    stem: |
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
+    errorName: TypeError
+    options:
+      - code: 'const user = { name: "Ali" }; user.name = "Sara";'
+      - code: 'const nums = [1, 2]; nums.push(3);'
+      - code: 'let count = 1; count = count + 1;'
+      - code: 'const city = "Tehran"; city = "Shiraz";'
+    answer: 4
+    explain: |
+      در گزینه‌ی ۴ به متغیر `const` مقدار تازه داده شده (انتساب دوباره)، پس `TypeError` رخ می‌دهد. در گزینه‌های ۱ و ۲ خود متغیر عوض نشده، فقط **محتوای** شیء یا آرایه‌ای که به آن اشاره می‌کند تغییر کرده و این برای `const` مجاز است. گزینه‌ی ۳ هم یک `let` است که انتساب دوباره‌اش آزاد است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [1, 2, 3];
+      nums.push(4);
+      nums[0] = 10;
+      console.log(nums);
+    options:
+      - out: "[1, 2, 3]"
+      - out: "[1, 2, 3, 4]"
+      - out: "!! TypeError"
+      - out: "[10, 2, 3, 4]"
+    answer: 4
+    explain: |
+      `const` فقط اجازه نمی‌دهد `nums` به آرایه‌ی **دیگری** وصل شود؛ تغییر محتوای همان آرایه آزاد است. `push(4)` عدد ۴ را به انتها اضافه می‌کند و `nums[0] = 10` خانه‌ی اول را عوض می‌کند، پس `[10, 2, 3, 4]` چاپ می‌شود. گزینه‌ی ۳ همان تصور غلطِ «const یعنی محتوای غیرقابل‌تغییر» است و گزینه‌های ۱ و ۲ فرض کرده‌اند بعضی تغییرها نادیده گرفته می‌شوند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js چیست؟
+    check: output
+    code: |
+      const settings = { theme: "dark" };
+      settings.theme = "light";
+      console.log(settings.theme);
+      settings = { theme: "blue" };
+      console.log(settings.theme);
+    options:
+      - out: ["light", "blue"]
+      - out: ["dark", "!! TypeError"]
+      - out: ["light", "!! TypeError"]
+      - out: ["!! TypeError"]
+    answer: 3
+    explain: |
+      خط ۲ محتوای همان شیء را تغییر می‌دهد که برای `const` مجاز است؛ پس خط ۳ مقدار `light` را چاپ می‌کند. خط ۴ می‌خواهد `settings` را به یک شیء **جدید** وصل کند؛ این انتساب دوباره است و `TypeError` می‌دهد. این خطا در زمان اجرا رخ می‌دهد، پس خروجی خط ۳ قبل از آن چاپ شده است (رد گزینه‌ی ۴). گزینه‌ی ۲ تغییر ویژگی را هم ممنوع فرض کرده و گزینه‌ی ۱ اصلاً ممنوعیت انتساب دوباره را ندیده است.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      let a = 1;
+      const b;
+      b = 2;
+      console.log(a, b);
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 1
+    explain: |
+      `const` باید همان لحظه‌ی تعریف مقدار بگیرد؛ `const b;` در خط ۲ خطای `SyntaxError: Missing initializer in const declaration` می‌دهد. این خطا هنگام خواندن (parse) کل فایل و **قبل از اجرای هر خطی** کشف می‌شود. گزینه‌ی ۲ وسوسه‌انگیز است، چون خط ۳ هم انتساب دوباره به `const` به نظر می‌رسد، ولی برنامه اصلاً به مرحله‌ی اجرا نمی‌رسد.
+
+  - level: medium
+    stem: |
+      در کنسول مرورگر (مثل اسلاید ۲۳) دستور `let a = 12` را وارد می‌کنیم. کنسول بلافاصله بعد از آن، به‌عنوان نتیجه‌ی این دستور چه چیزی نشان می‌دهد؟
+    check: value
+    expr: 'eval("let a = 12")'
+    options:
+      - '`12`'
+      - '`undefined`'
+      - '`null`'
+      - '`"a"`'
+    answer: 2
+    explain: |
+      یک دستور تعریف (declaration) مقداری تولید نمی‌کند و کنسول برای چنین دستوری `undefined` نشان می‌دهد. این `undefined` مقدار `a` **نیست**؛ مقدار `a` همان `12` است و اگر `a` را تایپ کنی، `12` می‌بینی. گزینه‌ی ۱ همان تصور غلطِ «کنسول مقدار متغیر را نشان می‌دهد» است و `null` و نام متغیر هم هیچ‌وقت نتیجه‌ی یک تعریف نیستند.
+
+  - level: medium
+    stem: |
+      در کنسول مرورگر ابتدا `let a = 12` و سپس `a = "Hello!"` را وارد می‌کنیم. کنسول بعد از خط دوم چه مقداری را به‌عنوان نتیجه نشان می‌دهد؟
+    check: value
+    setup: 'let a = 12;'
+    expr: 'a = "Hello!"'
+    options:
+      - '`"Hello!"`'
+      - '`undefined`'
+      - '`12`'
+      - '`true`'
+    answer: 1
+    explain: |
+      انتساب برخلاف تعریف، یک **عبارت** (expression) است و مقدارش همان مقداری است که منتسب شد؛ برای همین کنسول اسلاید ۲۳ جلوی `a = "Hello!"` مقدار `"Hello!"` را نشان داد. `undefined` نتیجه‌ی دستورهای تعریف مثل `let a = 12` است، `12` مقدار قبلی `a` است و انتساب هیچ‌وقت `true` (به معنای «موفق بود») برنمی‌گرداند.
+
+  - level: hard
+    stem: |
+      در اسلاید ۲۳، Firefox برای `b = 12` (که `b` قبلاً با `const` تعریف شده بود) پیام `invalid assignment to const 'b'` را نشان داد. اگر همین کار در Node.js انجام شود، کدام گزینه درست است؟
+    check: claims
+    setup: |
+      function attempt() {
+        const b = 13;
+        try {
+          b = 12;
+          return "no error, b = " + b;
+        } catch (e) {
+          return e.name + ": " + e.message;
+        }
+      }
+    options:
+      - text: 'خطایی رخ نمی‌دهد و مقدار `b` برابر `12` می‌شود.'
+        expr: 'attempt()'
+        equals: '"no error, b = 12"'
+      - text: 'خطا از نوع `SyntaxError` است، چون به `const` اصلاً نمی‌شود چیزی منتسب کرد.'
+        expr: 'attempt().split(":")[0]'
+        equals: '"SyntaxError"'
+      - text: 'نوع خطا همان `TypeError` است، ولی متن پیام فرق می‌کند: `Assignment to constant variable.`'
+        expr: 'attempt()'
+        equals: '"TypeError: Assignment to constant variable."'
+      - text: 'خطا از نوع `ReferenceError` است، چون متغیر `b` پیدا نمی‌شود.'
+        expr: 'attempt().split(":")[0]'
+        equals: '"ReferenceError"'
+    answer: 3
+    explain: |
+      انتساب دوباره به `const` در همه‌ی موتورها `TypeError` است و فقط متن پیام فرق می‌کند: SpiderMonkey در Firefox می‌گوید `invalid assignment to const 'b'` و V8 در Chrome و Node.js می‌گوید `Assignment to constant variable.`. گزینه‌ی ۱ غلط است چون Node.js هم جلوی این کار را می‌گیرد. `SyntaxError` برای `const` بدون مقدار اولیه است، نه انتساب دوباره، و `ReferenceError` برای متغیر تعریف‌نشده است، در حالی که `b` تعریف شده است.
+
+  - level: medium
+    stem: |
+      کدام گزینه درست است؟
+    options:
+      - '`const` اجازه نمی‌دهد محتوای آرایه‌ای که در آن ذخیره شده تغییر کند.'
+      - '`let` و `const` هر دو block-scoped هستند؛ یعنی فقط داخل همان `{ ... }` که در آن تعریف شده‌اند وجود دارند.'
+      - 'متغیر `let` فقط یک بار مقدار می‌گیرد و بعد از آن قفل می‌شود.'
+      - '`var` جدیدتر از `let` است و block-scoped است.'
+    answer: 2
+    explain: |
+      اسلاید ۲۴: «Both are block-scoped (only exist inside `{ ... }`)». گزینه‌ی ۱ غلط است چون `const` فقط انتساب دوباره را منع می‌کند و `push` یا تغییر خانه‌های آرایه مجاز است. گزینه‌ی ۳ توصیف `const` است، نه `let`. گزینه‌ی ۴ از دو جهت غلط است: `var` قدیمی‌تر است و function-scoped است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js چیست؟
+    check: output
+    code: |
+      {
+        var a = 1;
+        let b = 2;
+      }
+      console.log(a);
+      console.log(b);
+    options:
+      - out: ["1", "2"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "2"]
+      - out: ["1", "!! ReferenceError"]
+    answer: 4
+    explain: |
+      `var` بلوک `{ }` را نادیده می‌گیرد (function-scoped است)، پس `a` بیرون از بلوک هم وجود دارد و `1` چاپ می‌شود. اما `let` block-scoped است و `b` فقط داخل بلوک وجود دارد؛ خواندن آن بیرون از بلوک `ReferenceError` می‌دهد. چون خطا روی خط آخر رخ می‌دهد، خروجی خط قبل چاپ شده است (رد گزینه‌ی ۲). گزینه‌ی ۱ هر دو را مثل `var` فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let level = "outer";
+      {
+        let level = "inner";
+        console.log(level);
+      }
+      console.log(level);
+    options:
+      - out: ["inner", "inner"]
+      - out: ["inner", "outer"]
+      - out: ["outer", "outer"]
+      - out: ["!! SyntaxError"]
+    answer: 2
+    explain: |
+      `let level` داخل بلوک، تعریف دوباره نیست؛ یک متغیر **جدید** است که فقط در همان بلوک زندگی می‌کند و در آن‌جا متغیر بیرونی را می‌پوشاند. داخل بلوک `inner` و بیرون از آن متغیر اصلی یعنی `outer` چاپ می‌شود. `SyntaxError` فقط وقتی رخ می‌داد که هر دو `let` در **یک** محدوده بودند. گزینه‌ی ۱ فرض کرده متغیر داخلی، بیرونی را عوض کرده است.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      var x = 1;
+      var x = 2;
+      let y = 1;
+      y = 2;
+      let y = 3;
+      console.log(x, y);
+    options:
+      - line: 2
+      - line: 4
+      - line: 5
+      - line: 0
+    answer: 3
+    explain: |
+      `var` تعریف دوباره را بی‌صدا اجازه می‌دهد، پس خط ۲ مشکلی ندارد. خط ۴ انتساب دوباره به `let` است که مجاز است. خط ۵ متغیر `y` را در همان محدوده **دوباره تعریف** می‌کند و `SyntaxError: Identifier 'y' has already been declared` می‌دهد. چون این یک `SyntaxError` است، در واقع هیچ خطی از فایل اجرا نمی‌شود.
+
+  - level: hard
+    stem: |
+      کد زیر به‌صورت یک فایل با Node.js اجرا می‌شود. خروجی کدام است؟
+    check: output
+    code: |
+      console.log("start");
+      let total = 5;
+      total = 10;
+      let total = 20;
+      console.log(total);
+    options:
+      - out: ["start", "20"]
+      - out: ["start", "!! SyntaxError"]
+      - out: ["start", "10"]
+      - out: ["!! SyntaxError"]
+    answer: 4
+    explain: |
+      تعریف دوباره‌ی `let total` در همان محدوده یک `SyntaxError` است. خطاهای نحوی هنگام خواندن (parse) فایل و **قبل از اجرای اولین خط** کشف می‌شوند، پس حتی `start` هم چاپ نمی‌شود. گزینه‌ی ۲ فرض کرده خطا در زمان اجرا رخ می‌دهد (مثل `TypeError` انتساب به `const`). گزینه‌ی ۱ رفتار `var` را در نظر گرفته که تعریف دوباره را اجازه می‌دهد و گزینه‌ی ۳ فرض کرده تعریف دوباره بی‌صدا نادیده گرفته می‌شود.
+
+  - level: medium
+    stem: |
+      کدام تعریف متغیر **بدون خطا** اجرا می‌شود؟
+    check: option-throws
+    want: ok
+    options:
+      - code: 'let first-name = "Ali";'
+      - code: 'let 2ndPlace = "Sara";'
+      - code: 'let class = "A1";'
+      - code: 'let _total$ = 0;'
+    answer: 4
+    explain: |
+      نام متغیر می‌تواند حرف، رقم، `_` و `$` داشته باشد، پس `_total$` کاملاً مجاز است. در گزینه‌ی ۱ خط تیره عملگر منها تفسیر می‌شود، در گزینه‌ی ۲ نام با رقم شروع شده و در گزینه‌ی ۳ `class` یک کلمه‌ی رزروشده است؛ هر سه `SyntaxError` می‌دهند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let userName = "Ali";
+      let username = "Reza";
+      userName = "Sara";
+      console.log(username);
+    options:
+      - out: "Ali"
+      - out: "Reza"
+      - out: "Sara"
+      - out: "!! SyntaxError"
+    answer: 2
+    explain: |
+      JavaScript به بزرگی و کوچکی حروف حساس است (case-sensitive)؛ پس `userName` و `username` دو متغیر جدا هستند و تعریف دوباره‌ای رخ نداده است (رد گزینه‌ی ۴). خط ۳ فقط `userName` را عوض می‌کند و `username` همان `Reza` می‌ماند. گزینه‌ی ۳ دو نام را یکی فرض کرده است.
+
+  - level: easy
+    stem: |
+      طبق قرارداد رایج نام‌گذاری در JavaScript (camelCase)، کدام نام برای متغیری که «تعداد کل سفارش‌ها» را نگه می‌دارد مناسب‌تر است؟
+    options:
+      - '`total_orders`'
+      - '`TotalOrders`'
+      - '`totalOrders`'
+      - '`totalorders`'
+    answer: 3
+    explain: |
+      در camelCase کلمه‌ی اول با حرف کوچک و هر کلمه‌ی بعدی با حرف بزرگ شروع می‌شود: `totalOrders`. هر چهار نام از نظر زبان مجازند و خطا نمی‌دهند، ولی `total_orders` سبک snake_case (رایج در Python) است، `TotalOrders` سبک PascalCase است که برای نام کلاس‌ها به کار می‌رود و `totalorders` مرز کلمه‌ها را نشان نمی‌دهد و خواندنش سخت است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let data = 42;
+      console.log(typeof data);
+      data = "forty-two";
+      console.log(typeof data);
+    options:
+      - out: ["number", "string"]
+      - out: ["number", "number"]
+      - out: ["number", "!! TypeError"]
+      - out: ["string", "string"]
+    answer: 1
+    explain: |
+      در JavaScript نوع به **مقدار** تعلق دارد، نه به متغیر (dynamic typing). وقتی `data` عدد است `typeof` می‌گوید `number` و بعد از انتساب رشته می‌گوید `string`. گزینه‌ی ۲ فرض کرده نوع متغیر هنگام تعریف قفل می‌شود و گزینه‌ی ۳ رفتار زبان‌هایی مثل Java را در نظر گرفته که ریختن رشته در متغیر عددی را منع می‌کنند.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام کلمه قرار بگیرد تا کد زیر بدون خطا اجرا شود و `3` را چاپ کند؟
+    check: option-output
+    expect: "3"
+    code: |
+      ___ count = 1;
+      count = count + 2;
+      console.log(count);
+    options:
+      - text: '`const`'
+        code: 'const count = 1; count = count + 2; console.log(count);'
+      - text: '`int`'
+        code: 'int count = 1; count = count + 2; console.log(count);'
+      - text: '`let`'
+        code: 'let count = 1; count = count + 2; console.log(count);'
+      - text: '`final`'
+        code: 'final count = 1; count = count + 2; console.log(count);'
+    answer: 3
+    explain: |
+      خط دوم به `count` مقدار تازه می‌دهد، پس متغیر باید قابل انتساب دوباره باشد: `let`. با `const` همان خط دوم `TypeError` می‌دهد. `int` و `final` کلمه‌های Java هستند و در JavaScript برای تعریف متغیر وجود ندارند؛ هر دو `SyntaxError` می‌دهند.
