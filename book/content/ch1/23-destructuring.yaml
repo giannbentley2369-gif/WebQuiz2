@@ -215,6 +215,13 @@ lesson: |
   console.log(createUser());                 // Guest (user)
   ```
 
+  همین کار در callbackهای متدهای آرایه هم خیلی رایج است؛ پارامتر هر عضو را همان‌جا باز می‌کنیم:
+
+  ```js
+  const users = [{ name: "Ali", age: 20 }, { name: "Sara", age: 17 }];
+  console.log(users.map(({ name }) => name)); // [ 'Ali', 'Sara' ]
+  ```
+
   ### destructuring مقدار `null` یا `undefined`
 
   `null` و `undefined` هیچ خاصیتی ندارند، پس باز کردن آن‌ها **همیشه** خطای `TypeError` می‌دهد:
@@ -242,7 +249,7 @@ lesson: |
   console.log([..."hi"]);      // [ 'h', 'i' ] (a string is iterable)
   ```
 
-  **۲. داخل شیء (کپی، افزودن و بازنویسی):**
+  **۲. داخل شیء (کپی، افزودن و بازنویسی؛ مروری بر درس «اشیاء (Objects) و Object literal»):**
 
   ```js
   const base = { a: 1, b: 2 };
@@ -259,11 +266,17 @@ lesson: |
   const nums = [5, 1, 9];
   console.log(Math.max(...nums)); // 9   (same as Math.max(5, 1, 9))
   console.log(Math.max(nums));    // NaN (one argument: the whole array)
+
+  const list = [1, 2];
+  list.push(...[3, 4]);           // same as list.push(3, 4)
+  console.log(list);              // [ 1, 2, 3, 4 ]
   ```
+
+  بدون `...`، دستور `list.push([3, 4])` کل آرایه را به‌صورت **یک** عضو اضافه می‌کند و حاصل `[ 1, 2, [ 3, 4 ] ]` می‌شود.
 
   #### spread در اسلاید ۴۸
 
-  در مثال اسلاید ۴۸ (درس متدهای آرایه) این بخش را دیدیم:
+  در مثال اسلاید ۴۸ (درس «متدهای forEach، map، filter، find، findIndex و reduce») این بخش را دیدیم:
 
   ```js
   const students = [{ name: "Alice", score: 85 }, { name: "Bob", score: 72 }];
@@ -312,7 +325,7 @@ lesson: |
   - `const { a = 5 } = { a: null };` مقدار `null` می‌دهد، نه `5`.
   - باز کردن `null` یا `undefined` خطای `TypeError` می‌دهد؛ مثلاً تابعی با پارامتر `{ title }` که بدون آرگومان صدا زده شود. پیش‌فرض `= {}` برای کل پارامتر این مشکل را حل می‌کند.
   - `[...rest, last]` خطای `SyntaxError` است و هیچ خطی از فایل اجرا نمی‌شود.
-  - `Math.max(nums)` برابر `NaN` است؛ باید بنویسی `Math.max(...nums)`.
+  - `Math.max(nums)` برابر `NaN` است؛ باید بنویسی `Math.max(...nums)`. همین‌طور `arr.push(other)` کل آرایه‌ی `other` را **یک** عضو حساب می‌کند، ولی `arr.push(...other)` اعضایش را تک‌تک اضافه می‌کند.
   - کپی با spread سطحی است: آرایه‌ها و اشیای درونی بین کپی و اصلی **مشترک** می‌مانند.
   - destructuring چیزی را «نابود» نمی‌کند؛ آرایه یا شیء اصلی دست‌نخورده می‌ماند.
   :::
