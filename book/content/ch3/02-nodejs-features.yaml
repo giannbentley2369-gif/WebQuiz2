@@ -1,0 +1,556 @@
+id: ch3-node-features
+title: "ویژگی‌های Node.js"
+slides: "NodeJS & TS، اسلایدهای ۶ و ۷"
+lesson: |
+  در درس قبل دیدیم Node.js چرا به وجود آمد. حالا وقت آن است که با آن کار کنیم و ویژگی‌هایش را یکی‌یکی بشناسیم. اسلاید ۶ فقط یک **تصویر** است (یک نمودار با هشت برچسب دور لوگوی Node.js) و اسلاید ۷ پنج ویژگی دیگر و یک میم دارد؛ هر دو را کامل اینجا آورده‌ایم.
+
+  ### اجرای Node.js در عمل
+  بعد از نصب Node.js، در ترمینال سه کار اصلی می‌توانی انجام دهی:
+
+  ```bash
+  node -v        # print the installed version, e.g. v24.22.2
+  node app.js    # run the file app.js
+  node           # open the REPL (interactive mode)
+  ```
+
+  #### اجرای یک فایل
+  هر فایل `.js` را با `node <file>` اجرا می‌کنی؛ خروجی `console.log` در همان **ترمینال** چاپ می‌شود، نه در کنسول مرورگر. یک برنامه‌ی کنسولی کوچک که اسم کاربر را از **آرگومان‌های خط فرمان** (command-line arguments: کلمه‌هایی که بعد از نام فایل تایپ می‌کنی) می‌گیرد:
+
+  ```js title=greet.js
+  const name = process.argv[2] || "stranger";
+  console.log("Hello, " + name + "!");
+  ```
+
+  ```bash
+  node greet.js Ali   # Hello, Ali!
+  node greet.js       # Hello, stranger!
+  ```
+
+  `process.argv` آرایه‌ای است که خانه‌ی `0` آن مسیر خودِ برنامه‌ی `node`، خانه‌ی `1` مسیر فایل و از خانه‌ی `2` به بعد آرگومان‌های ما هستند.
+
+  #### REPL
+  اگر فقط `node` را بزنی، وارد **REPL** (Read-Eval-Print Loop: حلقه‌ی «بخوان، ارزیابی کن، چاپ کن») می‌شوی؛ هر عبارتی تایپ کنی، فوراً اجرا و نتیجه‌اش نشان داده می‌شود. برای امتحان سریع یک تکه کد عالی است:
+
+  ```text
+  > 1 + 2
+  3
+  > "a" + 1
+  'a1'
+  > const x = 5
+  undefined
+  > x * 2
+  10
+  > .exit
+  ```
+
+  REPL رشته‌ها را با کوتیشن نشان می‌دهد (`'a1'`) و برای دستوری که مقدار برنمی‌گرداند (مثل تعریف متغیر) `undefined` می‌نویسد. با `.exit` یا دو بار `Ctrl+C` بیرون می‌آیی.
+
+  ### هشت ویژگی Node.js (اسلاید ۶)
+  این اسلاید یک نمودار تصویری است: لوگوی Node.js در وسط و هشت برچسب رنگی دورش، چهار تا در هر طرف:
+
+  | ستون چپ نمودار | ستون راست نمودار |
+  |---|---|
+  | Fast Data Streaming | Single-Threaded |
+  | Highly Scalable | Event-Driven |
+  | JavaScript | No Buffering |
+  | Cross-Platform Compatibility | Asynchronous |
+
+  اسلاید هیچ توضیحی نمی‌دهد؛ معنی هر کدام را با هم ببینیم:
+
+  | ویژگی | معنی ساده |
+  |---|---|
+  | **Asynchronous** (ناهمگام) | توابع Node.js منتظر تمام شدن کارهای کُند (فایل، شبکه) نمی‌مانند؛ کار را شروع می‌کنند و نتیجه بعداً با callback یا Promise می‌رسد. |
+  | **Event-Driven** (رویدادمحور) | برنامه حول رویدادها می‌چرخد: «درخواست رسید»، «داده آمد»، «کار تمام شد». برای هر رویداد یک تابع شنونده (listener) ثبت می‌کنیم. |
+  | **Single-Threaded** (تک‌نخی) | کد JavaScript ما روی **یک** thread اجرا می‌شود و event loop کارها را نوبت‌بندی می‌کند. |
+  | **Highly Scalable** (مقیاس‌پذیری بالا) | چون منتظر I/O نمی‌ماند، با منابع کم به تعداد خیلی زیادی اتصال هم‌زمان جواب می‌دهد. |
+  | **No Buffering** (بدون بافر کردن) | داده را **تکه‌تکه** (chunk) خروجی می‌دهد، نه اینکه اول همه‌اش را در حافظه جمع کند (**buffer**: حافظه‌ی موقتی که داده در آن جمع می‌شود). |
+  | **Fast Data Streaming** (جریان سریع داده) | موتور سریع V8 به‌اضافه‌ی پردازش داده به‌صورت **stream** (جریان: داده‌ای که ذره‌ذره می‌رسد و ذره‌ذره پردازش می‌شود). |
+  | **JavaScript** | همان زبان مرورگر؛ برنامه‌نویس frontend بدون یاد گرفتن زبان جدید، backend هم می‌نویسد. |
+  | **Cross-Platform Compatibility** (سازگاری چندسکویی) | همان کد روی Windows، Linux و macOS اجرا می‌شود. `process.platform` نام سیستم‌عامل را می‌دهد (`"win32"`، `"linux"`، `"darwin"`). |
+
+  #### Asynchronous و Single-Threaded با هم چطور جور درمی‌آیند؟
+  شاید بپرسی «اگر فقط یک thread هست، چطور کارها هم‌زمان پیش می‌روند؟» جواب: کد **JavaScript** ما روی یک thread اجرا می‌شود، ولی کارهای I/O را سیستم‌عامل و کتابخانه‌ی داخلی Node.js (به نام libuv) **در پس‌زمینه** انجام می‌دهند. thread اصلی فقط کار را سفارش می‌دهد و وقتی نتیجه آماده شد، callback را اجرا می‌کند. برای همین Node.js با یک thread **Highly Scalable** است؛ ولی یادت باشد که یک محاسبه‌ی سنگین JavaScript همان thread را مسدود می‌کند.
+
+  #### Event-Driven در عمل: EventEmitter
+  قلب رویدادمحور بودن Node.js کلاسی به نام `EventEmitter` است. با `on` برای یک رویداد شنونده ثبت می‌کنی و با `emit` آن رویداد را «اعلام» می‌کنی:
+
+  ```js
+  const EventEmitter = require("events");
+  const shop = new EventEmitter();
+
+  shop.on("order", (item) => console.log(`Preparing ${item}`)); // register a listener
+  console.log("Waiting...");
+  shop.emit("order", "pizza"); // fire the event
+  console.log("Done");
+  // Output:
+  // Waiting...
+  // Preparing pizza
+  // Done
+  ```
+
+  دقت کن `Preparing pizza` **قبل از** `Done` چاپ شد: `emit` شنونده‌ها را **همان لحظه و همگام** صدا می‌زند و تا کارشان تمام نشود، خط بعد اجرا نمی‌شود. اگر برای رویدادی هیچ شنونده‌ای ثبت نشده باشد، `emit` هیچ کاری نمی‌کند (فقط `false` برمی‌گرداند) و خطا هم نمی‌دهد.
+
+  #### No Buffering و Fast Data Streaming در عمل: stream
+  فرض کن می‌خواهی یک فیلم ۲ گیگابایتی را برای کاربر بفرستی. راه بد: کل فایل را در حافظه بخوانی و بعد بفرستی. راه Node.js: فایل را **تکه‌تکه** بخوانی و هر تکه را فوراً بفرستی؛ درست مثل تماشای آنلاین فیلم که لازم نیست صبر کنی کل فیلم دانلود شود. در مثال زیر، `highWaterMark: 4` اندازه‌ی هر تکه را ۴ بایت (اینجا ۴ حرف) گذاشته است:
+
+  ```js
+  const fs = require("fs");
+  fs.writeFileSync("data.txt", "abcdefghij");
+
+  const stream = fs.createReadStream("data.txt", { encoding: "utf8", highWaterMark: 4 });
+  stream.on("data", (chunk) => console.log("chunk:", chunk)); // fired for every chunk
+  stream.on("end", () => console.log("done"));                // fired once at the end
+  console.log("reading...");
+  // Output:
+  // reading...
+  // chunk: abcd
+  // chunk: efgh
+  // chunk: ij
+  // done
+  ```
+
+  اول `reading...` آمد، چون خواندن stream ناهمگام است. بعد رویداد `data` سه بار (برای هر تکه) و در آخر رویداد `end` یک بار رخ داد. یعنی stream هم رویدادمحور است.
+
+  ### ادامه‌ی ویژگی‌ها (اسلاید ۷)
+
+  **۱. Built on async/await for cleaner, modern concurrency.** API‌های جدید Node.js به جای callback، **Promise** برمی‌گردانند، پس می‌شود با `async/await` کد ناهمگام را مثل کد معمولی و خط‌به‌خط نوشت. (**concurrency** یعنی هم‌روندی: پیش بردن چند کار در یک بازه‌ی زمانی.)
+
+  ```js
+  const fs = require("fs/promises"); // the Promise-based version of fs
+
+  async function main() {
+    await fs.writeFile("note.txt", "Hello file");
+    const text = await fs.readFile("note.txt", "utf8");
+    console.log(text);
+  }
+
+  main();
+  console.log("main started");
+  // Output:
+  // main started
+  // Hello file
+  ```
+
+  `main()` تا اولین `await` جلو می‌رود و بعد کنترل را پس می‌دهد؛ برای همین `main started` زودتر چاپ می‌شود.
+
+  **۲. Uses ES modules and import/export syntax natively.** Node.js سیستم ماژول استاندارد JavaScript یعنی **ES Modules** (ESM) را مستقیم و بدون ابزار اضافه پشتیبانی می‌کند (پایین‌تر مفصل می‌بینیم).
+
+  **۳. Embraces TypeScript, ESM, and modern tooling by default.** Node.js با TypeScript، ESM و ابزارهای مدرن به‌خوبی کنار می‌آید. مثلاً Node.js نسخه‌ی ۲۴ می‌تواند یک فایل `.ts` را مستقیم اجرا کند: فقط **نوع‌ها را پاک می‌کند** (type stripping) و اجرا می‌کند، ولی آن‌ها را **بررسی نمی‌کند**. پس برای پیدا کردن خطاهای نوع هنوز به کامپایلر TypeScript (`tsc`) نیاز داریم.
+
+  ```bash
+  node app.ts   # Node.js 24 removes the types and runs the code (no type checking!)
+  ```
+
+  **۴. Supports powerful frameworks like Express, NestJS, and Fastify.** **framework** (چارچوب: اسکلت آماده‌ای که ساختار برنامه را تعیین می‌کند و ما فقط بخش‌های خودمان را در آن می‌نویسیم) کار ساختن سرور را خیلی ساده می‌کند:
+  - **Express**: کمینه‌گرا (minimalist) و پرطرفدارترین فریم‌ورک وب Node.js (در درس «پکیج‌های محبوب» دوباره می‌بینیمش).
+  - **NestJS**: فریم‌ورکی ساختاریافته برای پروژه‌های بزرگ که با TypeScript نوشته می‌شود.
+  - **Fastify**: فریم‌ورکی با تمرکز بر سرعت بالا و سربار کم.
+
+  **۵. Integrates seamlessly with containers, cloud, and edge runtimes.** برنامه‌ی Node.js را راحت می‌شود داخل **container** (بسته‌ای که برنامه را با همه‌ی نیازهایش یکجا نگه می‌دارد تا همه‌جا یکسان اجرا شود؛ مثل Docker) گذاشت، روی سرویس‌های **cloud** (ابری) اجرا کرد یا در **edge runtime**ها (محیط‌هایی که کد را روی سرورهای نزدیک به محل کاربر اجرا می‌کنند) استفاده کرد.
+
+  #### میم اسلاید ۷
+  کنار این اسلاید یک میم با عنوان «**JavaScript programming**» هست: مردی که روی خودش نوشته «**app 300kb**» یک کوله‌پشتی نظامی غول‌پیکر به دوش دارد که رویش نوشته «**Node_modules, 12GB**». شوخی‌اش این است که کد خود برنامه کوچک است، ولی پوشه‌ی `node_modules` (جایی که npm همه‌ی پکیج‌های نصب‌شده را می‌گذارد) به‌خاطر **وابستگی‌ها** (dependency: پکیج‌هایی که برنامه به آن‌ها نیاز دارد) و وابستگی‌های آن وابستگی‌ها، **خیلی** بزرگ می‌شود. اسم این مشکل dependency bloat (پف کردن وابستگی‌ها) است؛ در درس بعد، «dependency overload» در اسلاید ۸ و «size» در اسلاید ۹ به همین اشاره دارند.
+
+  ### دو سیستم ماژول در Node.js: CommonJS و ES Modules
+  Node.js دو روش برای تقسیم کد به فایل‌های جدا (ماژول) دارد.
+
+  #### CommonJS (روش قدیمی و پیش‌فرض Node.js)
+  با `module.exports` چیزی را **صادر** (export) می‌کنی و با `require` **وارد** (import) می‌کنی:
+
+  ```js title=math.js
+  console.log("math.js loaded");
+  function add(a, b) {
+    return a + b;
+  }
+  module.exports = { add, PI: 3.14 };
+  ```
+
+  ```js title=app.js
+  const math = require("./math");       // the ".js" extension is optional here
+  const { add } = require("./math.js"); // destructuring works too
+  console.log(math.add(2, 3), add(1, 1), math.PI);
+  // Output:
+  // math.js loaded
+  // 5 2 3.14
+  ```
+
+  `math.js loaded` فقط **یک بار** چاپ شد، با اینکه دو بار `require` کردیم: Node.js هر ماژول را فقط بار اول اجرا می‌کند و نتیجه را **cache** (ذخیره) می‌کند؛ `require`های بعدی همان شیء ذخیره‌شده را برمی‌گردانند.
+
+  #### ES Modules (روش استاندارد و جدید)
+  با `export` و `import` کار می‌کنی؛ همان سیستمی که مرورگرها و TypeScript هم استفاده می‌کنند:
+
+  ```js title=math.mjs
+  export function add(a, b) {
+    return a + b;
+  }
+  export const PI = 3.14;
+  export default function greet(name) {
+    return "Hello " + name;
+  }
+  ```
+
+  ```js title=app.mjs
+  import greet, { add, PI } from "./math.mjs"; // the extension is required in ESM
+  console.log(add(2, 3), PI, greet("Ali"));    // 5 3.14 Hello Ali
+  ```
+
+  #### Node.js از کجا می‌فهمد فایل CommonJS است یا ESM؟
+
+  | فایل | Node.js آن را چطور اجرا می‌کند |
+  |---|---|
+  | `name.mjs` | همیشه ES Module |
+  | `name.cjs` | همیشه CommonJS |
+  | `name.js` و در `package.json` نوشته شده `"type": "module"` | ES Module |
+  | `name.js` و در `package.json` نوشته شده `"type": "commonjs"` | CommonJS (دستور `npm init` در نسخه‌های جدید همین را می‌نویسد) |
+  | `name.js` بدون فیلد `type` | CommonJS؛ ولی Node.js جدید اگر در فایل `import`/`export` ببیند، آن را ESM اجرا می‌کند (و اگر `package.json` وجود داشته باشد، یک هشدار هم می‌دهد) |
+
+  | | CommonJS | ES Modules |
+  |---|---|---|
+  | وارد کردن | `require("./math")` | `import { add } from "./math.mjs"` |
+  | صادر کردن | `module.exports = …` یا `exports.x = …` | `export` و `export default` |
+  | پسوند در مسیرهای نسبی | اختیاری | اجباری |
+  | `require` و `__dirname` و `__filename` | تعریف شده‌اند | تعریف **نشده‌اند** |
+  | `this` در بالاترین سطح فایل | `{}` (همان `module.exports`) | `undefined` |
+  | `await` در بالاترین سطح فایل (top-level await) | مجاز نیست | مجاز است |
+  | استاندارد بودن | مخصوص Node.js | استاندارد رسمی JavaScript (در مرورگر هم کار می‌کند) |
+
+  ::: trap
+  - در CommonJS، `exports` فقط یک **میان‌بُر** به `module.exports` است. `exports.hello = "hi"` درست کار می‌کند، ولی `exports = { hello: "hi" }` فقط متغیر محلی `exports` را عوض می‌کند و چیزی صادر **نمی‌شود** (`require` همان شیء خالی `{}` را برمی‌گرداند). برای صادر کردن یک شیء کامل از `module.exports = {...}` استفاده کن.
+  - اگر در `package.json` نوشته باشد `"type": "module"`، استفاده از `require` در یک فایل `.js` خطای `ReferenceError: require is not defined in ES module scope` می‌دهد.
+  - برعکس، اگر `"type": "commonjs"` باشد (پیش‌فرض `npm init` جدید)، نوشتن `import` در فایل `.js` خطای `SyntaxError: Cannot use import statement outside a module` می‌دهد.
+  :::
+
+  ### Node.js در برابر مرورگر
+
+  | امکان | مرورگر | Node.js |
+  |---|---|---|
+  | `window`، `document`، `alert`، DOM | دارد | **ندارد** |
+  | `process`، `require`، `fs`، `http` | ندارد | دارد |
+  | `globalThis` | دارد (همان `window`) | دارد (همان `global`) |
+  | `console.log` | در کنسول DevTools | در ترمینال |
+  | `setTimeout`، `Promise`، `JSON`، `Math`، `fetch` | دارد | دارد |
+  | `import`/`export` | دارد (`<script type="module">`) | دارد (ESM) |
+
+  ```js
+  // A CommonJS file running in Node.js
+  console.log(typeof window);         // "undefined"
+  console.log(globalThis === global); // true
+  console.log(typeof setTimeout);     // "function"
+  console.log(this);                  // {}
+  ```
+
+  ::: tip
+  - **JavaScript** همان زبان است؛ چیزی که بین مرورگر و Node.js فرق می‌کند **ابزارهای محیط** است. قبل از حل هر تست، اول ببین کد در کدام محیط اجرا می‌شود.
+  - `typeof` روی چیزی که وجود ندارد خطا نمی‌دهد و `"undefined"` برمی‌گرداند؛ این ترفند معروف برای فهمیدن محیط است: `typeof window === "undefined"` یعنی احتمالاً داخل Node.js هستیم.
+  :::
+
+  ::: trap
+  `emit` در `EventEmitter` **همگام** است: شنونده‌ها همان لحظه اجرا می‌شوند، نه «بعداً» مثل `setTimeout`. پس در تست‌های ترتیب خروجی، خروجی شنونده را درست در جای خط `emit` بنویس.
+  :::
+
+  ::: summary
+  - اجرای فایل با `node app.js`، REPL با `node` خالی، آرگومان‌ها در `process.argv`.
+  - هشت ویژگی اسلاید ۶: Asynchronous، Event-Driven، Single-Threaded، Highly Scalable، No Buffering، Fast Data Streaming، JavaScript، Cross-Platform Compatibility.
+  - اسلاید ۷: async/await، ES Modules، TypeScript و ابزارهای مدرن، فریم‌ورک‌های Express و NestJS و Fastify، container و cloud و edge.
+  - میم اسلاید ۷: برنامه‌ی ۳۰۰ کیلوبایتی و `node_modules` دوازده‌گیگابایتی، یعنی پف کردن وابستگی‌ها.
+  - CommonJS (`require`، `module.exports`) در برابر ESM (`import`، `export`، `.mjs` یا `"type": "module"`).
+  :::
+questions:
+  - level: easy
+    stem: در نمودار تصویری اسلاید ۶ («Node.js Features») هشت ویژگی دور لوگوی Node.js نوشته شده است. کدام گزینه جزو این هشت ویژگی **نیست**؟
+    options:
+      - 'No Buffering'
+      - 'Multi-Threaded'
+      - 'Cross-Platform Compatibility'
+      - 'Highly Scalable'
+    answer: 2
+    explain: |
+      هشت برچسب نمودار این‌ها هستند: Fast Data Streaming، Highly Scalable، JavaScript، Cross-Platform Compatibility، Single-Threaded، Event-Driven، No Buffering و Asynchronous. Node.js **Single-Threaded** (تک‌نخی) است، نه Multi-Threaded؛ کد JavaScript روی یک thread اجرا می‌شود. گزینه‌های ۱، ۳ و ۴ عیناً روی نمودار هستند.
+  - level: easy
+    stem: منظور از ویژگی **No Buffering** در Node.js چیست؟
+    options:
+      - 'Node.js اصلاً از حافظه‌ی RAM استفاده نمی‌کند.'
+      - 'Node.js نمی‌تواند فایل‌های بزرگ را بخواند.'
+      - 'داده‌ای که خوانده می‌شود هرگز در هیچ متغیری نگه داشته نمی‌شود.'
+      - 'برنامه‌ها داده را تکه‌تکه (chunk) و به‌محض آماده شدن خروجی می‌دهند، نه اینکه اول همه‌ی داده را در حافظه جمع کنند.'
+    answer: 4
+    explain: |
+      No Buffering یعنی Node.js به‌جای جمع کردن کل داده در حافظه (buffer کردن)، آن را به‌صورت stream و تکه‌تکه خروجی می‌دهد. این به معنای استفاده نکردن از حافظه نیست (رد گزینه‌ی ۱) و نگه داشتن هر تکه در یک متغیر هم کاملاً ممکن است (رد گزینه‌ی ۳). اتفاقاً همین روش باعث می‌شود Node.js فایل‌های خیلی بزرگ را راحت پردازش کند (رد گزینه‌ی ۲).
+  - level: medium
+    stem: |
+      در کد زیر `highWaterMark: 4` یعنی اندازه‌ی هر تکه (chunk) حداکثر ۴ بایت است (اینجا ۴ حرف). خروجی کد در Node.js کدام است؟
+    check: output
+    code: |
+      const fs = require("fs");
+      fs.writeFileSync("data.txt", "abcdefghij");
+
+      const stream = fs.createReadStream("data.txt", { encoding: "utf8", highWaterMark: 4 });
+      stream.on("data", (chunk) => console.log("chunk:", chunk));
+      stream.on("end", () => console.log("done"));
+      console.log("reading...");
+    options:
+      - out: ["reading...", "chunk: abcd", "chunk: efgh", "chunk: ij", "done"]
+      - out: ["reading...", "chunk: abcdefghij", "done"]
+      - out: ["chunk: abcd", "chunk: efgh", "chunk: ij", "done", "reading..."]
+      - out: ["chunk: abcdefghij", "reading...", "done"]
+    answer: 1
+    explain: |
+      خواندن stream ناهمگام است، پس اول کد همگام اجرا می‌شود و `reading...` می‌آید (رد گزینه‌های ۳ و ۴). بعد فایل ۱۰ حرفی در تکه‌های حداکثر ۴ حرفی خوانده می‌شود: `abcd`، `efgh` و `ij`، و برای هر تکه یک رویداد `data` رخ می‌دهد. در پایان رویداد `end` و `done` می‌آید. گزینه‌ی ۲ فرض کرده کل فایل یکجا (buffer شده) خوانده می‌شود، که برخلاف ایده‌ی stream است.
+  - level: hard
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const EventEmitter = require("events");
+      const shop = new EventEmitter();
+
+      shop.on("order", (item) => console.log(`Preparing ${item}`));
+      console.log("Waiting...");
+      shop.emit("order", "pizza");
+      shop.emit("cancel", "pizza");
+      console.log("Done");
+    options:
+      - out: ["Waiting...", "Done", "Preparing pizza"]
+      - out: ["Preparing pizza", "Waiting...", "Done"]
+      - out: ["Waiting...", "Preparing pizza", "Done"]
+      - out: ["Waiting...", "Preparing pizza", "!! Error"]
+    answer: 3
+    explain: |
+      `on` فقط شنونده را ثبت می‌کند و چیزی چاپ نمی‌کند، پس اول `Waiting...` می‌آید (رد گزینه‌ی ۲). `emit` شنونده‌ها را **همگام** و همان لحظه اجرا می‌کند، پس `Preparing pizza` قبل از `Done` چاپ می‌شود (رد گزینه‌ی ۱ که `emit` را مثل `setTimeout` فرض کرده). برای رویداد `cancel` هیچ شنونده‌ای ثبت نشده؛ در این حالت `emit` فقط `false` برمی‌گرداند و خطایی رخ نمی‌دهد (رد گزینه‌ی ۴).
+  - level: easy
+    stem: ویژگی **Cross-Platform Compatibility** در نمودار اسلاید ۶ یعنی چه؟
+    options:
+      - 'همان کد Node.js را می‌توان روی سیستم‌عامل‌های مختلف مثل Windows، Linux و macOS اجرا کرد.'
+      - 'هر برنامه‌ی Node.js هم‌زمان در مرورگر کاربر و روی سرور اجرا می‌شود.'
+      - 'برنامه‌ی Node.js را باید برای هر سیستم‌عامل از نو نوشت.'
+      - 'Node.js کد زبان‌های دیگر مثل Python و Java را هم اجرا می‌کند.'
+    answer: 1
+    explain: |
+      Cross-Platform یعنی «چندسکویی»: Node.js برای Windows، Linux و macOS وجود دارد و همان کد JavaScript روی همه‌شان اجرا می‌شود (`process.platform` نام سیستم‌عامل فعلی را می‌دهد). گزینه‌ی ۲ «سکو» را با مرورگر و سرور اشتباه گرفته؛ گزینه‌ی ۳ دقیقاً برعکس این ویژگی است؛ و Node.js فقط JavaScript اجرا می‌کند، نه زبان‌های دیگر (رد گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const fs = require("fs/promises");
+
+      async function main() {
+        await fs.writeFile("note.txt", "Hello file");
+        const text = await fs.readFile("note.txt", "utf8");
+        console.log(text);
+      }
+
+      main();
+      console.log("main started");
+    options:
+      - out: ["Hello file", "main started"]
+      - out: ["main started"]
+      - out: ["Hello file"]
+      - out: ["main started", "Hello file"]
+    answer: 4
+    explain: |
+      `fs/promises` نسخه‌ی Promise‌محور `fs` است. `main()` تا اولین `await` جلو می‌رود؛ چون نوشتن فایل کاری ناهمگام است، کنترل به بیرون برمی‌گردد و `main started` چاپ می‌شود. بعد از کامل شدن نوشتن و خواندن، `Hello file` چاپ می‌شود. گزینه‌ی ۱ فرض کرده `await` کل برنامه را متوقف می‌کند، در حالی که فقط ادامه‌ی همان تابع `async` منتظر می‌ماند. گزینه‌های ۲ و ۳ هم یکی از دو خروجی را جا انداخته‌اند؛ هر دو خط چاپ می‌شوند.
+  - level: easy
+    stem: فایلی به نام `app.js` داریم. با کدام دستور در ترمینال آن را با Node.js اجرا می‌کنیم؟
+    options:
+      - '`npm app.js`'
+      - '`run app.js`'
+      - '`node app.js`'
+      - '`js app.js`'
+    answer: 3
+    explain: |
+      برنامه‌ی اجرایی Node.js در ترمینال `node` نام دارد و نام فایل را به آن می‌دهیم: `node app.js`. دستور `npm` مدیر بسته است و `npm app.js` خطای «Unknown command» می‌دهد. `run` و `js` هم دستورهای Node.js نیستند.
+  - level: medium
+    stem: اگر در ترمینال فقط دستور `node` را (بدون نام فایل) بزنیم چه اتفاقی می‌افتد؟
+    options:
+      - 'نسخه‌ی نصب‌شده‌ی Node.js چاپ می‌شود و برنامه تمام می‌شود.'
+      - 'محیط تعاملی REPL باز می‌شود که هر عبارت تایپ‌شده را می‌خواند، ارزیابی می‌کند و نتیجه را چاپ می‌کند.'
+      - 'یک فایل `package.json` جدید در پوشه‌ی فعلی ساخته می‌شود.'
+      - 'خطا می‌دهد، چون Node.js همیشه به نام یک فایل نیاز دارد.'
+    answer: 2
+    explain: |
+      `node` بدون آرگومان، **REPL** (Read-Eval-Print Loop) را باز می‌کند؛ مثلاً اگر `1 + 2` بنویسی، `3` نشان می‌دهد و با `.exit` بیرون می‌آیی. چاپ نسخه کار `node -v` است (گزینه‌ی ۱)، ساختن `package.json` کار `npm init` است (گزینه‌ی ۳) و نیاز به نام فایل فقط برای اجرای یک فایل است (گزینه‌ی ۴).
+  - level: hard
+    stem: با اجرای `node app.js`، خروجی کدام است؟
+    check: output
+    files:
+      math.js: |
+        console.log("math.js loaded");
+        function add(a, b) {
+          return a + b;
+        }
+        module.exports = { add, PI: 3.14 };
+      app.js: |
+        const math = require("./math");
+        const { add } = require("./math.js");
+        console.log(math.add(2, 3), add(1, 1), math.PI);
+    entry: app.js
+    options:
+      - out: ["math.js loaded", "math.js loaded", "5 2 3.14"]
+      - out: ["5 2 3.14"]
+      - out: ["math.js loaded", "5 2 3.14"]
+      - out: ["!! Error"]
+    answer: 3
+    explain: |
+      در CommonJS نوشتن پسوند `.js` در `require` اختیاری است، پس `./math` و `./math.js` هر دو به همان فایل می‌رسند و خطایی رخ نمی‌دهد (رد گزینه‌ی ۴). Node.js هر ماژول را فقط **بار اول** اجرا و نتیجه را cache می‌کند؛ پس `math.js loaded` فقط یک بار چاپ می‌شود (رد گزینه‌ی ۱). کد بالای فایل `math.js` هنگام اولین `require` واقعاً اجرا می‌شود، پس گزینه‌ی ۲ هم غلط است.
+  - level: hard
+    stem: با اجرای `node app.js`، خروجی کدام است؟
+    check: output
+    files:
+      bad.js: |
+        exports = { hello: "hi" };
+      good.js: |
+        exports.hello = "hi";
+      app.js: |
+        const bad = require("./bad");
+        const good = require("./good");
+        console.log(bad);
+        console.log(good);
+    entry: app.js
+    options:
+      - out: ["{}", "{ hello: 'hi' }"]
+      - out: ["{ hello: 'hi' }", "{ hello: 'hi' }"]
+      - out: ["{ hello: 'hi' }", "{}"]
+      - out: ["undefined", "{ hello: 'hi' }"]
+    answer: 1
+    explain: |
+      چیزی که `require` برمی‌گرداند همیشه `module.exports` است. `exports` در ابتدا فقط یک ارجاع (میان‌بُر) به همان شیء است. در `good.js` یک ویژگی به همان شیء اضافه شده، پس `{ hello: 'hi' }` صادر می‌شود. در `bad.js` متغیر محلی `exports` به یک شیء **جدید** اشاره داده شده و `module.exports` همان شیء خالی اولیه مانده است، پس `{}` برمی‌گردد. خروجی `undefined` (گزینه‌ی ۴) هم غلط است، چون `module.exports` از اول یک شیء خالی است.
+  - level: medium
+    stem: با اجرای `node app.js` در پوشه‌ای که این دو فایل در آن هستند، چه اتفاقی می‌افتد؟
+    check: output
+    files:
+      package.json: |
+        {
+          "name": "demo",
+          "type": "module"
+        }
+      app.js: |
+        const fs = require("fs");
+        console.log("file system ready");
+    entry: app.js
+    options:
+      - out: ["file system ready"]
+      - out: ["!! SyntaxError"]
+      - out: ["!! TypeError"]
+      - out: ["!! ReferenceError"]
+    answer: 4
+    explain: |
+      `"type": "module"` می‌گوید همه‌ی فایل‌های `.js` این پوشه ES Module هستند. در ESM تابع `require` تعریف نشده است، پس خط اول خطای `ReferenceError: require is not defined in ES module scope` می‌دهد و چیزی چاپ نمی‌شود. خطا از نوع SyntaxError نیست، چون صدا زدن یک تابع از نظر نحوی کاملاً درست است و فقط آن نام وجود ندارد. راه درست: `import fs from "fs";` یا تغییر پسوند فایل به `.cjs`.
+  - level: hard
+    stem: |
+      پروژه را با `npm init -y` ساخته‌ایم (نسخه‌های جدید npm فیلد `"type": "commonjs"` را هم در `package.json` می‌نویسند). با اجرای `node index.js` چه اتفاقی می‌افتد؟
+    check: output
+    files:
+      package.json: |
+        {
+          "name": "demo",
+          "version": "1.0.0",
+          "type": "commonjs"
+        }
+      index.js: |
+        import fs from "fs";
+        console.log("file system ready");
+    entry: index.js
+    options:
+      - out: ["file system ready"]
+      - out: ["!! SyntaxError"]
+      - out: ["!! ReferenceError"]
+      - out: ["!! TypeError"]
+    answer: 2
+    explain: |
+      با `"type": "commonjs"`، فایل `index.js` به‌صورت CommonJS اجرا می‌شود و در CommonJS دستور `import` از نظر **نحوی** مجاز نیست؛ پس قبل از اجرای هر خطی، `SyntaxError: Cannot use import statement outside a module` رخ می‌دهد و هیچ چیزی چاپ نمی‌شود. `ReferenceError` (گزینه‌ی ۳) خطای حالت برعکس است، یعنی `require` داخل ESM. برای درست کردنش یا `"type": "module"` بنویس، یا پسوند را `.mjs` کن، یا به جای `import` از `require` استفاده کن.
+  - level: medium
+    stem: با کدام کار، Node.js یک فایل را به‌عنوان **ES Module** (با پشتیبانی از `import` و `export`) اجرا می‌کند؟
+    options:
+      - 'گذاشتن پسوند `.cjs` برای فایل'
+      - 'نوشتن `"type": "commonjs"` در `package.json`'
+      - 'گذاشتن پسوند `.mjs` برای فایل، یا نوشتن `"type": "module"` در `package.json` برای فایل‌های `.js`'
+      - 'نوشتن `"main": "index.js"` در `package.json`'
+    answer: 3
+    explain: |
+      پسوند `.mjs` همیشه یعنی ES Module و `"type": "module"` هم فایل‌های `.js` آن پروژه را ESM می‌کند. پسوند `.cjs` و `"type": "commonjs"` دقیقاً برعکس، یعنی CommonJS را تعیین می‌کنند. فیلد `main` فقط فایل ورودی پکیج را مشخص می‌کند و ربطی به نوع ماژول ندارد.
+  - level: medium
+    stem: فایل زیر با پسوند `.mjs` (یعنی به‌صورت ES Module) در Node.js اجرا می‌شود. خروجی کدام است؟
+    check: output
+    module: true
+    code: |
+      console.log(typeof require);
+      console.log(this);
+      console.log(typeof setTimeout);
+    options:
+      - out: ["undefined", "undefined", "function"]
+      - out: ["function", "{}", "function"]
+      - out: ["undefined", "{}", "undefined"]
+      - out: ["!! ReferenceError"]
+    answer: 1
+    explain: |
+      در ES Module تابع `require` وجود ندارد، ولی `typeof` روی نام تعریف‌نشده خطا نمی‌دهد و `"undefined"` برمی‌گرداند (رد گزینه‌ی ۴). مقدار `this` در بالاترین سطح یک ES Module برابر `undefined` است. `setTimeout` هم در Node.js یک تابع سراسری است (رد گزینه‌ی ۳). گزینه‌ی ۲ خروجی همین کد در یک فایل **CommonJS** است، که در آن `require` تابع و `this` همان `{}` (یعنی `module.exports`) است.
+  - level: medium
+    stem: در میم اسلاید ۷ با عنوان «JavaScript programming»، روی مرد نوشته شده «app 300kb» و روی کوله‌پشتی غول‌پیکرش «Node_modules, 12GB». این میم به کدام واقعیت اشاره دارد؟
+    options:
+      - 'برنامه‌های Node.js همیشه دقیقاً ۱۲ گیگابایت حجم دارند.'
+      - 'پوشه‌ی `node_modules` کد اصلی برنامه‌ی خود ما را نگه می‌دارد.'
+      - 'Node.js اجازه نمی‌دهد حجم کد برنامه از ۳۰۰ کیلوبایت بیشتر شود.'
+      - 'کد خود برنامه کوچک است، ولی وابستگی‌ها و وابستگی‌های آن‌ها در `node_modules` حجم بسیار بزرگی پیدا می‌کنند.'
+    answer: 4
+    explain: |
+      این میم به dependency bloat اشاره دارد: npm همه‌ی پکیج‌هایی که برنامه لازم دارد، **به‌اضافه‌ی** پکیج‌هایی که خود آن‌ها لازم دارند، را در `node_modules` می‌ریزد و این پوشه از کد خود برنامه خیلی بزرگ‌تر می‌شود. اعداد میم اغراق طنز است، نه قانون (رد گزینه‌های ۱ و ۳). کد خود ما بیرون از `node_modules` است؛ این پوشه فقط پکیج‌های نصب‌شده را نگه می‌دارد (رد گزینه‌ی ۲).
+  - level: medium
+    stem: اسلاید ۷ می‌گوید Node.js از فریم‌ورک‌های قدرتمندی پشتیبانی می‌کند. کدام گزینه جزو فریم‌ورک‌های سمت سروری که این اسلاید نام می‌برد **نیست**؟
+    options:
+      - 'Express'
+      - 'React'
+      - 'NestJS'
+      - 'Fastify'
+    answer: 2
+    explain: |
+      متن اسلاید ۷: «Supports powerful frameworks like Express, NestJS, and Fastify». هر سه برای ساختن سرور و API با Node.js هستند. React کتابخانه‌ای برای ساختن **رابط کاربری** (UI) در سمت frontend است (اسلاید ۱۳: «library for building interactive UIs with components») و فریم‌ورک سمت سرور نیست.
+  - level: hard
+    stem: کدام عبارت درباره‌ی تفاوت Node.js و مرورگر **نادرست** است؟
+    options:
+      - '`globalThis` هم در مرورگر و هم در Node.js وجود دارد.'
+      - 'در Node.js با ماژول `fs` می‌توان فایل‌های روی دیسک را با داشتن مسیرشان خواند؛ کاری که کد یک صفحه‌ی وب اجازه‌اش را ندارد.'
+      - '`setTimeout` و `Promise` مخصوص مرورگرند و در Node.js وجود ندارند.'
+      - 'در Node.js عبارت `typeof window` برابر `"undefined"` است.'
+    answer: 3
+    explain: |
+      `setTimeout`، `Promise`، `console`، `JSON` و `Math` در **هر دو** محیط وجود دارند؛ اصلاً event loop و Promise‌ها ستون اصلی ناهمگام بودن Node.js هستند. گزینه‌ی ۱ درست است (`globalThis` در مرورگر همان `window` و در Node.js همان `global` است). گزینه‌ی ۲ درست است، چون صفحه‌ی وب برای امنیت کاربر به فایل‌های دیسک دسترسی آزاد ندارد. گزینه‌ی ۴ هم درست است، چون Node.js شیء `window` ندارد و `typeof` روی نام تعریف‌نشده `"undefined"` می‌دهد.
+  - level: hard
+    stem: |
+      اسلاید ۷ می‌گوید Node.js «Embraces TypeScript … by default». در **Node.js نسخه‌ی ۲۴** فایل `app.ts` زیر را مستقیم با دستور `node app.ts` اجرا می‌کنیم. چه اتفاقی می‌افتد؟
+    check: output
+    files:
+      app.ts: |
+        let count: number = "ten";
+        console.log(count);
+    entry: app.ts
+    options:
+      - text: 'برنامه اجرا نمی‌شود و خطای نوع (type error) می‌گیریم، چون `"ten"` از نوع `number` نیست.'
+        out: "!! TypeError"
+      - text: 'خطای `SyntaxError` می‌گیریم، چون Node.js نوشتن نوع (`: number`) را نمی‌شناسد.'
+        out: "!! SyntaxError"
+      - text: '`NaN` چاپ می‌شود، چون `"ten"` به عدد تبدیل می‌شود.'
+        out: "NaN"
+      - text: '`ten` چاپ می‌شود؛ Node.js فقط نوع‌ها را پاک می‌کند و آن‌ها را بررسی نمی‌کند.'
+        out: "ten"
+    answer: 4
+    explain: |
+      Node.js نسخه‌ی ۲۴ فایل `.ts` را با «پاک کردن نوع‌ها» (type stripping) اجرا می‌کند: `: number` حذف می‌شود و کد به `let count = "ten";` تبدیل می‌شود. پس `ten` چاپ می‌شود. Node.js نوع‌ها را **بررسی نمی‌کند**؛ خطای نوع را فقط کامپایلر TypeScript (`tsc`) گزارش می‌دهد (رد گزینه‌ی ۱). Node.js این نحو را می‌شناسد و پاکش می‌کند، پس SyntaxError هم رخ نمی‌دهد (رد گزینه‌ی ۲). هیچ تبدیل نوعی هم انجام نمی‌شود (رد گزینه‌ی ۳).
+  - level: easy
+    stem: در سیستم ماژول **CommonJS** (سیستم قدیمی و پیش‌فرض Node.js)، برای وارد کردن یک ماژول از چه چیزی و برای صادر کردن از چه چیزی استفاده می‌کنیم؟
+    options:
+      - '`require` برای وارد کردن و `module.exports` برای صادر کردن'
+      - '`import` برای وارد کردن و `export default` برای صادر کردن'
+      - '`include` برای وارد کردن و `module.import` برای صادر کردن'
+      - '`fetch` برای وارد کردن و `window.exports` برای صادر کردن'
+    answer: 1
+    explain: |
+      در CommonJS با `require("./file")` وارد می‌کنیم و با `module.exports` (یا میان‌بُر `exports.name`) صادر می‌کنیم. گزینه‌ی ۲ نحو **ES Modules** است، نه CommonJS. `include` و `module.import` در JavaScript وجود ندارند، `fetch` برای درخواست HTTP است و `window` هم اصلاً در Node.js نیست.
+  - level: medium
+    stem: Node.js با اینکه **تک‌نخی** (single-threaded) است، چرا **Highly Scalable** شمرده می‌شود؟
+    options:
+      - 'چون برای هر درخواست یک thread جدید می‌سازد و کارها را بین آن‌ها پخش می‌کند.'
+      - 'چون I/O غیرمسدودکننده و رویدادمحور است و آن یک thread هیچ‌وقت بیکار منتظر فایل یا شبکه نمی‌ماند؛ پس به اتصال‌های هم‌زمان زیادی می‌رسد.'
+      - 'چون کد سرور را در مرورگر هر کاربر اجرا می‌کند تا بار سرور کم شود.'
+      - 'چون همه‌ی داده‌ها را اول کامل در حافظه buffer می‌کند و بعد یکجا می‌فرستد.'
+    answer: 2
+    explain: |
+      راز مقیاس‌پذیری Node.js همان مدل event-driven و non-blocking است: thread اصلی کارهای I/O را به پس‌زمینه می‌سپارد و فوراً سراغ درخواست بعدی می‌رود. گزینه‌ی ۱ با تک‌نخی بودن تناقض دارد. کد سرور در مرورگر کاربر اجرا نمی‌شود (رد گزینه‌ی ۳). گزینه‌ی ۴ هم برعکس ویژگی No Buffering است.

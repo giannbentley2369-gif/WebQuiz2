@@ -1,0 +1,577 @@
+id: ch2-attributes
+title: "ویژگی‌ها (Attributes) و کلاس‌ها: setAttribute و classList"
+slides: "JS in HTML، اسلایدهای ۳۱ تا ۳۴"
+lesson: |
+  عنوان اسلاید ۳۱ این است: «Modifying… Everything!»؛ یعنی با JavaScript تقریباً **همه‌چیزِ** یک عنصر را می‌شود عوض کرد. در این درس سراغ attributeها (ویژگی‌ها؛ همان جفت‌های `name="value"` که داخل تگ HTML می‌نویسیم) و مهم‌ترینشان، یعنی `class`، می‌رویم:
+
+  ```html
+  <img src="cat.png" alt="A cat" width="300">
+  <a href="/about" target="_blank">About</a>
+  <input type="text" value="Ali" disabled>
+  ```
+
+  ::: analogy
+  هر عنصر را مثل یک جعبه با چند **برچسب** در نظر بگیر: `src="cat.png"` و `width="300"`. `setAttribute` برچسب می‌چسباند (یا برچسب قبلی را عوض می‌کند)، `getAttribute` برچسب را می‌خواند و `removeAttribute` آن را می‌کَنَد. برچسب `class` هم یک برچسب ویژه است که فهرستی از کلمه‌ها را نگه می‌دارد و ابزار مخصوص خودش، `classList`، را دارد.
+  :::
+
+  ### چهار متد کار با attributeها
+
+  ```js
+  const link = document.querySelector("a");
+  link.setAttribute("href", "https://sharif.edu");  // add or change
+  console.log(link.getAttribute("href"));           // "https://sharif.edu"
+  link.removeAttribute("target");                   // delete it
+  console.log(link.hasAttribute("target"));         // false
+  console.log(link.getAttribute("title"));          // null -> no such attribute
+  ```
+
+  | متد | کار | خروجی |
+  |---|---|---|
+  | `setAttribute(name, value)` | اگر attribute نباشد **اضافه** می‌کند و اگر باشد مقدارش را **عوض** می‌کند | `undefined` |
+  | `getAttribute(name)` | مقدار را **می‌خواند** | همیشه **رشته**، یا `null` اگر وجود نداشته باشد |
+  | `removeAttribute(name)` | attribute را **حذف** می‌کند؛ اگر نباشد خطایی نمی‌دهد | `undefined` |
+  | `hasAttribute(name)` | **وجود** attribute را بررسی می‌کند | `true` یا `false` |
+
+  مقداری که به `setAttribute` می‌دهی همیشه **به رشته تبدیل** می‌شود: `setAttribute("title", 42)` مقدار `"42"` را ذخیره می‌کند و `setAttribute("title", null)` مقدار رشته‌ی `"null"` را؛ یعنی `null` دادن، attribute را **حذف نمی‌کند**.
+
+  #### attributeهای بولی (Boolean attributes)
+
+  attributeهایی مثل `disabled`، `checked`، `hidden`، `required` و `readonly` فقط با **حضورشان** کار می‌کنند و مقدارشان مهم نیست. پس:
+
+  ```js
+  btn.setAttribute("disabled", "false");  // STILL disabled! the attribute exists
+  console.log(btn.disabled);              // true
+  btn.removeAttribute("disabled");        // now it is enabled
+  btn.disabled = false;                   // same thing, using the property
+  ```
+
+  ### attribute یا property؟
+
+  مرورگر برای بیشترِ attributeهای استاندارد یک **property** (خاصیت) هم‌نام روی شیء عنصر می‌سازد: `img.src`، `a.href`، `el.id`، `input.value` و… . اما این دو همیشه یکی نیستند:
+
+  | موضوع | `getAttribute(...)` | property |
+  |---|---|---|
+  | نوع مقدار | همیشه رشته (یا `null`) | نوع واقعی: `img.width` عدد `300`، `btn.disabled` بولی |
+  | آدرس‌ها (`src`، `href`) | همان متنی که نوشته شده: `"dambooldor2.png"` | آدرس کامل و مطلق: `"file:///…/dom/dambooldor2.png"` |
+  | `value` در `<input>` | مقدار **اولیه** (نوشته‌شده در HTML) | مقدار **فعلی** (چیزی که کاربر تایپ کرده) |
+  | نام | `class`، `for` | `className`، `htmlFor` |
+
+  ```html
+  <input id="name" value="guest">
+  ```
+
+  ```js
+  const input = document.getElementById("name");
+  // ...the user types "Sara" into the box...
+  console.log(input.value);                  // "Sara"  (current value)
+  console.log(input.getAttribute("value"));  // "guest" (initial value from HTML)
+  ```
+
+  attributeهای ساختگی (غیراستاندارد) مثل `<div foo="1">` property نمی‌سازند (`div.foo` برابر `undefined` است)؛ برای آن‌ها یا `getAttribute` به کار ببر یا از `data-*` استفاده کن.
+
+  #### attributeهای `data-*` و `dataset`
+
+  برای چسباندن داده‌ی دلخواه به یک عنصر، استاندارد این است که نام attribute با `data-` شروع شود. JavaScript همه را در شیء `dataset` می‌بیند و نامِ خط‌تیره‌دار را به camelCase (چسباندن کلمه‌ها و بزرگ کردن حرف اول هر کلمه‌ی بعدی) تبدیل می‌کند:
+
+  ```html
+  <li id="item" data-product-id="42" data-price="9.5">Pen</li>
+  ```
+
+  ```js
+  const item = document.getElementById("item");
+  console.log(item.dataset.productId);   // "42"  (a string!)
+  console.log(item.dataset.price);       // "9.5"
+  item.dataset.inStock = "yes";          // adds data-in-stock="yes" to the tag
+  ```
+
+  ### `classList`: ابزار مخصوص کلاس‌ها
+
+  ```js
+  const box = document.querySelector(".card");   // <div class="card">
+  box.classList.add("active");             // class="card active"
+  box.classList.add("big", "shadow");      // several at once: "card active big shadow"
+  box.classList.remove("shadow");          // "card active big" (no error if missing)
+  box.classList.toggle("dark");            // added -> returns true
+  box.classList.toggle("dark");            // removed -> returns false
+  box.classList.contains("active");        // true
+  box.classList.replace("big", "small");   // "card active small"
+  console.log(box.classList.length);       // 3
+  ```
+
+  - `add` کلاس تکراری اضافه نمی‌کند و می‌تواند چند کلاس را یک‌جا بگیرد.
+  - `remove` هم چندتایی کار می‌کند و اگر کلاس وجود نداشته باشد خطا نمی‌دهد.
+  - `toggle(name)` اگر کلاس نباشد اضافه می‌کند و اگر باشد حذف؛ **خروجی‌اش وضعیت جدید است**: `true` یعنی «الان هست» و `false` یعنی «الان نیست».
+  - `toggle(name, force)`: با `force` برابر `true` فقط اضافه می‌کند و با `false` فقط حذف. مثلاً `el.classList.toggle("hidden", !isVisible)` کلاس را دقیقاً مطابق یک شرط تنظیم می‌کند.
+  - `contains(name)` فقط بررسی می‌کند و چیزی را تغییر نمی‌دهد.
+  - نام کلاس را **بدون نقطه** بنویس: `add("active")`. نقطه مال انتخابگرهای CSS است؛ `add(".active")` کلاسی به نام عجیبِ `.active` می‌سازد!
+  - هر آرگومان فقط **یک** کلاس است: `add("btn primary")` خطای `InvalidCharacterError` می‌دهد؛ درستش `add("btn", "primary")` است.
+
+  #### `className`، `classList` و `setAttribute("class", …)`
+
+  | | نوع | نوشتن با آن |
+  |---|---|---|
+  | `el.className` | یک رشته مثل `"card active"` | **همه‌ی** کلاس‌ها را جایگزین می‌کند |
+  | `el.setAttribute("class", …)` | — | **همه‌ی** کلاس‌ها را جایگزین می‌کند |
+  | `el.classList` | شیئی فهرست‌مانند (DOMTokenList) با متدهای بالا | فقط همان کلاس را اضافه/حذف می‌کند |
+
+  ```js
+  // <p class="note big">
+  p.setAttribute("class", "red");   // class="red"  (note and big are gone!)
+  p.classList.add("bold");          // class="red bold"
+  p.className += " small";          // class="red bold small" (do not forget the space)
+  ```
+
+  ### استایل پویا و تغییر وضعیت با کلاس‌ها
+
+  آخرین نکته‌ی اسلاید ۳۱ می‌گوید این ابزارها برای **استایل پویا** و **تغییر وضعیت** (state) به کار می‌روند. به‌جای این‌که در JavaScript ده‌ها استایل درون‌خطی (inline style؛ مثل `el.style.color = "red"`) بنویسی، ظاهر را در CSS به شکل کلاس تعریف کن و در JavaScript فقط کلاس را اضافه یا حذف کن:
+
+  ```css
+  .dark   { background: #222; color: #eee; }
+  .hidden { display: none; }
+  .error  { border: 2px solid red; }
+  ```
+
+  ```js
+  themeBtn.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark");  // state: dark on or off
+    themeBtn.textContent = isDark ? "Light mode" : "Dark mode";
+  });
+  ```
+
+  این کار سه لایه‌ی صفحه (ساختار با HTML، ظاهر با CSS، رفتار با JavaScript؛ یادآوری اسلاید ۳) را از هم جدا نگه می‌دارد، برگرداندنش با یک `remove` یا `toggle` ساده است و یک کلاس را می‌شود روی عنصرهای زیادی به کار برد. کلاس‌ها **وضعیت** را هم نشان می‌دهند: تب `active`، منوی `open`، آیتم `selected`، فیلد `error`؛ و `contains` می‌گوید الان در کدام وضعیت هستیم.
+
+  ### مثال اسلایدهای ۳۲ تا ۳۴: Change Image
+
+  ```html lines title=doc.html
+  <!DOCTYPE html>
+  <html>
+  <body>
+      <img src="dambooldor.png" id="dambooldor" width="300" height="300">
+      <button>clickme</button>
+      <script>
+          const btn = document.querySelector('button');
+          btn.addEventListener('click', () => {
+              const img = document.getElementById("dambooldor");
+              img.setAttribute("src", "dambooldor2.png");
+          });
+      </script>
+  </body>
+  </html>
+  ```
+
+  - **خط ۴:** تصویری ۳۰۰ در ۳۰۰ با `src="dambooldor.png"` و `id="dambooldor"` (شوخیِ اسلاید با نام «دامبلدور»).
+  - **خطوط ۷ و ۸:** دکمه را پیدا می‌کنیم و listener کلیک را وصل می‌کنیم.
+  - **خط ۹:** تصویر را با `id` پیدا می‌کنیم.
+  - **خط ۱۰:** مقدار attribute `src` را عوض می‌کنیم؛ مرورگر بلافاصله تصویر جدید را بار می‌کند و نشان می‌دهد.
+
+  **قبل از کلیک (اسلاید ۳۳):** تصویر اول (دامبلدور با رنگ‌های قرمز) و دکمه‌ی «clickme» درست کنار آن، چون `<img>` و `<button>` هر دو عنصرهای inline (عنصرهایی که در یک خط کنار هم می‌نشینند) هستند.
+  **بعد از کلیک (اسلاید ۳۴):** تصویر دیگری (`dambooldor2.png`، با رنگ‌های آبی‌سبز) به‌جایش آمده؛ اندازه همچنان ۳۰۰ در ۳۰۰ است، چون به attributeهای `width` و `height` دست نزدیم، و دکمه هم سر جایش است.
+
+  چند نکته درباره‌ی همین مثال:
+
+  - `img.src = "dambooldor2.png";` (کار با property) همین اثر را دارد.
+  - بعد از کلیک، `img.getAttribute("src")` برابر `"dambooldor2.png"` است ولی `img.src` آدرس کامل را می‌دهد: `file:///home/mani/Projects/University/web-ta/sampleprojects/dom/dambooldor2.png`.
+  - کلیک دوم همان مقدار را دوباره می‌نویسد؛ نه تغییری دیده می‌شود و نه خطایی رخ می‌دهد.
+
+  برای اینکه هر کلیک تصویر را **بین دو حالت** عوض کند، باید با `getAttribute` (نه `img.src`) مقایسه کنیم:
+
+  ```js
+  btn.addEventListener("click", () => {
+    const img = document.getElementById("dambooldor");
+    const next = img.getAttribute("src") === "dambooldor.png" ? "dambooldor2.png" : "dambooldor.png";
+    img.setAttribute("src", next);
+  });
+  ```
+
+  ::: tip
+  - `setAttribute` هم اضافه می‌کند هم تغییر می‌دهد؛ `getAttribute` همیشه رشته یا `null` برمی‌گرداند؛ `removeAttribute` روی attributeِ ناموجود خطا نمی‌دهد.
+  - برای کلاس‌ها `classList` را ترجیح بده: `add`، `remove` و `toggle` فقط همان کلاس را دست می‌زنند و بقیه را نگه می‌دارند.
+  - `toggle` وضعیت جدید را برمی‌گرداند؛ پس `const isDark = body.classList.toggle("dark")` هم وضعیت را عوض می‌کند و هم می‌گوید الان در چه وضعیتی هستیم.
+  - ظاهر را در CSS تعریف کن و در JavaScript فقط کلاس را عوض کن.
+  :::
+
+  ::: trap
+  - `getAttribute` برای attributeِ ناموجود `null` برمی‌گرداند، نه `undefined` و نه رشته‌ی خالی.
+  - `getAttribute("width")` رشته‌ی `"300"` است ولی `img.width` عدد `300`؛ مقدار `dataset` هم همیشه رشته است (`"42" + 1` می‌شود `"421"`).
+  - `img.src` و `a.href` آدرس **کامل** را برمی‌گردانند؛ مقایسه‌ی `img.src === "a.png"` تقریباً هیچ‌وقت درست نیست.
+  - `setAttribute("disabled", "false")` دکمه را غیرفعال **می‌کند**؛ برای فعال کردن `removeAttribute("disabled")` لازم است.
+  - `setAttribute("class", …)` و `className = …` همه‌ی کلاس‌های قبلی را پاک می‌کنند.
+  - `classList.add(".active")` کلاسی با نقطه می‌سازد و `classList.add("a b")` خطای `InvalidCharacterError` می‌دهد.
+  - بعد از تایپ کاربر، `input.value` و `input.getAttribute("value")` با هم فرق دارند.
+  :::
+
+  ::: summary
+  attributeها: `setAttribute` (افزودن/تغییر)، `getAttribute` (خواندن؛ رشته یا `null`)، `removeAttribute` (حذف)، `hasAttribute` (وجود). property همان مقدار را با نوع واقعی و وضعیت فعلی نشان می‌دهد (`img.src` مطلق، `input.value` فعلی). کلاس‌ها: `classList.add/remove/toggle/contains/replace`؛ `className` و `setAttribute("class")` همه را جایگزین می‌کنند. استایل پویا = تعریف کلاس در CSS + عوض کردن کلاس در JavaScript.
+  :::
+questions:
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <img id="pic" src="cat.png">
+    code: |
+      const pic = document.getElementById("pic");
+      console.log(pic.getAttribute("alt"));
+    options:
+      - out: "undefined"
+      - out: "null"
+      - out: "false"
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      `getAttribute` برای attributeی که روی عنصر وجود ندارد مقدار `null` برمی‌گرداند (و در غیر این صورت همیشه یک رشته). گزینه‌ی ۱ رفتار خواندن یک property ناموجود از شیء را با `getAttribute` اشتباه گرفته، گزینه‌ی ۳ خروجی `hasAttribute` را حدس زده و گزینه‌ی ۴ اشتباه است چون نبودن attribute خطا نیست.
+
+  - level: easy
+    stem: کدام دستور attribute `title` را به‌طور **کامل** از عنصر `el` حذف می‌کند؟
+    options:
+      - '`el.setAttribute("title", null)`'
+      - '`el.setAttribute("title", "")`'
+      - '`el.removeAttribute("title")`'
+      - '`el.classList.remove("title")`'
+    answer: 3
+    explain: |
+      فقط `removeAttribute` خودِ attribute را حذف می‌کند (بعد از آن `hasAttribute("title")` برابر `false` است). گزینه‌ی ۱ مقدار را رشته‌ی `"null"` می‌کند و گزینه‌ی ۲ آن را خالی می‌کند، ولی در هر دو attribute هنوز وجود دارد. گزینه‌ی ۴ با attributeها کاری ندارد و فقط کلاسی به نام `title` را (اگر باشد) از فهرست کلاس‌ها برمی‌دارد.
+
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <a id="link" href="/home">Home</a>
+    code: |
+      const link = document.getElementById("link");
+      link.setAttribute("href", "/about");
+      link.setAttribute("target", "_blank");
+      console.log(link.getAttribute("href"), link.getAttribute("target"), link.attributes.length);
+    options:
+      - out: "/home _blank 3"
+      - out: "/about _blank 2"
+      - out: "/about null 3"
+      - out: "/about _blank 3"
+    answer: 4
+    explain: |
+      `setAttribute` اگر attribute وجود داشته باشد مقدارش را **عوض** می‌کند (`href` از `/home` به `/about`) و اگر نباشد آن را **اضافه** می‌کند (`target`). حالا لینک سه attribute دارد: `id`، `href` و `target`. گزینه‌ی ۱ فکر کرده مقدار قبلی عوض نمی‌شود، گزینه‌ی ۲ `id` را نشمرده و گزینه‌ی ۳ تصور کرده `setAttribute` فقط attributeهای موجود را تغییر می‌دهد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="box">Box</div>
+    code: |
+      const box = document.getElementById("box");
+      box.removeAttribute("title");
+      console.log(box.hasAttribute("title"), box.hasAttribute("id"));
+    options:
+      - out: "!! NotFoundError"
+      - out: "false true"
+      - out: "true true"
+      - out: "undefined true"
+    answer: 2
+    explain: |
+      حذف attributeی که وجود ندارد **خطا نمی‌دهد** و فقط کاری انجام نمی‌شود. `hasAttribute` همیشه یک مقدار بولی برمی‌گرداند: `title` نیست (`false`) و `id` هست (`true`). گزینه‌ی ۱ رفتار سخت‌گیرانه‌ی `removeChild` را به `removeAttribute` نسبت داده، گزینه‌ی ۳ وجود `title` را فرض کرده و گزینه‌ی ۴ فکر کرده `hasAttribute` مقدار `undefined` برمی‌گرداند.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <img src="a.png" width="300">
+    code: |
+      const img = document.querySelector("img");
+      console.log(typeof img.getAttribute("width"), typeof img.width);
+    options:
+      - out: "string number"
+      - out: "number number"
+      - out: "string string"
+      - out: "number string"
+    answer: 1
+    explain: |
+      `getAttribute` همیشه رشته (یا `null`) برمی‌گرداند، پس `"300"` از نوع `string` است. اما property متناظر، `img.width`، مقدار را با نوع واقعی‌اش یعنی عدد `300` می‌دهد. گزینه‌های ۲ و ۴ فکر کرده‌اند `getAttribute` عدد برمی‌گرداند و گزینه‌ی ۳ property را هم رشته دانسته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <button id="send">Send</button>
+    code: |
+      const send = document.getElementById("send");
+      send.setAttribute("disabled", "false");
+      console.log(send.disabled);
+      send.removeAttribute("disabled");
+      console.log(send.disabled);
+    options:
+      - out: ["false", "false"]
+      - out: ["false", "true"]
+      - out: ["true", "false"]
+      - out: ["true", "true"]
+    answer: 3
+    explain: |
+      `disabled` یک attribute بولی است و فقط **حضورش** مهم است؛ مقدار `"false"` هم حضور حساب می‌شود، پس دکمه غیرفعال است و `true` چاپ می‌شود. با `removeAttribute` attribute حذف و دکمه فعال می‌شود (`false`). گزینه‌ی ۱ اشتباه رایج است (خیال کرده رشته‌ی `"false"` یعنی فعال)، گزینه‌ی ۲ کاملاً برعکس است و گزینه‌ی ۴ اثر `removeAttribute` را نادیده گرفته است.
+
+  - level: easy
+    stem: در مثال «Change Image» (اسلاید ۳۲) بعد از کلیک روی دکمه‌ی «clickme»، طبق اسلاید ۳۴ چه تغییری روی صفحه دیده می‌شود؟
+    options:
+      - تصویر و دکمه هر دو حذف می‌شوند و تصویر جدیدی جای آن‌ها می‌آید.
+      - فقط تصویر عوض می‌شود؛ اندازه‌ی ۳۰۰ در ۳۰۰ و دکمه بدون تغییر می‌مانند.
+      - تصویر عوض می‌شود ولی اندازه‌اش به اندازه‌ی واقعی فایل جدید برمی‌گردد.
+      - تصویر جدید زیر تصویر قبلی اضافه می‌شود.
+    answer: 2
+    explain: |
+      `setAttribute("src", "dambooldor2.png")` فقط مقدار `src` همان `<img>` را عوض می‌کند؛ `width` و `height` دست نخورده‌اند، پس تصویر جدید هم ۳۰۰ در ۳۰۰ نمایش داده می‌شود و دکمه سر جایش است. هیچ عنصری حذف یا اضافه نمی‌شود؛ پس گزینه‌های ۱ و ۴ غلط‌اند، و گزینه‌ی ۳ اشتباه است چون attributeهای اندازه هنوز روی تگ هستند.
+
+  - level: medium
+    stem: صفحه‌ی زیر همان کد اسلاید ۳۲ است. کاربر روی دکمه کلیک می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <img src="dambooldor.png" id="dambooldor" width="300" height="300">
+      <button>clickme</button>
+    code: |
+      const btn = document.querySelector('button');
+      btn.addEventListener('click', () => {
+          const img = document.getElementById("dambooldor");
+          img.setAttribute("src", "dambooldor2.png");
+      });
+    events:
+      - { type: click, target: "button" }
+    after: |
+      const pic = document.getElementById("dambooldor");
+      console.log(pic.getAttribute("src"), pic.getAttribute("width"));
+    eventsNote: 'بعد از کلیک این دستور اجرا می‌شود: `console.log(pic.getAttribute("src"), pic.getAttribute("width"));` که در آن `pic` همان تصویر `#dambooldor` است.'
+    options:
+      - out: "dambooldor2.png 300"
+      - out: "dambooldor.png 300"
+      - out: "dambooldor2.png null"
+      - out: "dambooldor.png dambooldor2.png"
+    answer: 1
+    explain: |
+      listener مقدار attribute `src` را به `dambooldor2.png` تغییر داده و `getAttribute` همان متن نوشته‌شده را برمی‌گرداند؛ `width` هم دست نخورده و هنوز `"300"` است. گزینه‌ی ۲ تغییر را ندیده، گزینه‌ی ۳ فکر کرده تغییر `src` بقیه‌ی attributeها را پاک می‌کند و گزینه‌ی ۴ تصور کرده `setAttribute` یک attribute دوم کنار قبلی می‌سازد.
+
+  - level: hard
+    stem: 'صفحه از آدرس `https://quiz.example/gallery/index.html` باز شده است. خروجی کد زیر کدام است؟'
+    check: dom-output
+    url: https://quiz.example/gallery/index.html
+    html: |
+      <img src="day.png">
+    code: |
+      const img = document.querySelector("img");
+      img.setAttribute("src", "cat.png");
+      console.log(img.getAttribute("src"));
+      console.log(img.src);
+    options:
+      - out: ["cat.png", "cat.png"]
+      - out: ["https://quiz.example/gallery/cat.png", "cat.png"]
+      - out: ["cat.png", "https://quiz.example/gallery/cat.png"]
+      - out: ["cat.png", "https://quiz.example/cat.png"]
+    answer: 3
+    explain: |
+      `getAttribute` همان متنی را می‌دهد که در attribute نوشته شده (`cat.png`)، ولی property `img.src` آدرس را **کامل و مطلق** می‌کند: آدرس نسبی `cat.png` نسبت به پوشه‌ی صفحه (`/gallery/`) حل می‌شود. گزینه‌ی ۱ فرقی بین این دو قائل نشده، گزینه‌ی ۲ جای آن‌ها را برعکس کرده و گزینه‌ی ۴ آدرس را نسبت به ریشه‌ی سایت حل کرده، در حالی که مبنا پوشه‌ی فعلی صفحه است.
+
+  - level: medium
+    stem: '`<input>` زیر را در نظر بگیر. کاربر محتوای کادر را پاک می‌کند و `Sara` را تایپ می‌کند. خروجی کدام است؟'
+    check: dom-output
+    html: |
+      <input id="name" value="guest">
+    code: |
+      const input = document.getElementById("name");
+      input.addEventListener("input", () => {
+        console.log(input.value, input.getAttribute("value"));
+      });
+    events:
+      - { type: input, target: "#name", value: "Sara" }
+    options:
+      - out: "Sara Sara"
+      - out: "guest guest"
+      - out: "guest Sara"
+      - out: "Sara guest"
+    answer: 4
+    explain: |
+      property `value` مقدار **فعلی** کادر (چیزی که کاربر تایپ کرده) را نگه می‌دارد، ولی attribute `value` همان مقدار **اولیه**‌ی نوشته‌شده در HTML است و با تایپ کاربر عوض نمی‌شود. گزینه‌ی ۱ این دو را همیشه یکی دانسته، گزینه‌ی ۲ تایپ کاربر را نادیده گرفته و گزینه‌ی ۳ نقش آن‌ها را برعکس کرده است.
+
+  - level: hard
+    stem: 'صفحه از آدرس `https://quiz.example/` باز شده و کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی کدام است؟'
+    check: dom-output
+    html: |
+      <img id="pic" src="day.png">
+      <button id="switch">Switch</button>
+    code: |
+      const pic = document.getElementById("pic");
+      document.getElementById("switch").addEventListener("click", () => {
+        if (pic.src === "day.png") {
+          pic.src = "night.png";
+        } else {
+          pic.src = "day.png";
+        }
+        console.log(pic.getAttribute("src"));
+      });
+    events:
+      - { type: click, target: "#switch", times: 3 }
+    options:
+      - out: ["night.png", "day.png", "night.png"]
+      - out: ["night.png", "night.png", "night.png"]
+      - out: ["day.png", "night.png", "day.png"]
+      - out: ["day.png", "day.png", "day.png"]
+    answer: 4
+    explain: |
+      `pic.src` آدرس کامل (`https://quiz.example/day.png`) را برمی‌گرداند، پس شرط `pic.src === "day.png"` **هیچ‌وقت** برقرار نیست و هر بار شاخه‌ی `else` اجرا می‌شود که `src` را دوباره `day.png` می‌کند. نتیجه این است که تصویر هرگز عوض نمی‌شود. گزینه‌ی ۱ همان رفتاری است که برنامه‌نویس می‌خواست (با `pic.getAttribute("src") === "day.png"` به دست می‌آید)؛ گزینه‌های ۲ و ۳ هم شرط را دست‌کم یک بار درست فرض کرده‌اند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <li id="item" data-product-id="42" data-price="9.5">Pen</li>
+    code: |
+      const item = document.getElementById("item");
+      console.log(item.dataset.productId + 1);
+      item.dataset.inStock = "yes";
+      console.log(item.getAttribute("data-in-stock"));
+    options:
+      - out: ["43", "yes"]
+      - out: ["NaN", "null"]
+      - out: ["421", "null"]
+      - out: ["421", "yes"]
+    answer: 4
+    explain: |
+      `data-product-id` در `dataset` با نام camelCase یعنی `productId` دیده می‌شود و مقدارش **رشته‌ی** `"42"` است؛ پس `"42" + 1` به‌صورت رشته‌ای `"421"` می‌شود. مقداردهی `dataset.inStock` هم یک attribute واقعی به نام `data-in-stock` روی تگ می‌سازد. گزینه‌ی ۱ مقدار را عدد فرض کرده، گزینه‌ی ۲ فکر کرده نام خط‌تیره‌دار در `dataset` پیدا نمی‌شود و گزینه‌های ۲ و ۳ تصور کرده‌اند `dataset` روی attributeها اثری ندارد.
+
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="box" class="card"></div>
+    code: |
+      const box = document.getElementById("box");
+      box.classList.add("active", "big");
+      box.classList.add("active");
+      console.log(box.className, box.classList.length);
+    options:
+      - out: "card active big 3"
+      - out: "card active big active 4"
+      - out: "active big 2"
+      - out: "active big active 3"
+    answer: 1
+    explain: |
+      `classList.add` کلاس‌های قبلی (`card`) را نگه می‌دارد، می‌تواند چند کلاس را یک‌جا بگیرد و کلاس **تکراری** اضافه نمی‌کند؛ پس فهرست نهایی `card active big` با ۳ کلاس است. گزینه‌های ۲ و ۴ تکرار را مجاز دانسته‌اند و گزینه‌های ۳ و ۴ فکر کرده‌اند `add` کلاس‌های قبلی را پاک می‌کند (کاری که `className =` انجام می‌دهد).
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="a b c">Text</p>
+    code: |
+      const el = document.querySelector("p");
+      el.classList.remove("ghost");
+      el.classList.remove("a", "c");
+      console.log(el.className, el.classList.contains("b"));
+    options:
+      - out: "!! NotFoundError"
+      - out: "a b c true"
+      - out: "b false"
+      - out: "b true"
+    answer: 4
+    explain: |
+      حذف کلاسی که وجود ندارد (`ghost`) خطا نمی‌دهد و `remove` می‌تواند چند کلاس را یک‌جا حذف کند؛ پس فقط `b` می‌ماند و `contains("b")` برابر `true` است. گزینه‌ی ۱ فکر کرده حذف کلاس ناموجود خطاست، گزینه‌ی ۲ فرض کرده `remove` با چند آرگومان کار نمی‌کند و چیزی حذف نمی‌شود و گزینه‌ی ۳ نتیجه‌ی `contains` را اشتباه گفته است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      const body = document.body;
+      console.log(body.classList.toggle("dark"));
+      console.log(body.classList.toggle("dark"));
+      console.log(body.classList.toggle("dark", true));
+      console.log(body.className);
+    options:
+      - out: ["undefined", "undefined", "undefined", "dark"]
+      - out: ["true", "false", "true", "dark"]
+      - out: ["false", "true", "false", "dark"]
+      - out: ["true", "true", "true", "dark"]
+    answer: 2
+    explain: |
+      `toggle` **وضعیت جدید** را برمی‌گرداند: بار اول کلاس اضافه می‌شود (`true`)، بار دوم حذف (`false`). با آرگومان دوم `true`، `toggle` فقط **اضافه** می‌کند؛ پس کلاس اضافه و `true` چاپ می‌شود و در پایان `className` برابر `dark` است. گزینه‌ی ۱ فکر کرده `toggle` چیزی برنمی‌گرداند، گزینه‌ی ۳ تصور کرده خروجی، وضعیتِ **قبل** از تغییر است و گزینه‌ی ۴ `toggle` را مثل `add` فرض کرده که هیچ‌وقت حذف نمی‌کند.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p" class="note big">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      p.setAttribute("class", "red");
+      p.classList.add("bold");
+      p.className += " small";
+      console.log(p.className);
+    options:
+      - out: "note big red bold small"
+      - out: "red small"
+      - out: "red bold small"
+      - out: "bold small"
+    answer: 3
+    explain: |
+      `setAttribute("class", "red")` **کل** کلاس‌ها را جایگزین می‌کند و `note` و `big` از بین می‌روند. بعد `classList.add` کلاس `bold` را اضافه می‌کند و `+= " small"` رشته‌ی کلاس را ادامه می‌دهد: `red bold small`. گزینه‌ی ۱ فکر کرده `setAttribute` کلاس اضافه می‌کند، گزینه‌ی ۲ تصور کرده `+=` کلاس‌های `classList` را پاک می‌کند و گزینه‌ی ۴ `red` را جا انداخته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="tab">Home</div>
+    code: |
+      const tab = document.querySelector("#tab");
+      tab.classList.add(".active");
+      console.log(tab.classList.contains("active"), tab.className);
+    options:
+      - out: "false .active"
+      - out: "true active"
+      - out: "true .active"
+      - out: "!! SyntaxError"
+    answer: 1
+    explain: |
+      نقطه فقط در **انتخابگرهای CSS** (مثل `querySelector(".active")`) معنای «کلاس» دارد. `classList.add` نام خام کلاس را می‌گیرد؛ پس کلاسی دقیقاً به نام `.active` (با نقطه) ساخته می‌شود و کلاس `active` وجود ندارد. گزینه‌ی ۲ فکر کرده نقطه خودکار حذف می‌شود، گزینه‌ی ۳ دو نام متفاوت را یکی دانسته و گزینه‌ی ۴ تصور کرده نقطه در نام کلاس خطاست، در حالی که فقط فاصله (whitespace) و رشته‌ی خالی ممنوع‌اند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <button>Save</button>
+    code: |
+      const btn = document.querySelector("button");
+      btn.classList.add("btn primary");
+      console.log(btn.className);
+    options:
+      - out: "btn primary"
+      - out: "!! InvalidCharacterError"
+      - out: "btn"
+      - out: "btn,primary"
+    answer: 2
+    explain: |
+      هر آرگومانِ `classList.add` باید **یک** نام کلاس بدون فاصله باشد. رشته‌ی `"btn primary"` فاصله دارد، پس مرورگر خطای `InvalidCharacterError` می‌دهد و `console.log` اجرا نمی‌شود. شکل درست `btn.classList.add("btn", "primary")` است. گزینه‌ی ۱ رفتار `className = "btn primary"` را توصیف می‌کند و گزینه‌های ۳ و ۴ حدس‌هایی هستند که هیچ‌کدام رخ نمی‌دهند.
+
+  - level: medium
+    stem: 'می‌خواهیم هر کلیک روی دکمه، حالت تاریک صفحه را **روشن یا خاموش** کند (اگر کلاس `dark` هست برداشته شود و اگر نیست اضافه شود). در جای خالی `document.body.classList.______("dark");` کدام گزینه قرار می‌گیرد؟'
+    options:
+      - '`add`'
+      - '`contains`'
+      - '`toggle`'
+      - '`replace`'
+    answer: 3
+    explain: |
+      `toggle` دقیقاً همین کار را می‌کند: اگر کلاس نباشد اضافه و اگر باشد حذف می‌کند، و وضعیت جدید را هم برمی‌گرداند. `add` فقط اضافه می‌کند (کلیک دوم حالت تاریک را خاموش نمی‌کند)، `contains` فقط بررسی می‌کند و چیزی را تغییر نمی‌دهد و `replace` دو آرگومان (کلاس قدیم و جدید) می‌گیرد و یک کلاس را با دیگری عوض می‌کند.
+
+  - level: hard
+    stem: کدام جمله **نادرست** است؟
+    options:
+      - '`el.classList.contains("x")` اگر کلاس `x` وجود نداشته باشد، آن را اضافه می‌کند.'
+      - '`el.className = "x"` همه‌ی کلاس‌های قبلی را با `x` جایگزین می‌کند.'
+      - '`el.classList.add("x")` کلاس‌های قبلی را نگه می‌دارد.'
+      - '`el.classList.toggle("x")` اگر `x` وجود داشته باشد آن را حذف می‌کند و `false` برمی‌گرداند.'
+    answer: 1
+    explain: |
+      `contains` فقط **بررسی** می‌کند و `true` یا `false` برمی‌گرداند؛ هیچ تغییری در کلاس‌ها نمی‌دهد. پس گزینه‌ی ۱ نادرست و پاسخ است. گزینه‌ی ۲ درست است، چون `className` کل رشته‌ی کلاس را جایگزین می‌کند؛ گزینه‌ی ۳ هم درست است و گزینه‌ی ۴ همان رفتار واقعی `toggle` است (وضعیت جدید، یعنی «نیست»، را برمی‌گرداند).
+
+  - level: easy
+    stem: طبق اسلاید ۳۱ کلاس‌ها برای «استایل پویا و تغییر وضعیت» به کار می‌روند. کدام گزینه بهترین دلیل برای اضافه و حذف کردن **کلاس‌های CSS** به‌جای نوشتن چندین `el.style.…` در JavaScript است؟
+    options:
+      - تغییر `style` از طریق JavaScript در مرورگرهای جدید کار نمی‌کند.
+      - '`classList` تنها راه تغییر رنگ یک عنصر است.'
+      - با کلاس‌ها، صفحه بدون CSS هم ظاهر درستی خواهد داشت.
+      - ظاهر در CSS تعریف می‌شود و JavaScript فقط وضعیت را عوض می‌کند؛ برگرداندن آن ساده است و یک کلاس را می‌شود روی عنصرهای زیادی به کار برد.
+    answer: 4
+    explain: |
+      با کلاس‌ها، «ظاهر» (CSS) از «رفتار» (JavaScript) جدا می‌ماند؛ همان تفکیک سه‌لایه‌ی اسلاید ۳. برگرداندن وضعیت با یک `remove` یا `toggle` انجام می‌شود و تغییر ظاهر فقط در یک جای CSS لازم است. گزینه‌ی ۱ غلط است چون `el.style` کاملاً کار می‌کند، گزینه‌ی ۲ هم غلط است (با `style.color` هم می‌شود رنگ را عوض کرد) و گزینه‌ی ۳ برعکس است: کلاس بدون تعریف در CSS هیچ اثری ندارد.
