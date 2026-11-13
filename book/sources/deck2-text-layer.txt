@@ -1,0 +1,778 @@
+
+########## PAGE 1 ##########
+Web Programming   CE 40419 Sharif University of Technology        Spring - 2026
+
+
+
+
+Structure Meets                                              Ali Abrishami
+
+
+
+
+Behaviour!
+
+
+
+                                                                              1
+
+########## PAGE 2 ##########
+Web Programming                                                      Spring - 2026
+
+
+
+
+In This Lecture You Will…
+
+
+
+
+             Learn What DOM   Figure out a way    Understand async
+                    is          to make your        programming
+                              pages interactive    usages in web
+
+                                                                                 2
+
+########## PAGE 3 ##########
+Web Programming                                                Spring - 2026
+
+
+
+
+ REMINDER: The Three
+ Layers of a Website
+
+         Structure             Style          Behaviour
+
+
+         What the content is   How it looks    How it reacts
+
+
+
+
+                                                                           3
+
+########## PAGE 4 ##########
+Web Programming                                                                                                 Spring - 2026
+
+
+
+
+REMINDER: Objects
+       ●    Objects group related data and
+            behavior.
+
+       ●    Made of key-value pairs.
+
+       ●    Values can be data (properties)
+            or functions (methods).
+
+       ●    JSON (JavaScript Object
+            Notation) is a common way to
+            store & share object data.
+                                              Technically speaking, in JavaScript, almost everything is an object.
+
+
+                                                                                                                            4
+
+########## PAGE 5 ##########
+Web Programming                                                                              Spring - 2026
+
+
+
+
+REMINDER: this Keyword
+
+       ●    Refers to the object that is calling the function.
+
+       ●    In objects, this points to the object itself.
+
+       ●    In classes, this points to the created instance.
+
+       ●    In arrow functions, this is inherited from the outer scope.
+
+       ●    The value of this depends on how a function is called, not where it’s defined.
+
+
+
+
+                                                                                                         5
+
+########## PAGE 6 ##########
+Web Programming                                                                             Spring - 2026
+
+
+
+
+REMINDER: Async JS
+       ●    Callbacks: Pass a function to run later.
+
+       ●    Promises: Represent a future value with states.
+
+       ●    async/await: Built on Promises, but cleaner syntax.
+
+       ●    Callbacks: can cause nested “callback hell.”
+
+       ●    Promises: chain with .then() / .catch().
+
+       ●    async/await: looks synchronous, easier to read.
+
+       ●    Error handling: callbacks → manual, promises → .catch(), async → try...catch.
+
+                                                                                                        6
+
+########## PAGE 7 ##########
+Web Programming                                                                   Spring - 2026
+
+
+
+
+A Deeper View on Markup
+Languages
+     ●    Markup languages describe structure using
+          tags
+
+     ●    Examples: HTML, XML, Markdown
+
+     ●    Documents are arranged in a hierarchical
+          tree
+
+     ●    Parent and child elements show how content
+          nests
+
+     ●    This tree model is the foundation of the DOM
+                                                         Source: Board Infinity
+                                                                                              7
+
+########## PAGE 8 ##########
+Web Programming                                                                                      Spring - 2026
+
+
+
+
+From Markup To DOM
+                                                                                         Source: W3Schools
+
+       ●    Browser parses HTML into a tree
+            of nodes
+
+       ●    Each tag becomes an element
+            node in the tree
+
+       ●    Text inside tags becomes text
+            nodes
+
+       ●    Attributes become node
+            properties
+
+       ●    This DOM tree is what JavaScript
+            can access & modify                Look how the DOM tree organizes the elements.
+
+
+                                                                                                                 8
+
+########## PAGE 9 ##########
+Web Programming                                                            Spring - 2026
+
+
+
+
+What is the DOM?
+                                                         Source: Milne Publishing
+
+
+
+
+       ●    DOM is short for Document Object Model
+
+       ●    A tree-based representation of a webpage
+
+       ●    Connects HTML structure with JavaScript
+
+       ●    Lets programs read, modify, add, or remove
+            elements
+
+       ●    Acts as a bridge between content and
+            interactivity
+
+
+                                                                                       9
+
+########## PAGE 10 ##########
+Web Programming                                          Spring - 2026
+
+
+
+
+Class Activity Time!
+                  Draw the DOM tree for this HTML code
+
+
+
+
+                                                                   10
+
+########## PAGE 11 ##########
+Web Programming                                                  Spring - 2026
+
+
+
+
+DOM Structure
+       ●    Root node is document
+
+       ●    Elements: tags (<div>,
+            <p>)
+
+       ●    Attributes: properties (id,
+            class)
+
+       ●    Text: text nodes
+
+       ●    All connected in a
+            hierarchical tree
+
+                                          Source: StackOverﬂow
+                                                                            11
+
+########## PAGE 12 ##########
+Web Programming                                                Spring - 2026
+
+
+
+
+DOM Hierarchy In JS
+       ●    window: the top-level browser
+            object (global context, remember?)
+
+       ●    document: represents the web
+            page inside the window
+
+       ●    Elements: tags (<div>, <p>,
+            <h1>) as objects in the DOM tree
+
+       ●    Attributes & Text: properties of
+            element nodes
+
+       ●    Events: methods & listeners that
+            connect JS to user actions
+                                                 Source: CIS
+
+                                                                         12
+
+########## PAGE 13 ##########
+Web Programming                          Spring - 2026
+
+
+
+
+The document Object
+       ●    Represents the entire web
+            page in the browser
+
+       ●    Acts as the entry point to
+            the DOM tree
+
+       ●    Provides methods to find
+            elements
+            (getElementById,
+            querySelector)
+
+       ●    Lets JS create, remove, or
+            update nodes
+
+
+                                                   13
+
+########## PAGE 14 ##########
+Web Programming                             Spring - 2026
+
+
+
+
+The document Object (cont.)
+                      Let’s run this code
+
+
+
+
+                      It has JavaScript
+                      embedded inside
+                     HTML (remember?)
+
+
+
+                       Can you predict
+                      what’s going to be
+                        printed in the
+                          console?
+
+                                                      14
+
+########## PAGE 15 ##########
+Web Programming                          Spring - 2026
+
+
+
+
+The document Object (cont.)
+                     The element itself has
+                       been printed in the
+                     console, which makes
+                        sense, since we
+                     logged the element to
+                          the console.
+
+                         Now, let’s ask
+                     ourselves, what other
+                        cool things can
+                       document do?!
+
+
+                                                   15
+
+########## PAGE 16 ##########
+Web Programming                                                                    Spring - 2026
+
+
+
+
+Querying DOM Elements
+       ●    Use JavaScript to find elements on the page
+
+       ●    getElementById("id"): finds one element by its ID
+
+       ●    getElementsByClassName("class"): finds all elements with that class
+
+       ●    getElementsByTagName("tag"): finds all elements with that tag
+
+       ●    querySelector("selector"): finds the first match using CSS selectors
+
+       ●    querySelectorAll("selector"): finds all matches using CSS selectors
+
+
+                                                                                             16
+
+########## PAGE 17 ##########
+Web Programming                                                             Spring - 2026
+
+
+
+
+Class Activity Time!
+                  What does each line of this JavaScript code snippet do?
+
+
+
+
+                                                                                      17
+
+########## PAGE 18 ##########
+Web Programming                                                        Spring - 2026
+
+
+
+
+Events
+       ●    Events let webpages react to user actions
+
+       ●    Common events: click, input, submit, keydown, load, etc.
+
+       ●    Handlers can be set using HTML attributes or JavaScript
+
+       ●    addEventListener is the modern way to attach events
+
+       ●    Multiple handlers can be added to the same event
+
+       ●    Events enable interactive and dynamic user experiences
+
+
+                                                                                 18
+
+########## PAGE 19 ##########
+Web Programming          Spring - 2026
+
+
+
+
+Example: Button Action
+
+
+
+
+                                   19
+
+########## PAGE 20 ##########
+Web Programming          Spring - 2026
+
+
+
+
+Example: Button Action
+(cont.)
+
+
+
+
+                                   20
+
+########## PAGE 21 ##########
+Web Programming          Spring - 2026
+
+
+
+
+Example: Button Action
+(cont.)
+
+
+
+
+                                   21
+
+########## PAGE 22 ##########
+Web Programming                                                                Spring - 2026
+
+
+
+
+Manipulating The DOM
+       ●    The DOM represents the page as a tree of objects
+
+       ●    JavaScript can change text, HTML, and styles dynamically
+
+       ●    You can create, insert, and remove elements on the fly
+
+       ●    Attributes like id, class, and src can be modified easily
+
+       ●    Methods like getElementById and querySelector help find elements
+
+       ●    DOM manipulation powers interactive, dynamic web pages
+
+
+                                                                                         22
+
+########## PAGE 23 ##########
+Web Programming                                                         Spring - 2026
+
+
+
+
+Adding New Elements
+       ●    Use document.createElement("tag") to create a new element
+
+       ●    Set text using .innerText or .innerHTML
+
+       ●    Add attributes with .setAttribute("name", "value")
+
+       ●    Append the element using .appendChild() or .append()
+
+       ●    Insert elements before others with .insertBefore()
+
+       ●    Combine with events for dynamic UI changes
+
+
+                                                                                  23
+
+########## PAGE 24 ##########
+Web Programming     Spring - 2026
+
+
+
+
+Example: New Div!
+
+
+
+
+                              24
+
+########## PAGE 25 ##########
+Web Programming             Spring - 2026
+
+
+
+
+Example: New Div! (cont.)
+
+
+
+
+                                      25
+
+########## PAGE 26 ##########
+Web Programming             Spring - 2026
+
+
+
+
+Example: New Div! (cont.)
+
+
+
+
+                                      26
+
+########## PAGE 27 ##########
+Web Programming                                                       Spring - 2026
+
+
+
+
+Removing Elements
+       ●    Use .remove() to delete an element directly
+
+       ●    Or call .removeChild() on the parent element
+
+       ●    replaceChild() can swap one element for another
+
+       ●    Always query the element first before removing
+
+       ●    Useful for dynamic UIs like todo lists or notifications
+
+       ●    Combine with events for interactive removals
+
+
+                                                                                27
+
+########## PAGE 28 ##########
+Web Programming         Spring - 2026
+
+
+
+
+Example: Title Goes Away!
+
+
+
+
+                                  28
+
+########## PAGE 29 ##########
+Web Programming         Spring - 2026
+
+
+
+
+Example: Title Goes Away!
+(cont.)
+
+
+
+
+                                  29
+
+########## PAGE 30 ##########
+Web Programming         Spring - 2026
+
+
+
+
+Example: Title Goes Away!
+(cont.)
+
+
+
+
+                                  30
+
+########## PAGE 31 ##########
+Web Programming                                                                       Spring - 2026
+
+
+
+
+Modifying… Everything!
+       ●    Use .setAttribute("name", "value") to add or change an attribute
+
+       ●    .getAttribute("name") reads an attribute’s value
+
+       ●    .removeAttribute("name") deletes an attribute
+
+       ●    Use element.classList.add("class") to add classes dynamically
+
+       ●    classList.remove("class") and classList.toggle("class") for flexibility
+
+       ●    Useful for dynamic styling and state changes
+
+
+                                                                                                31
+
+########## PAGE 32 ##########
+Web Programming         Spring - 2026
+
+
+
+
+Example: Change Image
+
+
+
+
+                                  32
+
+########## PAGE 33 ##########
+Web Programming         Spring - 2026
+
+
+
+
+Example: Change Image
+(cont.)
+
+
+
+
+                                  33
+
+########## PAGE 34 ##########
+Web Programming         Spring - 2026
+
+
+
+
+Example: Change Image
+(cont.)
+
+
+
+
+                                  34
+
+########## PAGE 35 ##########
+Web Programming                                                              Spring - 2026
+
+
+
+
+Forms
+       ●    Access form elements with getElementById or querySelector
+
+       ●    Read user input using .value or .checked for checkboxes/radios
+
+       ●    Attach submit or input events for real-time interaction
+
+       ●    Prevent page reload on submit with event.preventDefault()
+
+       ●    Validate user input before processing
+
+       ●    Combine with DOM methods for dynamic feedback
+
+
+                                                                                       35
+
+########## PAGE 36 ##########
+Web Programming                                                                    Spring - 2026
+
+
+
+
+The window Object
+       ●    Represents the browser window containing the web page
+
+       ●    All global JavaScript objects, functions, and variables belong to it
+
+       ●    Provides methods like alert(), confirm(), and prompt()
+
+       ●    Gives access to location, history, navigator, and more
+
+       ●    Offers timers: setTimeout() and setInterval()
+
+       ●    Accessible properties: innerWidth, innerHeight, scrollX, scrollY
+
+
+                                                                                             36
+
+########## PAGE 37 ##########
+Web Programming                                                                      Spring - 2026
+
+
+
+
+Class Activity Time!
+                  What does alert do? How is it different from prompt and confirm?
+
+
+
+                                  What does location represent?
+
+
+
+
+                     How would you use window to make your pages responsive?
+
+
+
+
+                        Does window have any other children than document?
+
+
+                                                                                               37
+
+########## PAGE 38 ##########
+Web Programming                                                                            Spring - 2026
+
+
+
+
+The localStorage Object
+       ●    Local storage lets websites store data persistently in the browser.
+
+       ●    Data is saved as key–value pairs using localStorage.setItem() and getItem().
+
+       ●    The data stays even after closing the tab or browser.
+
+       ●    Browsers usually allow about 5–10 MB of space per site.
+            `
+       ●    It follows the same-origin policy, so data is isolated per domain.
+
+       ●    Only strings are stored, it’s synchronous, and not safe for sensitive info.
+
+
+                                                                                                     38
+
+########## PAGE 39 ##########
+Web Programming                                                                              Spring - 2026
+
+
+
+
+The sessionStorage
+       ●    sessionStorage stores data only for the current browser tab.
+
+       ●    Data is saved as key–value pairs using sessionStorage.setItem() and getItem().
+
+       ●    The data is cleared when the tab or window is closed.
+
+       ●    It usually has the same storage limit as localStorage (around 5–10 MB).
+
+       ●    It also follows the same-origin policy for security isolation.
+
+       ●    Stores only strings, is synchronous, and not meant for sensitive data.
+
+
+                                                                                                       39
+
+########## PAGE 40 ##########
+Web Programming                                                                           Spring - 2026
+
+
+
+
+Class Activity Time!
+                  What is the key difference between local storage and session storage?
+
+
+
+
+                               Provide an example usage of local storage.
+
+
+
+
+                             Provide an example usage of session storage.
+
+
+
+
+                                                                                                    40
