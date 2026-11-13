@@ -1,0 +1,887 @@
+id: ch1-hoisting
+title: "Hoisting و Temporal Dead Zone (TDZ)"
+slides: "Introduction to JS، اسلایدهای ۳۴ تا ۳۸"
+lesson: |
+  ### میم اسلاید ۳۷: «حس عجیبی دارد، ولی اجازه می‌دهم!»
+  در میم اسلاید ۳۷، پیتر پارکر (مرد عنکبوتی) با جمله‌ی **«Using variable before declaration»** (استفاده از متغیر قبل از تعریفش) سراغ دکتر استرنج می‌رود و دکتر استرنج که برچسب **Javascript** خورده، جواب می‌دهد: **«That feels weird, but I'll allow it»** (حس عجیبی دارد، ولی اجازه می‌دهم).
+
+  در بیشتر زبان‌ها (مثل C یا Java) اگر از متغیری قبل از تعریفش استفاده کنی، برنامه اصلاً اجرا نمی‌شود. ولی JavaScript در خیلی از موارد «اجازه می‌دهد»:
+
+  ```js
+  console.log(city); // undefined (no error!)
+  var city = "Tehran";
+  console.log(city); // Tehran
+  ```
+
+  خط اول متغیری را می‌خواند که هنوز به خط تعریفش نرسیده‌ایم، ولی خطا نمی‌گیرد و `undefined` چاپ می‌کند. دلیل این رفتار عجیب **hoisting** است. در این درس دقیق یاد می‌گیری کِی `undefined` می‌گیری، کِی خطا و کِی همه‌چیز درست کار می‌کند؛ این‌ها از پرتکرارترین تست‌های «خروجی کد» هستند.
+
+  ### Hoisting چیست؟ (اسلایدهای ۳۷ و ۳۸)
+  **hoisting** (بالا بردن اعلان‌ها به ابتدای محدوده؛ فعل انگلیسی hoist یعنی «بالا کشیدن»، مثل بالا کشیدن پرچم) طبق اسلاید ۳۷ یعنی:
+
+  - **Moving declarations before execution**: اعلان‌ها (declarations) **قبل از اجرای کد** جابه‌جا می‌شوند.
+  - **Common in languages like JavaScript**: رفتاری رایج در زبان‌هایی مثل JavaScript است.
+  - **Means code runs as if declared at top**: کد طوری اجرا می‌شود که **انگار** همه‌ی اعلان‌ها بالای محدوده نوشته شده‌اند.
+  - **Variables/functions exist before use**: متغیرها و توابع حتی قبل از خطی که در آن تعریف شده‌اند «وجود دارند».
+  - **Can cause unexpected behavior**: می‌تواند رفتارهای غیرمنتظره ایجاد کند.
+
+  اسلاید ۳۸ (Hoisting in JavaScript) دقیق‌ترش می‌کند:
+
+  - **JS moves declarations to the top of scope**: JavaScript اعلان‌ها را به **بالای scope** (محدوده؛ بخشی از کد که یک نام در آن معتبر است: کل فایل، بدنه‌ی یک تابع یا یک بلوک `{ }`) می‌برد.
+  - **Works for `var`, `function`, and `class` (partially)**: برای `var`، `function` و (به‌صورت ناقص) `class` کار می‌کند.
+  - **Variables are hoisted but not initialized**: متغیرها بالا برده می‌شوند ولی **مقداردهی اولیه (initialization)** نمی‌شوند.
+  - **Access before init gives `undefined` or error**: دسترسی قبل از مقداردهی، یا `undefined` می‌دهد یا خطا.
+  - **Makes code order confusing if misused**: اگر بد استفاده شود، ترتیب کد را گیج‌کننده می‌کند.
+
+  دو اصطلاح درس «متغیرها» را یادت بیاور: در `var score = 10;` بخش `var score` **اعلان (declaration)** است و `= 10` **مقداردهی (initialization)**. کل داستان hoisting در یک جمله: **فقط اعلان بالا می‌رود؛ مقداردهی سر جای خودش می‌ماند.**
+
+  ### پشت صحنه: مرحله‌ی ایجاد و مرحله‌ی اجرا
+  در واقعیت هیچ خطی از کد تو جابه‌جا نمی‌شود؛ «بالا رفتن» یک مدل ذهنی است. اتفاق واقعی این است که موتور JavaScript هر scope را در **دو مرحله** اجرا می‌کند:
+
+  1. **مرحله‌ی ایجاد (creation phase)**: قبل از اجرای حتی یک خط، موتور کل آن scope را مرور می‌کند و **نام** همه‌ی اعلان‌ها را ثبت می‌کند. hoisting همین‌جا رخ می‌دهد.
+  2. **مرحله‌ی اجرا (execution phase)**: حالا کد خط‌به‌خط از بالا به پایین اجرا می‌شود و هر مقداردهی **وقتی خطش برسد** انجام می‌شود.
+
+  ::: analogy
+  یک کلاس درس را تصور کن. قبل از شروع کلاس (مرحله‌ی ایجاد)، استاد فهرست دانشجوها را می‌خواند و برای هر اسم یک صندلی کنار می‌گذارد. بعد کلاس شروع می‌شود (مرحله‌ی اجرا) و دانشجوها یکی‌یکی از راه می‌رسند.
+
+  - صندلی `var`: رویش برگه‌ای با نوشته‌ی `undefined` گذاشته‌اند؛ اگر زودتر سراغش بروی، فقط همان برگه را می‌بینی.
+  - صندلی `let`، `const` و `class`: رزرو شده، ولی دورش نوار «دست نزنید!» کشیده‌اند؛ تا صاحبش نرسد، نزدیک شدن به آن یعنی خطا.
+  - صندلی `function` (تابعِ اعلان‌شده): صاحبش از همان اول نشسته و آماده‌ی کار است.
+  :::
+
+  برای `var`، کد اول طوری اجرا می‌شود که انگار کد دوم را نوشته‌ای:
+
+  ```js
+  // What we write:
+  console.log(a); // undefined
+  var a = 10;
+  console.log(a); // 10
+  ```
+
+  ```js
+  // How it behaves (mental model):
+  var a;          // the declaration is hoisted (a = undefined)
+  console.log(a); // undefined
+  a = 10;         // the assignment stays in its place
+  console.log(a); // 10
+  ```
+
+  ### جدول اصلی: هر اعلان در مرحله‌ی ایجاد چه می‌شود؟
+
+  | اعلان | در مرحله‌ی ایجاد | استفاده قبل از خط تعریف |
+  |---|---|---|
+  | `var x = 5;` | `x` ساخته می‌شود با مقدار `undefined` | `undefined` (بدون خطا) |
+  | `let x = 5;` و `const x = 5;` | `x` ساخته می‌شود ولی **مقدار اولیه نمی‌گیرد** (در TDZ است) | `ReferenceError` |
+  | `function f() {}` | `f` ساخته می‌شود و **کل تابع** در آن قرار می‌گیرد | کار می‌کند |
+  | `class A {}` | `A` ساخته می‌شود ولی مقدار اولیه نمی‌گیرد (در TDZ است) | `ReferenceError` |
+  | `var f = () => {};` یا `var f = function () {};` | مثل هر `var`: `f` برابر `undefined` | خواندن: `undefined`؛ صدا زدن: `TypeError` |
+  | `const f = () => {};` یا `let f = function () {};` | مثل هر `const`/`let`: در TDZ | `ReferenceError` |
+  | (اصلاً اعلانی وجود ندارد) | — | `ReferenceError: x is not defined` |
+
+  بیا یک مثال کامل را با این دو مرحله دنبال کنیم:
+
+  ```js lines
+  console.log(a);         // undefined
+  console.log(sum(1, 2)); // 3
+  var a = 1;
+  let b = 2;
+  function sum(x, y) {
+    return x + y;
+  }
+  console.log(a, b);      // 1 2
+  ```
+
+  - **مرحله‌ی ایجاد**: موتور سه اعلان پیدا می‌کند: `a` (با مقدار `undefined`)، `b` (بدون مقدار اولیه، در TDZ) و `sum` (همراه با کل بدنه‌اش).
+  - **مرحله‌ی اجرا**: خط ۱ مقدار فعلی `a` یعنی `undefined` را چاپ می‌کند. خط ۲ تابع `sum` را که از قبل آماده است صدا می‌زند و `3` چاپ می‌شود. خط ۳ عدد `1` را در `a` می‌ریزد. خط ۴ به TDZ متغیر `b` پایان می‌دهد و `2` را در آن می‌ریزد. خط‌های ۵ تا ۷ در مرحله‌ی اجرا کاری ندارند (تابع قبلاً ساخته شده است). خط ۸ چاپ می‌کند `1 2`.
+  - اگر در خط ۱ به جای `a`، متغیر `b` را می‌خواندیم، خطای `ReferenceError` می‌گرفتیم و برنامه همان‌جا متوقف می‌شد.
+
+  ### `var`: بالا می‌رود، با مقدار `undefined`
+  اعلان `var` به بالای **نزدیک‌ترین تابع** می‌رود (یا اگر داخل هیچ تابعی نباشد، به بالای کل فایل). بلوک‌های `if`، `for` و `{ }` برای `var` اهمیتی ندارند، چون `var` **function-scoped** (محدود به تابع، نه بلوک) است. نتیجه‌ی عجیبش: حتی اعلانی که داخل یک بلوکِ **هرگز اجرانشده** باشد هم hoist می‌شود:
+
+  ```js
+  console.log(flag); // undefined
+  if (false) {
+    var flag = true; // never runs, but the declaration is still hoisted
+  }
+  console.log(flag); // undefined
+  ```
+
+  هیچ‌کدام از دو `console.log` خطا نمی‌دهد: `flag` در مرحله‌ی ایجاد ساخته شده، ولی چون مقداردهی‌اش هرگز اجرا نشد، تا آخر `undefined` می‌ماند. اسلاید ۲۷ همین را یکی از مشکلات `var` می‌داند: «declarations move to the top, causing unexpected undefined».
+
+  ### `let` و `const`: بالا می‌روند، ولی در TDZ
+  `let` و `const` هم hoist می‌شوند (موتور از همان ابتدای scope نامشان را می‌شناسد)، ولی **مقدار اولیه نمی‌گیرند**. از ابتدای scope تا لحظه‌ای که خط تعریفشان اجرا شود، در بازه‌ای به نام **Temporal Dead Zone** یا **TDZ** (منطقه‌ی مرده‌ی زمانی؛ بازه‌ای که متغیر وجود دارد ولی هنوز قابل استفاده نیست) هستند. هر دسترسی به متغیر در این بازه، خطای `ReferenceError` (خطای ارجاع) می‌دهد:
+
+  ```js
+  console.log(score); // ReferenceError: Cannot access 'score' before initialization
+  let score = 10;
+  ```
+
+  - **شروع TDZ**: ابتدای scope متغیر؛ برای `let` و `const` یعنی ابتدای همان بلوک `{ }`، بدنه‌ی تابع یا فایلی که در آن تعریف شده‌اند.
+  - **پایان TDZ**: لحظه‌ای که خط تعریف **اجرا** شود. حتی `let note;` بدون مقدار هم به TDZ پایان می‌دهد و متغیر را `undefined` می‌کند:
+
+  ```js
+  let note;          // TDZ ends here, even without a value
+  console.log(note); // undefined
+  note = "saved";
+  console.log(note); // saved
+  ```
+
+  #### چرا «Temporal» (زمانی)؟
+  چون TDZ به **زمان اجرا** بستگی دارد، نه به **جای** کد در فایل. تابعی که بالاتر از خط تعریف نوشته شده، اگر **بعد از** اجرای آن خط صدا زده شود، مشکلی ندارد:
+
+  ```js
+  function show() {
+    console.log(msg); // written ABOVE the declaration...
+  }
+  let msg = "hi";
+  show(); // hi  (...but it RUNS after the declaration line)
+  ```
+
+  ولی اگر همین تابع **قبل از** اجرای خط تعریف صدا زده شود، هنوز در TDZ هستیم:
+
+  ```js lines
+  function show() {
+    console.log(msg);
+  }
+  show(); // ReferenceError: Cannot access 'msg' before initialization
+  let msg = "hi";
+  ```
+
+  خطا هنگام اجرای خط ۲ (همان‌جا که `msg` خوانده می‌شود) پرتاب می‌شود و Node.js همین خط را گزارش می‌کند؛ خط ۴ فقط باعث اجرای آن شده است.
+
+  #### `typeof` هم از TDZ در امان نیست
+  `typeof` (عملگری که نوع یک مقدار را به‌صورت رشته برمی‌گرداند) برای نامی که **اصلاً تعریف نشده** خطا نمی‌دهد و `"undefined"` برمی‌گرداند. ولی برای متغیری که در TDZ است، خطا می‌دهد:
+
+  ```js
+  console.log(typeof ghost); // "undefined" (ghost was never declared: typeof is safe)
+  console.log(typeof later); // ReferenceError: Cannot access 'later' before initialization
+  let later = 1;
+  ```
+
+  #### سه پیام خطا که نباید قاطی کنی
+
+  | پیام | معنی | چه زمانی؟ |
+  |---|---|---|
+  | `ReferenceError: x is not defined` | اصلاً متغیری به نام `x` در scopeهای قابل‌دسترسی وجود ندارد | نامی که هیچ‌جا تعریف نشده |
+  | `ReferenceError: Cannot access 'x' before initialization` | `x` وجود دارد (hoist شده) ولی هنوز در TDZ است | `let`، `const` یا `class` قبل از خط تعریف |
+  | `TypeError: f is not a function` | `f` وجود دارد ولی مقدارش تابع نیست (مثلاً `undefined` است) و آن را صدا زده‌ایم | `var f = ...` که قبل از خط تعریف صدا زده شود |
+
+  متن پیام به موتور بستگی دارد: Chrome و Node.js (موتور V8) می‌نویسند `Cannot access 'x' before initialization` و Firefox می‌نویسد `can't access lexical declaration 'x' before initialization`؛ ولی **نوع خطا همیشه `ReferenceError` است**.
+
+  ### hoisting در هر scope جداگانه رخ می‌دهد
+  مرحله‌ی ایجاد فقط مخصوص کل فایل نیست: **هر بار که یک تابع صدا زده می‌شود**، بدنه‌ی آن تابع مرحله‌ی ایجاد خودش را دارد (و هر بلوک `{ }` هم برای `let`، `const` و `class`). پس یک متغیر محلی، از **همان خط اول** تابع، متغیر هم‌نامِ بیرونی را **پنهان (shadow)** می‌کند؛ حتی در خط‌هایی که بالاتر از تعریف محلی نوشته شده‌اند.
+
+  با `var` نتیجه یک `undefined` غیرمنتظره است:
+
+  ```js
+  var user = "Ali";
+  function hello() {
+    console.log(user); // undefined (the local user is hoisted to the top of hello)
+    var user = "Sara";
+    console.log(user); // Sara
+  }
+  hello();
+  console.log(user);   // Ali (the global user was never touched)
+  ```
+
+  با `let` نتیجه خطاست، و این بهترین **اثبات** است که `let` هم hoist می‌شود:
+
+  ```js lines
+  let x = 1;
+  function f() {
+    console.log(x); // ReferenceError: Cannot access 'x' before initialization
+    let x = 2;
+  }
+  f();
+  ```
+
+  اگر `let x` داخل `f` hoist نمی‌شد، خط ۳ باید `x` بیرونی را می‌دید و `1` چاپ می‌کرد. ولی `x` داخلی از ابتدای بدنه‌ی `f` ثبت شده، `x` بیرونی را پنهان کرده و هنوز در TDZ است؛ پس خطا می‌گیریم. پیام خطا هم همین را می‌گوید: «Cannot access before initialization»، نه «is not defined».
+
+  یک مثال ترکیبی از قاعده‌ی «`var` کل تابع را می‌بیند، `let` فقط بلوک خودش را»:
+
+  ```js
+  function demo() {
+    console.log(a);        // undefined: var a belongs to the whole function
+    {
+      // the TDZ of b starts here (top of the block)
+      let b = 2;           // the TDZ of b ends here
+      var a = 1;           // var ignores the block
+      console.log(b);      // 2
+    }
+    console.log(a);        // 1
+    console.log(typeof b); // "undefined": b does not exist outside its block
+  }
+  demo();
+  ```
+
+  ### توابع: declaration در برابر arrow (اسلایدهای ۳۴ تا ۳۶)
+  اسلاید ۳۴ درباره‌ی **function declaration** (اعلان تابع؛ تعریف تابع با کلمه‌ی کلیدی `function` و یک نام، به‌صورت یک دستور مستقل) می‌گوید: «Can be called before or after it's defined (hoisted)» و زیرش تأکید می‌کند: «Remember, this can be hoisted!». چنین تابعی در مرحله‌ی ایجاد **همراه با بدنه‌اش** ساخته می‌شود، پس قبل از خط تعریف هم قابل صدا زدن است:
+
+  ```js title=fn.js
+  console.log(add(2, 3)); // 5 (called BEFORE the declaration: works)
+
+  function add(a, b) {
+    return a + b;
+  }
+
+  console.log(add(2, 3)); // 5 (called after: works too)
+  ```
+
+  اسلاید ۳۵ درباره‌ی **arrow function** (تابع پیکانی ES6 با نحو `=>`) می‌گوید: «**Not hoisted** (must be defined before use)» و «Remember, this **cannot** be hoisted!». دلیلش این است که arrow function خودش اعلان نیست؛ یک **مقدار** است که در یک متغیر ریخته می‌شود. پس رفتارش دقیقاً رفتار **همان متغیر** است و تابع فقط وقتی در متغیر قرار می‌گیرد که خط تعریف اجرا شود. کد اسلاید ۳۵، اگر صدا زدن را بالاتر ببریم:
+
+  ```js title=fn.js
+  console.log(multiply(4, 5)); // ReferenceError: Cannot access 'multiply' before initialization
+
+  const multiply = (a, b) => {
+    return a * b;
+  };
+  ```
+
+  اگر همان arrow function را در `var` بریزیم، پیام خطا عوض می‌شود: متغیر hoist شده و `undefined` است، و صدا زدن `undefined` یعنی `TypeError`:
+
+  ```js
+  console.log(typeof mult2); // "undefined"
+  mult2(4, 5);               // TypeError: mult2 is not a function
+  var mult2 = (a, b) => a * b;
+  ```
+
+  **function expression** (عبارت تابعی؛ تابعی که به‌صورت مقدار در یک متغیر ریخته می‌شود، مثل `const f = function () {};`) هم دقیقاً همین‌طور است: hoisting آن را کلمه‌ی کلیدی متغیر (`var`، `let` یا `const`) تعیین می‌کند، نه کلمه‌ی `function`.
+
+  خلاصه‌ی اسلاید ۳۶ (Method I vs. Method II): «Functions are **hoisted** (usable before definition)» و «Arrows are **not hoisted**». یک کاربرد عملی hoisting توابع این است که می‌توانی کد اصلی را بالای فایل بنویسی و تابع‌های کمکی را پایین آن:
+
+  ```js
+  // main code on top
+  console.log(formatPrice(1200)); // 1200 Toman
+
+  // helper functions at the bottom (function declarations are hoisted)
+  function formatPrice(n) {
+    return n + " Toman";
+  }
+  ```
+
+  hoisting توابع داخل توابع دیگر هم رخ می‌دهد؛ حتی تابعی که **بعد از `return`** نوشته شده، در مرحله‌ی ایجاد ساخته می‌شود:
+
+  ```js
+  function outer() {
+    return inner(); // works: inner is hoisted to the top of outer
+    function inner() {
+      return "inner works";
+    }
+  }
+  console.log(outer()); // inner works
+  ```
+
+  ### `class`: «تا حدی» hoist می‌شود
+  اسلاید ۳۸ می‌گوید hoisting برای `class` به‌صورت **partially** (ناقص) کار می‌کند: نام کلاس در مرحله‌ی ایجاد ثبت می‌شود، ولی مثل `let` و `const` تا خط تعریفش در TDZ می‌ماند. پس برخلاف function declaration، **نمی‌توانی قبل از خط تعریف از کلاس استفاده کنی** (کلاس‌ها را در درس «کلاس‌ها» کامل می‌خوانیم):
+
+  ```js
+  const p = new Person("Ali"); // ReferenceError: Cannot access 'Person' before initialization
+
+  class Person {
+    constructor(name) {
+      this.name = name;
+    }
+  }
+  ```
+
+  راه درست این است که اول کلاس را تعریف کنی و بعد با `new` از آن شیء بسازی.
+
+  ::: info بیشتر بدانیم: وقتی چند اعلان هم‌نام داریم
+  - اگر **دو function declaration** هم‌نام باشند، هر دو در مرحله‌ی ایجاد پردازش می‌شوند و **دومی جای اولی را می‌گیرد**؛ پس حتی صدا زدن در بالای فایل هم نسخه‌ی دوم را اجرا می‌کند.
+  - اگر یک `var` و یک function declaration هم‌نام باشند، در مرحله‌ی ایجاد **تابع برنده است** (اعلان `var` نامی را که از قبل وجود دارد `undefined` نمی‌کند). ولی در مرحله‌ی اجرا، وقتی به خط مقداردهی `var` برسیم، مقدار جدید جای تابع را می‌گیرد:
+
+  ```js
+  console.log(typeof value); // "function" (function declarations win in the creation phase)
+  var value = 10;
+  function value() {}
+  console.log(typeof value); // "number" (the assignment ran on line 2)
+  ```
+
+  با `let`، `const` یا `class` اصلاً نمی‌شود نام تکراری تعریف کرد: `let value = 10; function value() {}` خطای `SyntaxError: Identifier 'value' has already been declared` می‌دهد.
+  :::
+
+  ### چطور از دردسرهای hoisting دور بمانیم؟
+  اسلاید ۳۸ هشدار می‌دهد: «Makes code order confusing if misused». چند عادت ساده:
+
+  - متغیرها را با `const` (یا در صورت نیاز `let`) و **در بالای scope** تعریف کن و **قبل از استفاده** مقدار بده.
+  - از `var` استفاده نکن (درس «مشکلات var»)؛ `undefined` بی‌صدای آن باگ را پنهان می‌کند، ولی `ReferenceError` در `let`/`const` فوراً خبرت می‌کند.
+  - arrow function و function expression را **قبل از** اولین صدا زدن تعریف کن.
+  - به hoisting توابع فقط آگاهانه تکیه کن (مثل تابع‌های کمکی پایین فایل)، نه برای خواندن متغیرهایی که هنوز مقدار نگرفته‌اند.
+
+  ::: tip
+  - **فقط اعلان hoist می‌شود، نه مقداردهی.** `console.log(x); var x = 5;` چاپ می‌کند `undefined`، نه `5`.
+  - قبل از خط تعریف: `var` ← `undefined`؛ `let`، `const` و `class` ← `ReferenceError` (TDZ)؛ function declaration ← کامل و قابل صدا زدن.
+  - arrow function و function expression از متغیرشان پیروی می‌کنند: با `const`/`let` ← `ReferenceError` و با `var` ← `TypeError: ... is not a function`.
+  - TDZ از ابتدای scope شروع می‌شود و وقتی خط تعریف **اجرا** شود تمام می‌شود؛ زمان اجرا مهم است، نه جای کد در فایل.
+  - hoisting در هر scope جداگانه است: `var` به بالای تابع می‌رود و `let`/`const`/`class` به بالای بلوک خودشان.
+  :::
+
+  ::: trap
+  - `typeof` فقط برای نامِ **تعریف‌نشده** امن است (`"undefined"`)؛ روی متغیرِ در TDZ خطای `ReferenceError` می‌دهد.
+  - متغیر محلیِ `let` از **اولین خط** تابع، متغیر هم‌نام بیرونی را پنهان می‌کند: `let x = 1; function f() { console.log(x); let x = 2; } f();` خطا می‌دهد، نه `1`. با `var` همین الگو `undefined` چاپ می‌کند، نه مقدار بیرونی.
+  - `var` داخل `if (false) { ... }` هم hoist می‌شود؛ خواندنش `undefined` است، نه `ReferenceError`.
+  - `let count = count + 1;` خطا می‌دهد: TDZ تا **پایان** اجرای خط تعریف ادامه دارد و سمت راست قبل از پایان TDZ خوانده می‌شود.
+  - «Cannot access ... before initialization» و «... is not defined» هر دو `ReferenceError` هستند، ولی صدا زدن متغیری که `undefined` است (`var f` قبل از تعریف) `TypeError` است.
+  - `var n;` بدون مقدار در مرحله‌ی اجرا هیچ کاری نمی‌کند؛ مقداری را که قبلاً در `n` ریخته شده پاک نمی‌کند.
+  :::
+
+  ::: summary
+  - hoisting یعنی ثبت اعلان‌ها در ابتدای scope قبل از اجرا؛ کد طوری اجرا می‌شود که انگار اعلان‌ها بالا نوشته شده‌اند (اسلاید ۳۷).
+  - طبق اسلاید ۳۸ برای `var`، `function` و `class` (ناقص) کار می‌کند؛ متغیرها hoist می‌شوند ولی مقداردهی نمی‌شوند.
+  - `var` ← `undefined`؛ `let`/`const`/`class` ← TDZ و `ReferenceError`؛ function declaration ← قابل صدا زدن پیش از تعریف؛ arrow function ← hoist نمی‌شود (مثل متغیرش رفتار می‌کند).
+  - TDZ: از ابتدای scope تا اجرای خط تعریف؛ حتی `typeof` هم در آن خطا می‌دهد.
+  :::
+questions:
+  - level: easy
+    stem: |
+      در میم اسلاید ۳۷، پیتر پارکر با جمله‌ی «Using variable before declaration» سراغ دکتر استرنج (با برچسب Javascript) می‌رود و جواب می‌شنود: «That feels weird, but I'll allow it». این میم به کدام رفتار JavaScript اشاره دارد؟
+    options:
+      - 'Type coercion (تبدیل خودکار نوع داده‌ها)'
+      - 'Hoisting (بالا بردن اعلان‌ها به ابتدای scope)'
+      - 'Closure (به خاطر سپردن متغیرهای بیرونی توسط تابع)'
+      - 'Garbage collection (پاک‌سازی خودکار حافظه)'
+    answer: 2
+    explain: |
+      میم دقیقاً درباره‌ی «استفاده از متغیر قبل از تعریفش» است و JavaScript به خاطر **hoisting** این کار را اجازه می‌دهد؛ مثلاً `console.log(x); var x = 5;` خطا نمی‌دهد و `undefined` چاپ می‌کند. type coercion درباره‌ی تبدیل نوع داده‌هاست، closure درباره‌ی دسترسی تابع به متغیرهای scope بیرونی و garbage collection درباره‌ی پاک‌سازی حافظه؛ هیچ‌کدام ربطی به استفاده‌ی زودتر از تعریف ندارند.
+
+  - level: easy
+    stem: |
+      کدام گزینه تعریف درست **hoisting** در JavaScript است؟
+    options:
+      - 'قبل از اجرا، کل خط‌های تعریف، یعنی هم اعلان و هم مقداردهی، به ابتدای فایل منتقل می‌شوند.'
+      - 'هر متغیری که قبل از تعریفش استفاده شود، خودبه‌خود با مقدار `null` ساخته می‌شود.'
+      - 'قبل از اجرای کد، اعلان‌ها (declarations) در ابتدای scope خودشان ثبت می‌شوند؛ انگار به بالای scope منتقل شده‌اند.'
+      - 'موتور JavaScript همه‌ی `var`ها را خودکار به `let` تبدیل می‌کند تا خطایی رخ ندهد.'
+    answer: 3
+    explain: |
+      در مرحله‌ی ایجاد (قبل از اجرای کد)، موتور نام همه‌ی اعلان‌های هر scope را ثبت می‌کند؛ اسلاید ۳۷ این را «Moving declarations before execution» و «code runs as if declared at top» می‌نامد. گزینه‌ی ۱ اشتباه رایج است: **مقداردهی** بالا نمی‌رود و سر جای خودش اجرا می‌شود (برای همین `var` قبل از تعریف `undefined` است، نه مقدار نهایی). گزینه‌ی ۲ غلط است، چون `var` قبل از تعریف `undefined` است، نه `null`، و `let` اصلاً مقدار اولیه نمی‌گیرد. گزینه‌ی ۴ ساختگی است؛ هیچ تبدیل خودکاری بین `var` و `let` وجود ندارد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۸، hoisting برای کدام اعلان‌ها کار می‌کند؟
+    options:
+      - 'فقط `function`؛ متغیرها هرگز hoist نمی‌شوند.'
+      - 'فقط `let` و `const`.'
+      - '`var`، `function` و `class` (به‌صورت ناقص).'
+      - 'فقط `var`؛ توابع و کلاس‌ها هرگز hoist نمی‌شوند.'
+    answer: 3
+    explain: |
+      متن اسلاید ۳۸: «Works for `var`, `function`, and `class` (partially)». گزینه‌ی ۱ غلط است، چون `var` هم hoist می‌شود (و قبل از تعریف `undefined` است). گزینه‌ی ۲ نادرست است، چون `var` و `function` را که قطعاً hoist می‌شوند کنار گذاشته است (`let` و `const` هم مثل `class` فقط به‌صورت ناقص و در TDZ hoist می‌شوند). گزینه‌ی ۴ هم function declaration را نادیده گرفته که اسلاید ۳۴ صریحاً می‌گوید hoist می‌شود.
+
+  - level: easy
+    stem: |
+      در جای خالی جمله‌ی اسلاید ۳۸ کدام گزینه قرار می‌گیرد؟
+
+      «متغیرها hoist می‌شوند، ولی ______ نمی‌شوند.» (Variables are hoisted but not ______)
+    options:
+      - 'اعلان (declared)'
+      - 'مقداردهی اولیه (initialized)'
+      - 'در scope ثبت (registered in the scope)'
+      - 'برای موتور شناخته‌شده (known to the engine)'
+    answer: 2
+    explain: |
+      جمله‌ی اسلاید ۳۸: «Variables are hoisted but not **initialized**». یعنی نام متغیر از ابتدای scope ثبت و شناخته می‌شود، ولی مقداری که در خط تعریف آمده هنوز در آن ریخته نشده است: `var` موقتاً `undefined` است و `let`/`const` اصلاً مقدار اولیه ندارند (TDZ). گزینه‌های ۱، ۳ و ۴ همه به معنی «اعلان یا ثبت شدن» هستند؛ این دقیقاً کاری است که hoisting **انجام می‌دهد**، پس نمی‌توانند در جای خالی بنشینند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(x);
+      var x = 5;
+      console.log(x);
+    options:
+      - out: ["undefined", "5"]
+      - out: ["5", "5"]
+      - out: ["!! ReferenceError"]
+      - out: ["null", "5"]
+    answer: 1
+    explain: |
+      اعلان `var x` hoist می‌شود و `x` از ابتدا با مقدار `undefined` وجود دارد، ولی مقداردهی `= 5` سر جای خودش (خط ۲) اجرا می‌شود. پس خط ۱ `undefined` و خط ۳ `5` چاپ می‌کند. گزینه‌ی ۲ فکر کرده مقداردهی هم بالا می‌رود؛ گزینه‌ی ۳ رفتار `let` را به `var` نسبت داده؛ گزینه‌ی ۴ هم اشتباه است، چون مقدار پیش‌فرض `undefined` است، نه `null`.
+
+  - level: medium
+    stem: |
+      یک فایل این سه اعلان را دارد: `var a = 5;`، `let b = 6;` و `function c() {}`. در پایان **مرحله‌ی ایجاد** (creation phase)، یعنی درست قبل از اجرای اولین خط، وضعیت این سه نام کدام است؟
+    options:
+      - '`a` برابر `5`، `b` برابر `6` و `c` تابع کامل'
+      - 'هر سه برابر `undefined`'
+      - '`a` برابر `undefined`، `b` بدون مقدار اولیه (در TDZ) و `c` تابع کامل'
+      - '`a` در TDZ، `b` برابر `undefined` و `c` فقط یک نام بدون بدنه'
+    answer: 3
+    explain: |
+      در مرحله‌ی ایجاد: `var a` ساخته و با `undefined` مقداردهی می‌شود؛ `let b` ساخته می‌شود ولی مقدار اولیه نمی‌گیرد (در TDZ است)؛ function declaration `c` همراه با کل بدنه‌اش ساخته می‌شود. مقدارهای `5` و `6` فقط در مرحله‌ی اجرا و وقتی خطشان برسد ریخته می‌شوند (رد گزینه‌ی ۱). گزینه‌ی ۲ تفاوت `let` و `function` را نادیده گرفته و گزینه‌ی ۴ رفتار `var` و `let` را برعکس گفته و بدنه‌ی تابع را هم جا انداخته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(i);
+      for (var i = 0; i < 3; i++) {}
+      console.log(i);
+    options:
+      - out: ["undefined", "3"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "2"]
+      - out: ["0", "3"]
+    answer: 1
+    explain: |
+      `var i` در سرآیند حلقه به بالای scope (اینجا کل فایل) hoist می‌شود، چون `var` بلوک حلقه را نمی‌شناسد. پس خط ۱ `undefined` چاپ می‌کند، نه خطا (رد گزینه‌ی ۲). حلقه تا وقتی `i < 3` است ادامه دارد و وقتی `i` به `3` می‌رسد متوقف می‌شود؛ `i` بیرون از حلقه هم در دسترس است و `3` چاپ می‌شود. گزینه‌ی ۳ آخرین مقدارِ «داخل» بدنه‌ی حلقه را گفته و گزینه‌ی ۴ فکر کرده hoisting مقدار اولیه‌ی `0` را هم بالا می‌برد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function check(n) {
+        if (n > 10) {
+          var label = "big";
+        }
+        return label;
+      }
+      console.log(check(50), check(5));
+    options:
+      - out: ["!! ReferenceError"]
+      - out: "big big"
+      - out: "big null"
+      - out: "big undefined"
+    answer: 4
+    explain: |
+      `var label` به بالای تابع `check` hoist می‌شود و بلوک `if` برایش اهمیتی ندارد. در `check(50)` شرط درست است و `label` مقدار `"big"` می‌گیرد. در `check(5)` شرط نادرست است، ولی `label` باز هم وجود دارد (با مقدار `undefined`)، پس `return label` خطا نمی‌دهد (رد گزینه‌ی ۱). هر بار صدا زدن تابع متغیرهای محلی تازه‌ی خودش را دارد، پس `"big"` از صدا زدن قبلی باقی نمی‌ماند (رد گزینه‌ی ۲)، و مقدار پیش‌فرض `undefined` است نه `null` (رد گزینه‌ی ۳).
+
+  - level: easy
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «به بازه‌ی زمانی از ابتدای scope تا اجرای خط تعریفِ یک متغیر `let` یا `const`، که در آن هر دسترسی به متغیر خطای `ReferenceError` می‌دهد، ______ می‌گویند.»
+    options:
+      - 'Hoisting'
+      - 'Global Scope'
+      - 'Closure'
+      - 'Temporal Dead Zone (TDZ)'
+    answer: 4
+    explain: |
+      این تعریف **Temporal Dead Zone (TDZ)** است: متغیر `let`/`const` از ابتدای scope وجود دارد ولی تا اجرای خط تعریفش قابل استفاده نیست. hoisting نام کلی پدیده‌ی ثبت اعلان‌ها در ابتدای scope است، نه آن بازه‌ی ممنوع؛ global scope محدوده‌ی سراسری برنامه است و closure به خاطر سپردن متغیرهای بیرونی توسط یک تابع.
+
+  - level: easy
+    stem: |
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
+    errorName: ReferenceError
+    options:
+      - code: 'console.log(b); let b = 1;'
+      - code: 'console.log(a); var a = 1;'
+      - code: 'hello(); function hello() {}'
+      - code: 'var c; console.log(c);'
+    answer: 1
+    explain: |
+      در گزینه‌ی ۱، `b` با `let` تعریف شده و `console.log(b)` در TDZ آن اجرا می‌شود، پس `ReferenceError: Cannot access 'b' before initialization` رخ می‌دهد. گزینه‌ی ۲ فقط `undefined` چاپ می‌کند (رفتار `var`)، گزینه‌ی ۳ تابعی را صدا می‌زند که به‌صورت function declaration کامل hoist شده است، و گزینه‌ی ۴ متغیری را می‌خواند که قبلاً اعلان شده و مقدارش `undefined` است.
+
+  - level: medium
+    stem: |
+      کدام عبارت درباره‌ی TDZ **درست** است؟
+    options:
+      - 'TDZ از ابتدای scope متغیر شروع می‌شود و وقتی خط تعریف آن اجرا شود تمام می‌شود.'
+      - 'TDZ فقط مخصوص متغیرهای `var` است.'
+      - 'TDZ از خط تعریف متغیر شروع می‌شود و تا پایان بلوک ادامه دارد.'
+      - 'خواندن متغیری که در TDZ است، مقدار `undefined` برمی‌گرداند.'
+    answer: 1
+    explain: |
+      TDZ از ابتدای scope (بلوک، بدنه‌ی تابع یا فایل) شروع می‌شود و لحظه‌ای که خط تعریف اجرا شود تمام می‌شود. گزینه‌ی ۲ برعکس است: `var` اصلاً TDZ ندارد و TDZ مخصوص `let`، `const` و `class` است. گزینه‌ی ۳ جهت را اشتباه گفته؛ بعد از خط تعریف، متغیر کاملاً قابل استفاده است. گزینه‌ی ۴ هم رفتار `var` است؛ دسترسی در TDZ خطای `ReferenceError` می‌دهد.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      let price = 100;
+      let total = price + tax;
+      let tax = 9;
+      console.log(total);
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 1
+    explain: |
+      در خط ۲ برای محاسبه‌ی `price + tax` باید `tax` خوانده شود، ولی `tax` با `let` در خط ۳ تعریف شده و هنوز در TDZ است؛ پس `ReferenceError: Cannot access 'tax' before initialization` روی خط ۲ رخ می‌دهد. خط ۳ خودش مشکلی ندارد و خط ۴ هم به دلیل توقف برنامه هرگز اجرا نمی‌شود. کسی که «هیچ خطایی» را انتخاب کند، `let` را با `var` اشتباه گرفته است (با `var` حاصل `100 + undefined` یعنی `NaN` می‌شد).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function greet() {
+        console.log("Hi " + userName);
+      }
+      let userName = "Sara";
+      greet();
+    options:
+      - out: "Hi undefined"
+      - out: ["!! ReferenceError"]
+      - out: "Hi Sara"
+      - out: "Hi "
+    answer: 3
+    explain: |
+      TDZ به **زمان اجرا** بستگی دارد، نه به جای نوشتن کد. تابع `greet` گرچه بالاتر از `let userName` نوشته شده، فقط در خط ۵ و **بعد از** اجرای خط ۴ صدا زده می‌شود؛ در آن لحظه TDZ تمام شده و `userName` برابر `"Sara"` است. اگر `greet()` قبل از خط ۴ صدا زده می‌شد، `ReferenceError` می‌گرفتیم (گزینه‌ی ۲). گزینه‌ی ۱ رفتار `var` قبل از مقداردهی است و گزینه‌ی ۴ هم هیچ پایه‌ای ندارد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let later = "outer";
+      console.log(typeof notDeclared);
+      {
+        console.log(typeof later);
+        let later = 5;
+      }
+    options:
+      - out: ["undefined", "string"]
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "number"]
+    answer: 2
+    explain: |
+      `typeof` برای نامی که **اصلاً تعریف نشده** امن است و رشته‌ی `"undefined"` را برمی‌گرداند (خط ۲). داخل بلوک، `let later = 5` یک `later` **جدید** می‌سازد که از ابتدای بلوک ثبت شده و `later` بیرونی را پنهان (shadow) می‌کند؛ پس خط ۴، `later` داخلی را می‌بیند که هنوز در TDZ است و حتی `typeof` هم `ReferenceError` می‌دهد. گزینه‌ی ۱ فکر کرده خط ۴ متغیر بیرونی را می‌بیند (یعنی `let` داخلی hoist نمی‌شود)، گزینه‌ی ۴ مقداردهی داخلی را هم hoist‌شده فرض کرده، و گزینه‌ی ۳ فکر کرده `typeof` روی نام تعریف‌نشده هم خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      کدام عبارت درباره‌ی پیام‌های خطای زیر **درست** است؟
+
+      `ReferenceError: x is not defined` و `ReferenceError: Cannot access 'x' before initialization` و `TypeError: x is not a function`
+    options:
+      - '`x is not defined` یعنی `x` در scope وجود دارد ولی هنوز در TDZ است.'
+      - "`Cannot access 'x' before initialization` یعنی `x` hoist شده و وجود دارد ولی هنوز در TDZ است؛ در حالی که `x is not defined` یعنی اصلاً متغیری با این نام وجود ندارد."
+      - '`TypeError: x is not a function` فقط وقتی رخ می‌دهد که `x` با `const` تعریف شده باشد.'
+      - 'این سه پیام در واقع یکی‌اند و فقط مرورگرهای مختلف متن متفاوتی برایشان نشان می‌دهند.'
+    answer: 2
+    explain: |
+      «Cannot access ... before initialization» یعنی موتور متغیر را می‌شناسد (hoist شده) ولی در TDZ است؛ «is not defined» یعنی هیچ متغیری با این نام در scopeهای قابل‌دسترسی نیست. گزینه‌ی ۱ این دو را جابه‌جا کرده است. گزینه‌ی ۳ غلط است، چون `TypeError: x is not a function` وقتی رخ می‌دهد که چیزی را که تابع نیست صدا بزنیم؛ مثلاً `var x` قبل از مقداردهی که `undefined` است. گزینه‌ی ۴ هم غلط است: این‌ها سه وضعیت متفاوت‌اند (نوع خطای سومی حتی `TypeError` است)؛ فقط **متن** یک پیام ممکن است بین موتورها فرق کند.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      let count = 5;
+      {
+        let count = count + 1;
+        console.log(count);
+      }
+      console.log(count);
+    options:
+      - line: 0
+      - line: 4
+      - line: 3
+      - line: 6
+    answer: 3
+    explain: |
+      داخل بلوک، `let count` جدیدی تعریف می‌شود که از ابتدای بلوک، `count` بیرونی را پنهان (shadow) می‌کند. برای اجرای خط ۳ اول باید سمت راست، یعنی `count + 1`، حساب شود؛ ولی TDZ متغیر داخلی تا **پایان** اجرای همین خط ادامه دارد، پس خواندن `count` در سمت راست `ReferenceError` می‌دهد. انتخاب «هیچ خطایی» (یعنی انتظار چاپ `6` و `5`) از این تصور غلط می‌آید که سمت راست، `count` بیرونی را می‌بیند. خط‌های ۴ و ۶ هرگز اجرا نمی‌شوند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(add(2, 3));
+
+      function add(a, b) {
+        return a + b;
+      }
+    options:
+      - out: "undefined"
+      - out: ["!! ReferenceError"]
+      - out: ["!! TypeError"]
+      - out: "5"
+    answer: 4
+    explain: |
+      `add` یک function declaration است و در مرحله‌ی ایجاد **همراه با بدنه‌اش** ساخته می‌شود؛ اسلاید ۳۴: «Can be called before or after it's defined (hoisted)». پس صدا زدن قبل از خط تعریف، `5` چاپ می‌کند. `ReferenceError` و `TypeError` رفتار arrow function یا function expression در `const`/`var` است، و `undefined` فقط وقتی چاپ می‌شد که تابع چیزی برنمی‌گرداند.
+
+  - level: easy
+    stem: |
+      کد زیر (کد اسلاید ۳۵ که صدا زدن تابع در آن بالاتر آمده) در Node.js اجرا می‌شود. کدام خط خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log("Start");
+      console.log(multiply(4, 5));
+      const multiply = (a, b) => {
+        return a * b;
+      };
+      console.log("End");
+    options:
+      - line: 0
+      - line: 2
+      - line: 3
+      - line: 6
+    answer: 2
+    explain: |
+      `multiply` با `const` تعریف شده و arrow function فقط در خط ۳ در آن ریخته می‌شود. در خط ۲ هنوز در TDZ است، پس `ReferenceError: Cannot access 'multiply' before initialization` رخ می‌دهد؛ اسلاید ۳۵: «Not hoisted (must be defined before use)». خط ۱ قبل از خطا اجرا شده و `Start` را چاپ کرده است. خط ۳ خودِ تعریف است و مشکلی ندارد، و خط ۶ به دلیل توقف برنامه هرگز اجرا نمی‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(typeof greet);
+      greet();
+      var greet = function () {
+        console.log("Hello");
+      };
+    options:
+      - out: ["function", "Hello"]
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "!! TypeError"]
+    answer: 4
+    explain: |
+      `greet` با `var` تعریف شده؛ پس hoist می‌شود و تا اجرای خط ۳ مقدارش `undefined` است. خط ۱ رشته‌ی `"undefined"` را چاپ می‌کند. خط ۲ سعی می‌کند `undefined` را مثل تابع صدا بزند، پس `TypeError: greet is not a function` رخ می‌دهد؛ نه `ReferenceError`، چون متغیر وجود دارد (رد گزینه‌ی ۲). گزینه‌ی ۱ فکر کرده function expression هم مثل function declaration کامل hoist می‌شود و گزینه‌ی ۳ فکر کرده خط ۱ هم خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      اجرای کدام قطعه‌کد **بدون خطا** است؟
+    check: option-throws
+    want: ok
+    options:
+      - code: 'sayHi(); const sayHi = () => console.log("hi");'
+      - code: 'sayHi(); var sayHi = () => console.log("hi");'
+      - code: 'sayHi(); let sayHi = function () { console.log("hi"); };'
+      - code: 'sayHi(); function sayHi() { console.log("hi"); }'
+    answer: 4
+    explain: |
+      فقط function declaration (گزینه‌ی ۴) کامل hoist می‌شود و قبل از خط تعریف قابل صدا زدن است. در گزینه‌های ۱ و ۳، `sayHi` با `const`/`let` تعریف شده و هنگام صدا زدن در TDZ است: `ReferenceError`. در گزینه‌ی ۲، `sayHi` با `var` تعریف شده و `undefined` است؛ صدا زدنش `TypeError: sayHi is not a function` می‌دهد. دقت کن که در گزینه‌ی ۳ هم کلمه‌ی `function` آمده، ولی این یک function expression در `let` است و رفتارش را `let` تعیین می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(typeof a, typeof b, typeof c);
+      var a = function () {};
+      function b() {}
+      var c = () => {};
+    options:
+      - out: "undefined function undefined"
+      - out: "function function function"
+      - out: "undefined function function"
+      - out: ["!! ReferenceError"]
+    answer: 1
+    explain: |
+      در مرحله‌ی ایجاد، `a` و `c` (هر دو `var`) با `undefined` ساخته می‌شوند؛ اینکه بعداً یک function expression یا arrow function در آن‌ها ریخته می‌شود، در خط ۱ هنوز اهمیتی ندارد. فقط `b` که function declaration است همراه با بدنه‌اش ساخته می‌شود. پس خروجی `undefined function undefined` است. گزینه‌ی ۲ فکر کرده هر چیزی که تابع است hoist می‌شود؛ گزینه‌ی ۳ arrow function را برخلاف اسلاید ۳۵ hoist‌شده فرض کرده؛ و گزینه‌ی ۴ غلط است، چون اینجا نه `typeof` و نه `var` خطایی ایجاد نمی‌کنند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function getMessage() {
+        return format("hi");
+        function format(s) {
+          return s + suffix;
+        }
+        var suffix = "!";
+      }
+      console.log(getMessage());
+    options:
+      - out: "hi!"
+      - out: "hiundefined"
+      - out: ["!! ReferenceError"]
+      - out: ["!! TypeError"]
+    answer: 2
+    explain: |
+      بدنه‌ی `getMessage` مرحله‌ی ایجاد خودش را دارد: `format` (function declaration) همراه با بدنه ساخته می‌شود و `suffix` (`var`) با مقدار `undefined`. بعد خط `return format("hi")` اجرا می‌شود و تابع همان‌جا تمام می‌شود؛ پس خط `var suffix = "!"` **هرگز** اجرا نمی‌شود و حاصل `"hi" + undefined` رشته‌ی `"hiundefined"` است. گزینه‌ی ۱ فرض کرده مقداردهی هم hoist می‌شود. گزینه‌های ۳ و ۴ فکر کرده‌اند چیزی که بعد از `return` نوشته شده (تابع `format` یا متغیر `suffix`) اصلاً وجود ندارد؛ ولی hoisting اعلان‌ها را صرف‌نظر از جایشان در بدنه ثبت می‌کند.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log("Creating a pet...");
+      const pet = new Animal("cat");
+      class Animal {
+        constructor(kind) {
+          this.kind = kind;
+        }
+      }
+      console.log(pet.kind);
+    options:
+      - line: 0
+      - line: 2
+      - line: 3
+      - line: 8
+    answer: 2
+    explain: |
+      `class` طبق اسلاید ۳۸ «partially» hoist می‌شود: نامش از ابتدای scope ثبت می‌شود ولی تا اجرای خط تعریف (خط ۳) در TDZ است. پس `new Animal("cat")` در خط ۲ خطای `ReferenceError: Cannot access 'Animal' before initialization` می‌دهد. خط ۱ قبل از خطا اجرا شده و پیامش را چاپ کرده است؛ خط ۳ و خط ۸ هم به دلیل توقف برنامه اجرا نمی‌شوند. کسی که «هیچ خطایی» را انتخاب کند، کلاس را مثل function declaration کاملاً hoist‌شده فرض کرده است.
+
+  - level: medium
+    stem: |
+      چرا اسلاید ۳۸ می‌گوید hoisting برای `class` به‌صورت «partially» (ناقص) کار می‌کند؟
+    options:
+      - 'چون فقط constructor کلاس hoist می‌شود و متدهایش نه.'
+      - 'چون کلاس‌ها فقط در مرورگر hoist می‌شوند، نه در Node.js.'
+      - 'چون قبل از خط تعریف، کلاس مثل `var` مقدار `undefined` دارد.'
+      - 'چون نام کلاس از ابتدای scope ثبت می‌شود، ولی تا اجرای خط تعریف در TDZ است و نمی‌توان از آن استفاده کرد.'
+    answer: 4
+    explain: |
+      «partially» یعنی hoisting کلاس نیمه‌کاره است: نام کلاس از ابتدای scope شناخته می‌شود (برای همین پیام خطا `Cannot access 'X' before initialization` است، نه `X is not defined`)، ولی مثل `let`/`const` تا خط تعریف در TDZ می‌ماند و قابل استفاده نیست. گزینه‌ی ۱ ساختگی است (کلاس به‌صورت یک واحد تعریف می‌شود)، گزینه‌ی ۲ غلط است چون رفتار در مرورگر و Node.js یکسان است، و گزینه‌ی ۳ رفتار `var` است، نه `class`.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      let x = 1;
+      function f() {
+        console.log(x);
+        let x = 2;
+      }
+      f();
+    options:
+      - line: 0
+      - line: 1
+      - line: 3
+      - line: 4
+    answer: 3
+    explain: |
+      `let x = 2` داخل `f` باعث می‌شود یک `x` محلی از **ابتدای** بدنه‌ی `f` ثبت شود و `x` بیرونی را پنهان کند. پس خط ۳، `x` محلی را می‌خواند که هنوز در TDZ است: `ReferenceError: Cannot access 'x' before initialization` (خطا روی همین خط پرتاب می‌شود؛ خط ۶ فقط تابع را صدا زده است). خط ۱ مشکلی ندارد، چون `x` داخلی در scope دیگری است و تعریف دوباره حساب نمی‌شود. خط ۴ هرگز اجرا نمی‌شود. اگر `let` اصلاً hoist نمی‌شد، خط ۳ عدد `1` را چاپ می‌کرد و خطایی رخ نمی‌داد (گزینه‌ی ۱).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      var a = 1;
+      function test() {
+        console.log(a);
+        if (true) {
+          var a = 2;
+        }
+        console.log(a);
+      }
+      test();
+      console.log(a);
+    options:
+      - out: ["1", "2", "1"]
+      - out: ["1", "2", "2"]
+      - out: ["undefined", "2", "2"]
+      - out: ["undefined", "2", "1"]
+    answer: 4
+    explain: |
+      داخل `test`، اعلان `var a` (هرچند داخل بلوک `if` نوشته شده) به بالای **تابع** hoist می‌شود و `a` سراسری را پنهان می‌کند. پس اولین `console.log(a)` مقدار `a` محلی یعنی `undefined` را چاپ می‌کند. بعد `if` اجرا می‌شود و `a` محلی `2` می‌شود؛ دومین چاپ `2` است. `a` سراسری هرگز تغییر نکرده، پس خط آخر `1` چاپ می‌کند. گزینه‌های ۱ و ۲ hoisting داخل تابع را نادیده گرفته‌اند و گزینه‌های ۲ و ۳ فکر کرده‌اند `var a = 2` متغیر سراسری را تغییر می‌دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      var result = calc(3);
+      console.log(result);
+      function calc(n) {
+        return n * factor;
+      }
+      var factor = 2;
+      console.log(calc(3));
+    options:
+      - out: ["6", "6"]
+      - out: ["NaN", "6"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "6"]
+    answer: 2
+    explain: |
+      `calc` یک function declaration است و در خط ۱ قابل صدا زدن است؛ ولی در آن لحظه `factor` (یک `var`) هنوز `undefined` است، پس `3 * undefined` برابر `NaN` می‌شود. بعد از اجرای خط ۶، `factor` برابر `2` است و صدا زدن دوباره `6` می‌دهد. گزینه‌ی ۱ فرض کرده مقداردهی `factor` هم hoist می‌شود، گزینه‌ی ۳ رفتار `let` را به `var` نسبت داده، و گزینه‌ی ۴ فراموش کرده که ضرب در `undefined` عدد `NaN` می‌دهد، نه `undefined`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      greet();
+      function greet() {
+        console.log("first");
+      }
+      greet();
+      function greet() {
+        console.log("second");
+      }
+      greet();
+    options:
+      - out: ["second", "second", "second"]
+      - out: ["first", "first", "second"]
+      - out: ["first", "second", "second"]
+      - out: ["!! SyntaxError"]
+    answer: 1
+    explain: |
+      هر دو function declaration در مرحله‌ی ایجاد پردازش می‌شوند و دومی جای اولی را می‌گیرد. در مرحله‌ی اجرا، خط‌های تعریف تابع کاری انجام نمی‌دهند، پس هر سه صدا زدن، نسخه‌ی دوم را اجرا می‌کنند. گزینه‌های ۲ و ۳ فکر کرده‌اند تعریف‌ها در مرحله‌ی اجرا و به ترتیب خط‌ها جایگزین می‌شوند. گزینه‌ی ۴ هم غلط است: در این کد تعریف دوباره‌ی یک function declaration (مثل `var`) خطا نمی‌دهد؛ این `let`، `const` و `class` هستند که با تعریف دوباره `SyntaxError` می‌دهند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      var item;
+      console.log(typeof item);
+      function item() {}
+      item = "pen";
+      console.log(typeof item);
+    options:
+      - out: ["undefined", "string"]
+      - out: ["undefined", "function"]
+      - out: ["function", "string"]
+      - out: ["function", "function"]
+    answer: 3
+    explain: |
+      در مرحله‌ی ایجاد، function declaration برنده است: `item` همان تابع است و اعلان `var item` (چون این نام از قبل وجود دارد) آن را `undefined` نمی‌کند. در مرحله‌ی اجرا، خط ۱ (`var item;` بدون مقدار) هیچ کاری انجام نمی‌دهد، پس خط ۲ `function` چاپ می‌کند. خط ۴ رشته‌ی `"pen"` را در `item` می‌ریزد و خط ۵ `string` چاپ می‌کند. گزینه‌های ۱ و ۲ فکر کرده‌اند `var item;` مقدار را `undefined` می‌کند و گزینه‌ی ۴ فکر کرده خط تعریف تابع در مرحله‌ی اجرا دوباره `item` را تابع می‌کند.
+
+  - level: hard
+    stem: |
+      کدام قطعه‌کد عدد `5` را چاپ می‌کند؟
+    check: option-output
+    expect: "5"
+    options:
+      - code: 'console.log(n); var n = 5;'
+      - code: 'var n; console.log(n); n = 5;'
+      - code: 'n = 5; console.log(n); var n;'
+      - code: 'console.log(n); let n = 5;'
+    answer: 3
+    explain: |
+      در گزینه‌ی ۳، اعلان `var n` در مرحله‌ی ایجاد بالا می‌رود؛ در مرحله‌ی اجرا اول `n = 5` اجرا می‌شود، بعد `console.log(n)` عدد `5` را چاپ می‌کند و `var n;` (بدون مقدار) کاری انجام نمی‌دهد. گزینه‌های ۱ و ۲ هر دو `undefined` چاپ می‌کنند، چون موقع چاپ هنوز مقداری در `n` ریخته نشده است. گزینه‌ی ۴ به دلیل TDZ خطای `ReferenceError` می‌دهد.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log(a);
+      console.log(b());
+      console.log(c);
+      var a = 1;
+      function b() {
+        return "b";
+      }
+      let c = 3;
+    options:
+      - line: 0
+      - line: 1
+      - line: 2
+      - line: 3
+    answer: 4
+    explain: |
+      خط ۱ یک `var` را قبل از تعریف می‌خواند: `undefined` و بدون خطا. خط ۲ یک function declaration را صدا می‌زند که کامل hoist شده است و `b` چاپ می‌شود. خط ۳ متغیر `c` را می‌خواند که با `let` در خط ۸ تعریف شده و هنوز در TDZ است: `ReferenceError`. پس اولین (و تنها) خطا روی خط ۳ است.
+
+  - level: easy
+    stem: |
+      اسلاید ۳۸ هشدار می‌دهد که hoisting اگر بد استفاده شود، ترتیب کد را گیج‌کننده می‌کند. کدام عادت بیشترین کمک را برای پرهیز از این مشکل می‌کند؟
+    options:
+      - 'متغیرها را با `const`/`let` در بالای scope تعریف کنیم و هر چیزی را پیش از استفاده تعریف کنیم.'
+      - 'همه‌ی متغیرها را با `var` تعریف کنیم تا هیچ‌وقت `ReferenceError` نگیریم.'
+      - 'همه‌ی تعریف‌ها را عمداً پایین فایل بنویسیم، چون به هر حال hoist می‌شوند.'
+      - 'قبل از خواندن هر متغیر، آن را با `typeof` بررسی کنیم؛ چون `typeof` هیچ‌وقت خطا نمی‌دهد.'
+    answer: 1
+    explain: |
+      تعریف همه‌چیز با `const`/`let` در بالای scope و پیش از استفاده باعث می‌شود ترتیب نوشتن کد با ترتیب واقعی اجرا یکی باشد، و اگر جایی اشتباهاً زودتر از متغیری استفاده کنی، خطای واضح `ReferenceError` بگیری. گزینه‌ی ۲ خطا را حذف نمی‌کند، بلکه آن را به یک `undefined` بی‌صدا و باگ پنهان تبدیل می‌کند (همان مشکل `var` در اسلاید ۲۷). گزینه‌ی ۳ ترتیب کد را گیج‌کننده‌تر می‌کند و برای `let`، `const` و `class` خطا می‌دهد. گزینه‌ی ۴ غلط است، چون `typeof` روی متغیری که در TDZ است خطا می‌دهد.
