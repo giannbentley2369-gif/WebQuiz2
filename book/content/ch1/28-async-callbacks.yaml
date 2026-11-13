@@ -1,0 +1,754 @@
+id: ch1-async-callbacks
+title: "JavaScript ناهمگام (Asynchronous) و Callback"
+slides: "Introduction to JS، اسلایدهای ۵۳ و ۵۴"
+lesson: |
+  ### یک آشپزخانه، یک آشپز: single-threaded یعنی چه؟
+  فرض کن رستورانی فقط **یک آشپز** دارد. این آشپز در هر لحظه فقط یک کار می‌تواند بکند: یا پیاز خرد می‌کند، یا سس را هم می‌زند. JavaScript دقیقاً همین‌طور است. طبق اسلاید ۵۳، JavaScript به‌طور پیش‌فرض **single-threaded** است؛ یعنی فقط یک **thread** دارد (thread یا «رشته‌ی اجرا» یعنی یک مسیر که دستورها پشت سر هم روی آن اجرا می‌شوند) و **در هر لحظه فقط یک کار** انجام می‌دهد.
+
+  حالا مشکل این است که طبق همین اسلاید، **بعضی کارها زمان‌بر هستند**؛ مثل گرفتن داده از سرور (fetching data) یا منتظر ماندن برای یک تایمر. اگر آشپزِ ما برنج را بار بگذارد و بیست دقیقه بالای قابلمه بایستد و فقط نگاهش کند، هیچ سفارش دیگری آماده نمی‌شود. به این وضع **blocking** (مسدود کردن) می‌گویند. آشپز باهوش برنج را بار می‌گذارد، یک **زنگ (تایمر)** تنظیم می‌کند و سراغ کارهای دیگر می‌رود؛ هر وقت زنگ زد، به برنج برمی‌گردد.
+
+  اسلاید ۵۳ همین را می‌گوید: **JavaScript به جای اینکه همه‌چیز را مسدود کند، از کد ناهمگام (asynchronous code) استفاده می‌کند** و **کد ناهمگام اجازه می‌دهد در زمان انتظار، کارهای دیگر اجرا شوند**.
+
+  - **همگام (synchronous)**: هر دستور صبر می‌کند تا دستور قبلی **کاملاً** تمام شود.
+  - **ناهمگام (asynchronous)**: کار زمان‌بر را **شروع می‌کنیم**، منتظرش نمی‌مانیم و به کارهای دیگر می‌رسیم؛ نتیجه را **بعداً**، هر وقت آماده شد، رسیدگی می‌کنیم.
+
+  ::: analogy
+  باجه‌ی بانک را در نظر بگیر. در حالت همگام، پشت باجه می‌ایستی و تا کارت تمام نشود تکان نمی‌خوری و نفر بعدی هم پشت سرت منتظر می‌ماند. در حالت ناهمگام، شماره‌ی نوبت می‌گیری، می‌نشینی و کار دیگری می‌کنی؛ هر وقت شماره‌ات را صدا زدند، سراغ باجه می‌روی. «صدا زدن شماره‌ات» همان **callback** است که پایین‌تر می‌بینیم.
+  :::
+
+  پس انتظار را چه کسی می‌کشد؟ JavaScript همیشه داخل یک **محیط اجرا** کار می‌کند: مرورگر با Web APIها و Node.js با System APIها. کارهای زمان‌بر، مثل شمردن زمان یک تایمر یا انتظار برای جواب شبکه، را **خود محیط** و بیرون از تنها thread جاوااسکریپت انجام می‌دهد. وقتی کار تمام شد، تابعی که برایش سپرده بودیم در صف قرار می‌گیرد و هر وقت thread بیکار شد اجرا می‌شود. این همان ویژگی **non-blocking event loop** (حلقه‌ی رویدادِ غیرمسدودکننده) است که در فهرست ویژگی‌های JavaScript (اسلاید ۹) دیدیم. جزئیات این صف‌ها و ترتیب دقیقشان را در درس event loop در آخر همین فصل می‌بینیم.
+
+  ### نمودار اسلاید ۵۳: همگام در برابر ناهمگام
+  اسلاید ۵۳ دو نمودار کنار هم دارد. در هر دو، **Process A** (مثلاً کد ما) یک درخواست برای **Process B** (مثلاً سرور) می‌فرستد و B مدتی مشغول کار است:
+
+  - **Synchronous**: نوار فعالیت A بعد از فرستادن درخواست **قطع می‌شود** و برچسب **Wait for response** دارد؛ یعنی A بیکار منتظر می‌ماند و فقط وقتی پاسخ B برگشت، کارش را از سر می‌گیرد.
+  - **Asynchronous**: نوار فعالیت A **بدون وقفه ادامه دارد** و برچسب **Continue working** دارد؛ B هم‌زمان کار می‌کند و پاسخ وقتی می‌رسد که A هنوز مشغول است (**Get response**).
+
+  | | Synchronous (همگام) | Asynchronous (ناهمگام) |
+  |---|---|---|
+  | بعد از فرستادن درخواست | A منتظر می‌ماند (Wait for response) | A به کارش ادامه می‌دهد (Continue working) |
+  | وقتی پاسخ B می‌رسد | A تازه کارش را از سر می‌گیرد | A پاسخ را دریافت و رسیدگی می‌کند (Get response) |
+  | نتیجه | زمان A در انتظار هدر می‌رود | A و B هم‌زمان مشغول‌اند |
+
+  ### blocking را با چشم خودت ببین
+  این حلقه، تنها thread جاوااسکریپت را ۳ ثانیه مشغول نگه می‌دارد (به این کار **busy waiting** یا «انتظار مشغول» می‌گویند):
+
+  ```js
+  console.log("start");
+  const start = Date.now();
+  while (Date.now() - start < 3000) {
+    // busy waiting for 3 seconds: the only thread is stuck here
+  }
+  console.log("end (3 seconds later)");
+  ```
+
+  اگر این کد در مرورگر اجرا شود، در این ۳ ثانیه صفحه **یخ می‌زند**: دکمه‌ها به کلیک جواب نمی‌دهند، اسکرول کار نمی‌کند و هیچ تایمری اجرا نمی‌شود. برای همین کارهای طولانی را هرگز این‌طور منتظر نمی‌مانیم.
+
+  ### تابع callback چیست؟
+  طبق اسلاید ۵۴، **callback** یک تابع ساده است که **به‌عنوان یک مقدار به تابع دیگری داده می‌شود** و **فقط وقتی رویداد مربوط رخ داد اجرا می‌شود**. این کار ممکن است چون در JavaScript تابع‌ها first-class هستند (مثل هر مقدار دیگری می‌توان آن‌ها را در متغیر گذاشت یا به تابع دیگر داد). اسمش هم از همین‌جا آمده: «بعداً با من تماس بگیر» (call me back).
+
+  اول یک callback ساده و **همگام** را ببین:
+
+  ```js
+  function greetUser(name, callback) {
+    const message = "Hello, " + name;
+    callback(message); // we call the function we were given
+  }
+
+  greetUser("Sara", (msg) => {
+    console.log(msg); // Hello, Sara
+  });
+  ```
+
+  دقت کن که **خودِ تابع** را می‌دهیم (`showMessage`)، نه نتیجه‌ی صدا زدنش را (`showMessage()`). پرانتز یعنی «همین حالا اجرا کن».
+
+  ### تایمرها: setTimeout و دوستانش
+  اسلاید ۵۴: «یک مثال رایج، استفاده از **تایمرها** است». `setTimeout(callback, delay)` به محیط اجرا می‌گوید «این تابع را دست‌کم بعد از `delay` میلی‌ثانیه اجرا کن» (۱۰۰۰ میلی‌ثانیه = ۱ ثانیه). نکته‌ی کلیدی: خودِ `setTimeout` **بلافاصله برمی‌گردد** و منتظر نمی‌ماند:
+
+  ```js
+  console.log("1: order placed");
+  setTimeout(() => {
+    console.log("3: pizza delivered");
+  }, 2000);
+  console.log("2: watching a movie");
+  // 1: order placed
+  // 2: watching a movie
+  // 3: pizza delivered   (about 2 seconds later)
+  ```
+
+  قاعده‌های تایمر:
+
+  1. `setTimeout` فقط تابع را **ثبت** می‌کند و بلافاصله برمی‌گردد؛ پس کدِ بعد از آن زودتر اجرا می‌شود.
+  2. تأخیر، **حداقلِ** زمان انتظار است، نه زمان دقیق: callback وقتی اجرا می‌شود که هم زمانش رسیده باشد و هم thread بیکار باشد (کد فعلی تمام شده باشد).
+  3. `setTimeout(fn, 0)` یعنی «هر چه زودتر، **بعد از** تمام شدن کد فعلی»؛ نه «همین حالا».
+  4. تایمرهایی که با هم ثبت شده‌اند به ترتیب **زمان موعدشان** اجرا می‌شوند؛ تایمرهایی با تأخیر برابر، به ترتیب **ثبت شدنشان**.
+
+  ```js
+  setTimeout(() => console.log("A (300 ms)"), 300);
+  setTimeout(() => console.log("B (0 ms)"), 0);
+  setTimeout(() => console.log("C (100 ms)"), 100);
+  console.log("D (sync)");
+  // D (sync)
+  // B (0 ms)
+  // C (100 ms)
+  // A (300 ms)
+  ```
+
+  و یک حلقه‌ی طولانی همگام، تایمرها را عقب می‌اندازد؛ حتی تایمری را که موعدش رسیده است:
+
+  ```js
+  const start = Date.now();
+  setTimeout(() => {
+    console.log("timer waited at least 200 ms:", Date.now() - start >= 200);
+  }, 50);
+  while (Date.now() - start < 200) {
+    // the thread is busy for 200 ms
+  }
+  console.log("loop finished");
+  // loop finished
+  // timer waited at least 200 ms: true
+  ```
+
+  تایمرهای دیگر:
+
+  | تابع | کار |
+  |---|---|
+  | `setTimeout(fn, ms)` | `fn` را **یک بار**، دست‌کم بعد از `ms` میلی‌ثانیه اجرا می‌کند و یک شناسه (id) برمی‌گرداند. |
+  | `setInterval(fn, ms)` | `fn` را **هر** `ms` میلی‌ثانیه **تکرار** می‌کند تا متوقفش کنیم؛ این هم شناسه برمی‌گرداند. |
+  | `clearTimeout(id)` | یک `setTimeout` را **قبل از اجرا** لغو می‌کند. |
+  | `clearInterval(id)` | تکرار یک `setInterval` را متوقف می‌کند. |
+
+  ```js
+  let count = 0;
+  const id = setInterval(() => {
+    count++;
+    console.log("tick", count);
+    if (count === 3) {
+      clearInterval(id); // stop repeating
+    }
+  }, 1000);
+  // tick 1, tick 2, tick 3 (one per second), then it stops
+
+  const reminder = setTimeout(() => console.log("Reminder!"), 5000);
+  clearTimeout(reminder); // cancelled: "Reminder!" is never printed
+  ```
+
+  شناسه‌ای که برمی‌گردد در مرورگر یک عدد است و در Node.js یک شیء `Timeout`؛ لازم نیست نوعش را بدانی، فقط آن را نگه دار و به `clearTimeout` یا `clearInterval` بده.
+
+  ### کد اسلاید ۵۴ قدم‌به‌قدم
+  ```js title=callback.js
+  function fetchData(callback) {
+    setTimeout(() => {
+      callback("Data received!");
+    }, 1000);
+  }
+
+  fetchData(result => {
+    console.log(result); // "Data received!" (after 1 sec)
+  });
+  ```
+
+  (روی اسلاید کنار این کامنت یک تیک سبز هم هست.) `fetchData` رفتار «گرفتن داده از سرور» را شبیه‌سازی می‌کند که حدود ۱ ثانیه طول می‌کشد:
+
+  1. `fetchData` صدا زده می‌شود و تابع `result => { ... }` با نام `callback` به آن داده می‌شود.
+  2. `fetchData` تابع دیگری (`() => { ... }`) را با تأخیر ۱۰۰۰ به `setTimeout` می‌دهد. `setTimeout` بلافاصله برمی‌گردد و `fetchData` تمام می‌شود؛ برنامه فعلاً کار دیگری ندارد و منتظر می‌ماند.
+  3. حدود ۱ ثانیه بعد، محیط اجرا تابعِ تایمر را اجرا می‌کند و این تابع `callback("Data received!")` را صدا می‌زند.
+  4. callbackِ ما با `result = "Data received!"` اجرا می‌شود و آن را چاپ می‌کند.
+
+  پس در این کد **دو callback** داریم: تابعی که به `setTimeout` دادیم (محیط اجرا صدایش می‌زند) و تابعی که به `fetchData` دادیم (تابعِ تایمر صدایش می‌زند).
+
+  چرا `fetchData` نتیجه را `return` نمی‌کند؟ چون وقتی داده آماده می‌شود، تابع مدت‌هاست تمام شده است. `return` داخل callback تایمر، مقدار را به محیط اجرا برمی‌گرداند، نه به کسی که `getData` را صدا زده بود:
+
+  ```js
+  function getData() {
+    setTimeout(() => {
+      return "Data received!"; // returns to the timer, not to getData's caller
+    }, 1000);
+  }
+  console.log(getData()); // undefined: getData has already finished
+  ```
+
+  راه درست همان کاری است که اسلاید کرده: نتیجه را **به یک callback تحویل بده**.
+
+  ### callback همگام و callback ناهمگام
+  هر callbackی ناهمگام نیست!
+
+  - **callbackهای همگام**: callbackهای `forEach`، `map`، `filter` و تابع مقایسه‌ی `sort` (درس متدهای آرایه) **همان لحظه**، در حین صدا زدن آن متد، اجرا می‌شوند.
+  - **callbackهای ناهمگام**: callbackهای `setTimeout` و `setInterval`، تابعی که با `addEventListener("click", fn)` به یک دکمه می‌دهیم (فصل ۲) و توابع خواندن فایل در Node.js (همان File system API که اسلاید ۱۰ نام برد)؛ این‌ها **بعداً**، وقتی رویداد رخ داد، اجرا می‌شوند.
+
+  ```js
+  console.log("start");
+  [10, 20].forEach((n) => console.log(n));   // runs right now
+  setTimeout(() => console.log("timer"), 0); // runs later
+  console.log("end");
+  // start
+  // 10
+  // 20
+  // end
+  // timer
+  ```
+
+  ### Callback hell (جهنم callbackها)
+  اسلاید ۵۴: **هر callback یک سطح تودرتویی (nesting) اضافه می‌کند و وقتی callbackها زیاد شوند، کد خیلی زود پیچیده می‌شود.** به این وضع **callback hell** (جهنم callbackها) یا «هرم نابودی» (pyramid of doom) می‌گویند. فرض کن سه کار ناهمگام داریم که هر کدام به نتیجه‌ی قبلی نیاز دارد:
+
+  ```js
+  function getUser(id, callback) {
+    setTimeout(() => callback({ id: id, name: "Sara" }), 100);
+  }
+  function getOrders(user, callback) {
+    setTimeout(() => callback(["book", "pen"]), 100);
+  }
+  function getDetails(order, callback) {
+    setTimeout(() => callback({ item: order, price: 50 }), 100);
+  }
+
+  getUser(1, (user) => {
+    getOrders(user, (orders) => {
+      getDetails(orders[0], (details) => {
+        console.log("Nested:", user.name, details.item, details.price);
+        // ...and every next step would go one level deeper
+      });
+    });
+  });
+  // Nested: Sara book 50 (after about 300 ms)
+  ```
+
+  تودرتو کردن یعنی **اجرای پشت سر هم**: هر مرحله فقط بعد از تمام شدن مرحله‌ی قبل شروع می‌شود. اما با هر مرحله‌ی جدید، کد یک پله به راست می‌رود و خواندن، تغییر دادن و رسیدگی به خطاها سخت‌تر می‌شود.
+
+  **BEST PRACTICE** اسلاید ۵۴: **callbackها برای حالت‌های ساده عالی‌اند! منطق را به تابع‌های کوچک‌تر بشکن، به جای اینکه بیش از حد تودرتو کنی.** همان منطق با تابع‌های کوچکِ اسم‌دار (با همان سه تابع `getUser`، `getOrders` و `getDetails` بالا):
+
+  ```js
+  function showDetails(details) {
+    console.log("Named:", details.item, details.price);
+  }
+  function handleOrders(orders) {
+    getDetails(orders[0], showDetails);
+  }
+  function handleUser(user) {
+    getOrders(user, handleOrders);
+  }
+
+  getUser(1, handleUser); // Named: book 50
+  ```
+
+  راه‌حل اساسی‌تر، Promise و `async/await` است (روش‌های دوم و سوم) که در درس‌های بعدی می‌بینیم.
+
+  ### خطا در callbackها: الگوی error-first
+  در درس «مدیریت خطا: try، catch، finally و throw» دیدیم که `try...catch` دورِ یک کار ناهمگام، خطایی را که **بعداً** داخل callback رخ می‌دهد نمی‌گیرد. پس در روش callback، رسیدگی به خطا **دستی (manual)** است (اسلاید ۵۷: «callbacks → manual»). قرارداد رایج (به‌خصوص در Node.js) **error-first callback** است: پارامتر اول callback **خطا** است (اگر خطایی نباشد `null`) و پارامتر دوم **نتیجه**:
+
+  ```js
+  function readConfig(name, callback) {
+    setTimeout(() => {
+      if (!name) {
+        callback(new Error("No file name given")); // failure: the error comes first
+        return;
+      }
+      callback(null, { file: name, debug: true });   // success: null error, then the result
+    }, 50);
+  }
+
+  function handleConfig(err, config) {
+    if (err) {
+      console.log("Failed:", err.message);
+      return; // stop here
+    }
+    console.log("Config:", config.file);
+  }
+
+  readConfig("app.json", handleConfig); // Config: app.json
+  readConfig("", handleConfig);         // Failed: No file name given
+  ```
+
+  ::: tip
+  - `setTimeout` و `setInterval` بلافاصله برمی‌گردند؛ کدِ بعد از آن‌ها اول اجرا می‌شود.
+  - عدد تأخیر، حداقل زمان انتظار است.
+  - تایمرهایی که با هم ثبت شده‌اند: تأخیر کمتر زودتر؛ تأخیر برابر، به ترتیب ثبت.
+  - callbackهای تودرتو یعنی اجرای پشت سر هم؛ تایمرهای کنار هم یعنی انتظارِ هم‌زمان.
+  - به تایمر خودِ تابع را بده (`fn`)، نه نتیجه‌ی صدا زدنش را (`fn()`).
+  :::
+
+  ::: trap دام‌های تستی
+  - `setTimeout(fn, 0)` فوری نیست؛ `fn` بعد از تمام شدن کد همگامِ فعلی اجرا می‌شود.
+  - `return` داخل callback تایمر، از تابع بیرونی `return` نمی‌کند؛ نتیجه‌ی ناهمگام را باید به یک callback داد.
+  - `try...catch` دورِ `setTimeout` خطای داخل callback را نمی‌گیرد؛ در error-first باید `err` را دستی بررسی کرد.
+  - callbackهای `forEach` و `map` همگام‌اند؛ «callback» همیشه به معنای «ناهمگام» نیست.
+  - `setTimeout(greet(), 1000)` تابع `greet` را **همین حالا** صدا می‌زند و مقدار برگشتی‌اش را به تایمر می‌دهد.
+  - یک حلقه‌ی طولانی همگام همه‌چیز را مسدود می‌کند؛ تایمری که موعدش رسیده هم تا آخر حلقه صبر می‌کند.
+  :::
+
+  ::: note
+  ترتیب دقیق اجرا وقتی Promise هم در کار باشد (microtask و macrotask) موضوع درس event loop است. در این درس فقط تایمرها و callbackها را دیدیم.
+  :::
+
+  ::: summary
+  - JavaScript تک‌نخی (single-threaded) است و در هر لحظه یک کار انجام می‌دهد؛ برای کارهای زمان‌بر (شبکه، تایمر) از کد ناهمگام استفاده می‌کند تا همه‌چیز مسدود نشود.
+  - callback تابعی است که به تابع دیگری داده می‌شود و وقتی رویداد رخ داد اجرا می‌شود؛ تایمرها مثال رایجش هستند.
+  - تودرتویی زیاد callbackها به callback hell می‌رسد؛ منطق را به تابع‌های کوچک‌تر بشکن.
+  - خطاها در روش callback دستی رسیدگی می‌شوند (الگوی error-first).
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۳، JavaScript به‌طور پیش‌فرض **single-threaded** است. این یعنی:
+    options:
+      - در هر لحظه فقط یک کار (یک تکه کد) را اجرا می‌کند.
+      - هر تابع را روی یک thread جداگانه و هم‌زمان با بقیه اجرا می‌کند.
+      - هر برنامه فقط می‌تواند یک تابع داشته باشد.
+      - هر خط کد فقط یک بار در کل عمر برنامه اجرا می‌شود.
+    answer: 1
+    explain: |
+      اسلاید ۵۳: «single-threaded → runs one task at a time». thread یعنی یک مسیر اجرای دستورها و JavaScript فقط یکی از آن دارد. گزینه‌ی ۲ تعریف چندنخی (multi-threaded) است که برعکس این ویژگی است. گزینه‌های ۳ و ۴ هیچ ربطی به thread ندارند؛ یک برنامه می‌تواند هر تعداد تابع داشته باشد و یک خط (مثلاً داخل حلقه) بارها اجرا شود.
+
+  - level: easy
+    stem: |
+      چرا JavaScript برای کارهای زمان‌بر از کد ناهمگام (asynchronous) استفاده می‌کند؟
+    options:
+      - چون کد ناهمگام همیشه سریع‌تر از کد همگام محاسبه می‌شود.
+      - چون مرورگرها اجرای کد همگام را ممنوع کرده‌اند.
+      - چون JavaScript فقط یک thread دارد و اگر برای کار زمان‌بر صبر کند، همه‌چیز (مثلاً کل صفحه) قفل می‌شود.
+      - چون کد ناهمگام، JavaScript را چندنخی (multi-threaded) می‌کند.
+    answer: 3
+    explain: |
+      طبق اسلاید ۵۳، JavaScript تک‌نخی است و «به جای مسدود کردن همه‌چیز» از کد ناهمگام استفاده می‌کند تا در زمان انتظار کارهای دیگر اجرا شوند. کد ناهمگام محاسبه را سریع‌تر نمی‌کند؛ فقط زمان انتظار را هدر نمی‌دهد (رد گزینه‌ی ۱). بیشتر کدهای JavaScript همگام‌اند و ممنوعیتی در کار نیست (رد گزینه‌ی ۲). کد ناهمگام هم برای کد ما thread جدیدی نمی‌سازد؛ انتظار را محیط اجرا می‌کشد و callback بعداً روی همان یک thread اجرا می‌شود (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۳، کدام گزینه نمونه‌ای از «عملیات زمان‌بر» است که JavaScript نباید برایش همه‌چیز را مسدود کند؟
+    options:
+      - جمع دو عدد و تعریف یک متغیر
+      - گرفتن داده از سرور (fetching data) و منتظر ماندن برای یک تایمر
+      - نوشتن یک کامنت و تعریف یک تابع
+      - 'خواندن طول یک رشته با `length`'
+    answer: 2
+    explain: |
+      اسلاید ۵۳ دو مثال می‌زند: «fetching data, waiting for timers». این کارها به چیزی بیرون از کد ما (شبکه یا گذر زمان) وابسته‌اند و ممکن است ثانیه‌ها طول بکشند. کارهای گزینه‌های ۱، ۳ و ۴ تقریباً فوری و همگام انجام می‌شوند؛ کامنت هم اصلاً اجرا نمی‌شود.
+
+  - level: easy
+    stem: |
+      در نمودار «Asynchronous» اسلاید ۵۳، Process A بعد از فرستادن درخواست به Process B چه می‌کند؟
+    options:
+      - منتظر پاسخ می‌ماند و تا رسیدن پاسخ هیچ کاری نمی‌کند (Wait for response).
+      - درخواست را آن‌قدر تکرار می‌کند تا B جواب بدهد.
+      - کارش تمام می‌شود و پاسخ B دیگر دریافت نمی‌شود.
+      - به کار خودش ادامه می‌دهد (Continue working) و هر وقت پاسخ رسید، آن را دریافت می‌کند (Get response).
+    answer: 4
+    explain: |
+      در نمودار ناهمگام، نوار سبز A بعد از فرستادن درخواست بدون وقفه ادامه دارد (Continue working) و پاسخ B وقتی می‌رسد که A هنوز مشغول کار است (Get response). گزینه‌ی ۱ دقیقاً نمودار «Synchronous» است که برچسب Wait for response دارد. گزینه‌های ۲ و ۳ در هیچ‌کدام از دو نمودار نیستند؛ پاسخ B حتماً به A برمی‌گردد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۴، **callback** چیست؟
+    options:
+      - تابعی که خودش را صدا می‌زند (تابع بازگشتی).
+      - تابعی که به‌عنوان یک مقدار به تابع دیگری داده می‌شود و فقط وقتی رویداد مربوط رخ داد اجرا می‌شود.
+      - اولین تابعی که هنگام بارگذاری برنامه اجرا می‌شود.
+      - 'تابعی که حتماً باید اسمش `callback` باشد.'
+    answer: 2
+    explain: |
+      اسلاید ۵۴: «a simple function that's passed as a value to another function, and will only be executed when the event happens». این کار ممکن است چون در JavaScript تابع‌ها first-class هستند و مثل هر مقدار دیگری جابه‌جا می‌شوند. تابع بازگشتی (گزینه‌ی ۱) مفهوم دیگری است و ترتیب بارگذاری (گزینه‌ی ۳) ربطی به callback ندارد. اسم پارامتر هم دلخواه است (گزینه‌ی ۴)؛ در کد اسلاید اسمش `callback` است، ولی می‌توانست `done` یا `onReady` باشد.
+
+  - level: easy
+    stem: |
+      کادر BEST PRACTICE اسلاید ۵۴ چه توصیه‌ای درباره‌ی callbackها می‌کند؟
+    options:
+      - همیشه و برای هر کاری از callback استفاده کن، حتی برای کارهای همگام.
+      - برای منطق پیچیده، callbackها را تا جای ممکن در هم تودرتو کن.
+      - callbackها برای حالت‌های ساده عالی‌اند؛ منطق را به تابع‌های کوچک‌تر بشکن، به جای اینکه بیش از حد تودرتو کنی.
+      - هرگز از callback استفاده نکن، چون JavaScript از آن پشتیبانی نمی‌کند.
+    answer: 3
+    explain: |
+      متن کادر: «Callbacks are great for simple cases! Break logic into smaller functions instead of nesting too deep». گزینه‌ی ۲ دقیقاً همان کاری است که به callback hell می‌رسد. گزینه‌ی ۱ اغراق است و گزینه‌ی ۴ غلط؛ callback یکی از پایه‌های JavaScript است و `setTimeout` و `forEach` هر دو callback می‌گیرند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log("order placed");
+      setTimeout(() => {
+        console.log("pizza delivered");
+      }, 1000);
+      console.log("watching a movie");
+    options:
+      - out: ["order placed", "pizza delivered", "watching a movie"]
+      - out: ["pizza delivered", "order placed", "watching a movie"]
+      - out: ["order placed", "watching a movie"]
+      - out: ["order placed", "watching a movie", "pizza delivered"]
+    answer: 4
+    explain: |
+      `setTimeout` فقط تابع را برای ۱ ثانیه‌ی بعد ثبت می‌کند و **بلافاصله** برمی‌گردد؛ پس خط بعدی (`watching a movie`) بی‌معطلی اجرا می‌شود و `pizza delivered` حدود ۱ ثانیه بعد چاپ می‌شود. گزینه‌ی ۱ فکر کرده `setTimeout` برنامه را ۱ ثانیه متوقف می‌کند، گزینه‌ی ۲ ترتیب کد را نادیده گرفته و گزینه‌ی ۳ فکر کرده برنامه قبل از اجرای تایمر تمام می‌شود؛ اما مرورگر و Node.js تایمرهای ثبت‌شده را اجرا می‌کنند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      setTimeout(() => console.log("A"), 0);
+      console.log("B");
+      console.log("C");
+    options:
+      - out: ["A", "B", "C"]
+      - out: ["B", "A", "C"]
+      - out: ["B", "C", "A"]
+      - out: ["B", "C"]
+    answer: 3
+    explain: |
+      تأخیر `0` یعنی «هر چه زودتر، **بعد از** تمام شدن کد فعلی»، نه «همین حالا». callback تایمر فقط وقتی اجرا می‌شود که thread بیکار شود؛ پس اول `B` و `C` (کد همگام) و بعد `A`. گزینه‌ی ۱ تأخیر صفر را اجرای فوری فرض کرده، گزینه‌ی ۲ فکر کرده تایمر وسط کد همگام اجرا می‌شود و گزینه‌ی ۴ فکر کرده تایمرِ صفر اصلاً اجرا نمی‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      setTimeout(() => console.log("slow"), 300);
+      setTimeout(() => console.log("fast"), 100);
+      setTimeout(() => console.log("medium"), 200);
+      console.log("sync");
+    options:
+      - out: ["sync", "fast", "medium", "slow"]
+      - out: ["slow", "fast", "medium", "sync"]
+      - out: ["sync", "slow", "fast", "medium"]
+      - out: ["fast", "medium", "slow", "sync"]
+    answer: 1
+    explain: |
+      اول کد همگام اجرا می‌شود (`sync`). سه تایمر تقریباً هم‌زمان ثبت شده‌اند، پس به ترتیب **زمان موعدشان** اجرا می‌شوند، نه به ترتیب نوشتنشان: ۱۰۰، ۲۰۰ و بعد ۳۰۰ میلی‌ثانیه. گزینه‌ی ۲ تایمرها را همگام فرض کرده، گزینه‌ی ۳ ترتیب نوشتن را معیار گرفته و گزینه‌ی ۴ فکر کرده تایمرها قبل از کد همگام اجرا می‌شوند.
+
+  - level: medium
+    stem: |
+      کد اسلاید ۵۴ را با دو خط اضافه اجرا می‌کنیم. خروجی کدام است؟
+    check: output
+    code: |
+      function fetchData(callback) {
+        setTimeout(() => {
+          callback("Data received!");
+        }, 1000);
+      }
+
+      fetchData(result => {
+        console.log(result);
+      });
+      console.log("Waiting...");
+      setTimeout(() => console.log("half a second later"), 500);
+    options:
+      - out: ["Data received!", "Waiting...", "half a second later"]
+      - out: ["Waiting...", "Data received!", "half a second later"]
+      - out: ["Waiting...", "half a second later"]
+      - out: ["Waiting...", "half a second later", "Data received!"]
+    answer: 4
+    explain: |
+      `fetchData` فقط یک تایمر ۱۰۰۰ میلی‌ثانیه‌ای ثبت می‌کند و بلافاصله برمی‌گردد؛ پس `Waiting...` اول چاپ می‌شود. بعد تایمر ۵۰۰ میلی‌ثانیه‌ای زودتر به موعدش می‌رسد و `half a second later` چاپ می‌شود، و سر ۱ ثانیه تایمر `fetchData` callback ما را با `"Data received!"` صدا می‌زند. گزینه‌ی ۱ فکر کرده `fetchData` منتظر می‌ماند، گزینه‌ی ۲ ترتیب زمانی دو تایمر را رعایت نکرده و گزینه‌ی ۳ فکر کرده چون `fetchData` چیزی `return` نمی‌کند، callback هرگز اجرا نمی‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log("start");
+      [10, 20].forEach((n) => console.log(n));
+      setTimeout(() => console.log("timer"), 0);
+      console.log("end");
+    options:
+      - out: ["start", "end", "10", "20", "timer"]
+      - out: ["start", "10", "20", "end", "timer"]
+      - out: ["start", "end", "timer", "10", "20"]
+      - out: ["start", "10", "20", "timer", "end"]
+    answer: 2
+    explain: |
+      callbackِ `forEach` **همگام** است: همان لحظه‌ی صدا زدن `forEach` برای هر عضو اجرا می‌شود؛ پس `10` و `20` بلافاصله بعد از `start` می‌آیند. callbackِ `setTimeout` **ناهمگام** است و حتی با تأخیر `0`، بعد از تمام شدن کد همگام (`end`) اجرا می‌شود. گزینه‌های ۱ و ۳ فکر کرده‌اند هر callbackی ناهمگام است و گزینه‌ی ۴ تأخیر صفر را فوری فرض کرده است.
+
+  - level: medium
+    stem: |
+      کدام callback **همگام** است؛ یعنی همان لحظه‌ی صدا زدن تابعِ گیرنده و قبل از رفتن به خط بعدی اجرا می‌شود؟
+    options:
+      - 'callbackِ `[1, 2, 3].forEach(cb)`'
+      - 'callbackِ `setTimeout(cb, 0)`'
+      - 'callbackِ `setInterval(cb, 1000)`'
+      - 'callbackِ `button.addEventListener("click", cb)`'
+    answer: 1
+    explain: |
+      `forEach` همان لحظه روی همه‌ی عضوها می‌چرخد و callback را برای هر کدام صدا می‌زند؛ وقتی `forEach` تمام شد، همه‌ی callbackها هم اجرا شده‌اند. سه گزینه‌ی دیگر ناهمگام‌اند: callbackِ `setTimeout` حتی با تأخیر صفر بعد از کد فعلی اجرا می‌شود، callbackِ `setInterval` هر ۱ ثانیه یک بار، و listener کلیک هر وقت کاربر کلیک کند (فصل ۲)؛ خودِ `addEventListener` فقط تابع را ثبت می‌کند و صدایش نمی‌زند.
+
+  - level: medium
+    stem: |
+      کدام جمله درباره‌ی `setTimeout(fn, 1000)` **درست** است؟
+    options:
+      - برنامه را ۱ ثانیه متوقف (pause) می‌کند و بعد خط بعدی را اجرا می‌کند.
+      - 'دقیقاً سر ۱۰۰۰ میلی‌ثانیه، حتی اگر کد دیگری در حال اجرا باشد، آن را قطع می‌کند و `fn` را اجرا می‌کند.'
+      - '`fn` زودتر از ۱ ثانیه اجرا نمی‌شود، اما اگر thread جاوااسکریپت مشغول کار دیگری باشد، ممکن است دیرتر اجرا شود.'
+      - 'اگر بلافاصله بعد از آن یک `setTimeout` دیگر با همین تأخیر ثبت کنیم، ترتیب اجرای این دو تصادفی است.'
+    answer: 3
+    explain: |
+      عدد دوم `setTimeout` **حداقل** زمان انتظار است: callback فقط وقتی اجرا می‌شود که هم زمانش رسیده باشد و هم thread بیکار باشد. `setTimeout` برنامه را متوقف نمی‌کند و بلافاصله برمی‌گردد (رد گزینه‌ی ۱) و چون JavaScript تک‌نخی است، هیچ callbackی وسط کدی که در حال اجراست اجرا نمی‌شود (رد گزینه‌ی ۲). دو تایمر با تأخیر یکسان هم به ترتیب ثبت شدنشان اجرا می‌شوند، نه تصادفی (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let count = 0;
+      const id = setInterval(() => {
+        count++;
+        console.log("tick", count);
+        if (count === 3) {
+          clearInterval(id);
+          console.log("stopped");
+        }
+      }, 100);
+      console.log("interval started");
+    options:
+      - out: ["tick 1", "tick 2", "tick 3", "stopped", "interval started"]
+      - out: ["interval started", "tick 1", "tick 2", "tick 3", "stopped"]
+      - out: ["interval started", "tick 1", "tick 2", "stopped"]
+      - out: ["interval started", "tick 1", "stopped"]
+    answer: 2
+    explain: |
+      `setInterval` هم مثل `setTimeout` بلافاصله برمی‌گردد، پس `interval started` اول چاپ می‌شود. بعد callback هر ۱۰۰ میلی‌ثانیه یک بار اجرا می‌شود: چون `count++` قبل از چاپ است، شمارش از ۱ شروع می‌شود و در بار سوم `clearInterval(id)` تکرار را متوقف می‌کند و `stopped` چاپ می‌شود. گزینه‌ی ۱ تایمر را همگام فرض کرده و گزینه‌های ۳ و ۴ شرط `count === 3` را درست دنبال نکرده‌اند.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا یادآوری لغو شود و خروجی کد **فقط** `set` و `cancelled` باشد؟
+    check: option-output
+    expect: |
+      set
+      cancelled
+    code: |
+      let timer = setTimeout(() => {
+        console.log("Reminder!");
+      }, 1000);
+      console.log("set");
+      ___;
+      console.log("cancelled");
+    options:
+      - text: '`timer = null`'
+        code: |
+          let timer = setTimeout(() => {
+            console.log("Reminder!");
+          }, 1000);
+          console.log("set");
+          timer = null;
+          console.log("cancelled");
+      - text: '`clearTimeout()`'
+        code: |
+          let timer = setTimeout(() => {
+            console.log("Reminder!");
+          }, 1000);
+          console.log("set");
+          clearTimeout();
+          console.log("cancelled");
+      - text: '`delete timer`'
+        code: |
+          let timer = setTimeout(() => {
+            console.log("Reminder!");
+          }, 1000);
+          console.log("set");
+          delete timer;
+          console.log("cancelled");
+      - text: '`clearTimeout(timer)`'
+        code: |
+          let timer = setTimeout(() => {
+            console.log("Reminder!");
+          }, 1000);
+          console.log("set");
+          clearTimeout(timer);
+          console.log("cancelled");
+    answer: 4
+    explain: |
+      `setTimeout` یک شناسه (id) برمی‌گرداند که باید آن را به `clearTimeout` بدهیم تا تایمر قبل از اجرا لغو شود. `timer = null` فقط متغیر را عوض می‌کند و تایمرِ ثبت‌شده در محیط اجرا سر جایش می‌ماند؛ `clearTimeout()` بدون شناسه نمی‌داند کدام تایمر را لغو کند؛ `delete timer` هم روی متغیرها کار نمی‌کند. در هر سه حالت `Reminder!` بعد از ۱ ثانیه چاپ می‌شود.
+
+  - level: medium
+    stem: |
+      کدام جمله «callback hell» را درست توصیف می‌کند؟
+    options:
+      - هر callback یک سطح تودرتویی (nesting) اضافه می‌کند و وقتی callbackها زیاد شوند، کد خیلی زود پیچیده و ناخوانا می‌شود.
+      - خطایی است که مرورگر وقتی بیش از ۱۰ callback در برنامه باشد نشان می‌دهد.
+      - یعنی callbackها همیشه کندتر از کد همگام اجرا می‌شوند.
+      - فقط در Node.js رخ می‌دهد و در مرورگر وجود ندارد.
+    answer: 1
+    explain: |
+      اسلاید ۵۴: «Every callback adds a level of nesting, and when you have lots of callbacks, the code starts to be complicated very quickly». callback hell مشکلِ **خوانایی و نگهداری** کد است، نه خطای مرورگر (گزینه‌ی ۲) یا کندی اجرا (گزینه‌ی ۳)، و در هر محیطی که callbackهای تودرتو بنویسیم رخ می‌دهد (گزینه‌ی ۴). راه‌حل‌هایش شکستن منطق به تابع‌های کوچک‌تر، Promise و `async/await` است.
+
+  - level: medium
+    stem: |
+      در الگوی **error-first callback** (مثل `callback(err, data)`)، روش درست رسیدگی به خطای یک عملیات ناهمگام کدام است؟
+    options:
+      - 'صدا زدن تابع ناهمگام را داخل `try...catch` بگذاریم؛ خطای callback هم همان‌جا گرفته می‌شود.'
+      - نیازی به رسیدگی نیست؛ JavaScript خطاهای callback را خودکار نادیده می‌گیرد.
+      - 'داخل callback اول پارامتر `err` را بررسی کنیم؛ اگر خطا بود به آن رسیدگی کنیم و ادامه ندهیم، وگرنه از `data` استفاده کنیم.'
+      - پارامتر اول همیشه نتیجه است و خطا در آخرین پارامتر می‌آید.
+    answer: 3
+    explain: |
+      در این الگو پارامتر اول خطاست (`null` یعنی خطایی نبوده) و پارامتر دوم نتیجه؛ پس رسیدگی به خطا «دستی» (manual) و داخل خودِ callback انجام می‌شود، همان‌طور که اسلاید ۵۷ می‌گوید: «callbacks → manual». `try...catch` دورِ فراخوانی، خطایی را که بعداً رخ می‌دهد نمی‌گیرد (رد گزینه‌ی ۱)، خطاها خودکار نادیده گرفته نمی‌شوند (رد گزینه‌ی ۲) و ترتیب پارامترها در این الگو دقیقاً «اول خطا» است (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function getUser() {
+        let user = "unknown";
+        setTimeout(() => {
+          user = "Sara";
+        }, 100);
+        return user;
+      }
+      console.log(getUser());
+    options:
+      - out: ["Sara"]
+      - out: ["unknown"]
+      - out: ["undefined"]
+      - out: ["unknown", "Sara"]
+    answer: 2
+    explain: |
+      `setTimeout` تابع را برای ۱۰۰ میلی‌ثانیه‌ی بعد ثبت می‌کند و بلافاصله برمی‌گردد؛ پس `return user` همان لحظه، وقتی `user` هنوز `"unknown"` است، اجرا می‌شود. تغییر به `"Sara"` بعداً رخ می‌دهد، وقتی `getUser` مدت‌هاست تمام شده و مقدارش چاپ شده است. گزینه‌ی ۱ فکر کرده `return` منتظر تایمر می‌ماند، گزینه‌ی ۳ فکر کرده مقدار متغیر هنوز تعیین نشده و گزینه‌ی ۴ فکر کرده تغییر بعدی دوباره چاپ می‌شود؛ اما فقط یک `console.log` داریم. این همان دامِ «Mixing sync & async code» در اسلاید ۵۸ است: نتیجه‌ی ناهمگام را باید به یک callback داد، نه `return` کرد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function greet() {
+        console.log("Hello");
+        return () => console.log("Bye");
+      }
+      setTimeout(greet(), 100);
+      console.log("Start");
+    options:
+      - out: ["Start", "Hello", "Bye"]
+      - out: ["Start", "Hello"]
+      - out: ["Hello", "Bye", "Start"]
+      - out: ["Hello", "Start", "Bye"]
+    answer: 4
+    explain: |
+      `setTimeout(greet(), 100)` تابع `greet` را به‌خاطر پرانتزها **همین حالا** صدا می‌زند، پس `Hello` اول چاپ می‌شود؛ مقدار برگشتیِ `greet`، یعنی تابع `() => console.log("Bye")`، به‌عنوان callback به تایمر داده می‌شود. بعد `Start` چاپ می‌شود و ۱۰۰ میلی‌ثانیه بعد `Bye`. گزینه‌ی ۱ فرض کرده `greet` بعد از تأخیر اجرا می‌شود (که برای `setTimeout(greet, 100)` بدون پرانتز درست بود)، گزینه‌ی ۲ تابع برگشتی را نادیده گرفته و گزینه‌ی ۳ فکر کرده تابع برگشتی هم بلافاصله اجرا می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function step(name, ms, next) {
+        setTimeout(() => {
+          console.log(name);
+          next();
+        }, ms);
+      }
+
+      step("login", 300, () => {
+        step("load profile", 100, () => {
+          step("show page", 200, () => {
+            console.log("all done");
+          });
+        });
+      });
+      console.log("started");
+    options:
+      - out: ["started", "login", "load profile", "show page", "all done"]
+      - out: ["started", "load profile", "show page", "login", "all done"]
+      - out: ["login", "load profile", "show page", "all done", "started"]
+      - out: ["started", "all done", "login", "load profile", "show page"]
+    answer: 1
+    explain: |
+      همان اول فقط تایمر `login` ثبت می‌شود و `started` (کد همگام) اول چاپ می‌شود. هر مرحله‌ی بعدی **داخل callbackِ مرحله‌ی قبل** ثبت می‌شود؛ پس شمارش `load profile` تازه بعد از اجرای `login` (۳۰۰ میلی‌ثانیه) شروع می‌شود و همین‌طور تا آخر. تودرتویی یعنی اجرای پشت سر هم و تأخیرهای کوچک‌ترِ مرحله‌های بعد هم این ترتیب را عوض نمی‌کنند. گزینه‌ی ۲ فکر کرده همه‌ی تایمرها از اول ثبت شده‌اند و بر اساس تأخیر مرتب می‌شوند، گزینه‌ی ۳ کد همگام را آخر گذاشته و گزینه‌ی ۴ فکر کرده درونی‌ترین callback زودتر از همه اجرا می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const start = Date.now();
+      setTimeout(() => {
+        console.log("timer waited at least 200 ms:", Date.now() - start >= 200);
+      }, 50);
+      while (Date.now() - start < 200) {
+        // busy waiting: blocks the only thread
+      }
+      console.log("loop finished");
+    options:
+      - out: ["timer waited at least 200 ms: false", "loop finished"]
+      - out: ["loop finished", "timer waited at least 200 ms: false"]
+      - out: ["loop finished", "timer waited at least 200 ms: true"]
+      - out: ["loop finished"]
+    answer: 3
+    explain: |
+      تایمر ۵۰ میلی‌ثانیه‌ای ثبت می‌شود، اما حلقه‌ی `while` تنها thread جاوااسکریپت را ۲۰۰ میلی‌ثانیه مشغول نگه می‌دارد (busy waiting). در این مدت هیچ callbackی نمی‌تواند اجرا شود، حتی اگر موعدش رسیده باشد؛ پس اول `loop finished` و بعد callback تایمر چاپ می‌شود و تا آن موقع دست‌کم ۲۰۰ میلی‌ثانیه گذشته است (`true`). گزینه‌ی ۱ فکر کرده تایمر وسط حلقه آن را قطع می‌کند، گزینه‌ی ۲ فکر کرده تایمر سر ۵۰ میلی‌ثانیه «در پس‌زمینه» اجرا شده و فقط چاپش عقب افتاده، و گزینه‌ی ۴ فکر کرده تایمری که موعدش گذشته لغو می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function divide(a, b, callback) {
+        setTimeout(() => {
+          if (b === 0) {
+            callback(new Error("Cannot divide by zero"));
+          } else {
+            callback(null, a / b);
+          }
+        }, 100);
+      }
+
+      function report(err, result) {
+        if (err) {
+          console.log("Error:", err.message);
+          return;
+        }
+        console.log("Result:", result);
+      }
+
+      divide(10, 2, report);
+      divide(1, 0, report);
+      console.log("Calculating...");
+    options:
+      - out: ["Result: 5", "Error: Cannot divide by zero", "Calculating..."]
+      - out: ["Calculating...", "Result: 5", "Error: Cannot divide by zero"]
+      - out: ["Calculating...", "Error: Cannot divide by zero", "Result: 5"]
+      - out: ["Calculating...", "Result: 5", "Result: Infinity"]
+    answer: 2
+    explain: |
+      هر دو `divide` فقط تایمر ثبت می‌کنند، پس اول `Calculating...` چاپ می‌شود. دو تایمر با تأخیر یکسان (۱۰۰) به ترتیب ثبت شدنشان اجرا می‌شوند: اول `divide(10, 2)` که `callback(null, 5)` را صدا می‌زند و `Result: 5` چاپ می‌شود؛ بعد `divide(1, 0)` که خطا را در **پارامتر اول** می‌فرستد و `report` آن را دستی بررسی می‌کند. گزینه‌ی ۱ تایمرها را همگام فرض کرده، گزینه‌ی ۳ فکر کرده خطاها زودتر می‌رسند و گزینه‌ی ۴ رفتار خودِ `1 / 0` (یعنی `Infinity`) را در نظر گرفته، در حالی که شرط `b === 0` پیش از تقسیم، مسیر خطا را انتخاب می‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let total = 0;
+      setTimeout(() => {
+        total += 10;
+      }, 0);
+      total += 1;
+      console.log("now:", total);
+      setTimeout(() => {
+        console.log("later:", total);
+      }, 0);
+    options:
+      - out: ["now: 11", "later: 11"]
+      - out: ["now: 1", "later: 1"]
+      - out: ["now: 10", "later: 11"]
+      - out: ["now: 1", "later: 11"]
+    answer: 4
+    explain: |
+      callbackِ تایمر اول حتی با تأخیر `0` بعد از کد همگام اجرا می‌شود؛ پس در لحظه‌ی چاپ `now:` فقط `total += 1` اجرا شده و مقدار `1` است (رد گزینه‌های ۱ و ۳). بعد از تمام شدن کد همگام، دو تایمر با تأخیر یکسان به ترتیب ثبتشان اجرا می‌شوند: اول `total += 10` (یعنی ۱۱) و بعد `later: 11` چاپ می‌شود. گزینه‌ی ۲ فراموش کرده تایمر اول قبل از تایمر دوم اجرا می‌شود.
+
+  - level: hard
+    stem: |
+      در کد اسلاید ۵۴، کدام جمله **درست** است؟
+    manual: "Concept question about which function calls which callback; the code itself was run in Node.js (it prints Data received! after about 1 s)."
+    code: |
+      function fetchData(callback) {
+        setTimeout(() => {
+          callback("Data received!");
+        }, 1000);
+      }
+
+      fetchData(result => {
+        console.log(result);
+      });
+    options:
+      - 'دو callback داریم: تابع `() => { ... }` که به `setTimeout` داده شده و محیط اجرا بعد از ۱ ثانیه صدایش می‌زند، و تابع `result => { ... }` که با نام `callback` به `fetchData` داده شده و تابعِ تایمر صدایش می‌زند.'
+      - 'فقط یک callback داریم: `result => { ... }` که خودِ `setTimeout` آن را مستقیم بعد از ۱ ثانیه صدا می‌زند.'
+      - '`fetchData` بعد از ۱ ثانیه مقدار `"Data received!"` را `return` می‌کند و `console.log` همان مقدار را چاپ می‌کند.'
+      - 'تابع `result => { ... }` یک بار بلافاصله هنگام صدا زدن `fetchData` و یک بار دیگر بعد از ۱ ثانیه اجرا می‌شود.'
+    answer: 1
+    explain: |
+      به `setTimeout` تابع بی‌نام `() => { callback("Data received!"); }` داده شده؛ این تابع callbackِ تایمر است و محیط اجرا بعد از ۱ ثانیه صدایش می‌زند. خودِ این تابع، callbackِ ما (`result => { ... }` که داخل `fetchData` اسمش `callback` است) را با مقدار `"Data received!"` صدا می‌زند. پس `setTimeout` مستقیماً با تابع ما کاری ندارد (رد گزینه‌ی ۲). `fetchData` هیچ `return`ی ندارد و نتیجه فقط از راه callback می‌رسد (رد گزینه‌ی ۳). callback ما هم فقط یک بار و فقط بعد از رخ دادن رویداد اجرا می‌شود (رد گزینه‌ی ۴).

@@ -1,0 +1,786 @@
+id: ch1-review
+review: true
+title: "آزمون جامع فصل اول"
+intro: |
+  این آزمون ۳۰ پرسش «ترکیبی» دارد؛ یعنی هر پرسش دست‌کم دو درس از فصل اول را با هم می‌سنجد (مثلاً closure و `var` و `setTimeout`، یا تبدیل نوع و متدهای آرایه). بیشتر پرسش‌ها سخت‌اند و شبیه سؤال‌های دشوار کوییز طراحی شده‌اند.
+
+  پیشنهاد ما: برای هر ۳۰ پرسش روی هم حدود **۵۰ دقیقه** وقت بگذار، کدها را اجرا نکن و خروجی را خط به خط روی کاغذ ردیابی کن. بعد پاسخ‌هایت را با پاسخ‌نامه مقایسه کن و برای هر اشتباه، درس مربوط را دوباره مرور کن. همه‌ی خروجی‌ها در Node.js بررسی شده‌اند.
+questions:
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const a = "5";
+      const b = 2;
+      console.log(`${a + b}|${a - b}|${a * b + "1"}|${[1, 2] + b}`);
+    options:
+      - out: "7|3|101|1,22"
+      - out: "52|3|11|1,22"
+      - out: "52|3|101|1,22"
+      - out: "52|3|101|NaN"
+    answer: 3
+    explain: |
+      درون `${}` همان قواعد معمول عملگرها اجرا می‌شود و template literal فقط نتیجه را به رشته تبدیل می‌کند. `"5" + 2` چسباندن رشته است (`"52"`)، اما `-` و `*` عددی‌اند: `"5" - 2` برابر `3` و `"5" * 2` برابر `10` است و سپس `10 + "1"` رشته‌ی `"101"` می‌شود. آرایه در کنار `+` به رشته‌ی `"1,2"` تبدیل می‌شود و `"1,2" + 2` می‌شود `"1,22"`. گزینه‌ی ۱ فکر کرده template literal جمع را عددی می‌کند، گزینه‌ی ۲ `10 + "1"` را `11` دانسته و گزینه‌ی ۴ جمع آرایه با عدد را `NaN` فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const values = [0, "0", "", null, undefined, NaN, [], "false"];
+      const looseZero = values.filter(v => v == 0);
+      const truthy = values.filter(v => !!v);
+      console.log(looseZero.length, truthy.length);
+    options:
+      - out: "5 3"
+      - out: "3 3"
+      - out: "4 3"
+      - out: "4 2"
+    answer: 3
+    explain: |
+      در `v == 0` فقط `0`، `"0"`، `""` و `[]` برابر صفر می‌شوند: رشته‌ها به عدد تبدیل می‌شوند (`""` به `0`) و آرایه‌ی خالی اول به رشته‌ی `""` و سپس به `0` تبدیل می‌شود. `null == 0` و `undefined == 0` طبق قاعده‌ی ویژه‌ی `==` نادرست‌اند (`null` و `undefined` فقط با هم برابرند)، `NaN` با هیچ چیز برابر نیست و `"false"` به `NaN` تبدیل می‌شود. برای `!!v` فقط سه مقدار truthy داریم: `"0"` (رشته‌ی غیرخالی)، `[]` (هر شیء truthy است) و `"false"`. گزینه‌ی ۱ `null == 0` را درست فرض کرده، گزینه‌ی ۲ `[] == 0` را نادرست دانسته و گزینه‌ی ۴ آرایه‌ی خالی را falsy پنداشته است.
+
+  - level: hard
+    stem: |
+      کدام گزینه درست است؟
+    check: claims
+    options:
+      - text: '`null == 0` برابر `true` است.'
+        expr: 'null == 0'
+        equals: 'true'
+      - text: '`"" || 0 || null` برابر `null` است.'
+        expr: '"" || 0 || null'
+        equals: 'null'
+      - text: '`[] == ![]` برابر `false` است.'
+        expr: '[] == ![]'
+        equals: 'false'
+      - text: '`0 ?? "default"` برابر `"default"` است.'
+        expr: '0 ?? "default"'
+        equals: '"default"'
+    answer: 2
+    explain: |
+      عملگر `||` اولین مقدار truthy را برمی‌گرداند و اگر هیچ‌کدام truthy نباشد، **آخرین** مقدار را؛ `""` و `0` هر دو falsy‌اند، پس حاصل `null` است. گزینه‌ی ۱ نادرست است: `null` در `==` فقط با `undefined` (و خودش) برابر است و `null == 0` برابر `false` است. گزینه‌ی ۳ نادرست است: `![]` برابر `false` است (هر شیء truthy است) و `[] == false` با تبدیل هر دو طرف به عدد (`0 == 0`) برابر `true` می‌شود. گزینه‌ی ۴ نادرست است: `??` فقط به جای `null` و `undefined` مقدار پیش‌فرض می‌گذارد، پس `0 ?? "default"` همان `0` است (برخلاف `||`).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function grade(x) {
+        let out = "";
+        switch (x) {
+          case 1:
+            out += "a";
+          case "2":
+            out += "b";
+            break;
+          case 2:
+            out += "c";
+          default:
+            out += "d";
+        }
+        return out;
+      }
+      console.log(grade(1), grade(2), grade("1"));
+    options:
+      - out: "a cd d"
+      - out: "ab b d"
+      - out: "ab cd ab"
+      - out: "ab cd d"
+    answer: 4
+    explain: |
+      `switch` با مقایسه‌ی سخت‌گیرانه (`===`) کار می‌کند و بعد از ورود به یک `case`، تا رسیدن به `break` به caseهای بعدی هم ادامه می‌دهد (fall-through). `grade(1)`: وارد `case 1` می‌شود (`a`) و چون `break` ندارد، `case "2"` هم اجرا می‌شود (`b`) و آنجا `break` است؛ پس `ab`. `grade(2)`: با `"2"` برابر نیست (`2 === "2"` نادرست است)، وارد `case 2` می‌شود (`c`) و تا `default` ادامه می‌دهد؛ پس `cd`. `grade("1")` با هیچ caseی برابر نیست و فقط `default` اجرا می‌شود: `d`. گزینه‌ی ۱ fall-through را فراموش کرده، گزینه‌ی ۲ فرض کرده `switch` با `==` مقایسه می‌کند و گزینه‌ی ۳ `"1"` را با `1` برابر دانسته است.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const items = ["a", "b"];
+      for (const item of items) {
+        console.log(item);
+      }
+      for (const i = 0; i < items.length; i++) {
+        console.log(items[i]);
+      }
+    options:
+      - line: 2
+      - line: 5
+      - line: 6
+      - line: 0
+    answer: 2
+    explain: |
+      در `for...of` در هر دور یک ثابت **تازه** ساخته می‌شود و هیچ‌وقت به آن انتساب دوباره نمی‌شود، پس `const` در خط ۲ مجاز است و `a` و `b` چاپ می‌شوند. در حلقه‌ی کلاسیک `for` اما فقط یک متغیر داریم که بخش سوم (`i++`) باید آن را تغییر دهد؛ دور اول بدون مشکل `a` را چاپ می‌کند (خط ۶)، ولی سپس `i++` در خط ۵ به ثابت مقدار تازه می‌دهد و `TypeError: Assignment to constant variable` رخ می‌دهد. پس خط ۶ مشکلی ندارد و گزینه‌ی «بدون خطا» هم نادرست است.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const user = { name: "Ali" };
+      user.name = "Sara";
+      let score = 10;
+      if (score > 5) {
+        const user = { name: "Reza" };
+        score += user.name.length;
+      }
+      console.log(user.name, score);
+      user = { name: "Mina" };
+    options:
+      - line: 2
+      - line: 5
+      - line: 0
+      - line: 9
+    answer: 4
+    explain: |
+      `const` فقط **انتساب دوباره** به متغیر را ممنوع می‌کند، نه تغییر محتوای شیء؛ پس خط ۲ مجاز است. در خط ۵، `const user` درون بلوک `if` یک متغیر **جدید** با محدوده‌ی بلوکی است که `user` بیرونی را می‌پوشاند (shadowing)، پس خطا نیست؛ `score` برابر `10 + 4 = 14` می‌شود و خط ۸ عبارت `Sara 14` را چاپ می‌کند. خط ۹ به خود ثابت `user` مقدار تازه می‌دهد و `TypeError: Assignment to constant variable` رخ می‌دهد؛ پس گزینه‌ی «بدون خطا» هم نادرست است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      var name = "global";
+      function show() {
+        console.log(name);
+        var name = "local";
+        console.log(name);
+      }
+      show();
+      console.log(name);
+    options:
+      - out: ["global", "local", "global"]
+      - out: ["undefined", "local", "global"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "local", "local"]
+    answer: 2
+    explain: |
+      اعلان `var name` درون تابع به ابتدای همان تابع hoist می‌شود (فقط اعلان، با مقدار `undefined`) و `name` سراسری را درون تابع می‌پوشاند. پس اولین `console.log` همان `name` محلی را می‌بیند که هنوز مقدار نگرفته (`undefined`)، دومی `local` را چاپ می‌کند و خط آخر، بیرون از تابع، `name` سراسری یعنی `global` را. گزینه‌ی ۱ hoisting را نادیده گرفته، گزینه‌ی ۳ رفتار TDZ مخصوص `let`/`const` را به `var` نسبت داده و گزینه‌ی ۴ فکر کرده `var` درون تابع متغیر سراسری را عوض می‌کند.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log(sum(2, 3));
+      console.log(typeof mult, typeof notDeclared);
+      function sum(a, b) { return a + b; }
+      var mult = (a, b) => a * b;
+      console.log(mult(2, 3));
+      console.log(typeof div);
+      const div = (a, b) => a / b;
+      console.log(div(6, 3));
+    options:
+      - line: 2
+      - line: 6
+      - line: 1
+      - line: 0
+    answer: 2
+    explain: |
+      خط ۱ مشکلی ندارد، چون function declaration به‌طور کامل hoist می‌شود و `5` چاپ می‌شود. در خط ۲، `mult` با `var` تعریف شده و فقط اعلانش (با مقدار `undefined`) بالا رفته است؛ `typeof` روی متغیری که اصلاً تعریف نشده (`notDeclared`) هم بدون خطا `"undefined"` می‌دهد. خط ۵ هم `6` را چاپ می‌کند. اما در خط ۶، `div` با `const` تعریف شده و هنوز در TDZ است و در TDZ حتی `typeof` هم `ReferenceError` می‌دهد. کسی که گزینه‌ی «بدون خطا» را بزند، `typeof` را همیشه بی‌خطر پنداشته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function makeCounters() {
+        var fns = [];
+        for (var i = 0; i < 3; i++) {
+          fns.push(() => i * 10);
+        }
+        i = 7;
+        return fns;
+      }
+      const counters = makeCounters();
+      console.log(counters.map(f => f()).join(" "));
+    options:
+      - out: "0 10 20"
+      - out: "30 30 30"
+      - out: "70 70 70"
+      - out: ["!! ReferenceError"]
+    answer: 3
+    explain: |
+      `var` محدوده‌ی تابعی دارد، پس در کل `makeCounters` فقط **یک** متغیر `i` وجود دارد و هر سه arrow function به همان متغیر (نه به مقدار لحظه‌ی ساخت) closure دارند. حلقه با `i = 3` تمام می‌شود و سپس خط `i = 7` همان متغیر را عوض می‌کند؛ توابع بعداً درون `map` صدا زده می‌شوند و همه `7 * 10` را حساب می‌کنند. گزینه‌ی ۱ رفتار `let` را فرض کرده، گزینه‌ی ۲ تغییر بعد از حلقه را نادیده گرفته و گزینه‌ی ۴ فکر کرده `i` بیرون از حلقه در دسترس نیست (که برای `var` درست نیست).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => console.log("var:", i), 0);
+      }
+      for (let j = 0; j < 3; j++) {
+        setTimeout(() => console.log("let:", j), 0);
+      }
+      console.log("done");
+    options:
+      - out: ["done", "var: 3", "var: 3", "var: 3", "let: 0", "let: 1", "let: 2"]
+      - out: ["var: 0", "var: 1", "var: 2", "let: 0", "let: 1", "let: 2", "done"]
+      - out: ["done", "var: 0", "var: 1", "var: 2", "let: 0", "let: 1", "let: 2"]
+      - out: ["done", "var: 3", "var: 3", "var: 3", "let: 3", "let: 3", "let: 3"]
+    answer: 1
+    explain: |
+      حلقه‌ها فقط زمان‌سنج‌ها را ثبت می‌کنند و callbackها بعد از تمام شدن کد همگام اجرا می‌شوند؛ پس `done` اول چاپ می‌شود. `var` تابع‌محور (یا سراسری) است و هر سه arrow function به همان یک `i` مشترک closure دارند که در پایان حلقه `3` شده است؛ اما `let` در هر دور حلقه یک `j` تازه می‌سازد و هر callback مقدار دور خودش (`0`، `1`، `2`) را نگه می‌دارد. گزینه‌ی ۲ فرض کرده `setTimeout` با تأخیر `0` همان لحظه اجرا می‌شود، گزینه‌ی ۳ فرق `var` و `let` را نادیده گرفته و گزینه‌ی ۴ فکر کرده `let` هم یک متغیر مشترک دارد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function createWallet(start) {
+        let balance = start;
+        return {
+          add(x) {
+            balance += x;
+            return this;
+          },
+          get: () => balance,
+        };
+      }
+      const w1 = createWallet(10);
+      const w2 = createWallet(10);
+      w1.add(5).add("5");
+      console.log(w1.get(), w2.get(), w1.balance);
+    options:
+      - out: "20 10 undefined"
+      - out: "155 155 undefined"
+      - out: "155 10 155"
+      - out: "155 10 undefined"
+    answer: 4
+    explain: |
+      هر بار صدا زدن `createWallet` یک closure **جدید** با `balance` جداگانه می‌سازد، پس `w2` همان `10` می‌ماند. `add` با `w1.add(...)` صدا زده می‌شود، پس `this` آن خود `w1` است و `return this` اجازه‌ی زنجیره کردن را می‌دهد. `balance` ابتدا `10 + 5 = 15` می‌شود و سپس `15 + "5"` چسباندن رشته‌ای است: `"155"` (که `console.log` بدون نقل‌قول چاپ می‌کند). `balance` یک متغیر محلی و خصوصی است، نه خاصیت شیء، پس `w1.balance` برابر `undefined` است. گزینه‌ی ۱ جمع با رشته را عددی دانسته، گزینه‌ی ۲ فکر کرده دو کیف‌پول یک `balance` مشترک دارند و گزینه‌ی ۳ متغیر closure را خاصیت شیء فرض کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function update(obj, num, arr) {
+        obj.count++;
+        num++;
+        arr = [...arr, 4];
+        arr.push(5);
+        return arr.length;
+      }
+      const state = { count: 1 };
+      let n = 1;
+      const list = [1, 2, 3];
+      const len = update(state, n, list);
+      console.log(state.count, n, list.length, len);
+    options:
+      - out: "2 2 5 5"
+      - out: "1 1 3 5"
+      - out: "2 1 5 5"
+      - out: "2 1 3 5"
+    answer: 4
+    explain: |
+      شیء‌ها با **ارجاع** (reference) به تابع داده می‌شوند، پس `obj.count++` همان `state` را تغییر می‌دهد (`2`). اعداد primitive‌اند و کپی می‌شوند، پس `num++` روی `n` بیرونی اثری ندارد (`1`). `arr = [...arr, 4]` پارامتر `arr` را به یک آرایه‌ی **جدید** وصل می‌کند و `push(5)` فقط همین آرایه‌ی جدید را تغییر می‌دهد؛ پس `list` با طول `3` می‌ماند و تابع طول آرایه‌ی جدید یعنی `5` را برمی‌گرداند. گزینه‌ی ۱ عدد را هم ارجاعی و spread را بی‌اثر فرض کرده، گزینه‌ی ۲ فکر کرده تغییر شیء بیرون از تابع دیده نمی‌شود و گزینه‌ی ۳ فکر کرده `push` روی `list` اصلی اثر دارد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let a = 1;
+      let b = 2;
+      [a, b] = [b, a];
+      const [x, , y = a * 10, ...rest] = [5, 6, undefined, 8, 9];
+      const { length } = rest;
+      console.log(a, b, x, y, rest, length);
+    options:
+      - out: "2 1 5 10 [ 8, 9 ] 2"
+      - out: "2 1 5 20 [ 8, 9 ] 2"
+      - out: "2 1 5 undefined [ 8, 9 ] 2"
+      - out: "2 1 5 20 [ 8, 9 ] undefined"
+    answer: 2
+    explain: |
+      `[a, b] = [b, a]` بدون متغیر کمکی مقدارها را جابه‌جا می‌کند: `a = 2` و `b = 1`. در خط ۴، جای خالی بین دو ویرگول عنصر `6` را رد می‌کند و چون عنصر سوم صریحاً `undefined` است، مقدار پیش‌فرض `y` به کار می‌رود؛ این پیش‌فرض **در همان لحظه** و با `a` جدید (`2`) حساب می‌شود: `20`. `...rest` بقیه‌ی عناصر را در آرایه‌ی `[8, 9]` جمع می‌کند و چون آرایه خاصیت `length` دارد، `const { length } = rest` عدد `2` را می‌گیرد. گزینه‌ی ۱ پیش‌فرض را با `a` قدیمی حساب کرده، گزینه‌ی ۳ فکر کرده `undefined` صریح جلوی پیش‌فرض را می‌گیرد و گزینه‌ی ۴ object destructuring روی آرایه را بی‌اثر دانسته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const settings = { theme: "dark", size: null, tags: ["a"] };
+      const { theme = "light", size = 12, font = "Arial", tags } = settings;
+      const copy = { ...settings, theme: "blue" };
+      copy.tags.push("b");
+      tags.push("c");
+      console.log(theme, size, font);
+      console.log(settings.theme, settings.tags.length, copy.tags === settings.tags);
+    options:
+      - out: ["dark 12 Arial", "dark 3 true"]
+      - out: ["dark null Arial", "dark 2 false"]
+      - out: ["dark null Arial", "blue 3 true"]
+      - out: ["dark null Arial", "dark 3 true"]
+    answer: 4
+    explain: |
+      مقدار پیش‌فرض در destructuring فقط وقتی به کار می‌رود که مقدار `undefined` باشد؛ `theme` مقدار `"dark"` دارد و `size` برابر `null` است (نه `undefined`)، پس پیش‌فرض `12` استفاده نمی‌شود و فقط `font` که در شیء نیست `"Arial"` می‌گیرد. spread یک کپی **سطحی** (shallow) می‌سازد: `theme` در `copy` عوض می‌شود ولی `settings.theme` همان `"dark"` می‌ماند، و `settings.tags` و `copy.tags` و متغیر `tags` هر سه به **یک** آرایه اشاره می‌کنند. پس بعد از دو `push` طول آن `3` است و `copy.tags === settings.tags` برابر `true`. گزینه‌ی ۱ `null` را مثل `undefined` فرض کرده، گزینه‌ی ۲ کپی spread را عمیق دانسته و گزینه‌ی ۳ فکر کرده تغییر `theme` در `copy` به `settings` هم می‌رسد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const nums = [1, 2, 3];
+      const a = nums.forEach(n => n * 2);
+      const b = nums.map(n => n * 2);
+      const c = nums.push(4);
+      const total = nums.reduce((acc, n) => acc + n, "");
+      console.log(a, b.join(","), c, total);
+    options:
+      - out: "[ 2, 4, 6 ] 2,4,6 4 1234"
+      - out: "undefined 2,4,6 4 1234"
+      - out: "undefined 2,4,6,8 4 1234"
+      - out: "undefined 2,4,6 4 10"
+    answer: 2
+    explain: |
+      `forEach` همیشه `undefined` برمی‌گرداند (مقدار return هر callback دور ریخته می‌شود). `map` همان لحظه آرایه‌ی **جدید** `[2, 4, 6]` را می‌سازد و `push` بعدی که آرایه‌ی اصلی را تغییر می‌دهد (mutating)، روی `b` اثری ندارد. `push` طول جدید آرایه یعنی `4` را برمی‌گرداند. `reduce` با مقدار اولیه‌ی `""` شروع می‌کند، پس `"" + 1` رشته‌ی `"1"` می‌شود و بقیه‌ی عددها به آن چسبانده می‌شوند: `"1234"`. گزینه‌ی ۱ فکر کرده `forEach` آرایه برمی‌گرداند، گزینه‌ی ۳ فکر کرده خروجی `map` همراه آرایه‌ی اصلی به‌روز می‌شود و گزینه‌ی ۴ اثر مقدار اولیه‌ی رشته‌ای را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی کد زیر دقیقاً `Total: 30` شود؟
+    check: option-output
+    expect: "Total: 30"
+    code: |
+      const cart = [{ price: 10 }, { price: 20 }];
+      const total = cart.reduce((acc, item) => acc + item.price, ___);
+      console.log(`Total: ${total}`);
+    options:
+      - text: '`0`'
+        code: |
+          const cart = [{ price: 10 }, { price: 20 }];
+          const total = cart.reduce((acc, item) => acc + item.price, 0);
+          console.log(`Total: ${total}`);
+      - text: '`""`'
+        code: |
+          const cart = [{ price: 10 }, { price: 20 }];
+          const total = cart.reduce((acc, item) => acc + item.price, "");
+          console.log(`Total: ${total}`);
+      - text: '`"0"`'
+        code: |
+          const cart = [{ price: 10 }, { price: 20 }];
+          const total = cart.reduce((acc, item) => acc + item.price, "0");
+          console.log(`Total: ${total}`);
+      - text: '`undefined`'
+        code: |
+          const cart = [{ price: 10 }, { price: 20 }];
+          const total = cart.reduce((acc, item) => acc + item.price, undefined);
+          console.log(`Total: ${total}`);
+    answer: 1
+    explain: |
+      مقدار اولیه، نوع `acc` را در دور اول تعیین می‌کند. با `0` جمع کاملاً عددی است: `0 + 10 + 20 = 30`. با `""` در دور اول `"" + 10` رشته‌ی `"10"` می‌شود و بعد `20` به آن چسبانده می‌شود: `Total: 1020`. با `"0"` حاصل رشته‌ی `"01020"` است. با `undefined` (که به‌عنوان مقدار اولیه‌ی واقعی پذیرفته می‌شود) دور اول `undefined + 10` یعنی `NaN` است و خروجی `Total: NaN` می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const nums = [10, 1, 5, 100];
+      const sorted = nums.sort();
+      const byValue = [...nums].sort((a, b) => a - b);
+      console.log(sorted.join(","), byValue.join(","), nums[0], sorted === nums);
+    options:
+      - out: "1,5,10,100 1,5,10,100 10 false"
+      - out: "1,10,100,5 1,5,10,100 10 false"
+      - out: "1,10,100,5 1,5,10,100 1 true"
+      - out: "1,5,10,100 1,5,10,100 1 true"
+    answer: 3
+    explain: |
+      `sort()` بدون تابع مقایسه، عناصر را **به‌صورت رشته** مقایسه می‌کند؛ پس `"10"` و `"100"` قبل از `"5"` می‌آیند: `1,10,100,5`. `sort` آرایه را در جا تغییر می‌دهد (mutating) و **همان** آرایه را برمی‌گرداند، پس `sorted === nums` برابر `true` و `nums[0]` برابر `1` است. `[...nums]` یک کپی می‌سازد و `(a, b) => a - b` آن را عددی مرتب می‌کند: `1,5,10,100`. گزینه‌های ۱ و ۴ مرتب‌سازی پیش‌فرض را عددی دانسته‌اند و گزینه‌های ۱ و ۲ فکر کرده‌اند `sort` کپی برمی‌گرداند و آرایه‌ی اصلی دست‌نخورده می‌ماند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      class Counter {
+        constructor() {
+          this.count = 0;
+          this.incBound = this.inc.bind(this);
+        }
+        inc() {
+          this.count++;
+          return this.count;
+        }
+      }
+      const c = new Counter();
+      const { incBound } = c;
+      const inc = c.inc;
+      console.log(incBound(), incBound());
+      console.log(inc());
+    options:
+      - out: ["1 2", "!! TypeError"]
+      - out: ["1 2", "3"]
+      - out: ["1 2", "NaN"]
+      - out: ["!! TypeError"]
+    answer: 1
+    explain: |
+      `incBound` در constructor با `bind(this)` به همان شیء `c` چسبیده است، پس حتی وقتی با destructuring جدا و به‌تنهایی صدا زده شود، `count` همان شیء را زیاد می‌کند: `1` و `2`. اما `inc` بدون `bind` از شیء جدا شده و مثل یک تابع ساده صدا زده می‌شود؛ بدنه‌ی کلاس همیشه در حالت strict است، پس `this` برابر `undefined` می‌شود و `this.count++` خطای `TypeError` می‌دهد. گزینه‌ی ۲ فکر کرده تابعِ جداشده هنوز `this` را به یاد دارد، گزینه‌ی ۳ رفتار حالت sloppy (`this` برابر شیء سراسری و `undefined++` برابر `NaN`) را فرض کرده و گزینه‌ی ۴ فکر کرده تابع bindشده هم با جدا شدن، `this` را از دست می‌دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const team = {
+        name: "Red",
+        regular(greet) {
+          return `${greet} ${this.name}`;
+        },
+        makeArrow() {
+          return () => this.name;
+        },
+      };
+      const blue = { name: "Blue" };
+      const arrowFn = team.makeArrow();
+      console.log(team.regular.call(blue, "Hi"));
+      console.log(team.regular.apply(blue, ["Yo"]));
+      console.log(arrowFn.call(blue));
+      const bound = team.regular.bind(blue);
+      console.log(bound.call(team, "Hey"));
+    options:
+      - out: ["Hi Blue", "Yo Blue", "Red", "Hey Blue"]
+      - out: ["Hi Blue", "Yo Blue", "Blue", "Hey Red"]
+      - out: ["Hi Blue", "Yo Blue", "Blue", "Hey Blue"]
+      - out: ["Hi Blue", "Yo Blue", "Red", "Hey Red"]
+    answer: 1
+    explain: |
+      `call` و `apply` تابع را همان لحظه با `this` دلخواه اجرا می‌کنند و فرقشان فقط در شکل آرگومان‌هاست (`apply` آرایه می‌گیرد)؛ پس هر دو `Blue` را چاپ می‌کنند. arrow function خودش `this` ندارد و `this` را از جایی که ساخته شده (اجرای `team.makeArrow()`، یعنی `team`) می‌گیرد و `call` نمی‌تواند آن را عوض کند؛ پس `Red` چاپ می‌شود. تابعی که با `bind` ساخته شده برای همیشه به `blue` چسبیده و `call` بعدی آن را تغییر نمی‌دهد: `Hey Blue`. گزینه‌های ۲ و ۳ فکر کرده‌اند `call` روی arrow function اثر دارد و گزینه‌های ۲ و ۴ فکر کرده‌اند `call` می‌تواند اثر `bind` را لغو کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const timer = {
+        label: "T1",
+        startArrow() {
+          setTimeout(() => console.log("arrow:", this.label), 0);
+        },
+        startRegular() {
+          setTimeout(function () {
+            console.log("regular:", this.label);
+          }, 0);
+        },
+      };
+      timer.startRegular();
+      timer.startArrow();
+    options:
+      - out: ["regular: T1", "arrow: T1"]
+      - out: ["regular: T1", "arrow: undefined"]
+      - out: ["arrow: T1", "regular: undefined"]
+      - out: ["regular: undefined", "arrow: T1"]
+    answer: 4
+    explain: |
+      `startRegular` زودتر صدا زده شده، پس timer آن زودتر ثبت و زودتر اجرا می‌شود. callback آن یک function معمولی است که `setTimeout` آن را بدون شیء صاحب (نه به شکل `timer.method()`) صدا می‌زند؛ پس `this` دیگر `timer` نیست (در Node.js شیء Timeout و در مرورگر `window`) و `this.label` برابر `undefined` است. arrow function خودش `this` ندارد و `this` متد `startArrow`، یعنی `timer`، را به ارث می‌برد؛ پس `T1` چاپ می‌شود. گزینه‌ی ۱ فکر کرده function معمولی هم `this` را نگه می‌دارد، گزینه‌ی ۲ نقش دو نوع تابع را برعکس کرده و گزینه‌ی ۳ ترتیب ثبت timerها را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا کد زیر در Node.js دقیقاً `ticks: 1` را چاپ کند؟
+    check: option-output
+    expect: "ticks: 1"
+    code: |
+      const clock = {
+        ticks: 0,
+        start() {
+          setTimeout(___, 0);
+        },
+        tick() {
+          this.ticks++;
+          console.log("ticks:", this.ticks);
+        },
+      };
+      clock.start();
+    options:
+      - text: '`this.tick`'
+        code: |
+          const clock = {
+            ticks: 0,
+            start() {
+              setTimeout(this.tick, 0);
+            },
+            tick() {
+              this.ticks++;
+              console.log("ticks:", this.ticks);
+            },
+          };
+          clock.start();
+      - text: '`() => this.tick()`'
+        code: |
+          const clock = {
+            ticks: 0,
+            start() {
+              setTimeout(() => this.tick(), 0);
+            },
+            tick() {
+              this.ticks++;
+              console.log("ticks:", this.ticks);
+            },
+          };
+          clock.start();
+      - text: '`function () { this.tick(); }`'
+        code: |
+          const clock = {
+            ticks: 0,
+            start() {
+              setTimeout(function () { this.tick(); }, 0);
+            },
+            tick() {
+              this.ticks++;
+              console.log("ticks:", this.ticks);
+            },
+          };
+          clock.start();
+      - text: '`tick`'
+        code: |
+          const clock = {
+            ticks: 0,
+            start() {
+              setTimeout(tick, 0);
+            },
+            tick() {
+              this.ticks++;
+              console.log("ticks:", this.ticks);
+            },
+          };
+          clock.start();
+    answer: 2
+    explain: |
+      `setTimeout` تابعی را که می‌گیرد بعداً و به‌صورت تابع ساده (نه به شکل `clock.tick()`) صدا می‌زند. arrow function `this` را از `start` به ارث می‌برد که با `clock.start()` صدا زده شده، پس `this.tick()` روی `clock` اجرا می‌شود و `ticks: 1` چاپ می‌شود. با `this.tick` خود تابع بدون صاحبش پاس داده می‌شود و هنگام اجرا `this` دیگر `clock` نیست؛ `this.ticks` برابر `undefined` است و `undefined++` به `NaN` می‌رسد، پس `ticks: NaN` چاپ می‌شود. در function معمولی هم `this` شیء `clock` نیست، پس `this.tick` تعریف نشده است و صدا زدنش `TypeError` می‌دهد. `tick` به‌تنهایی یک متغیر تعریف‌نشده است (متدِ شیء، متغیر جداگانه نیست) و `ReferenceError` می‌دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function parse(text) {
+        try {
+          const data = JSON.parse(text);
+          return `ok:${data.n + 1}`;
+        } catch (err) {
+          return `fail:${err.name}`;
+        } finally {
+          console.log("finally");
+        }
+      }
+      console.log(parse('{"n": 1}'));
+      console.log(parse("{'n': 2}"));
+      console.log(parse('{"n": "3"}'));
+    options:
+      - out: ["finally", "ok:2", "finally", "fail:SyntaxError", "finally", "ok:31"]
+      - out: ["ok:2", "finally", "fail:SyntaxError", "finally", "ok:31", "finally"]
+      - out: ["finally", "ok:2", "finally", "ok:3", "finally", "ok:31"]
+      - out: ["finally", "ok:2", "finally", "fail:SyntaxError", "finally", "ok:4"]
+    answer: 1
+    explain: |
+      بلوک `finally` همیشه اجرا می‌شود، حتی وقتی `try` یا `catch` با `return` تمام شوند، و این کار **پیش از** رسیدن مقدار برگشتی به `console.log` بیرونی انجام می‌شود؛ پس در هر فراخوانی اول `finally` چاپ می‌شود. ورودی دوم JSON معتبر نیست (در JSON کلیدها و رشته‌ها باید با `"` نوشته شوند)، پس `JSON.parse` خطای `SyntaxError` می‌دهد و `catch` نام آن را برمی‌گرداند. در ورودی سوم `data.n` رشته‌ی `"3"` است و `"3" + 1` رشته‌ی `"31"` می‌شود. گزینه‌ی ۲ ترتیب `finally` را اشتباه گرفته، گزینه‌ی ۳ نقل‌قول تکی را در JSON مجاز دانسته و گزینه‌ی ۴ `"3" + 1` را جمع عددی فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function load(json) {
+        try {
+          return JSON.parse(json).items.length;
+        } catch (e) {
+          throw new RangeError("bad input: " + e.name);
+        } finally {
+          console.log("checked");
+        }
+      }
+      console.log(load('{"items": [1, 2]}'));
+      console.log(load('{"items": null}'));
+      console.log(load("[1, 2]"));
+    options:
+      - out: ["2", "checked", "checked", "!! RangeError"]
+      - out: ["checked", "2", "checked", "!! TypeError"]
+      - out: ["checked", "2", "checked", "!! RangeError"]
+      - out: ["checked", "2", "!! RangeError"]
+    answer: 3
+    explain: |
+      فراخوانی اول بدون خطا `2` را برمی‌گرداند، ولی `finally` پیش از رسیدن مقدار به `console.log` بیرونی اجرا می‌شود: اول `checked` و سپس `2`. در فراخوانی دوم JSON معتبر است ولی `items` برابر `null` است و `null.length` خطای `TypeError` می‌دهد؛ `catch` آن را می‌گیرد و یک خطای **تازه** از نوع `RangeError` پرتاب می‌کند. پیش از خروج این خطا از تابع، `finally` باز هم اجرا می‌شود (`checked`)، سپس `RangeError` بیرون‌آمده جایی گرفته نمی‌شود و برنامه متوقف می‌شود؛ پس خط آخر هرگز اجرا نمی‌شود. گزینه‌ی ۱ ترتیب `finally` را اشتباه گرفته، گزینه‌ی ۲ فکر کرده همان `TypeError` اولیه بیرون می‌آید و گزینه‌ی ۴ فکر کرده وقتی `catch` خطا پرتاب کند، `finally` اجرا نمی‌شود.
+
+  - level: hard
+    stem: |
+      کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: '`typeof JSON.parse("5")` برابر `"number"` است.'
+        expr: 'typeof JSON.parse("5")'
+        equals: '"number"'
+      - text: '`parseInt("12px") + Number("3")` برابر `15` است.'
+        expr: 'parseInt("12px") + Number("3")'
+        equals: '15'
+      - text: '`JSON.stringify({ a: undefined, b: 1 })` رشته‌ی `{"b":1}` را می‌سازد.'
+        expr: 'JSON.stringify({ a: undefined, b: 1 }) === ''{"b":1}'''
+        equals: 'true'
+      - text: '`JSON.parse(''{"a": 1}'').a + "1"` برابر `2` است.'
+        expr: 'JSON.parse(''{"a": 1}'').a + "1"'
+        equals: '2'
+    answer: 4
+    explain: |
+      `JSON.parse('{"a": 1}').a` عدد `1` است، ولی `1 + "1"` چسباندن رشته‌ای است و حاصل `"11"` می‌شود، نه `2`؛ پس گزینه‌ی ۴ نادرست است. بقیه درست‌اند: `JSON.parse("5")` عدد `5` را می‌دهد و `typeof` آن `"number"` است؛ `parseInt("12px")` از ابتدای رشته تا جایی که رقم هست می‌خواند (`12`) و `Number("3")` برابر `3` است، پس جمع `15` می‌شود؛ و `JSON.stringify` کلیدهایی را که مقدارشان `undefined` است کنار می‌گذارد و رشته‌ی `{"b":1}` را می‌سازد.
+
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی اجرای کد JavaScript درست است؟
+    options:
+      - 'چون JavaScript تک‌نخی (single-threaded) است، callback یک `setTimeout(..., 0)` تا وقتی یک حلقه‌ی همگام طولانی در حال اجراست اجرا نمی‌شود و باید صبر کند تا کد فعلی تمام و call stack خالی شود.'
+      - '`setTimeout` بخشی از خود موتور JavaScript (مثلاً V8) است و موتور بدون کمک محیط اجرا، زمان‌سنج‌ها را مدیریت می‌کند.'
+      - '`await` کل برنامه را متوقف می‌کند و تا وقتی Promise کامل نشود، هیچ کد دیگری (حتی بیرون از آن تابع async) اجرا نمی‌شود.'
+      - 'callbackهای `then` (microtaskها) فقط بعد از اجرای همه‌ی `setTimeout(..., 0)`های ثبت‌شده اجرا می‌شوند.'
+    answer: 1
+    explain: |
+      گزینه‌ی ۱ درست است: JavaScript فقط یک call stack دارد و event loop تنها وقتی callback بعدی را از صف برمی‌دارد که stack خالی باشد؛ پس «تأخیر ۰» یعنی «زودترین زمان ممکن بعد از کد فعلی»، نه «همین حالا». گزینه‌ی ۲ نادرست است: `setTimeout` جزو APIهایی است که محیط اجرا (مرورگر یا Node.js) فراهم می‌کند، نه خود موتور. گزینه‌ی ۳ نادرست است: `await` فقط همان تابع async را متوقف می‌کند و بقیه‌ی برنامه ادامه می‌یابد (non-blocking). گزینه‌ی ۴ برعکس واقعیت است: صف microtaskها همیشه پیش از macrotask بعدی (مثل callback یک timer) کاملاً خالی می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function getNum() {
+        return 5;
+      }
+      async function main() {
+        const a = getNum();
+        const b = await getNum();
+        console.log(typeof a, typeof b);
+        console.log(`${b + 1}`, b + "1");
+      }
+      main();
+      console.log("sync end");
+    options:
+      - out: ["object number", "6 51", "sync end"]
+      - out: ["sync end", "number number", "6 51"]
+      - out: ["sync end", "object number", "6 51"]
+      - out: ["sync end", "promise number", "6 51"]
+    answer: 3
+    explain: |
+      تابع async هنگام فراخوانی تا اولین `await` همگام اجرا می‌شود و همان‌جا متوقف می‌شود؛ پس `main()` در `await getNum()` منتظر می‌ماند و `sync end` اول چاپ می‌شود. تابع async **همیشه** Promise برمی‌گرداند: بدون `await`، متغیر `a` خود Promise است و `typeof` آن `"object"` است (در `typeof` نوعی به نام `"promise"` نداریم)، اما `await` مقدار `5` را از Promise بیرون می‌کشد. در خط بعد، `${b + 1}` جمع عددی (`6`) و `b + "1"` چسباندن رشته‌ای (`"51"`) است. گزینه‌ی ۱ فکر کرده کل تابع async پیش از کد بعدی تمام می‌شود، گزینه‌ی ۲ فراموش کردن `await` را بی‌اثر دانسته و گزینه‌ی ۴ برای Promise نوع جداگانه‌ای در `typeof` فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log("1");
+      setTimeout(() => console.log("2"), 0);
+      Promise.resolve()
+        .then(() => console.log("3"))
+        .then(() => console.log("4"));
+      (async () => {
+        console.log("5");
+        await null;
+        console.log("6");
+      })();
+      console.log("7");
+    options:
+      - out: ["1", "5", "7", "3", "4", "6", "2"]
+      - out: ["1", "7", "5", "3", "6", "4", "2"]
+      - out: ["1", "5", "7", "3", "6", "4", "2"]
+      - out: ["1", "5", "7", "2", "3", "6", "4"]
+    answer: 3
+    explain: |
+      کد همگام اول اجرا می‌شود: `1`، سپس بدنه‌ی تابع async تا اولین `await` (`5`) و بعد `7`. سپس صف microtaskها: اول callback نخستین `then` (`3`) و بعد ادامه‌ی تابع async پس از `await` (`6`)؛ `then` دوم فقط وقتی وارد صف می‌شود که `then` اول تمام شده باشد، پس `4` بعد از `6` می‌آید. `setTimeout` یک macrotask است و پس از خالی شدن کامل صف microtaskها اجرا می‌شود (`2`). گزینه‌ی ۱ فکر کرده زنجیره‌ی `then`ها یک‌جا و پشت سر هم اجرا می‌شود، گزینه‌ی ۲ بدنه‌ی تابع async را از همان ابتدا ناهمگام دانسته و گزینه‌ی ۴ `setTimeout(..., 0)` را بر Promiseها مقدم فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      setTimeout(() => {
+        console.log("T1");
+        Promise.resolve().then(() => console.log("P-in-T1"));
+      }, 0);
+      setTimeout(() => console.log("T2"), 0);
+      Promise.resolve().then(() => {
+        console.log("P1");
+        setTimeout(() => console.log("T3"), 0);
+      });
+      console.log("S");
+    options:
+      - out: ["S", "P1", "T1", "T2", "P-in-T1", "T3"]
+      - out: ["S", "P1", "T1", "P-in-T1", "T2", "T3"]
+      - out: ["S", "T1", "P-in-T1", "T2", "P1", "T3"]
+      - out: ["P1", "S", "T1", "P-in-T1", "T2", "T3"]
+    answer: 2
+    explain: |
+      اول کد همگام اجرا می‌شود (`S`). سپس، پیش از هر macrotask، همه‌ی microtaskها اجرا می‌شوند: `P1` که timer سوم (`T3`) را به **انتهای** صف timerها اضافه می‌کند. بعد timerها به ترتیب ثبت اجرا می‌شوند: `T1`؛ و چون بعد از هر macrotask دوباره صف microtaskها خالی می‌شود، `P-in-T1` بلافاصله پس از `T1` و پیش از `T2` می‌آید و در آخر `T3`. گزینه‌ی ۱ فکر کرده microtaskها فقط بعد از همه‌ی timerها اجرا می‌شوند، گزینه‌ی ۳ timerها را بر microtaskهای کد اصلی مقدم دانسته و گزینه‌ی ۴ callback `then` را همگام فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const wait = (ms, v) =>
+        new Promise((resolve) =>
+          setTimeout(() => {
+            console.log("done", v);
+            resolve(v);
+          }, ms)
+        );
+      async function run() {
+        const first = wait(300, "A");
+        const second = await wait(100, "B");
+        console.log("after B");
+        const all = await Promise.all([first, wait(50, "C"), second]);
+        console.log(all.join(","));
+      }
+      run();
+    options:
+      - out: ["done B", "after B", "done C", "done A", "A,C,B"]
+      - out: ["done B", "after B", "done A", "done C", "A,C,B"]
+      - out: ["done B", "after B", "done C", "done A", "C,A,B"]
+      - out: ["after B", "done B", "done C", "done A", "A,C,B"]
+    answer: 1
+    explain: |
+      `wait(300, "A")` بدون `await` صدا زده شده، پس timer آن همان لحظه شروع می‌شود؛ بعد `run` منتظر B می‌ماند که در لحظه‌ی ۱۰۰ میلی‌ثانیه تمام می‌شود (`done B` و سپس `after B`). حالا timer مربوط به C (۵۰ میلی‌ثانیه) شروع می‌شود و در لحظه‌ی ۱۵۰ تمام می‌شود، در حالی که A در لحظه‌ی ۳۰۰ تمام می‌شود؛ پس `done C` پیش از `done A` است. `Promise.all` نتیجه‌ها را به ترتیب **آرایه‌ی ورودی** برمی‌گرداند، نه به ترتیب تمام شدن، و مقدار معمولی `second` (یعنی `"B"`) را هم همان‌طور می‌پذیرد: `A,C,B`. گزینه‌ی ۲ فکر کرده `Promise.all` کارها را یکی‌یکی و به ترتیب آرایه اجرا می‌کند، گزینه‌ی ۳ نتیجه را به ترتیب پایان کار دانسته و گزینه‌ی ۴ فکر کرده کد بعد از `await` منتظر نمی‌ماند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function fail() {
+        throw new Error("boom");
+      }
+      async function a() {
+        try {
+          return await fail();
+        } catch (e) {
+          return "caught-a";
+        }
+      }
+      async function b() {
+        try {
+          return fail();
+        } catch (e) {
+          return "caught-b";
+        }
+      }
+      async function main() {
+        console.log(await a());
+        try {
+          console.log(await b());
+        } catch (e) {
+          console.log("main caught:", e.message);
+        }
+      }
+      main();
+    options:
+      - out: ["caught-a", "main caught: boom"]
+      - out: ["caught-a", "caught-b"]
+      - out: ["caught-a", "!! Error"]
+      - out: ["!! Error"]
+    answer: 1
+    explain: |
+      در `a`، `await fail()` منتظر Promise ردشده می‌ماند و رد شدن آن را به شکل یک خطای معمولی **درون** `try` پرتاب می‌کند؛ پس `catch` آن را می‌گیرد و `a` با `"caught-a"` کامل می‌شود. در `b`، `return fail()` بدون `await` فقط Promise را برمی‌گرداند و تابع از `try` خارج می‌شود؛ رد شدن Promise بیرون از `try` اتفاق می‌افتد و `catch` درون `b` آن را نمی‌بیند، پس Promise برگشتی `b` رد می‌شود. این رد شدن در `main` با `await b()` درون `try` گرفته می‌شود: `main caught: boom`. گزینه‌ی ۲ فرق `return await` با `return` را نادیده گرفته، گزینه‌ی ۳ فکر کرده این خطا هیچ‌جا گرفته نمی‌شود و برنامه crash می‌کند و گزینه‌ی ۴ فکر کرده `try...catch` اصلاً خطای async را نمی‌گیرد.
