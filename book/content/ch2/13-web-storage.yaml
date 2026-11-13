@@ -1,0 +1,532 @@
+id: ch2-storage
+title: "ذخیره‌سازی در مرورگر: localStorage و sessionStorage"
+slides: "JS in HTML، اسلایدهای ۳۸ تا ۴۰"
+lesson: |
+  وقتی صفحه را reload (بارگذاری دوباره) می‌کنی، همه‌ی متغیرهای JavaScript از نو ساخته می‌شوند و صفحه همه‌چیز را «فراموش» می‌کند. اما خیلی وقت‌ها می‌خواهیم چیزی **بماند**: تم تیره‌ای که کاربر انتخاب کرده، زبان سایت، سبد خرید یا مرحله‌ای از فرم که کاربر در آن بود. مرورگر برای این کار دو شیء آماده دارد: **`localStorage`** و **`sessionStorage`**. هر دو property شیء `window` هستند (پس `window.localStorage` همان `localStorage` است) و به آن‌ها Web Storage (حافظه‌ی وب) می‌گویند.
+
+  ::: analogy
+  `localStorage` مثل کمد شخصی‌ات در یک باشگاه است: وسایلت تا وقتی خودت خالی‌اش نکنی می‌ماند، حتی اگر به خانه بروی و هفته‌ی بعد برگردی؛ و هر باشگاه (هر سایت) کمدهای خودش را دارد. `sessionStorage` مثل سینی روی میز رستوران است: تا پشت همان میز (همان تب) نشسته‌ای در دسترس است، ولی وقتی بلند شوی (تب را ببندی) جمعش می‌کنند؛ و میز کناری (تب دیگر) سینی جداگانه‌ی خودش را دارد.
+  :::
+
+  ### آنچه اسلایدهای ۳۸ و ۳۹ می‌گویند
+
+  | ویژگی | `localStorage` (اسلاید ۳۸) | `sessionStorage` (اسلاید ۳۹) |
+  |---|---|---|
+  | هدف | ذخیره‌ی **ماندگار** (persistent) داده در مرورگر | ذخیره‌ی داده **فقط برای تب فعلی** |
+  | شکل داده | جفت‌های کلید-مقدار با `setItem()` و `getItem()` | همان |
+  | عمر داده | بعد از بستن تب و حتی بستن مرورگر **می‌ماند** | با بستن تب یا پنجره **پاک می‌شود** |
+  | حجم | معمولاً حدود ۵ تا ۱۰ مگابایت برای هر سایت | معمولاً همان حدود ۵ تا ۱۰ مگابایت |
+  | امنیت | سیاست same-origin: داده‌ی هر دامنه جداست | همان |
+  | محدودیت‌ها | فقط رشته، همگام (synchronous)، **برای اطلاعات حساس امن نیست** | فقط رشته، همگام، برای اطلاعات حساس نیست |
+
+  ### متدها (برای هر دو یکسان است)
+
+  ```js
+  localStorage.setItem("theme", "dark");   // save: add a new key or overwrite it
+  localStorage.getItem("theme");           // "dark"
+  localStorage.getItem("lang");            // null -> there is no such key
+  localStorage.removeItem("theme");        // delete one key (no error if it is missing)
+  localStorage.clear();                    // delete ALL keys of this site (localStorage only)
+  localStorage.length;                     // how many keys are saved
+  localStorage.key(0);                     // the NAME of the key at index 0 (or null)
+  ```
+
+  | عضو | کار | خروجی |
+  |---|---|---|
+  | `setItem(key, value)` | ذخیره (یا بازنویسی) | `undefined` |
+  | `getItem(key)` | خواندن | رشته، یا `null` اگر کلید نباشد |
+  | `removeItem(key)` | حذف یک کلید | `undefined` |
+  | `clear()` | حذف همه‌ی کلیدهای همان حافظه | `undefined` |
+  | `key(i)` | نامِ کلیدِ شماره‌ی `i` | رشته یا `null` |
+  | `length` | تعداد کلیدها | عدد |
+
+  `localStorage` و `sessionStorage` دو انبار **جدا** هستند: `localStorage.clear()` به sessionStorage دست نمی‌زند و `sessionStorage.setItem("step", "2")` در localStorage دیده نمی‌شود. نوشتن به شکل property (`localStorage.theme = "dark"`) هم کار می‌کند، ولی بهتر است همیشه از `setItem` و `getItem` استفاده کنی تا با نام متدها (مثل `length` و `key`) قاطی نشود.
+
+  ### فقط رشته!
+
+  هر مقداری که به `setItem` بدهی **قبل از ذخیره به رشته تبدیل می‌شود** و `getItem` همیشه رشته (یا `null`) برمی‌گرداند:
+
+  ```js
+  localStorage.setItem("count", 5);
+  console.log(localStorage.getItem("count") + 1);    // "51" -> string concatenation
+
+  localStorage.setItem("darkMode", false);
+  if (localStorage.getItem("darkMode")) {
+    console.log("runs!");   // "false" is a non-empty string, so it is truthy
+  }
+
+  localStorage.setItem("user", { name: "Ali" });
+  console.log(localStorage.getItem("user"));         // "[object Object]" -> the data is lost
+
+  localStorage.setItem("nums", [1, 2, 3]);
+  console.log(localStorage.getItem("nums"));         // "1,2,3"
+  ```
+
+  | چیزی که ذخیره می‌کنی | چیزی که برمی‌گردد |
+  |---|---|
+  | `5` | `"5"` |
+  | `false` | `"false"` (یک رشته‌ی غیرخالی، پس truthy؛ یعنی در شرط «درست» حساب می‌شود) |
+  | `null` | `"null"` |
+  | `{ name: "Ali" }` | `"[object Object]"` |
+  | `[1, 2, 3]` | `"1,2,3"` |
+
+  #### الگوی درست: JSON
+
+  برای شیء و آرایه، همان‌طور که در درس JSON فصل اول دیدیم، قبل از ذخیره `JSON.stringify` و بعد از خواندن `JSON.parse` می‌کنیم:
+
+  ```js
+  const user = { name: "Ali", age: 20 };
+  localStorage.setItem("user", JSON.stringify(user));      // '{"name":"Ali","age":20}'
+  const saved = JSON.parse(localStorage.getItem("user"));  // a real object again
+  console.log(saved.age + 1);                              // 21 -> age is a number again
+  ```
+
+  وقتی معلوم نیست کلید وجود دارد یا نه:
+
+  ```js
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];  // JSON.parse(null) is null -> []
+  ```
+
+  برای عدد از `Number()` و برای بولی از مقایسه با رشته استفاده کن:
+
+  ```js
+  const visits = Number(localStorage.getItem("visits")) + 1;   // Number(null) is 0
+  localStorage.setItem("visits", visits);
+  console.log("You have visited this page " + visits + " times");
+
+  const isDark = localStorage.getItem("darkMode") === "true";  // compare with the string
+  ```
+
+  ### همگام (synchronous)
+
+  `setItem` و `getItem` همگام‌اند: کارشان قبل از رفتن به خط بعد تمام می‌شود و برای خواندن مقدار، نه `await` لازم است نه callback. اما چون روی رشته‌ی اصلی (main thread) اجرا می‌شوند، ذخیره‌ی داده‌ی خیلی بزرگ می‌تواند صفحه را لحظه‌ای کُند کند؛ داده را کوچک نگه دار.
+
+  ### سیاست same-origin
+
+  **origin** (مبدأ) یعنی ترکیب **پروتکل + میزبان (دامنه) + پورت**. هر origin انبار localStorage و sessionStorage **جداگانه**‌ی خودش را دارد و هیچ سایتی نمی‌تواند داده‌ی سایت دیگر را بخواند. مسیر (path) صفحه مهم نیست:
+
+  | دو آدرس | origin یکسان؟ |
+  |---|---|
+  | `https://site.com/a.html` و `https://site.com/blog/b.html` | **بله**؛ فقط مسیر فرق دارد |
+  | `http://site.com` و `https://site.com` | خیر؛ پروتکل فرق دارد |
+  | `https://site.com` و `https://shop.site.com` | خیر؛ میزبان فرق دارد |
+  | `https://site.com` و `https://site.com:8080` | خیر؛ پورت فرق دارد |
+
+  ### عمر داده و تب‌ها
+
+  | موقعیت | `localStorage` | `sessionStorage` |
+  |---|---|---|
+  | reload در همان تب | می‌ماند | **می‌ماند** |
+  | بستن تب یا پنجره | می‌ماند | پاک می‌شود |
+  | بستن کل مرورگر و باز کردن فردا | می‌ماند | پاک شده است |
+  | باز کردن همان سایت در تب جدید (با تایپ آدرس) | **مشترک** است؛ همان داده دیده می‌شود | تب جدید sessionStorage **خالیِ خودش** را دارد |
+  | تا کی؟ | تا وقتی کد یا خودِ کاربر (پاک کردن داده‌های مرورگر) حذفش کند؛ تاریخ انقضا ندارد | تا وقتی آن تب باز است |
+
+  ### امنیت: جای اطلاعات حساس نیست
+
+  - داده‌ها **رمزنگاری نمی‌شوند** و هر کسی که به مرورگر دسترسی دارد می‌تواند آن‌ها را در DevTools (ابزار توسعه‌دهنده‌ی مرورگر، بخش Application یا Storage) ببیند یا تغییر دهد.
+  - **هر** کد JavaScriptی که در صفحه اجرا شود می‌تواند همه‌ی داده‌ها را بخواند؛ از جمله کدی که مهاجم با حمله‌ی XSS (Cross-Site Scripting؛ تزریق اسکریپت مخرب به صفحه‌ی یک سایت) وارد صفحه کرده است.
+  - پس رمز عبور، شماره‌ی کارت بانکی و اطلاعات محرمانه را آن‌جا نگذار و به مقدارهایش (مثلاً `isAdmin: true`) برای تصمیم‌های امنیتی اعتماد نکن.
+
+  ### نمونه‌ی کاربردی ۱: به خاطر سپردن تم تیره (localStorage)
+
+  ```js
+  const btn = document.getElementById("toggle");
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark");   // restore the saved choice when the page loads
+  }
+  btn.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  });
+  ```
+
+  ### نمونه‌ی کاربردی ۲: فرم چندمرحله‌ای (sessionStorage)
+
+  ```js
+  // remember the progress of this tab only
+  sessionStorage.setItem("signup-step", "2");
+  sessionStorage.setItem("signup-name", "Sara");
+
+  // after a reload in the same tab, continue where the user left off
+  const step = sessionStorage.getItem("signup-step") || "1";
+  console.log("Show step " + step);   // "Show step 2"
+  ```
+
+  ### فعالیت کلاسی اسلاید ۴۰
+
+  **۱. تفاوت اصلی localStorage و sessionStorage چیست؟** **عمر و دامنه‌ی داده.** داده‌ی localStorage تاریخ انقضا ندارد، بعد از بستن تب و مرورگر هم می‌ماند و بین همه‌ی تب‌های همان origin مشترک است. داده‌ی sessionStorage فقط مال همان یک تب است و با بستن تب یا پنجره پاک می‌شود. بقیه‌ی ویژگی‌ها مشترک‌اند: API یکسان، سیاست same-origin، فقط رشته، همگام، حدود ۵ تا ۱۰ مگابایت و نامناسب برای داده‌ی حساس.
+
+  **۲. یک مثال برای localStorage:** به خاطر سپردن تم تیره یا روشن، زبان انتخابی کاربر، سبد خرید یا لیست کارهایی که باید تا بازدید بعدی بماند، یا گزینه‌ی «این راهنما را دوباره نشان نده».
+
+  **۳. یک مثال برای sessionStorage:** پیشرفت یک فرم چندمرحله‌ای در همان تب، فیلترها و جست‌وجوی موقتی که با بستن تب باید پاک شود، پیام خوش‌آمدی که در هر بازدید فقط یک بار نمایش داده شود، یا وضعیتی که هر تب باید جدا داشته باشد.
+
+  ::: tip
+  - `setItem` و `getItem`، و برای حذف `removeItem` و `clear`؛ کلید ناموجود ← `null`.
+  - شیء و آرایه را با `JSON.stringify` ذخیره و با `JSON.parse` بخوان؛ برای مقدار شاید ناموجود: `JSON.parse(localStorage.getItem("key")) || []`.
+  - ماندگار و مشترک بین تب‌ها ← `localStorage`؛ موقت و مخصوص یک تب ← `sessionStorage`.
+  :::
+
+  ::: trap
+  - `setItem("count", 5)` ← `getItem("count") + 1` می‌شود `"51"`.
+  - `setItem("flag", false)` ← `"false"` که در `if` **درست** (truthy) حساب می‌شود.
+  - ذخیره‌ی مستقیم شیء ← `"[object Object]"` و داده از دست می‌رود.
+  - `getItem` برای کلید ناموجود `null` برمی‌گرداند، نه `undefined`.
+  - sessionStorage با reload پاک **نمی‌شود**؛ با بستن تب پاک می‌شود.
+  - localStorage تاریخ انقضا ندارد؛ خودبه‌خود (مثلاً بعد از ۲۴ ساعت) پاک نمی‌شود.
+  - `http://` و `https://` یک سایت، یا دو پورت متفاوت، origin جدا و انبار جدا دارند.
+  - رمز عبور و اطلاعات حساس را هرگز در Web Storage نگذار (XSS می‌تواند همه را بخواند).
+  :::
+
+  ::: summary
+  دو انبار کلید-مقدار در `window`، با API یکسان (`setItem`، `getItem`، `removeItem`، `clear`، `key`، `length`)، فقط رشته، همگام، حدود ۵ تا ۱۰ مگابایت، جدا برای هر origin و ناامن برای داده‌ی حساس. فرق اصلی: `localStorage` ماندگار و مشترک بین تب‌ها؛ `sessionStorage` فقط برای همان تب و تا بسته شدن آن.
+  :::
+questions:
+  - level: easy
+    stem: طبق فعالیت کلاسی اسلاید ۴۰، تفاوت **اصلی** `localStorage` و `sessionStorage` چیست؟
+    options:
+      - '`localStorage` فقط عدد ذخیره می‌کند ولی `sessionStorage` فقط رشته.'
+      - داده‌ی `localStorage` بعد از بستن تب و حتی مرورگر می‌ماند و بین تب‌های همان origin مشترک است، ولی داده‌ی `sessionStorage` فقط مال همان تب است و با بستن تب پاک می‌شود.
+      - '`localStorage` ناهمگام (asynchronous) است ولی `sessionStorage` همگام.'
+      - '`sessionStorage` از سیاست same-origin پیروی نمی‌کند ولی `localStorage` می‌کند.'
+    answer: 2
+    explain: |
+      فرق اصلی در **عمر و دامنه‌ی** داده است: localStorage ماندگار و بین تب‌های یک origin مشترک است و sessionStorage مخصوص یک تب و تا بسته شدن آن. بقیه‌ی ویژگی‌ها یکسان‌اند: هر دو فقط رشته ذخیره می‌کنند (گزینه‌ی ۱ غلط)، هر دو همگام‌اند (گزینه‌ی ۳ غلط) و هر دو از سیاست same-origin پیروی می‌کنند (گزینه‌ی ۴ غلط).
+
+  - level: easy
+    stem: کاربری در یک سایت مقدار `theme` را هم در `localStorage` و هم در `sessionStorage` ذخیره می‌کند. سپس **کل مرورگر را می‌بندد** و فردا دوباره همان سایت را باز می‌کند. کدام مقدار هنوز وجود دارد؟
+    options:
+      - فقط مقدار `localStorage`
+      - فقط مقدار `sessionStorage`
+      - هر دو
+      - هیچ‌کدام
+    answer: 1
+    explain: |
+      طبق اسلاید ۳۸ داده‌ی localStorage بعد از بستن تب و مرورگر هم می‌ماند (تاریخ انقضا ندارد)، ولی طبق اسلاید ۳۹ داده‌ی sessionStorage با بستن تب یا پنجره پاک می‌شود. پس فقط مقدار localStorage باقی است. گزینه‌ی ۲ نقش دو حافظه را برعکس کرده و گزینه‌های ۳ و ۴ تفاوت عمر آن‌ها را نادیده گرفته‌اند.
+
+  - level: medium
+    stem: کاربر در یک تب مقداری را در `sessionStorage` ذخیره می‌کند و سپس صفحه را در **همان تب** reload (بارگذاری دوباره) می‌کند. آن مقدار چه می‌شود؟
+    options:
+      - پاک می‌شود، چون `sessionStorage` فقط تا reload بعدی دوام دارد.
+      - به `localStorage` منتقل می‌شود.
+      - باقی می‌ماند، چون تب هنوز بسته نشده است.
+      - فقط در صورتی می‌ماند که با `JSON.stringify` ذخیره شده باشد.
+    answer: 3
+    explain: |
+      عمر sessionStorage به **تب** بسته است، نه به یک بار بارگذاری صفحه؛ تا تب باز است داده با reload هم می‌ماند و فقط بستن تب یا پنجره آن را پاک می‌کند. گزینه‌ی ۱ اشتباه رایج است، گزینه‌ی ۲ بی‌پایه است (دو انبار کاملاً جدا هستند) و گزینه‌ی ۴ غلط است چون `JSON.stringify` فقط شکل رشته را تعیین می‌کند و ربطی به عمر داده ندارد.
+
+  - level: hard
+    stem: 'کاربر سایت `https://shop.example.com` را در تب A باز کرده و این دو دستور را اجرا می‌کند: `localStorage.setItem("y", "1")` و `sessionStorage.setItem("x", "1")`. سپس یک تب **جدید** (B) باز می‌کند و همان آدرس را **تایپ** می‌کند. در تب B کدام مقدار قابل خواندن است؟'
+    options:
+      - هم `x` و هم `y`
+      - هیچ‌کدام
+      - فقط `x`
+      - فقط `y`
+    answer: 4
+    explain: |
+      localStorage بین **همه‌ی تب‌ها و پنجره‌های** یک origin مشترک است، پس `y` در تب B هم دیده می‌شود. sessionStorage علاوه بر origin به **تب** هم وابسته است و تب B که جداگانه باز شده sessionStorage خالیِ خودش را دارد؛ پس `x` آن‌جا نیست. گزینه‌ی ۱ sessionStorage را مشترک دانسته، گزینه‌ی ۲ localStorage را هم مخصوص تب فرض کرده و گزینه‌ی ۳ نقش دو حافظه را برعکس کرده است.
+
+  - level: easy
+    stem: خروجی کد زیر کدام است؟ (فرض کن localStorage این سایت در ابتدا خالی است.)
+    check: dom-output
+    code: |
+      localStorage.setItem("theme", "dark");
+      console.log(localStorage.getItem("theme"));
+      console.log(localStorage.getItem("lang"));
+    options:
+      - out: ["dark", "undefined"]
+      - out: ["dark", "null"]
+      - out: ["theme", "null"]
+      - out: ["dark", "false"]
+    answer: 2
+    explain: |
+      `getItem` مقدار ذخیره‌شده (`"dark"`) را برمی‌گرداند و برای کلیدی که وجود ندارد مقدار **`null`** می‌دهد. گزینه‌ی ۱ اشتباه رایج است (`undefined` مال خواندن property ناموجود از یک شیء معمولی است)، گزینه‌ی ۳ نام کلید را با مقدار اشتباه گرفته و گزینه‌ی ۴ فکر کرده کلید ناموجود `false` برمی‌گرداند.
+
+  - level: easy
+    stem: خروجی کد زیر کدام است؟ (هر دو حافظه در ابتدا خالی‌اند.)
+    check: dom-output
+    code: |
+      sessionStorage.setItem("step", "2");
+      console.log(sessionStorage.getItem("step"), localStorage.getItem("step"));
+    options:
+      - out: "2 2"
+      - out: "null 2"
+      - out: "2 null"
+      - out: "2 undefined"
+    answer: 3
+    explain: |
+      localStorage و sessionStorage دو انبار **جدا** هستند؛ ذخیره در یکی، در دیگری دیده نمی‌شود. پس sessionStorage مقدار `"2"` را دارد و localStorage برای این کلید `null` برمی‌گرداند. گزینه‌ی ۱ دو حافظه را یکی دانسته، گزینه‌ی ۲ نقششان را برعکس کرده و گزینه‌ی ۴ فراموش کرده کلید ناموجود `null` می‌دهد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      localStorage.setItem("x", "1");
+      console.log(localStorage.getItem("x"));
+      console.log(localStorage.setItem("y", "2"));
+    options:
+      - out: ["1", "undefined"]
+      - out: ["null", "undefined"]
+      - out: ["1", "true"]
+      - out: ["1", "y"]
+    answer: 1
+    explain: |
+      Web Storage **همگام** است: `setItem` کارش را تمام می‌کند و همان خط بعد مقدار `"1"` قابل خواندن است (نیازی به `await` یا callback نیست). `setItem` هم چیزی برنمی‌گرداند، پس `undefined` چاپ می‌شود. گزینه‌ی ۲ فکر کرده ذخیره‌سازی ناهمگام است و هنوز انجام نشده، و گزینه‌های ۳ و ۴ برای `setItem` مقدار برگشتی خیالی فرض کرده‌اند.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟ (هر دو حافظه در ابتدا خالی‌اند.)
+    check: dom-output
+    code: |
+      localStorage.setItem("a", "1");
+      localStorage.setItem("b", "2");
+      sessionStorage.setItem("c", "3");
+      localStorage.removeItem("a");
+      console.log(localStorage.length, localStorage.key(0));
+      localStorage.clear();
+      console.log(localStorage.length, sessionStorage.length);
+    options:
+      - out: ["1 b", "0 0"]
+      - out: ["2 a", "0 1"]
+      - out: ["1 a", "0 1"]
+      - out: ["1 b", "0 1"]
+    answer: 4
+    explain: |
+      بعد از `removeItem("a")` فقط کلید `b` در localStorage می‌ماند؛ پس `length` برابر ۱ و `key(0)` **نام** همان کلید، یعنی `"b"`، است. `localStorage.clear()` فقط localStorage را خالی می‌کند و sessionStorage هنوز یک کلید دارد. گزینه‌ی ۱ فکر کرده `clear` هر دو حافظه را پاک می‌کند، گزینه‌ی ۲ اثر `removeItem` را ندیده و گزینه‌ی ۳ کلید حذف‌شده را هنوز در اندیس ۰ دانسته است.
+
+  - level: medium
+    stem: 'فقط کلید `token` باید از localStorage حذف شود و بقیه‌ی کلیدها بمانند. در جای خالی `localStorage.______("token");` کدام گزینه قرار می‌گیرد؟'
+    options:
+      - '`clear`'
+      - '`removeItem`'
+      - '`deleteItem`'
+      - '`setItem`'
+    answer: 2
+    explain: |
+      `removeItem(key)` فقط همان یک کلید را حذف می‌کند. `clear()` **همه‌ی** کلیدهای localStorage را پاک می‌کند (آرگومانش هم نادیده گرفته می‌شود)، متدی به نام `deleteItem` وجود ندارد (خطای `TypeError`) و `setItem` برای ذخیره است و دو آرگومان لازم دارد؛ با یک آرگومان خطا می‌دهد.
+
+  - level: easy
+    stem: طبق اسلاید ۳۸، در `localStorage` چه نوع مقدارهایی ذخیره می‌شود؟
+    options:
+      - هر نوع داده‌ی JavaScript، از جمله شیء و آرایه، دقیقاً همان‌طور که هست
+      - فقط عدد و رشته
+      - فقط شیء‌های JSON
+      - فقط رشته؛ هر مقدار دیگری قبل از ذخیره به رشته تبدیل می‌شود.
+    answer: 4
+    explain: |
+      اسلاید ۳۸ صریحاً می‌گوید «Only strings are stored»: هر مقداری که به `setItem` بدهیم به رشته تبدیل می‌شود (عدد `5` به `"5"` و شیء به `"[object Object]"`). پس گزینه‌های ۱ و ۲ غلط‌اند. گزینه‌ی ۳ هم غلط است؛ JSON فقط **روشی** است که ما برای تبدیل شیء به رشته به کار می‌بریم و خودِ حافظه چیزی جز رشته نمی‌شناسد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      localStorage.setItem("count", 5);
+      const count = localStorage.getItem("count");
+      console.log(count + 1, typeof count);
+    options:
+      - out: "6 number"
+      - out: "6 string"
+      - out: "51 string"
+      - out: "51 number"
+    answer: 3
+    explain: |
+      عدد `5` هنگام ذخیره به رشته‌ی `"5"` تبدیل می‌شود و `getItem` همین رشته را برمی‌گرداند؛ پس `"5" + 1` به‌صورت رشته‌ای `"51"` است و نوع آن `string`. برای جمع عددی باید `Number(count) + 1` نوشت. گزینه‌های ۱ و ۴ نوع را عدد دانسته‌اند و گزینه‌ی ۲ با وجود رشته بودن، جمع عددی انجام داده است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      localStorage.setItem("darkMode", false);
+      if (localStorage.getItem("darkMode")) {
+        console.log("dark theme");
+      } else {
+        console.log("light theme");
+      }
+    options:
+      - out: "dark theme"
+      - out: "light theme"
+      - out: ""
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      `false` هنگام ذخیره به **رشته‌ی** `"false"` تبدیل می‌شود. هر رشته‌ی غیرخالی در شرط truthy (درست) است، پس شاخه‌ی اول اجرا می‌شود. راه درست مقایسه با رشته است: `localStorage.getItem("darkMode") === "true"`. گزینه‌ی ۲ فرض کرده مقدار بولی حفظ می‌شود، گزینه‌ی ۳ تصور کرده هیچ شاخه‌ای اجرا نمی‌شود و گزینه‌ی ۴ ذخیره‌ی مقدار بولی را خطا دانسته است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      const user = { name: "Ali", age: 20 };
+      localStorage.setItem("user", user);
+      const saved = localStorage.getItem("user");
+      console.log(saved);
+      console.log(saved.name);
+    options:
+      - out: ["{ name: 'Ali', age: 20 }", "Ali"]
+      - out: ["[object Object]", "undefined"]
+      - out: ["[object Object]", "!! TypeError"]
+      - out: ['{"name":"Ali","age":20}', "Ali"]
+    answer: 2
+    explain: |
+      شیء بدون `JSON.stringify` با روش پیش‌فرض به رشته تبدیل می‌شود که حاصلش `"[object Object]"` است و داده‌های اصلی از دست می‌رود. `saved` یک رشته است و رشته property به نام `name` ندارد؛ خواندن آن `undefined` می‌دهد، نه خطا. گزینه‌های ۱ و ۴ فکر کرده‌اند شیء حفظ یا خودکار به JSON تبدیل می‌شود و گزینه‌ی ۳ خواندن property ناموجود از یک رشته را خطا دانسته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      localStorage.setItem("nums", [1, 2, 3]);
+      const nums = localStorage.getItem("nums");
+      console.log(nums.length, nums.split(",").map(Number)[2] + 1);
+    options:
+      - out: "3 4"
+      - out: "5 31"
+      - out: "5 4"
+      - out: "3 31"
+    answer: 3
+    explain: |
+      آرایه هنگام ذخیره به رشته‌ی `"1,2,3"` تبدیل می‌شود که طولش ۵ کاراکتر است (سه رقم و دو کاما). `split(",")` آن را به `["1", "2", "3"]` می‌شکند و `map(Number)` همه را عدد می‌کند؛ پس عضو سوم `3` است و `3 + 1` برابر ۴. گزینه‌های ۱ و ۴ فکر کرده‌اند آرایه حفظ می‌شود (طول ۳) و گزینه‌های ۲ و ۴ اثر `map(Number)` را ندیده‌اند.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      const cart = [{ id: 1, qty: 2 }];
+      localStorage.setItem("cart", JSON.stringify(cart));
+      console.log(localStorage.getItem("cart"));
+      const loaded = JSON.parse(localStorage.getItem("cart"));
+      console.log(loaded[0].qty + 1);
+    options:
+      - out: ["[object Object]", "3"]
+      - out: ['[{"id":1,"qty":2}]', "21"]
+      - out: ["[{ id: 1, qty: 2 }]", "3"]
+      - out: ['[{"id":1,"qty":2}]', "3"]
+    answer: 4
+    explain: |
+      `JSON.stringify` آرایه را به متن JSON تبدیل می‌کند (کلیدها با نقل‌قول دوتایی و بدون فاصله) و همین رشته ذخیره و چاپ می‌شود. `JSON.parse` دوباره یک آرایه‌ی واقعی می‌سازد که در آن `qty` **عدد** است؛ پس `2 + 1` برابر ۳. گزینه‌ی ۱ فکر کرده `stringify` اثری ندارد، گزینه‌ی ۲ تصور کرده بعد از `parse` هم عددها رشته‌اند و گزینه‌ی ۳ شکل نمایش Node.js را با متن JSON اشتباه گرفته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (کلید `todos` هنوز در localStorage وجود ندارد.)
+    check: dom-output
+    code: |
+      const todos = JSON.parse(localStorage.getItem("todos")) || [];
+      todos.push("learn DOM");
+      localStorage.setItem("todos", JSON.stringify(todos));
+      console.log(todos.length, localStorage.getItem("todos"));
+    options:
+      - out: '1 ["learn DOM"]'
+      - out: "!! SyntaxError"
+      - out: "1 learn DOM"
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      `getItem` برای کلید ناموجود `null` می‌دهد و `JSON.parse(null)` **خطا نمی‌دهد**: `null` به رشته‌ی `"null"` تبدیل می‌شود که JSON معتبری است و حاصلش `null` است. بعد `|| []` یک آرایه‌ی خالی جایگزین می‌کند، آیتم اضافه و آرایه به‌صورت JSON ذخیره می‌شود. گزینه‌ی ۲ فکر کرده `JSON.parse(null)` خطای نحوی می‌دهد، گزینه‌ی ۳ اثر `JSON.stringify` را نادیده گرفته و گزینه‌ی ۴ تصور کرده `push` روی `null` اجرا می‌شود.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (کلید `visits` هنوز در localStorage وجود ندارد.)
+    check: dom-output
+    code: |
+      let visits = Number(localStorage.getItem("visits")) + 1;
+      localStorage.setItem("visits", visits);
+      console.log(visits, typeof localStorage.getItem("visits"));
+      visits = localStorage.getItem("visits") + 1;
+      console.log(visits);
+    options:
+      - out: ["NaN string", "NaN1"]
+      - out: ["1 string", "11"]
+      - out: ["1 number", "2"]
+      - out: ["1 string", "2"]
+    answer: 2
+    explain: |
+      `getItem` مقدار `null` می‌دهد و `Number(null)` برابر `0` است، پس `visits` برابر ۱ می‌شود. هنگام ذخیره به رشته‌ی `"1"` تبدیل می‌شود (نوع `string`). در خط بعد، بدون `Number()`، `"1" + 1` به‌صورت رشته‌ای `"11"` می‌شود. گزینه‌ی ۱ فکر کرده `Number(null)` برابر `NaN` است، گزینه‌ی ۳ تصور کرده نوع عدد حفظ می‌شود و گزینه‌ی ۴ در خط آخر جمع عددی انجام داده است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (localStorage در ابتدا خالی است.)
+    check: dom-output
+    code: |
+      localStorage.setItem("score", 10);
+      localStorage.score = 20;
+      console.log(localStorage.getItem("score") * 2, localStorage.length);
+    options:
+      - out: "20 1"
+      - out: "40 2"
+      - out: "40 1"
+      - out: "2020 1"
+    answer: 3
+    explain: |
+      نوشتن به شکل property (`localStorage.score = 20`) هم مقدار **همان کلید** را بازنویسی می‌کند (به‌صورت رشته‌ی `"20"`)، پس فقط یک کلید داریم. عملگر `*` رشته را به عدد تبدیل می‌کند: `"20" * 2` برابر ۴۰. گزینه‌ی ۱ فکر کرده property جدا از کلید ذخیره می‌شود، گزینه‌ی ۲ دو کلید جدا شمرده و گزینه‌ی ۴ رفتار `+` را به `*` نسبت داده است.
+
+  - level: medium
+    stem: کدام دو صفحه localStorage **مشترک** دارند (یعنی origin یکسانی دارند)؟
+    check: claims
+    options:
+      - text: '`http://site.com/index.html` و `https://site.com/index.html`'
+        expr: new URL("http://site.com/index.html").origin === new URL("https://site.com/index.html").origin
+        equals: "true"
+      - text: '`https://site.com/` و `https://shop.site.com/`'
+        expr: new URL("https://site.com/").origin === new URL("https://shop.site.com/").origin
+        equals: "true"
+      - text: '`https://site.com/` و `https://site.com:8080/`'
+        expr: new URL("https://site.com/").origin === new URL("https://site.com:8080/").origin
+        equals: "true"
+      - text: '`https://site.com/a.html` و `https://site.com/blog/b.html`'
+        expr: new URL("https://site.com/a.html").origin === new URL("https://site.com/blog/b.html").origin
+        equals: "true"
+    answer: 4
+    explain: |
+      origin از سه بخش ساخته می‌شود: **پروتکل + میزبان + پورت**؛ مسیر صفحه در آن نقشی ندارد. در گزینه‌ی ۴ هر سه بخش یکسان‌اند و فقط مسیر فرق دارد، پس انبار مشترک دارند. در گزینه‌ی ۱ پروتکل (`http` در برابر `https`)، در گزینه‌ی ۲ میزبان (زیردامنه‌ی `shop`) و در گزینه‌ی ۳ پورت (۴۴۳ در برابر ۸۰۸۰) فرق دارد؛ پس هر کدام origin و localStorage جداگانه دارند.
+
+  - level: easy
+    stem: چرا نباید رمز عبور یا اطلاعات حساس را در `localStorage` ذخیره کرد؟
+    options:
+      - داده‌ها رمزنگاری نمی‌شوند و هر کد JavaScriptی که در صفحه اجرا شود (مثلاً کدی که مهاجم با حمله‌ی XSS تزریق کرده) می‌تواند آن‌ها را بخواند.
+      - چون `localStorage` فقط عدد ذخیره می‌کند.
+      - چون داده‌های `localStorage` بعد از ۲۴ ساعت خودبه‌خود پاک می‌شوند.
+      - چون همه‌ی سایت‌های دیگر هم می‌توانند `localStorage` این سایت را بخوانند.
+    answer: 1
+    explain: |
+      اسلاید ۳۸ می‌گوید localStorage برای اطلاعات حساس امن نیست: داده به‌صورت متن ساده ذخیره می‌شود، در DevTools دیده می‌شود و هر اسکریپتی که در صفحه اجرا شود، از جمله اسکریپت تزریق‌شده با XSS، به آن دسترسی دارد. گزینه‌ی ۲ غلط است (فقط رشته ذخیره می‌شود، نه فقط عدد)، گزینه‌ی ۳ غلط است (تاریخ انقضا ندارد) و گزینه‌ی ۴ غلط است چون سیاست same-origin جلوی دسترسی سایت‌های دیگر را می‌گیرد.
+
+  - level: hard
+    stem: کدام جمله درباره‌ی `localStorage` و `sessionStorage` **نادرست** است؟
+    options:
+      - هر دو معمولاً حدود ۵ تا ۱۰ مگابایت فضا برای هر سایت دارند.
+      - داده‌های `localStorage` بعد از ۲۴ ساعت به‌طور خودکار منقضی و پاک می‌شوند.
+      - هر دو همگام (synchronous) هستند و فقط رشته ذخیره می‌کنند.
+      - '`localStorage.clear()` روی داده‌های `sessionStorage` اثری ندارد.'
+    answer: 2
+    explain: |
+      localStorage **تاریخ انقضا ندارد**؛ داده تا وقتی کد آن را حذف کند یا کاربر داده‌های مرورگر را پاک کند می‌ماند. پس گزینه‌ی ۲ نادرست و پاسخ است. گزینه‌های ۱ و ۳ عیناً از اسلایدهای ۳۸ و ۳۹ هستند و گزینه‌ی ۴ هم درست است، چون این دو، انبارهای جداگانه‌اند.
+
+  - level: medium
+    stem: کدام گزینه برای هر دو حافظه کاربرد **مناسبی** ذکر کرده است؟
+    options:
+      - '`localStorage` ← ذخیره‌ی رمز عبور کاربر برای ورود خودکار؛ `sessionStorage` ← تم تیره برای همه‌ی بازدیدهای آینده'
+      - '`localStorage` ← مرحله‌ی فعلی فرم ثبت‌نام در همین تب؛ `sessionStorage` ← سبد خریدی که باید تا هفته‌ی بعد بماند'
+      - '`localStorage` ← زبان انتخابی کاربر؛ `sessionStorage` ← مرحله‌ی فعلی یک فرم چندمرحله‌ای در همین تب'
+      - '`localStorage` ← شماره‌ی کارت بانکی؛ `sessionStorage` ← رمز عبور'
+    answer: 3
+    explain: |
+      ترجیحی که باید در بازدیدهای بعدی هم بماند (زبان، تم) جایش در localStorage است و وضعیتی که فقط برای همین تب و تا بسته شدنش معنا دارد (مرحله‌ی فرم چندمرحله‌ای) جایش در sessionStorage. گزینه‌ی ۲ کاربردها را برعکس کرده؛ سبد خریدی که باید بماند در sessionStorage با بستن تب از دست می‌رود. گزینه‌های ۱ و ۴ اطلاعات حساس را در Web Storage گذاشته‌اند که طبق اسلایدهای ۳۸ و ۳۹ امن نیست؛ تم تیره‌ی همیشگی هم در sessionStorage دوام نمی‌آورد.
+
+  - level: medium
+    stem: صفحه برای اولین بار باز شده (localStorage خالی است) و کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <button id="toggle">Theme</button>
+    code: |
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark") document.body.classList.add("dark");
+
+      document.getElementById("toggle").addEventListener("click", () => {
+        const isDark = document.body.classList.toggle("dark");
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+        console.log(localStorage.getItem("theme"));
+      });
+    events:
+      - { type: click, target: "#toggle", times: 3 }
+    options:
+      - out: ["dark", "dark", "dark"]
+      - out: ["true", "false", "true"]
+      - out: ["light", "dark", "light"]
+      - out: ["dark", "light", "dark"]
+    answer: 4
+    explain: |
+      در ابتدا کلید `theme` وجود ندارد، پس کلاس `dark` اضافه نمی‌شود. هر کلیک کلاس را با `toggle` عوض می‌کند و وضعیت جدید (`true` یا `false`) را برمی‌گرداند؛ کد آن را به رشته‌ی `"dark"` یا `"light"` تبدیل و ذخیره می‌کند: تیره، روشن، تیره. گزینه‌ی ۱ فکر کرده `toggle` همیشه اضافه می‌کند، گزینه‌ی ۲ مقدار بولی را مستقیم ذخیره‌شده فرض کرده (ولی کد رشته‌ی `"dark"` یا `"light"` ذخیره می‌کند) و گزینه‌ی ۳ وضعیت شروع را تیره فرض کرده است.
