@@ -1,0 +1,600 @@
+id: ch1-features
+title: "Transpile و ویژگی‌های زبان JavaScript"
+slides: "Introduction to JS، اسلایدهای ۸ و ۹"
+lesson: |
+  در اسلاید ۸ با یک ابزار مهم دنیای JavaScript آشنا می‌شویم: **transpiler**. در اسلاید ۹ هم یک فعالیت کلاسی داریم: معنی نُه ویژگی اصلی JavaScript. هر دو را کامل و با مثال می‌بینیم.
+
+  ### مشکل: کد جدید، مرورگر قدیمی
+
+  در درس قبل دیدیم که JavaScript هر سال نسخه‌ی جدیدی می‌گیرد. اما همه‌ی کاربرها مرورگرشان را به‌روز نمی‌کنند. کد زیر از امکانات ES2015 استفاده می‌کند:
+
+  ```js
+  const greet = (name) => `Hello, ${name}!`;
+  console.log(greet("Sara")); // Hello, Sara!
+  ```
+
+  اینجا دو چیز جدید هست که بعداً مفصل یاد می‌گیری: **arrow function** (روش کوتاه نوشتن تابع با `=>`) و **template literal** (رشته‌ای بین دو backtick که با `${...}` یک مقدار را داخل متن می‌گذارد). یک مرورگر قدیمی مثل Internet Explorer 11 هیچ‌کدام از این دو را نمی‌شناسد؛ با دیدن `=>` خطای syntax (یعنی SyntaxError: «این دستور نگارش را نمی‌فهمم») می‌دهد و **کل اسکریپت اجرا نمی‌شود**.
+
+  ### Transpile چیست؟ (اسلاید ۸)
+
+  **Transpile** (ترکیب دو کلمه‌ی translate و compile؛ یعنی «ترجمه‌ی کد از یک نسخه یا زبان به نسخه یا زبانِ هم‌سطح دیگر») راه‌حل این مشکل است. اسلاید ۸ پنج نکته درباره‌اش می‌گوید:
+
+  | نکته‌ی اسلاید | یعنی چه؟ |
+  |---|---|
+  | Converts new JS to older syntax | syntax (دستور نگارش) جدید را به syntax قدیمی‌تر تبدیل می‌کند؛ مثلاً `=>` را به `function` |
+  | Keeps code working on **old browsers** | کد روی مرورگرهای قدیمی هم کار می‌کند |
+  | Uses tools like Babel or SWC | با ابزارهایی مثل **Babel** یا **SWC** (Speedy Web Compiler) انجام می‌شود |
+  | Lets devs use future JS features | برنامه‌نویس می‌تواند از امکانات جدید و حتی «آینده‌ی» زبان استفاده کند، پیش از آنکه همه‌ی مرورگرها از آن‌ها پشتیبانی کنند |
+  | Adds a small build step | یک **مرحله‌ی build** (ساخت) کوچک اضافه می‌کند: کدی که می‌نویسی مستقیماً به مرورگر نمی‌رود؛ اول ابزار اجرا می‌شود و نسخه‌ی تبدیل‌شده را می‌سازد |
+
+  ::: analogy
+  meme اسلاید ۸ یک صحنه‌ی دادگاه است. مردی با برچسب **ES5+** (یعنی کد JavaScript جدید) ساکت ایستاده، چون قاضی زبانش را نمی‌فهمد. کنارش مردی با برچسب **Babel** به جای او حرف می‌زند و مثل **مترجم** حرف‌هایش را برای قاضی ترجمه می‌کند. قاضی با برچسب **Browser** (مرورگر) فقط زبان قدیمی را می‌فهمد. Transpile یعنی همین ترجمه: معنی همان می‌ماند، فقط کلمه‌ها عوض می‌شوند.
+  :::
+
+  #### یک مثال واقعی
+
+  کد بالا را با Babel (تنظیم‌شده برای مرورگرهای قدیمی) transpile کردیم. فایل سمت راست را ما نوشته‌ایم و فایل `dist` خروجی واقعی Babel است:
+
+  ```js title=src/greet.js
+  const greet = (name) => `Hello, ${name}!`;
+  console.log(greet("Sara")); // Hello, Sara!
+  ```
+
+  ```js title=dist/greet.js
+  var greet = function greet(name) {
+    return "Hello, ".concat(name, "!");
+  };
+  console.log(greet("Sara"));
+  ```
+
+  چه چیزهایی عوض شد؟
+  - `const` شد `var` (روش قدیمی تعریف متغیر).
+  - arrow function شد یک `function` معمولی، همراه با `return` صریح.
+  - template literal شد `"Hello, ".concat(name, "!")` که دقیقاً همان کار `"Hello, " + name + "!"` را می‌کند.
+  - و مهم‌تر از همه: **خروجی هر دو برنامه یکی است** (`Hello, Sara!`). Transpile رفتار برنامه را عوض نمی‌کند، فقط شکل نوشتنش را.
+
+  در عمل، تو فقط پوشه‌ی `src` را می‌نویسی و با یک دستور در ترمینال، نسخه‌ی `dist` ساخته می‌شود. مرورگر کاربر نسخه‌ی `dist` را دریافت می‌کند. این همان «مرحله‌ی build» است:
+
+  ```bash
+  npx babel src --out-dir dist   # build step: transpile every file in src/ into dist/
+  ```
+
+  ::: info
+  Babel فقط **syntax** را ترجمه می‌کند. اگر یک **تابع آماده‌ی** جدید (مثلاً متد `includes` آرایه) در مرورگر قدیمی وجود نداشته باشد، باید کد جایگزینی به نام **polyfill** هم به برنامه اضافه شود. به همین دلیل در مثال بالا `concat` دست نخورد: این متد از قدیم در زبان بوده است.
+  :::
+
+  #### Transpile، Compile و Interpret؛ فرقشان چیست؟
+
+  | اصطلاح | چه می‌کند؟ | مثال |
+  |---|---|---|
+  | **Compile** (کامپایل) | کد سطح بالا را به کد سطح پایین (مثلاً زبان ماشین) تبدیل می‌کند | تبدیل برنامه‌ی C به فایل اجرایی؛ تبدیل JavaScript به زبان ماشین داخل موتور V8 |
+  | **Transpile** | کد را به یک زبان یا نسخه‌ی **هم‌سطح** دیگر تبدیل می‌کند | ES2015+ به ES5 با Babel؛ TypeScript به JavaScript (فصل ۳) |
+  | **Interpret** (تفسیر) | بدون ساختن فایل خروجی، کد را دستور به دستور می‌خواند و همان لحظه اجرا می‌کند | اجرای خط‌به‌خط کد در Console مرورگر |
+
+  ### فعالیت کلاسی اسلاید ۹: نُه ویژگی JavaScript
+
+  اسلاید ۹ می‌پرسد: «These are some of the features of JavaScript. What does each one of them mean?»؛ یعنی این‌ها برخی از ویژگی‌های JavaScript هستند؛ هر کدام چه معنایی دارد؟ پاسخ کامل را یکی‌یکی می‌بینیم.
+
+  #### ویژگی ۱: High Level (سطح بالا)
+
+  یعنی زبان از جزئیات سخت‌افزار **فاصله** دارد: لازم نیست به آدرس‌های حافظه، ثبات‌های (register) پردازنده یا تعداد بایت‌های لازم برای یک داده فکر کنی و کد به زبان انسان نزدیک‌تر است. در زبان‌های سطح پایین (مثل Assembly و تا حدی C) این کارها با خود برنامه‌نویس است.
+
+  ```js
+  const message = "Hello" + " " + "World";
+  console.log(message.length); // 11
+  ```
+
+  نگفتیم این رشته چند بایت جا لازم دارد یا کجای حافظه ذخیره شود؛ موتور JavaScript خودش ترتیبش را می‌دهد. هزینه‌اش: کنترل کمتر روی سخت‌افزار.
+
+  #### ویژگی ۲: Garbage Collected (جمع‌آوری خودکار حافظه)
+
+  **Garbage Collector** (زباله‌جمع‌کن) بخشی از موتور است که حافظه‌ی مقدارهایی را که **دیگر هیچ راهی برای دسترسی به آن‌ها نمانده** به‌طور خودکار آزاد می‌کند. در زبانی مثل C باید خودت حافظه را بگیری و آزاد کنی و اگر فراموش کنی، حافظه هدر می‌رود (memory leak).
+
+  ```js
+  let user = { name: "Sara" };
+  user = null; // the object is now unreachable, so the garbage collector can free it
+  ```
+
+  ::: analogy
+  Garbage Collector مثل گارسونی است که میزهای خالی رستوران را جمع می‌کند: هر میزی که دیگر کسی پشتش ننشسته (مقداری که دیگر به آن دسترسی نداریم) را خودش تمیز می‌کند. **زمانش** را هم خودش تعیین می‌کند، نه تو.
+  :::
+
+  #### ویژگی ۳: Interpreted/JIT Compiled (تفسیری / کامپایل درجا)
+
+  در JavaScript لازم نیست قبل از اجرا خودت کد را کامپایل کنی و فایل اجرایی (مثلاً exe) بسازی؛ فایل `.js` را مستقیماً به موتور (مرورگر یا Node.js) می‌دهی:
+
+  ```bash
+  node app.js   # no separate compile step: the engine reads and runs the file directly
+  ```
+
+  موتورهای قدیمی کد را فقط **تفسیر** (interpret) می‌کردند. موتورهای امروزی مثل V8 از **JIT** (Just-In-Time، یعنی «درست در لحظه‌ی نیاز») استفاده می‌کنند: کد را parse (تجزیه) می‌کنند، سریع اجرایش را شروع می‌کنند و بخش‌هایی را که زیاد اجرا می‌شوند، **حین اجرا** به زبان ماشینِ بهینه کامپایل می‌کنند. اسلاید ۱۰ هم همین را می‌گوید: «Code is parsed, optimized, and compiled to machine code».
+
+  #### ویژگی ۴: Multi-paradigm (چندالگویی)
+
+  **Paradigm** یعنی «سبک برنامه‌نویسی». JavaScript به یک سبک محدود نیست و این سه سبک را پشتیبانی می‌کند:
+  - **Procedural** (رویه‌ای): نوشتن دستورها قدم‌به‌قدم و پشت سر هم.
+  - **Object-oriented** (شیءگرا یا OOP): گذاشتن داده و رفتار کنار هم در یک «شیء».
+  - **Functional** (تابعی): ساختن برنامه با پاس دادن تابع‌ها به هم.
+
+  یک مسئله (جمع قیمت‌ها) به هر سه سبک:
+
+  ```js
+  const prices = [10, 20, 30];
+
+  // 1) Procedural: step-by-step instructions
+  let total = 0;
+  for (let i = 0; i < prices.length; i++) {
+    total = total + prices[i];
+  }
+  console.log(total); // 60
+
+  // 2) Object-oriented: data and behaviour live together in an object
+  const cart = {
+    items: [10, 20, 30],
+    getTotal() {
+      let sum = 0;
+      for (const p of this.items) sum = sum + p;
+      return sum;
+    },
+  };
+  console.log(cart.getTotal()); // 60
+
+  // 3) Functional: give a function to another function
+  console.log(prices.reduce((sum, p) => sum + p, 0)); // 60
+  ```
+
+  نگران جزئیات `for`، `this` و `reduce` نباش؛ هر کدام درس خودش را دارد. فعلاً فقط ببین که **یک مسئله را می‌شود به سه سبک حل کرد**.
+
+  #### ویژگی ۵: Prototype-based OO (شیءگرایی مبتنی بر prototype)
+
+  در JavaScript هر شیء می‌تواند یک شیء دیگر را به‌عنوان **prototype** (الگو یا «والد») داشته باشد. اگر خاصیتی را از یک شیء بخواهی و خودش آن را نداشته باشد، JavaScript سراغ prototype آن می‌رود (و اگر آنجا هم نبود، سراغ prototypeِ آن prototype؛ به این زنجیره **prototype chain** می‌گویند). یعنی **ارث‌بری مستقیماً از یک شیء دیگر** انجام می‌شود.
+
+  ```js
+  const animal = {
+    eats: true,
+    walk() {
+      return "walking...";
+    },
+  };
+
+  const rabbit = Object.create(animal); // animal becomes rabbit's prototype
+  rabbit.jumps = true;
+
+  console.log(rabbit.jumps);  // true  (rabbit's own property)
+  console.log(rabbit.eats);   // true  (found on the prototype)
+  console.log(rabbit.walk()); // walking... (method borrowed from the prototype)
+  console.log(Object.keys(rabbit)); // [ 'jumps' ] (only its own keys)
+  ```
+
+  `Object.create(animal)` یک شیء تازه می‌سازد که prototypeِ آن `animal` است. `Object.keys` فقط کلیدهای **خودِ** شیء را برمی‌گرداند؛ برای همین `eats` در آن نیست، با اینکه `rabbit.eats` کار می‌کند. حتی `class` که در ES6 آمد، در پشت صحنه روی همین prototypeها ساخته شده است (`typeof` یک class برابر `"function"` است). متدهایی مثل `push` و `map` هم که روی همه‌ی آرایه‌ها کار می‌کنند، در prototype آرایه‌ها (`Array.prototype`) قرار دارند.
+
+  #### ویژگی ۶: First-class functions (تابع‌ها به‌عنوان «شهروند درجه‌یک»)
+
+  یعنی تابع در JavaScript یک **مقدار** است، درست مثل عدد و رشته. پس می‌توانی:
+  - تابع را در یک **متغیر** بگذاری؛
+  - تابع را به‌عنوان **ورودی** به تابع دیگر بدهی (به این تابعِ ورودی **callback** می‌گویند)؛
+  - تابع را از یک تابع دیگر **برگردانی**.
+
+  ```js
+  // 1) Store a function in a variable
+  const sayHi = function (name) {
+    return "Hi, " + name;
+  };
+
+  // 2) Pass a function to another function as an argument
+  function runTwice(fn, value) {
+    console.log(fn(value));
+    console.log(fn(value));
+  }
+  runTwice(sayHi, "Ali"); // Hi, Ali (two times)
+
+  // 3) Return a function from a function
+  function makeMultiplier(factor) {
+    return function (n) {
+      return n * factor;
+    };
+  }
+  const triple = makeMultiplier(3);
+  console.log(triple(5)); // 15
+  ```
+
+  این ویژگی پایه‌ی خیلی از مباحث بعدی است: callbackها، متدهای `map` و `filter`، رویدادهای صفحه و closure.
+
+  #### ویژگی ۷: Dynamic (پویا؛ dynamically typed)
+
+  یعنی **نوع** (type) داده‌ها **هنگام اجرا** مشخص و بررسی می‌شود، نه قبل از آن. متغیر نوع ثابت ندارد و یک متغیر می‌تواند اول عدد، بعد رشته و بعد بولین نگه دارد. (عملگر `typeof` نوع یک مقدار را به‌صورت رشته برمی‌گرداند؛ در درس‌های بعدی کامل می‌بینیمش.)
+
+  ```js
+  let x = 5;
+  console.log(typeof x); // "number"
+  x = "five";
+  console.log(typeof x); // "string"
+  x = true;
+  console.log(typeof x); // "boolean"
+  ```
+
+  در زبان‌های **static** (ایستا) مثل Java، C یا TypeScript (فصل ۳)، نوع هر متغیر از قبل مشخص است و کامپایلر جلوی چنین کدی را می‌گیرد و خطا می‌دهد. آزادیِ dynamic بودن یک هزینه هم دارد: خطاهای مربوط به نوع فقط **هنگام اجرا** معلوم می‌شوند و تبدیل نوع خودکار (type coercion) گاهی نتیجه‌های عجیبی می‌دهد.
+
+  #### ویژگی ۸: Single threaded (تک‌نخی)
+
+  **Thread** (نخ یا رشته‌ی اجرا) یعنی یک مسیر اجرای دستورها. JavaScript فقط **یک** thread اصلی دارد؛ یعنی در هر لحظه فقط **یک کار** انجام می‌دهد. اگر یک کار طولانی شروع شود، بقیه‌ی کارها (حتی کلیک کاربر و تایمرها) باید صبر کنند و صفحه «هنگ» می‌کند. (`setTimeout` تابعی را بعد از گذشت زمانی مشخص اجرا می‌کند؛ در درس‌های بخش async کامل می‌بینیمش.)
+
+  ```js
+  setTimeout(() => console.log("timer"), 0);
+
+  const start = Date.now();
+  while (Date.now() - start < 200) {
+    // busy: the only thread is stuck here for 200 ms
+  }
+  console.log("loop done");
+  ```
+
+  خروجی:
+
+  ```text
+  loop done
+  timer
+  ```
+
+  با اینکه زمان تایمر صفر میلی‌ثانیه است، `timer` بعد از `loop done` چاپ می‌شود؛ چون تنها thread تا پایان حلقه مشغول است و نوبت تایمر نمی‌رسد.
+
+  #### ویژگی ۹: Non-blocking event loop (حلقه‌ی رویداد غیرمسدودکننده)
+
+  اگر JavaScript تک‌نخی است، چرا وقتی منتظر جواب سرور است صفحه هنگ نمی‌کند؟ به خاطر **event loop** (حلقه‌ی رویداد). کارهای زمان‌بر (تایمر، درخواست شبکه، خواندن فایل، منتظر کلیک ماندن) به **محیط اجرا** (مرورگر یا Node.js) سپرده می‌شوند و JavaScript **منتظر نمی‌ماند** (non-blocking) و سراغ خط‌های بعدی می‌رود. وقتی آن کار تمام شد، تابعِ مربوط به آن در یک **صف** (queue) قرار می‌گیرد و event loop هر وقت thread بیکار شد، آن را اجرا می‌کند.
+
+  ```js
+  console.log("start");
+  setTimeout(() => console.log("timeout"), 0);
+  console.log("end");
+  ```
+
+  خروجی:
+
+  ```text
+  start
+  end
+  timeout
+  ```
+
+  ::: analogy
+  رستورانی را تصور کن که فقط **یک گارسون** دارد (single threaded). گارسون سفارش را به آشپزخانه می‌دهد (محیط اجرا) و به جای اینکه کنار آشپزخانه منتظر بماند، به میزهای دیگر می‌رسد (non-blocking). وقتی غذا آماده شد، آشپزخانه زنگ می‌زند (صف) و گارسون **هر وقت دستش خالی شد** غذا را می‌برد (event loop).
+  :::
+
+  جزئیات کامل این ماجرا را در درس‌های callback، Promise، async/await و event loop می‌بینیم.
+
+  #### خلاصه‌ی فعالیت کلاسی
+
+  | ویژگی | معنی در یک جمله | کلید تشخیص در تست |
+  |---|---|---|
+  | High Level | از جزئیات سخت‌افزار و مدیریت دستی حافظه دور است | «نزدیک به زبان انسان» |
+  | Garbage Collected | حافظه‌ی بلااستفاده خودکار آزاد می‌شود | «آزادسازی خودکار حافظه» |
+  | Interpreted/JIT Compiled | بدون کامپایل جداگانه اجرا می‌شود و موتور حین اجرا کد را به زبان ماشین کامپایل می‌کند | «parse، بهینه‌سازی، machine code» |
+  | Multi-paradigm | سبک‌های procedural، OOP و functional | «چند سبک برنامه‌نویسی» |
+  | Prototype-based OO | اشیاء از اشیاء دیگر (prototype) ارث می‌برند | «`Object.create`»، «prototype chain» |
+  | First-class functions | تابع مقدار است: ذخیره، پاس دادن، برگرداندن | «تابع به‌عنوان ورودی تابع دیگر» |
+  | Dynamic | نوع متغیر هنگام اجرا تعیین می‌شود و می‌تواند عوض شود | «`typeof` عوض می‌شود» |
+  | Single threaded | در هر لحظه فقط یک کار | «حلقه‌ی طولانی همه‌چیز را معطل می‌کند» |
+  | Non-blocking event loop | منتظر کارهای زمان‌بر نمی‌ماند؛ نتیجه بعداً از صف اجرا می‌شود | «`setTimeout` بعد از کدهای عادی» |
+
+  ::: tip
+  Single threaded و Non-blocking event loop **مکمل هم‌اند**: JavaScript فقط یک thread دارد، اما چون برای کارهای زمان‌بر منتظر نمی‌ماند، روان و پاسخ‌گو می‌ماند. Transpile هم فقط شکل کد را عوض می‌کند؛ خروجی برنامه بعد از transpile همان قبلی است.
+  :::
+
+  ::: trap
+  - **Transpile با Compile به زبان ماشین فرق دارد**: Babel کد JavaScript جدید را به JavaScript قدیمی (هم‌سطح) تبدیل می‌کند، نه به زبان ماشین. فشرده‌سازی کد (minify) هم transpile نیست.
+  - Transpile مرحله‌ی build را **اضافه** می‌کند، حذف نمی‌کند.
+  - «Dynamic» در این فهرست یعنی **dynamic typing** (نوع متغیر هنگام اجرا مشخص می‌شود)، نه «صفحه‌ی وب پویا».
+  - «Single threaded» یعنی در هر لحظه **یک تکه کد JavaScript** اجرا می‌شود؛ ولی تعداد زیادی تایمر و درخواست شبکه می‌توانند همزمان در جریان باشند، چون انتظارشان را محیط اجرا می‌کشد.
+  - «Interpreted» به این معنی نیست که کد هیچ‌وقت به زبان ماشین تبدیل نمی‌شود؛ موتورهای امروزی JIT دارند.
+  - وقتی arrow function را به `function` معمولی تبدیل می‌کنی، `return` را فراموش نکن؛ arrow functionِ یک‌خطی مقدارش را خودکار برمی‌گرداند ولی `function` معمولی نه.
+  :::
+questions:
+  - level: easy
+    stem: |
+      **Transpile** کردن کد JavaScript یعنی چه؟
+    options:
+      - تبدیل کد JavaScript به زبان ماشین برای اجرای سریع‌تر
+      - تبدیل syntax جدید JavaScript به syntax قدیمی‌تر تا مرورگرهای قدیمی هم آن را اجرا کنند
+      - فشرده‌کردن کد و حذف فاصله‌ها برای کم‌حجم‌شدن فایل
+      - تبدیل کد JavaScript به زبان Java
+    answer: 2
+    explain: |
+      طبق اسلاید ۸، transpile «Converts new JS to older syntax» و «Keeps code working on old browsers». گزینه‌ی ۱ تعریف compile به زبان ماشین است که کار خود موتور (مثلاً V8) است. گزینه‌ی ۳ فشرده‌سازی (minify) است، نه ترجمه. گزینه‌ی ۴ هم بی‌معناست؛ JavaScript و Java دو زبان جدا هستند.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۸، کدام دو ابزار برای transpile کردن JavaScript به کار می‌روند؟
+    options:
+      - V8 و SpiderMonkey
+      - CodePen و JSFiddle
+      - Node.js و npm
+      - Babel و SWC
+    answer: 4
+    explain: |
+      اسلاید ۸ می‌گوید: «Uses tools like Babel or SWC». V8 و SpiderMonkey موتورهای اجرای JavaScript در Chrome و Firefox هستند (اسلاید ۱۰)، CodePen و JSFiddle محیط‌های آنلاین نوشتن کد هستند (اسلاید ۱۳) و Node.js یک محیط اجرا و npm مدیر بسته‌های آن است (فصل ۳).
+
+  - level: easy
+    stem: |
+      در meme اسلاید ۸ (صحنه‌ی دادگاه)، **Babel** چه نقشی دارد؟
+    options:
+      - قاضی‌ای که درباره‌ی درست یا غلط بودن کد تصمیم می‌گیرد
+      - مترجمی که حرف‌های کد جدید (ES5+) را به زبانی که مرورگر (قاضی) می‌فهمد برمی‌گرداند
+      - متهمی که کد قدیمی نوشته است
+      - وکیلی که مرورگر را مجبور می‌کند syntax جدید را یاد بگیرد
+    answer: 2
+    explain: |
+      در meme، قاضی همان Browser است و ES5+ (کد جدید) ساکت ایستاده؛ Babel کنارش حرف می‌زند و مثل مترجم، کد جدید را به syntax قدیمی که مرورگر می‌فهمد تبدیل می‌کند. پس گزینه‌ی ۱ نقش مرورگر است و گزینه‌ی ۳ هم غلط است چون کسی که مترجم لازم دارد کد **جدید** است. Babel مرورگر را تغییر نمی‌دهد، خودِ کد را ترجمه می‌کند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      کدام مورد از ویژگی‌های transpile که در اسلاید ۸ آمده **نیست**؟
+    options:
+      - به برنامه‌نویس اجازه می‌دهد از امکانات آینده‌ی JavaScript استفاده کند.
+      - کد را روی مرورگرهای قدیمی قابل اجرا نگه می‌دارد.
+      - نیاز به هر نوع مرحله‌ی build را از بین می‌برد.
+      - syntax جدید را به syntax قدیمی‌تر تبدیل می‌کند.
+    answer: 3
+    explain: |
+      اسلاید ۸ دقیقاً برعکس گزینه‌ی ۳ را می‌گوید: «Adds a small build step»؛ یعنی transpile یک مرحله‌ی build **اضافه** می‌کند. گزینه‌های ۱ («Lets devs use future JS features»)، ۲ («Keeps code working on old browsers») و ۴ («Converts new JS to older syntax») عیناً از اسلاید هستند.
+
+  - level: medium
+    stem: |
+      منظور از جمله‌ی «Adds a small build step» در اسلاید ۸ چیست؟
+    options:
+      - کاربرِ سایت باید Babel را روی کامپیوتر خودش نصب کند تا بتواند سایت را ببیند.
+      - باید هر برنامه را دو بار بنویسیم: یک بار برای مرورگر جدید و یک بار برای مرورگر قدیمی.
+      - کدی که می‌نویسیم مستقیماً به مرورگر داده نمی‌شود؛ قبل از انتشار، ابزاری مثل Babel اجرا می‌شود و نسخه‌ی تبدیل‌شده را می‌سازد.
+      - کد پس از transpile فقط در مرورگرهای جدید اجرا می‌شود.
+    answer: 3
+    explain: |
+      build step یعنی بین «نوشتن کد» و «رسیدن کد به مرورگر» یک مرحله اضافه می‌شود: دستوری مثل `npx babel src --out-dir dist` اجرا می‌شود و مرورگر نسخه‌ی `dist` را می‌گیرد. این کار روی سیستم برنامه‌نویس انجام می‌شود، نه کاربر (رد گزینه‌ی ۱). نسخه‌ی قدیمی را خود ابزار خودکار می‌سازد و لازم نیست دو بار کد بنویسیم (رد گزینه‌ی ۲). هدف transpile اجرای کد روی مرورگرهای **قدیمی** است، پس گزینه‌ی ۴ برعکس است.
+
+  - level: medium
+    stem: |
+      کدام مورد نمونه‌ای از **transpile** است؟
+    options:
+      - تبدیل کد ES2015 به ES5 با Babel
+      - تبدیل کد JavaScript به زبان ماشین توسط موتور V8 هنگام اجرا
+      - اجرای خط‌به‌خط دستورها در Console مرورگر
+      - فشرده‌سازی فایل‌های پروژه با zip
+    answer: 1
+    explain: |
+      transpile یعنی تبدیل کد به زبان یا نسخه‌ی **هم‌سطح**؛ ES2015 و ES5 هر دو JavaScript هستند، پس گزینه‌ی ۱ درست است. گزینه‌ی ۲ compile است (تبدیل به کد سطح پایین)، گزینه‌ی ۳ تفسیر (interpret) است که خروجی جداگانه‌ای نمی‌سازد و گزینه‌ی ۴ فقط فشرده‌سازی فایل است و ربطی به ترجمه‌ی کد ندارد.
+
+  - level: hard
+    stem: |
+      Babel کد زیر را به ES5 تبدیل می‌کند. کدام گزینه یک معادل **درست** در ES5 است؛ یعنی دقیقاً همان خروجی `Hello, Sara!` را چاپ می‌کند؟
+    code: |
+      const greet = (name) => `Hello, ${name}!`;
+      console.log(greet("Sara"));
+    check: option-output
+    expect: "Hello, Sara!"
+    options:
+      - code: |
+          var greet = function (name) {
+            "Hello, " + name + "!";
+          };
+          console.log(greet("Sara"));
+      - code: |
+          var greet = function (name) {
+            return 'Hello, ${name}!';
+          };
+          console.log(greet("Sara"));
+      - code: |
+          var greet = function (name) {
+            return "Hello, " + "name" + "!";
+          };
+          console.log(greet("Sara"));
+      - code: |
+          var greet = function (name) {
+            return "Hello, " + name + "!";
+          };
+          console.log(greet("Sara"));
+    answer: 4
+    explain: |
+      arrow function یک‌خطی مقدارش را خودکار برمی‌گرداند، پس در نسخه‌ی ES5 باید `return` صریح نوشت و متغیر `name` را با `+` به رشته چسباند؛ این دقیقاً گزینه‌ی ۴ است (Babel همین را با `"Hello, ".concat(name, "!")` می‌نویسد). گزینه‌ی ۱ `return` ندارد و `undefined` چاپ می‌کند. در گزینه‌ی ۲، `${name}` داخل کوتیشن معمولی است و فقط داخل backtick کار می‌کند؛ پس همان متن `Hello, ${name}!` چاپ می‌شود. گزینه‌ی ۳ کلمه‌ی `"name"` را در کوتیشن گذاشته و `Hello, name!` چاپ می‌کند.
+
+  - level: easy
+    stem: |
+      منظور از **High Level** بودن JavaScript چیست؟
+    options:
+      - فقط روی کامپیوترهای قدرتمند اجرا می‌شود.
+      - از همه‌ی زبان‌های برنامه‌نویسی سریع‌تر است.
+      - برای اجرا باید ابتدا به یک فایل اجرایی (مثلاً exe) کامپایل شود.
+      - برنامه‌نویس با جزئیات سخت‌افزار مثل آدرس‌های حافظه و ثبات‌های پردازنده درگیر نمی‌شود و کد به زبان انسان نزدیک‌تر است.
+    answer: 4
+    explain: |
+      «سطح بالا» یعنی فاصله گرفتن از سخت‌افزار: موتور جای داده‌ها در حافظه و جزئیات پردازنده را مدیریت می‌کند. ربطی به قدرت کامپیوتر ندارد (گزینه‌ی ۱) و زبان‌های سطح بالا معمولاً سریع‌ترین زبان‌ها هم نیستند (گزینه‌ی ۲). گزینه‌ی ۳ توصیف زبان‌هایی مثل C است؛ JavaScript بدون کامپایل جداگانه و مستقیماً توسط موتور اجرا می‌شود.
+
+  - level: easy
+    stem: |
+      کدام ویژگی JavaScript یعنی «حافظه‌ی مقدارهایی که دیگر هیچ راهی برای دسترسی به آن‌ها نمانده، به‌طور خودکار آزاد می‌شود»؟
+    options:
+      - Garbage Collected
+      - First-class functions
+      - Dynamic
+      - Single threaded
+    answer: 1
+    explain: |
+      Garbage Collector بخشی از موتور است که حافظه‌ی مقدارهای غیرقابل‌دسترس را خودکار آزاد می‌کند. First-class functions یعنی تابع یک مقدار است، Dynamic یعنی نوع متغیرها هنگام اجرا تعیین می‌شود و Single threaded یعنی در هر لحظه فقط یک کار انجام می‌شود؛ هیچ‌کدام درباره‌ی آزادسازی حافظه نیستند.
+
+  - level: easy
+    stem: |
+      اینکه در JavaScript می‌توان یک تابع را در متغیر ذخیره کرد، آن را به تابع دیگری پاس داد یا از یک تابع برگرداند، کدام ویژگی است؟
+    options:
+      - Prototype-based OO
+      - Garbage Collected
+      - First-class functions
+      - Single threaded
+    answer: 3
+    explain: |
+      «First-class» یعنی تابع هم مثل عدد و رشته یک مقدار معمولی است؛ پس می‌شود ذخیره‌اش کرد، پاسش داد و برش گرداند. Prototype-based OO درباره‌ی ارث‌بری اشیاء از یکدیگر است، Garbage Collected درباره‌ی آزادسازی خودکار حافظه و Single threaded درباره‌ی انجام یک کار در هر لحظه.
+
+  - level: medium
+    stem: |
+      منظور از **Multi-paradigm** بودن JavaScript چیست؟
+    options:
+      - می‌توان در JavaScript به سبک‌های مختلفی مثل رویه‌ای (procedural)، شیءگرا (OOP) و تابعی (functional) برنامه نوشت.
+      - JavaScript هم در مرورگر و هم در Node.js اجرا می‌شود.
+      - JavaScript می‌تواند چند تکه کد را دقیقاً همزمان روی چند هسته‌ی پردازنده اجرا کند.
+      - نوع متغیرها در JavaScript هنگام اجرا مشخص می‌شود و می‌تواند تغییر کند.
+    answer: 1
+    explain: |
+      paradigm یعنی سبک برنامه‌نویسی و JavaScript هر سه سبک procedural، OOP و functional را پشتیبانی می‌کند (مثل مثال جمع قیمت‌ها در درسنامه). گزینه‌ی ۲ درباره‌ی محیط‌های اجراست، نه سبک برنامه‌نویسی. گزینه‌ی ۳ با Single threaded بودن JavaScript تناقض دارد و گزینه‌ی ۴ تعریف ویژگی Dynamic است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟ (این کد ویژگی **Dynamic** را نشان می‌دهد.)
+    check: output
+    code: |
+      let x = 5;
+      console.log(typeof x);
+      x = "five";
+      console.log(typeof x);
+      x = true;
+      console.log(typeof x);
+    options:
+      - out: ["number", "number", "number"]
+      - out: ["number", "string", "boolean"]
+      - out: ["number", "!! TypeError"]
+      - out: ["5", "five", "true"]
+    answer: 2
+    explain: |
+      در JavaScript نوع به **مقدار** وابسته است، نه به متغیر؛ پس با هر انتساب، `typeof x` نوع مقدار فعلی را می‌دهد: `number`، سپس `string` و در آخر `boolean`. گزینه‌ی ۱ فرض کرده نوع متغیر ثابت می‌ماند و گزینه‌ی ۳ فکر کرده تغییر نوع مثل زبان‌های static خطا می‌دهد. گزینه‌ی ۴ هم `typeof` را با خودِ مقدار اشتباه گرفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function shout(text) {
+        return text.toUpperCase() + "!";
+      }
+      function whisper(text) {
+        return text.toLowerCase() + "...";
+      }
+      function speak(style, text) {
+        return style(text);
+      }
+      console.log(speak(shout, "Hello"));
+      console.log(speak(whisper, "Hello"));
+    options:
+      - out: ["HELLO!", "hello..."]
+      - out: ["Hello!", "Hello..."]
+      - out: ["!! TypeError"]
+      - out: ["[Function: shout]", "[Function: whisper]"]
+    answer: 1
+    explain: |
+      به خاطر **First-class functions**، تابع‌های `shout` و `whisper` مثل یک مقدار به پارامتر `style` داده می‌شوند و `style(text)` همان تابع را صدا می‌زند: `toUpperCase` متن را بزرگ و `toLowerCase` آن را کوچک می‌کند؛ پس `HELLO!` و `hello...`. گزینه‌ی ۲ فراموش کرده که تابع‌ها حروف را عوض می‌کنند. پاس دادن تابع به تابع دیگر کاملاً مجاز است و خطا نمی‌دهد (رد گزینه‌ی ۳). `speak` نتیجه‌ی **صدا زدن** تابع را برمی‌گرداند، نه خودِ تابع را (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log("start");
+      setTimeout(() => console.log("timeout"), 0);
+      console.log("end");
+    options:
+      - out: ["start", "timeout", "end"]
+      - out: ["start", "end", "timeout"]
+      - out: ["timeout", "start", "end"]
+      - out: ["start", "end"]
+    answer: 2
+    explain: |
+      به خاطر **non-blocking event loop**، JavaScript منتظر تایمر نمی‌ماند: `setTimeout` تابع را به محیط اجرا می‌سپارد و برنامه سراغ خط بعد می‌رود. تابع تایمر فقط وقتی اجرا می‌شود که کدهای عادی تمام شده باشند؛ پس `start`، `end` و بعد `timeout`. زمان صفر یعنی «در اولین فرصت»، نه «همین الان» (رد گزینه‌های ۱ و ۳). تایمر هم حذف نمی‌شود و بالاخره اجرا می‌شود (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const animal = { eats: true };
+      const rabbit = Object.create(animal);
+      rabbit.jumps = true;
+
+      console.log(rabbit.jumps, rabbit.eats);
+      console.log(Object.keys(rabbit));
+    options:
+      - out: ["true undefined", "['jumps']"]
+      - out: ["true true", "['jumps', 'eats']"]
+      - out: ["!! TypeError"]
+      - out: ["true true", "['jumps']"]
+    answer: 4
+    explain: |
+      `Object.create(animal)` شیئی می‌سازد که prototypeِ آن `animal` است (**Prototype-based OO**). `rabbit` خودش `eats` ندارد، ولی JavaScript آن را در prototype پیدا می‌کند؛ پس `true true` (رد گزینه‌ی ۱). `Object.keys` فقط کلیدهای **خودِ** شیء را برمی‌گرداند، پس فقط `['jumps']` (رد گزینه‌ی ۲). هیچ خطایی هم رخ نمی‌دهد (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      کدام جمله درباره‌ی «Interpreted/JIT Compiled» بودن JavaScript در موتورهای امروزی مثل V8 **درست** است؟
+    options:
+      - کد JavaScript قبل از اجرا باید توسط برنامه‌نویس به یک فایل اجرایی کامپایل شود.
+      - کد فقط خط‌به‌خط تفسیر می‌شود و هیچ‌وقت به زبان ماشین تبدیل نمی‌شود.
+      - موتور کد را parse می‌کند و حین اجرا، بخش‌هایی را که زیاد اجرا می‌شوند به زبان ماشینِ بهینه کامپایل می‌کند.
+      - کد JavaScript ابتدا به bytecode زبان Java تبدیل و روی JVM اجرا می‌شود.
+    answer: 3
+    explain: |
+      JIT یعنی کامپایل «درست در لحظه‌ی نیاز»: موتور کد را parse می‌کند، اجرایش را شروع می‌کند و قسمت‌های پرتکرار را حین اجرا بهینه و به زبان ماشین کامپایل می‌کند (اسلاید ۱۰: «parsed, optimized, and compiled to machine code»). برنامه‌نویس هیچ مرحله‌ی کامپایل جداگانه‌ای انجام نمی‌دهد (رد گزینه‌ی ۱) و برخلاف گزینه‌ی ۲، کد به زبان ماشین تبدیل می‌شود. JavaScript هیچ ربطی به Java و JVM ندارد (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      بعد از اجرای خط دوم کد زیر، چه بر سر شیء `{ name: "Sara" }` می‌آید؟
+    code: |
+      let user = { name: "Sara" };
+      user = null;
+    manual: زمان کار Garbage Collector به‌طور قطعی قابل مشاهده نیست؛ فقط بدون خطا اجرا شدن کد با Node.js بررسی شد.
+    options:
+      - چون دیگر هیچ راهی برای دسترسی به آن نمانده، Garbage Collector هر وقت خودش تشخیص دهد، حافظه‌اش را آزاد می‌کند.
+      - برنامه‌نویس باید با دستوری مثل `free(user)` حافظه‌اش را آزاد کند.
+      - خطا رخ می‌دهد، چون نمی‌توان به متغیری که یک شیء داشته `null` داد.
+      - شیء تا بسته شدن برنامه در حافظه می‌ماند و هرگز آزاد نمی‌شود.
+    answer: 1
+    explain: |
+      بعد از `user = null` دیگر هیچ متغیری به آن شیء اشاره نمی‌کند؛ پس شیء «غیرقابل‌دسترس» است و **Garbage Collector** حافظه‌اش را خودکار آزاد می‌کند، آن هم در زمانی که خودش انتخاب می‌کند. در JavaScript تابعی مثل `free` وجود ندارد؛ آن روش زبان C است (رد گزینه‌ی ۲). `let` اجازه‌ی انتساب دوباره را می‌دهد و `null` یک مقدار معمولی است (رد گزینه‌ی ۳). گزینه‌ی ۴ دقیقاً همان memory leak است که Garbage Collector جلویش را می‌گیرد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      setTimeout(() => console.log("timer"), 0);
+
+      const start = Date.now();
+      while (Date.now() - start < 200) {
+        // busy for 200 ms
+      }
+      console.log("loop done");
+    options:
+      - out: ["timer", "loop done"]
+      - out: ["loop done"]
+      - out: ["loop done", "timer"]
+      - out: ["timer"]
+    answer: 3
+    explain: |
+      JavaScript **single threaded** است: تنها thread به مدت ۲۰۰ میلی‌ثانیه درگیر حلقه‌ی `while` است و تابع تایمر، با اینکه زمانش صفر است و زمانش هم مدت‌ها پیش رسیده، باید صبر کند تا thread آزاد شود. پس اول `loop done` و بعد `timer`. گزینه‌ی ۱ فرض کرده تایمر می‌تواند وسط حلقه اجرا شود. تایمر هم گم نمی‌شود (رد گزینه‌ی ۲) و حلقه هم بالاخره تمام می‌شود (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      کدام جمله **نادرست** است؟
+    options:
+      - 'First-class functions: می‌توان یک تابع را به‌عنوان ورودی به تابع دیگری داد.'
+      - 'Dynamic: نوع یک متغیر هنگام اجرا مشخص می‌شود و می‌تواند عوض شود.'
+      - 'Garbage Collected: حافظه‌ی بلااستفاده به‌طور خودکار آزاد می‌شود.'
+      - 'Single threaded: JavaScript می‌تواند چند تکه کد JavaScript را دقیقاً در یک لحظه روی چند هسته‌ی پردازنده اجرا کند.'
+    answer: 4
+    explain: |
+      Single threaded دقیقاً یعنی JavaScript فقط یک thread اصلی دارد و در هر لحظه **فقط یک** تکه کد را اجرا می‌کند؛ پس گزینه‌ی ۴ نادرست است. گزینه‌های ۱، ۲ و ۳ تعریف درست سه ویژگی First-class functions، Dynamic و Garbage Collected هستند.
+
+  - level: hard
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «JavaScript ...... است، یعنی در هر لحظه فقط یک کار انجام می‌دهد؛ اما به لطف ......، منتظر ماندن برای یک تایمر یا جواب شبکه برنامه را متوقف نمی‌کند.»
+    options:
+      - multi-threaded و Garbage Collector
+      - single threaded و non-blocking event loop
+      - single threaded و JIT compiler
+      - dynamic و prototype chain
+    answer: 2
+    explain: |
+      «یک کار در هر لحظه» تعریف single threaded است و چیزی که باعث می‌شود برنامه منتظر کارهای زمان‌بر نماند، non-blocking event loop است. گزینه‌ی ۱ خلاف ویژگی تک‌نخی است. JIT compiler سرعت اجرا را بالا می‌برد ولی ربطی به منتظر نماندن ندارد (رد گزینه‌ی ۳). dynamic درباره‌ی نوع متغیرهاست و prototype chain درباره‌ی ارث‌بری (رد گزینه‌ی ۴).
