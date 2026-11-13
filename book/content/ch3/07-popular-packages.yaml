@@ -1,0 +1,401 @@
+id: ch3-popular-packages
+title: "پکیج‌های محبوب"
+slides: "NodeJS & TS، اسلایدهای ۱۳ و ۱۴"
+lesson: |
+  در npm میلیون‌ها پکیج هست، ولی چند تا از آن‌ها آن‌قدر معروف‌اند که تقریباً هر برنامه‌نویس JavaScript اسمشان را می‌شناسد. اسلایدهای ۱۳ و ۱۴ ده پکیج محبوب را با یک جمله‌ی کوتاه معرفی می‌کنند (اسلاید ۱۳ کنار متن، لوگوی Express، React، Lodash و socket.io را هم دارد). در تست‌ها معمولاً یک **نیاز** را می‌گویند و می‌پرسند «کدام پکیج؟»؛ پس جمله‌ی هر پکیج را دقیق یاد بگیر.
+
+  | پکیج | توصیف اسلاید | یعنی… | بیشتر کجا؟ |
+  |---|---|---|---|
+  | **Express** | minimalist web framework for building APIs and servers | فریم‌ورک وب کمینه‌گرا برای ساختن API و سرور | سرور (Node.js) |
+  | **React** | library for building interactive UIs with components | کتابخانه‌ی ساختن رابط کاربری تعاملی با کامپوننت‌ها | مرورگر (frontend) |
+  | **Lodash** | utility functions for arrays, objects, and more | توابع کمکی برای آرایه‌ها، شیءها و… | هر دو |
+  | **Axios** | promise-based HTTP client for API requests | کلاینت HTTP مبتنی بر Promise برای درخواست به APIها | هر دو |
+  | **Socket.io** | real-time bidirectional communication for web apps | ارتباط دوطرفه‌ی بلادرنگ برای برنامه‌های وب | سرور + مرورگر |
+  | **Moment.js / Day.js** | date and time manipulation utilities | ابزارهای کار با تاریخ و زمان | هر دو |
+  | **Jest** | testing framework for JavaScript and Node.js | فریم‌ورک تست | ابزار توسعه |
+  | **Three.js** | 3D graphics and animations in the browser | گرافیک و انیمیشن سه‌بعدی در مرورگر | مرورگر |
+  | **Chalk** | style and colorize terminal output | رنگی و قالب‌دار کردن خروجی ترمینال | برنامه‌ی کنسولی |
+  | **Electron** | build cross-platform desktop apps with web technologies | ساختن برنامه‌ی دسکتاپ چندسکویی با فناوری‌های وب | دسکتاپ |
+
+  کدهای زیر فقط برای آشنایی‌اند و برای اجرا باید اول پکیج را نصب کنی (مثلاً `npm install express`)؛ ما همه‌ی آن‌ها را (به‌جز Three.js و Electron که به محیط گرافیکی نیاز دارند) با نسخه‌های فعلی پکیج‌ها اجرا کرده‌ایم.
+
+  ### پکیج‌های اسلاید ۱۳
+
+  #### Express: ساختن سرور و API
+  **API** (Application Programming Interface، رابط برنامه‌نویسی) اینجا یعنی مجموعه‌ای از آدرس‌ها روی سرور که برنامه‌های دیگر (مثلاً frontend) با فرستادن درخواست به آن‌ها داده (معمولاً JSON) می‌گیرند یا می‌فرستند. Express «کمینه‌گرا» (minimalist) است: هسته‌ی کوچکی دارد و بقیه‌ی امکانات را با پکیج‌های دیگر اضافه می‌کنی. نسبت به ماژول خام `http` (درس اول) کار تعریف **route** (مسیر: ترکیب یک آدرس و یک نوع درخواست مثل GET) و فرستادن JSON را خیلی ساده می‌کند:
+
+  ```js title=server.js
+  const express = require("express");
+  const app = express();
+
+  app.get("/api/hello", (req, res) => {
+    res.json({ message: "Hello from Express!" }); // send JSON to the client
+  });
+
+  app.listen(3000, () => console.log("Server running on port 3000"));
+  ```
+
+  با باز کردن `http://localhost:3000/api/hello` جواب `{"message":"Hello from Express!"}` برمی‌گردد.
+
+  #### React: رابط کاربری با کامپوننت
+  **component** (کامپوننت یا مؤلفه) یک تکه‌ی مستقل و قابل استفاده‌ی دوباره از رابط کاربری است؛ مثل یک دکمه، یک کارت محصول یا یک منو. در React هر کامپوننت یک تابع است که ظاهر آن تکه را برمی‌گرداند. نحوی که شبیه HTML داخل JavaScript است **JSX** نام دارد و قبل از اجرا با یک transpiler (مثل Babel) به JavaScript معمولی تبدیل می‌شود:
+
+  ```jsx
+  function Greeting({ name }) {
+    return <h1>Hello, {name}!</h1>;
+  }
+
+  // Used like an HTML tag:
+  <Greeting name="Sara" />
+  ```
+
+  React یک **کتابخانه** (library) است، نه سرور؛ در مرورگر اجرا می‌شود و صفحه را با تغییر داده‌ها خودکار به‌روز می‌کند.
+
+  #### Lodash: جعبه‌ابزار توابع کمکی
+  Lodash ده‌ها تابع آماده برای کارهای رایج با آرایه‌ها، شیءها، رشته‌ها و… دارد و طبق قرارداد با اسم `_` (زیرخط) استفاده می‌شود:
+
+  ```js
+  const _ = require("lodash");
+
+  console.log(_.chunk([1, 2, 3, 4, 5], 2)); // [ [ 1, 2 ], [ 3, 4 ], [ 5 ] ]
+  console.log(_.uniq([1, 1, 2, 3, 3]));     // [ 1, 2, 3 ]
+
+  const original = { user: { name: "Ali" } };
+  const copy = _.cloneDeep(original); // a deep copy: nested objects are copied too
+  copy.user.name = "Sara";
+  console.log(original.user.name);    // Ali
+  ```
+
+  #### Axios: درخواست HTTP با Promise
+  **HTTP client** کدی است که از طرف برنامه به سرورها درخواست می‌فرستد. Axios **promise-based** است، یعنی هر درخواست یک Promise برمی‌گرداند و می‌شود با `then` یا `async/await` از آن استفاده کرد. هم در مرورگر کار می‌کند و هم در Node.js:
+
+  ```js
+  const axios = require("axios");
+
+  async function loadUsers() {
+    try {
+      const response = await axios.get("https://api.example.com/users");
+      console.log(response.data); // the JSON body, already parsed
+    } catch (error) {
+      console.log("Request failed:", error.message);
+    }
+  }
+
+  loadUsers();
+  ```
+
+  ::: info Axios در برابر fetch
+  `fetch` داخلی مرورگر و Node.js هم Promise برمی‌گرداند، ولی دو فرق مهم با Axios دارد: بدنه‌ی JSON را باید خودت با `await res.json()` بخوانی (در Axios آماده در `response.data` است)، و برای پاسخ‌های خطا مثل 404 Promise را **رد نمی‌کند** (فقط `res.ok` برابر `false` می‌شود). Axios برای چنین پاسخی خطای `Request failed with status code 404` می‌دهد.
+  :::
+
+  #### Socket.io: ارتباط دوطرفه و بلادرنگ
+  در HTTP معمولی همیشه **کلاینت شروع می‌کند**: درخواست می‌فرستد و جواب می‌گیرد؛ سرور نمی‌تواند خودش سر صحبت را باز کند. Socket.io یک اتصال **دوطرفه** (bidirectional) و **بلادرنگ** (real-time: لحظه‌ای و بدون تأخیر محسوس) بین مرورگر و سرور برقرار می‌کند (بر پایه‌ی فناوری WebSocket)؛ هر طرف هر وقت بخواهد می‌تواند پیام بفرستد. کاربردها: چت، اعلان‌های زنده، بازی‌های آنلاین، ویرایش هم‌زمان یک سند.
+
+  ```js title=server.js
+  const { Server } = require("socket.io");
+  const io = new Server(3000);
+
+  io.on("connection", (socket) => {
+    socket.on("chat message", (msg) => {
+      io.emit("chat message", msg); // send it to everyone
+    });
+  });
+  ```
+
+  ```js title=client (browser)
+  const socket = io("http://localhost:3000");
+  socket.on("chat message", (msg) => console.log("New message:", msg));
+  socket.emit("chat message", "Hi!"); // New message: Hi!
+  ```
+
+  به شباهتش با `EventEmitter` درس «ویژگی‌های Node.js» دقت کن: باز هم `on` و `emit`؛ این بار رویدادها از روی شبکه جابه‌جا می‌شوند.
+
+  ### پکیج‌های اسلاید ۱۴
+
+  #### Moment.js / Day.js: تاریخ و زمان
+  کار با تاریخ (قالب‌بندی، اضافه کردن چند روز، فاصله‌ی دو تاریخ) با شیء `Date` خام JavaScript دردسر دارد. Moment.js سال‌ها کتابخانه‌ی استاندارد این کار بود؛ امروز خود تیمش آن را پروژه‌ی قدیمی (legacy) در حالت فقط نگه‌داری اعلام کرده است و **Day.js** جایگزین بسیار سبک‌تری با API تقریباً یکسان است:
+
+  ```js
+  const dayjs = require("dayjs");
+
+  const exam = dayjs("2026-11-17");
+  console.log(exam.format("YYYY/MM/DD"));               // 2026/11/17
+  console.log(exam.add(7, "day").format("YYYY-MM-DD")); // 2026-11-24
+  console.log(exam.diff(dayjs("2026-11-13"), "day"));   // 4
+  ```
+
+  #### Jest: تست خودکار
+  **test** (آزمون خودکار) کدی است که درستیِ کد دیگری را بررسی می‌کند. Jest یک فریم‌ورک تست برای JavaScript و Node.js است. با `test` یک تست تعریف می‌کنی و با `expect(...).toBe(...)` می‌گویی چه نتیجه‌ای انتظار داری:
+
+  ```js title=sum.test.js
+  const sum = require("./sum");
+
+  test("adds 1 + 2 to equal 3", () => {
+    expect(sum(1, 2)).toBe(3);
+  });
+  ```
+
+  Jest را با `npm install -D jest` (یک **devDependency**) نصب می‌کنی، در `package.json` می‌نویسی `"test": "jest"` و با `npm test` اجرا می‌کنی:
+
+  ```text
+  PASS ./sum.test.js
+    ✓ adds 1 + 2 to equal 3 (2 ms)
+
+  Tests:       1 passed, 1 total
+  ```
+
+  #### Three.js: سه‌بعدی در مرورگر
+  Three.js ساختن **گرافیک و انیمیشن سه‌بعدی** را در مرورگر (با فناوری WebGL) ساده می‌کند: یک صحنه (scene)، یک دوربین (camera)، یک رندرکننده (renderer) و اجسام (mesh) می‌سازی:
+
+  ```js
+  import * as THREE from "three";
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement); // a <canvas> element
+
+  const cube = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+  );
+  scene.add(cube);
+  camera.position.z = 5;
+
+  function animate() {
+    cube.rotation.y += 0.01; // rotate a little in every frame
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+  ```
+
+  #### Chalk: رنگی کردن خروجی ترمینال
+  برای **برنامه‌های کنسولی** (هدف a در اسلاید ۲) خروجی رنگی خیلی خواناتر است. Chalk متن را با کدهای رنگ ترمینال رنگی و قالب‌دار (پررنگ، زیرخط‌دار و…) می‌کند. نسخه‌های جدید Chalk فقط به‌صورت ES Module منتشر می‌شوند، پس با `import` واردش می‌کنیم:
+
+  ```js
+  import chalk from "chalk";
+
+  console.log(chalk.green("Success!"));
+  console.log(chalk.red.bold("Error: file not found"));
+  console.log(chalk.blue("Info:"), "server started");
+  ```
+
+  #### Electron: برنامه‌ی دسکتاپ با HTML و CSS و JavaScript
+  Electron موتور مرورگر **Chromium** (برای نمایش رابط کاربری با HTML و CSS و JavaScript) را با **Node.js** (برای دسترسی به فایل‌ها و سیستم‌عامل) ترکیب می‌کند تا با همان مهارت‌های وب، برنامه‌ی دسکتاپ **چندسکویی** (Windows، macOS، Linux) بسازی. برنامه‌هایی مثل VS Code، Slack و Discord با Electron ساخته شده‌اند:
+
+  ```js title=main.js
+  const { app, BrowserWindow } = require("electron");
+
+  app.whenReady().then(() => {
+    const win = new BrowserWindow({ width: 800, height: 600 });
+    win.loadFile("index.html"); // the UI is a normal web page
+  });
+  ```
+
+  ### دسته‌بندی: کدام پکیج کجا به کار می‌رود؟
+
+  | دسته | پکیج‌ها |
+  |---|---|
+  | سمت سرور (backend، در Node.js) | Express، بخش سرور Socket.io |
+  | سمت مرورگر (frontend) | React، Three.js، بخش کلاینت Socket.io |
+  | هر دو سمت | Axios، Lodash، Moment.js / Day.js |
+  | ابزار توسعه (devDependency) | Jest |
+  | برنامه‌ی کنسولی (ترمینال) | Chalk |
+  | برنامه‌ی دسکتاپ | Electron |
+
+  | نیاز | پکیج |
+  |---|---|
+  | ساختن API یا وب‌سرور | Express |
+  | رابط کاربری با تکه‌های قابل استفاده‌ی دوباره | React |
+  | تکه‌تکه کردن آرایه، حذف تکراری‌ها، کپی عمیق شیء | Lodash |
+  | گرفتن داده از یک API دیگر | Axios |
+  | چت یا اعلان زنده که سرور خودش به کاربر بفرستد | Socket.io |
+  | اضافه کردن چند روز به یک تاریخ و قالب‌بندی آن | Moment.js / Day.js |
+  | نوشتن تست خودکار | Jest |
+  | مکعب چرخان سه‌بعدی در صفحه‌ی وب | Three.js |
+  | پیام سبز «Success» در ترمینال | Chalk |
+  | برنامه‌ی دسکتاپ برای Windows و macOS و Linux | Electron |
+
+  ::: tip
+  برای هر پکیج یک «کلمه‌ی کلیدی» به خاطر بسپار: Express ← سرور، React ← کامپوننت، Lodash ← توابع کمکی (`_`)، Axios ← درخواست HTTP با Promise، Socket.io ← بلادرنگ و دوطرفه، Day.js ← تاریخ، Jest ← تست، Three.js ← سه‌بعدی، Chalk ← رنگ ترمینال، Electron ← دسکتاپ.
+  :::
+
+  ::: trap
+  - Axios و Socket.io هر دو با شبکه کار می‌کنند، ولی Axios **درخواست و پاسخ** است (همیشه کلاینت شروع می‌کند) و Socket.io **دوطرفه و بلادرنگ** است (سرور هم می‌تواند هر وقت خواست پیام بفرستد).
+  - React کتابخانه‌ی **رابط کاربری** است، نه سرور و نه برنامه‌ی دسکتاپ؛ برنامه‌ی دسکتاپ با وب کار Electron است.
+  - Jest ابزار زمان توسعه است و در `devDependencies` می‌نشیند؛ Express و Axios و Socket.io هنگام اجرا لازم‌اند.
+  :::
+questions:
+  - level: easy
+    stem: طبق اسلاید ۱۳، **Express** چیست؟
+    options:
+      - 'فریم‌ورک وب کمینه‌گرا (minimalist) برای ساختن API و سرور'
+      - 'کتابخانه‌ای برای ساختن رابط کاربری تعاملی با کامپوننت‌ها'
+      - 'فریم‌ورک تست برای JavaScript و Node.js'
+      - 'ابزاری برای رنگی کردن خروجی ترمینال'
+    answer: 1
+    explain: |
+      اسلاید ۱۳: «Express: minimalist web framework for building APIs and servers». گزینه‌ی ۲ توصیف React، گزینه‌ی ۳ توصیف Jest و گزینه‌ی ۴ توصیف Chalk است.
+  - level: easy
+    stem: برای نوشتن **تست خودکار** برای کد JavaScript و Node.js، کدام پکیج از اسلاید ۱۴ مناسب است؟
+    options:
+      - 'Chalk'
+      - 'Axios'
+      - 'Jest'
+      - 'Lodash'
+    answer: 3
+    explain: |
+      اسلاید ۱۴: «Jest: testing framework for JavaScript and Node.js». Chalk برای رنگی کردن خروجی ترمینال است، Axios کلاینت HTTP است و Lodash توابع کمکی برای آرایه‌ها و شیءها دارد.
+  - level: easy
+    stem: می‌خواهیم در یک برنامه‌ی کنسولی، پیام‌های موفقیت را **سبز** و پیام‌های خطا را **قرمز** در ترمینال نشان دهیم. کدام پکیج مناسب است؟
+    options:
+      - 'Three.js'
+      - 'Chalk'
+      - 'React'
+      - 'Electron'
+    answer: 2
+    explain: |
+      اسلاید ۱۴: «Chalk: style and colorize terminal output»؛ مثلاً `chalk.green("Success!")`. Three.js برای گرافیک سه‌بعدی در مرورگر است، React برای رابط کاربری صفحه‌ی وب و Electron برای برنامه‌ی دسکتاپ؛ هیچ‌کدام برای رنگ‌آمیزی متن ترمینال نیستند.
+  - level: medium
+    stem: یک برنامه‌ی **چت** می‌سازیم که در آن پیام هر کاربر باید **همان لحظه** و بدون refresh برای بقیه نمایش داده شود و سرور هم بتواند خودش پیام را به کاربران بفرستد. کدام پکیج از اسلاید ۱۳ برای این کار ساخته شده است؟
+    options:
+      - 'Axios'
+      - 'Lodash'
+      - 'Day.js'
+      - 'Socket.io'
+    answer: 4
+    explain: |
+      اسلاید ۱۳: «Socket.io: real-time bidirectional communication for web apps». «بلادرنگ» یعنی پیام‌ها لحظه‌ای می‌رسند و «دوطرفه» یعنی سرور هم می‌تواند بدون درخواست کلاینت پیام بفرستد. Axios هم با شبکه کار می‌کند، ولی مدلش درخواست و پاسخ است و همیشه کلاینت شروع‌کننده است. Lodash و Day.js اصلاً کار شبکه‌ای نمی‌کنند.
+  - level: medium
+    stem: می‌خواهیم با همان HTML و CSS و JavaScript یک برنامه‌ی **دسکتاپ** بسازیم که روی Windows، macOS و Linux اجرا شود. کدام پکیج مناسب است؟
+    options:
+      - 'Electron'
+      - 'React'
+      - 'Three.js'
+      - 'Express'
+    answer: 1
+    explain: |
+      اسلاید ۱۴: «Electron: build cross-platform desktop apps with web technologies». Electron موتور Chromium و Node.js را ترکیب می‌کند (VS Code و Slack با آن ساخته شده‌اند). React فقط رابط کاربری صفحه‌ی وب را می‌سازد و به‌تنهایی برنامه‌ی دسکتاپ تولید نمی‌کند. Three.js برای سه‌بعدی در مرورگر و Express برای سرور است.
+  - level: medium
+    stem: '«**promise-based HTTP client for API requests**» توصیف کدام پکیج در اسلاید ۱۳ است؟'
+    options:
+      - 'Express'
+      - 'Socket.io'
+      - 'Axios'
+      - 'Day.js'
+    answer: 3
+    explain: |
+      Axios کلاینت HTTP است: از طرف برنامه به API‌ها درخواست می‌فرستد و چون هر درخواست یک Promise برمی‌گرداند، با `async/await` هم کار می‌کند. Express **سرور** را می‌سازد (طرف مقابل درخواست)، Socket.io برای ارتباط بلادرنگ دوطرفه است و Day.js برای کار با تاریخ.
+  - level: medium
+    stem: کدام جفت «پکیج ← کاربرد» **نادرست** است؟
+    options:
+      - 'Three.js ← گرافیک و انیمیشن سه‌بعدی در مرورگر'
+      - 'Lodash ← ارتباط دوطرفه‌ی بلادرنگ برای برنامه‌های وب'
+      - 'React ← ساختن رابط کاربری تعاملی با کامپوننت‌ها'
+      - 'Moment.js / Day.js ← کار با تاریخ و زمان'
+    answer: 2
+    explain: |
+      Lodash مجموعه‌ی **توابع کمکی** برای آرایه‌ها، شیءها و… است («utility functions for arrays, objects, and more»). ارتباط دوطرفه‌ی بلادرنگ توصیف Socket.io است. سه جفت دیگر دقیقاً با متن اسلایدهای ۱۳ و ۱۴ می‌خوانند.
+  - level: medium
+    stem: کدام پکیج اساساً یک **فریم‌ورک سمت سرور** برای Node.js است؟
+    options:
+      - 'React'
+      - 'Three.js'
+      - 'Chalk'
+      - 'Express'
+    answer: 4
+    explain: |
+      Express برای ساختن API و سرور روی Node.js است. React و Three.js در مرورگر (frontend) اجرا می‌شوند. Chalk هرچند در Node.js اجرا می‌شود، فقط خروجی ترمینال را رنگی می‌کند و فریم‌ورک سرور نیست.
+  - level: hard
+    stem: یک پروژه‌ی سرور با Express ساخته شده، با Axios به API‌های دیگر درخواست می‌فرستد، با Socket.io پیام بلادرنگ می‌فرستد و با Jest تست می‌شود. کدام پکیج باید با `npm install -D` (یعنی در `devDependencies`) نصب شود؟
+    options:
+      - 'Jest'
+      - 'Express'
+      - 'Axios'
+      - 'Socket.io'
+    answer: 1
+    explain: |
+      Jest فقط هنگام **توسعه** (اجرای تست‌ها) لازم است و سرور در حال اجرا به آن نیازی ندارد؛ پس جایش `devDependencies` است. Express، Axios و Socket.io همگی هنگام **اجرای** سرور استفاده می‌شوند و باید در `dependencies` باشند؛ اگر با `-D` نصبشان کنی، با `npm install --omit=dev` روی سرور اصلی نصب نمی‌شوند و برنامه خراب می‌شود.
+  - level: hard
+    stem: در کد زیر اسم پکیج با `???` پوشانده شده است. این توابع کمکی (که طبق قرارداد با اسم `_` استفاده می‌شوند) مال کدام پکیج از اسلاید ۱۳ است؟
+    code: |
+      const _ = require("???");
+
+      console.log(_.chunk([1, 2, 3, 4, 5], 2)); // [ [ 1, 2 ], [ 3, 4 ], [ 5 ] ]
+      console.log(_.uniq([1, 1, 2, 3, 3]));     // [ 1, 2, 3 ]
+    manual: The package is hidden on purpose and is not installed in the automatic checker; the question asks which library this API belongs to (the outputs in the comments were verified with lodash 4.17.21 in a scratch project).
+    options:
+      - 'Axios'
+      - 'React'
+      - 'Lodash'
+      - 'Socket.io'
+    answer: 3
+    explain: |
+      Lodash «utility functions for arrays, objects, and more» است و طبق قرارداد با `_` وارد می‌شود (اسمش هم از «low dash» یعنی همین زیرخط می‌آید). `_.chunk` آرایه را تکه‌تکه می‌کند و `_.uniq` تکراری‌ها را حذف می‌کند. Axios برای درخواست HTTP است، React برای رابط کاربری و Socket.io برای ارتباط بلادرنگ؛ هیچ‌کدام چنین توابعی ندارند.
+  - level: medium
+    stem: کدام عبارت درباره‌ی **React** درست است؟
+    options:
+      - 'React یک فریم‌ورک سمت سرور برای ساختن API است.'
+      - 'React رابط کاربری را از کامپوننت‌های قابل استفاده‌ی دوباره می‌سازد.'
+      - 'React یک پایگاه داده برای ذخیره‌ی اطلاعات کاربران است.'
+      - 'React ابزاری برای bundle کردن فایل‌های JavaScript است.'
+    answer: 2
+    explain: |
+      اسلاید ۱۳: «React: library for building interactive UIs with components». ساختن API کار Express است، React پایگاه داده نیست و bundle کردن هم کار ابزارهایی مثل Webpack، Rollup و Parcel است.
+  - level: medium
+    stem: می‌خواهیم به تاریخ امتحان **۷ روز اضافه کنیم** و نتیجه را با قالب `YYYY-MM-DD` نمایش دهیم. کدام پکیج برای این کار ساخته شده است؟
+    options:
+      - 'Chalk'
+      - 'Jest'
+      - 'Socket.io'
+      - 'Moment.js یا Day.js'
+    answer: 4
+    explain: |
+      اسلاید ۱۴: «Moment.js / Day.js: date and time manipulation utilities»؛ مثلاً `dayjs("2026-11-17").add(7, "day").format("YYYY-MM-DD")` نتیجه‌ی `"2026-11-24"` را می‌دهد. Chalk فقط متن ترمینال را رنگی می‌کند، Jest برای تست است و Socket.io برای ارتباط بلادرنگ.
+  - level: hard
+    stem: کدام عبارت **نادرست** است؟
+    options:
+      - 'در Socket.io ارتباط یک‌طرفه است: فقط کلاینت می‌تواند به سرور پیام بفرستد.'
+      - 'Electron با ترکیب موتور مرورگر Chromium و Node.js، برنامه‌ی دسکتاپ با HTML و CSS و JavaScript می‌سازد.'
+      - 'Axios مبتنی بر Promise است، پس می‌توان آن را با `async/await` استفاده کرد.'
+      - 'Lodash توابع کمکی برای کار با آرایه‌ها، شیءها و… دارد.'
+    answer: 1
+    explain: |
+      کلمه‌ی کلیدی Socket.io «bidirectional» یعنی **دوطرفه** است: هم کلاینت و هم سرور هر وقت بخواهند می‌توانند پیام بفرستند (مثلاً سرور با `io.emit` به همه پیام می‌دهد). پس گزینه‌ی ۱ نادرست است. گزینه‌ی ۲ توضیح درست Electron است، گزینه‌ی ۳ همان «promise-based» در توصیف Axios است و گزینه‌ی ۴ توصیف اسلاید ۱۳ برای Lodash است.
+  - level: hard
+    stem: 'تیمی می‌خواهد: (الف) یک API روی سرور بسازد، (ب) برای کدش تست خودکار بنویسد و (ج) یک ابزار خط فرمان با خروجی رنگی برای ترمینال بسازد. کدام سه‌تایی به ترتیب (الف، ب، ج) مناسب است؟'
+    options:
+      - 'React، Jest، Three.js'
+      - 'Express، Axios، Electron'
+      - 'Express، Jest، Chalk'
+      - 'Socket.io، Lodash، React'
+    answer: 3
+    explain: |
+      API روی سرور با Express، تست با Jest و رنگی کردن خروجی ترمینال با Chalk. در گزینه‌ی ۱، React برای رابط کاربری مرورگر است نه API، و Three.js برای سه‌بعدی است. در گزینه‌ی ۲، Axios ابزار تست نیست و Electron هم برای برنامه‌ی دسکتاپ است. در گزینه‌ی ۴ هیچ‌کدام با نیازها جور نیست.
+  - level: easy
+    stem: برای نمایش یک **مکعب سه‌بعدی چرخان** در صفحه‌ی وب، کدام پکیج از اسلاید ۱۴ مناسب است؟
+    options:
+      - 'Electron'
+      - 'Chalk'
+      - 'Express'
+      - 'Three.js'
+    answer: 4
+    explain: |
+      اسلاید ۱۴: «Three.js: 3D graphics and animations in the browser». Electron برای برنامه‌ی دسکتاپ است، Chalk برای رنگ خروجی ترمینال و Express برای سرور؛ هیچ‌کدام گرافیک سه‌بعدی نمی‌سازند.
+  - level: medium
+    stem: کد زیر از توابع `test` و `expect` استفاده می‌کند (`sum` تابعی است که دو عدد را جمع می‌کند). این کد برای کدام پکیج نوشته شده و معمولاً چطور اجرا می‌شود؟
+    code: |
+      test("adds 2 + 3", () => {
+        expect(sum(2, 3)).toBe(5);
+      });
+    manual: Jest is not installed in the automatic checker; the question asks which library provides test() and expect() (verified with jest 30.5.2 in a scratch project, run through npm test).
+    options:
+      - 'Chalk؛ با `npm start` اجرا می‌شود.'
+      - 'Jest؛ معمولاً با `npm test` اجرا می‌شود (وقتی در `package.json` نوشته باشیم `"test": "jest"`).'
+      - 'Express؛ با `npm run build` اجرا می‌شود.'
+      - 'React؛ با `npm test` اجرا می‌شود.'
+    answer: 2
+    explain: |
+      `test(...)` و `expect(...).toBe(...)` API فریم‌ورک تست Jest هستند. Jest را با `npm install -D jest` نصب می‌کنیم، اسکریپت `"test": "jest"` را در `package.json` می‌نویسیم و با `npm test` (که بدون `run` هم کار می‌کند) اجرا می‌کنیم. Chalk، Express و React چنین توابعی ندارند. گزینه‌ی ۴ دستور اجرا را درست گفته ولی پکیج را اشتباه.

@@ -1,0 +1,745 @@
+id: ch2-prereq
+title: "مرور پیش‌نیازها: سه لایه‌ی وب، شیء، this و async"
+slides: "JS in HTML، اسلایدهای ۳ تا ۶"
+lesson: |
+  این درس، مرور چند پیش‌نیاز است که اسلایدهای ۳ تا ۶ پیش از شروع بحث DOM یادآوری می‌کنند. عنوان این
+  جلسه «**Structure Meets Behaviour!**» است، یعنی «ساختار به رفتار می‌رسد»: قرار است JavaScript (لایه‌ی
+  رفتار) را به HTML (لایه‌ی ساختار) وصل کنیم. طبق اسلاید ۲، این جلسه سه هدف دارد:
+
+  1. بفهمیم **DOM** چیست (از درس بعد کامل می‌بینیم).
+  2. راهی پیدا کنیم که صفحه‌هایمان **تعاملی (interactive)** شوند، یعنی به کارهای کاربر واکنش نشان دهند.
+  3. بفهمیم **برنامه‌نویسی ناهمگام (async)** در وب به چه کاری می‌آید.
+
+  ### ۱) سه لایه‌ی یک وب‌سایت (اسلاید ۳)
+
+  ::: analogy
+  یک خانه را تصور کن. **اسکلت و دیوارها** مشخص می‌کنند خانه چند اتاق دارد و هر چیز کجاست. **رنگ و
+  دکوراسیون** مشخص می‌کنند خانه چه شکلی دیده شود. **سیم‌کشی برق و کلیدها** مشخص می‌کنند وقتی کلیدی را
+  می‌زنی چه اتفاقی بیفتد. یک صفحه‌ی وب هم دقیقاً همین سه لایه را دارد.
+  :::
+
+  | لایه | سؤالی که جواب می‌دهد (اسلاید ۳) | فناوری | مثال |
+  |---|---|---|---|
+  | Structure (ساختار) | What the **content** is: محتوا چیست؟ | HTML | یک عنوان `<h1>` و یک دکمه‌ی `<button>` |
+  | Style (ظاهر) | How it **looks**: چه شکلی است؟ | CSS | رنگ، اندازه‌ی فونت، فاصله‌ها و چیدمان |
+  | Behaviour (رفتار) | How it **reacts**: چه واکنشی نشان می‌دهد؟ | JavaScript | با کلیک روی دکمه، متن عنوان عوض شود |
+
+  اسلاید ۳ نام فناوری‌ها را ننوشته، ولی تناظر استاندارد (از جلسه‌های قبل) همین است: ساختار = HTML،
+  ظاهر = CSS، رفتار = JavaScript. مثال کوچک زیر هر سه لایه را با هم دارد:
+
+  ```html
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <!-- Style layer: CSS -->
+      <style>
+        h1 { color: navy; }
+      </style>
+    </head>
+    <body>
+      <!-- Structure layer: HTML -->
+      <h1 id="title">Hello World</h1>
+      <button id="btn">CLICK ME!</button>
+
+      <!-- Behaviour layer: JavaScript -->
+      <script>
+        document.getElementById("btn").addEventListener("click", () => {
+          document.getElementById("title").textContent = "Goodbye World";
+        });
+      </script>
+    </body>
+  </html>
+  ```
+
+  بدون JavaScript، صفحه فقط چیزی را **نمایش** می‌دهد؛ با JavaScript صفحه **واکنش** نشان می‌دهد (اینجا با
+  کلیک، متن عنوان به `Goodbye World` تغییر می‌کند). البته لایه‌ی رفتار می‌تواند روی دو لایه‌ی دیگر هم اثر
+  بگذارد؛ مثلاً در اسلاید ۱۹ با `title.style.color = 'red'` رنگ متن را از داخل JavaScript عوض می‌کنیم.
+
+  ### ۲) اشیاء (Objects) — اسلاید ۴
+
+  **شیء (object)** مجموعه‌ای از داده‌ها و رفتارهای مرتبط است که کنار هم بسته‌بندی شده‌اند. شیء از
+  **جفت‌های کلید–مقدار (key-value pairs)** ساخته می‌شود:
+
+  - اگر مقدارِ یک کلید **داده** باشد، به آن **property** (ویژگی) می‌گوییم.
+  - اگر مقدارِ یک کلید **تابع** باشد، به آن **method** (متد، یعنی تابعی که متعلق به شیء است) می‌گوییم.
+
+  ```js
+  const student = {
+    name: "Ali",            // property (data)
+    age: 20,                // property (data)
+    greet() {               // method (function)
+      return "Hi, I am " + this.name;
+    },
+  };
+
+  console.log(student.name);    // "Ali"
+  console.log(student.greet()); // "Hi, I am Ali"
+  ```
+
+  **JSON** (مخفف JavaScript Object Notation، یعنی «نشانه‌گذاری شیء JavaScript») یک قالب **متنی** رایج
+  برای **ذخیره و به اشتراک گذاشتن** داده‌های شیء است؛ مثلاً برای فرستادن داده به سرور یا ذخیره در
+  حافظه‌ی مرورگر. دو تابع اصلی آن:
+
+  ```js
+  const text = JSON.stringify(student); // object -> JSON string
+  console.log(text);                    // {"name":"Ali","age":20}   (the method is gone!)
+
+  const copy = JSON.parse('{"name":"Sara","age":21}'); // JSON string -> object
+  console.log(copy.age + 1);            // 22   (age is a real number again)
+  ```
+
+  در JSON کلیدها حتماً داخل `"` هستند و **تابع‌ها ذخیره نمی‌شوند**؛ JSON فقط داده نگه می‌دارد، نه رفتار.
+
+  #### «در JavaScript تقریباً همه‌چیز شیء است»
+
+  در اسلاید ۴ میم معروف دو فضانورد آمده: اولی به زمینی که رویش لوگوی JavaScript است نگاه می‌کند و
+  می‌گوید «Wait it's all OBJECTS» (صبر کن، همه‌اش شیء است؟) و دومی پشت سرش می‌گوید «Always has been»
+  (همیشه همین بوده). زیر آن نوشته: «از نظر فنی، در JavaScript **تقریباً** همه‌چیز شیء است». آرایه‌ها،
+  تابع‌ها، تاریخ‌ها و (همان‌طور که در این فصل می‌بینیم) **همه‌ی عنصرهای صفحه** شیء هستند:
+
+  ```js
+  console.log(typeof []);             // "object"
+  console.log(typeof function () {}); // "function"  (functions are special objects)
+  console.log(typeof null);           // "object"    (a famous historical bug!)
+  ```
+
+  پس چرا «تقریباً»؟ چون مقدارهای **primitive** (مقدار اولیه: `string`، `number`، `boolean`، `null`،
+  `undefined`، `bigint` و `symbol`) شیء **نیستند**. با این حال می‌توانی روی یک رشته property بخوانی یا
+  متد صدا بزنی:
+
+  ```js
+  console.log("abc".length);   // 3
+  console.log((5).toFixed(1)); // "5.0"
+  ```
+
+  راز ماجرا **شیء پوششی (wrapper object)** است: وقتی روی یک primitive نقطه می‌گذاری، JavaScript برای یک
+  لحظه یک شیء موقت (`String`، `Number` یا `Boolean`) دور آن می‌سازد، property یا متد را از آن می‌خواند و
+  بلافاصله آن شیء موقت را دور می‌اندازد. به همین دلیل نمی‌توانی روی یک primitive چیزی ذخیره کنی:
+
+  ```js
+  const s = "abc";
+  s.extra = 42;          // goes to a temporary wrapper (strict mode: TypeError)
+  console.log(s.extra);  // undefined
+  console.log(typeof s); // "string"  -> still a primitive
+  ```
+
+  ارتباط با این فصل: مرورگر هر تگ HTML را به یک **شیء** تبدیل می‌کند که property دارد (مثل `id` و
+  `textContent`) و method دارد (مثل `addEventListener`). پس هرچه درباره‌ی اشیاء بلدی، اینجا به کارت
+  می‌آید.
+
+  ### ۳) کلمه‌ی کلیدی `this` (اسلاید ۵)
+
+  قوانین اسلاید ۵ درباره‌ی `this`:
+
+  1. `this` به شیئی اشاره می‌کند که تابع را **صدا زده** است.
+  2. در متدِ یک شیء، `this` خودِ همان شیء است.
+  3. در کلاس‌ها، `this` همان **نمونه‌ی (instance)** ساخته‌شده با `new` است.
+  4. در arrow function، `this` از **scope (محدوده‌ی) بیرونی** به ارث می‌رسد؛ arrow function `this`
+     مخصوص به خودش را ندارد.
+  5. مقدار `this` به **نحوه‌ی صدا زدن** تابع بستگی دارد، نه به جایی که تابع تعریف شده است.
+
+  | نحوه‌ی فراخوانی | مقدار `this` |
+  |---|---|
+  | `obj.method()` | `obj` (شیءِ قبل از نقطه) |
+  | `new Person()` و متدهای کلاس | نمونه‌ی ساخته‌شده |
+  | arrow function | همان `this` بیرونِ arrow function |
+  | فراخوانی ساده‌ی `f()` | حالت عادی (sloppy): شیء سراسری (`window` در مرورگر، `globalThis` در Node.js)؛ حالت strict و بدنه‌ی کلاس‌ها: `undefined` |
+  | listener با `function` معمولی | همان عنصری که listener روی آن ثبت شده است |
+
+  ```js
+  const obj = {
+    name: "obj",
+    regular() {
+      return this.name;
+    },
+  };
+  const other = { name: "other", regular: obj.regular }; // the same function!
+  const f = obj.regular;                                 // detached from obj
+
+  console.log(obj.regular());   // "obj"
+  console.log(other.regular()); // "other"  -> depends on the caller
+  console.log(f());             // Node.js: undefined | browser: "" (see the trap box)
+  ```
+
+  arrow functionی که مستقیماً به‌عنوان property در یک object literal نوشته شود، `this` را از **بیرونِ** آن
+  شیء می‌گیرد؛ ولی arrow functionی که **داخل یک متد** نوشته شود، `this` همان متد را به ارث می‌برد که
+  معمولاً همان چیزی است که می‌خواهیم:
+
+  ```js
+  const counter = {
+    count: 10,
+    regular() { return this.count; },
+    arrow: () => this.count,   // `this` comes from OUTSIDE the object literal
+  };
+  console.log(counter.regular()); // 10
+  console.log(counter.arrow());   // undefined
+
+  class Timer {
+    constructor(label) {
+      this.label = label;            // `this` = the new instance
+    }
+    report() {
+      const show = () => this.label; // arrow: inherits report's `this`
+      return show();
+    }
+  }
+  console.log(new Timer("T1").report()); // "T1"
+  ```
+
+  #### `this` در صفحه‌ی وب: داخل event listener
+
+  در درس رویدادها می‌بینیم که با `addEventListener` به مرورگر می‌گوییم «هر وقت روی این عنصر کلیک شد، این
+  تابع را اجرا کن». اینجا هم قانون «نحوه‌ی فراخوانی» برقرار است: مرورگر listener معمولی (`function`) را
+  طوری صدا می‌زند که `this` همان **عنصری** باشد که listener روی آن ثبت شده (یعنی `event.currentTarget`).
+  ولی arrow function `this` خودش را ندارد و `this` بیرونی را برمی‌دارد؛ در سطح بالای یک اسکریپت
+  مرورگر، آن `this` همان `window` است.
+
+  ```html
+  <button id="a">First</button>
+  <button id="b">Second</button>
+  <script>
+    document.getElementById("a").addEventListener("click", function (event) {
+      console.log(this.id, this === event.currentTarget); // a true
+    });
+    document.getElementById("b").addEventListener("click", (event) => {
+      console.log(this === window, event.currentTarget.id); // true b
+    });
+  </script>
+  ```
+
+  ::: tip
+  اگر داخل listener به خودِ عنصر نیاز داری، مطمئن‌ترین راه `event.currentTarget` است؛ هم در `function`
+  معمولی جواب می‌دهد و هم در arrow function.
+  :::
+
+  ::: trap دام تستی: `this.name` در مرورگر و Node.js
+  در کد بالا `f()` (متدی که از شیء جدا شده) در **Node.js** مقدار `undefined` می‌دهد، ولی در **مرورگر**
+  رشته‌ی خالی `""`! چون در فراخوانی ساده (حالت sloppy)، `this` همان `window` است و `window` از قبل یک
+  property به نام `name` دارد که مقدار پیش‌فرضش `""` است. پس در تست‌ها همیشه دقت کن کد در کدام محیط
+  اجرا می‌شود.
+  :::
+
+  ::: trap
+  arrow functionی که مستقیماً به‌عنوان property در object literal نوشته شود، `this` را **شیء** نمی‌گیرد.
+  برای متدهایی که به `this` نیاز دارند از نحو `method() { }` یا `function` استفاده کن.
+  :::
+
+  ### ۴) یادآوری JavaScript ناهمگام (اسلاید ۶)
+
+  #### چرا async در وب این‌قدر مهم است؟
+
+  JavaScript در مرورگر روی یک **thread اصلی** (رشته‌ی اجرای اصلی) اجرا می‌شود و همین thread کارهای دیگری
+  مثل رسم صفحه و پاسخ به کلیک و تایپ کاربر را هم انجام می‌دهد. اگر یک کد همگام (synchronous) چند ثانیه
+  منتظر بماند، در تمام این مدت صفحه **یخ می‌زند**: دکمه‌ها کار نمی‌کنند و حتی اسکرول هم گیر می‌کند. در وب
+  سه نوع کارِ «منتظرماندنی» زیاد داریم:
+
+  - **زمان‌سنج‌ها (timers)**: مثل `setTimeout` و `setInterval` (در درس شیء `window` می‌بینیم).
+  - **رویدادهای کاربر**: معلوم نیست کاربر کی کلیک می‌کند؛ پس تابعی می‌دهیم که «هر وقت کلیک شد» اجرا شود.
+  - **درخواست‌های شبکه**: گرفتن داده از سرور ممکن است از چند صدم ثانیه تا چند ثانیه طول بکشد.
+
+  راه‌حل این است که کار زمان‌بر را شروع کنیم، تابعی برای «بعداً» ثبت کنیم و فوراً به کار خودمان ادامه
+  دهیم تا صفحه پاسخ‌گو بماند. این همان هدف سوم جلسه است: «Understand async programming usages in web».
+
+  #### سه سبک: callback، Promise و async/await
+
+  **۱. Callback** (تابع برگشتی): تابعی را به تابع دیگر می‌دهیم تا **بعداً** اجرا شود. خطاها را باید
+  **دستی** بررسی کنیم؛ معمولاً اولین پارامتر callback خطاست (`err`):
+
+  ```js
+  function loadData(ok, callback) {
+    setTimeout(() => {
+      if (ok) callback(null, "data");
+      else callback(new Error("failed"));
+    }, 10);
+  }
+
+  loadData(false, (err, data) => {
+    if (err) {                                   // manual error handling
+      console.log("callback error:", err.message);
+      return;
+    }
+    console.log("callback data:", data);
+  });
+  // callback error: failed
+  ```
+
+  وقتی چند کار ناهمگام باید پشت سر هم انجام شوند، callbackها تو در تو می‌شوند و کد به شکل یک هرمِ کج
+  درمی‌آید که خواندن و مدیریت خطایش سخت است. به این وضعیت **callback hell** («جهنم callbackها»)
+  می‌گویند:
+
+  ```js
+  // Illustration only: getUser, getOrders and getDetails are imaginary functions.
+  getUser(1, (err, user) => {
+    getOrders(user, (err, orders) => {
+      getDetails(orders[0], (err, details) => {
+        console.log(details); // deeper and deeper...
+      });
+    });
+  });
+  ```
+
+  **۲. Promise** (وعده): شیئی که نماینده‌ی یک **مقدار آینده** است و یکی از سه **حالت (state)** را دارد:
+  `pending` (در انتظار)، `fulfilled` (انجام‌شده) یا `rejected` (ردشده). نتیجه را با `.then()` و خطا را با
+  `.catch()` می‌گیریم؛ زنجیره‌ی `.then()`ها کد را از حالت تو در تو بیرون می‌آورد:
+
+  ```js
+  function fetchUser(ok) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => (ok ? resolve("user loaded") : reject(new Error("network down"))), 30);
+    });
+  }
+
+  fetchUser(true)
+    .then((value) => console.log("then:", value))    // then: user loaded
+    .catch((err) => console.log("catch:", err.message));
+  ```
+
+  **۳. async/await**: بر پایه‌ی همان Promiseهاست، ولی نحو (syntax) تمیزتری دارد و کد را **شبیه کد همگام**
+  نشان می‌دهد. `await` فقط اجرای **همان تابع async** را تا آماده شدن نتیجه متوقف می‌کند، نه کل برنامه را.
+  خطاها با `try...catch` گرفته می‌شوند:
+
+  ```js
+  async function main() {
+    try {
+      console.log(await fetchUser(true));  // user loaded
+      console.log(await fetchUser(false)); // rejects -> jumps to catch
+      console.log("after");                // never runs
+    } catch (err) {
+      console.log("caught:", err.message); // caught: network down
+    }
+  }
+  main();
+  ```
+
+  | سبک | ایده | مدیریت خطا (اسلاید ۶) | ویژگی |
+  |---|---|---|---|
+  | Callback | تابعی را برای اجرا در آینده می‌دهیم | دستی (مثلاً بررسی `err`) | تو در تو شدن: callback hell |
+  | Promise | نماینده‌ی یک مقدار آینده با چند حالت | `.catch()` | زنجیره با `.then()` / `.catch()` |
+  | async/await | نحو ساده‌تر روی Promise | `try...catch` | ظاهر همگام و خوانایی بیشتر |
+
+  #### ترتیب اجرا (یادآوری فصل اول)
+
+  ابتدا همه‌ی کد همگام اجرا می‌شود، بعد **microtask**ها (کارهای کوچکِ فوری، مثل callback `.then` و ادامه‌ی
+  تابع بعد از `await`) و بعد **macrotask**ها (مثل callback `setTimeout`، حتی با تأخیر `0`). جزئیات event
+  loop در فصل اول آمده است:
+
+  ```js
+  async function load() {
+    console.log("load start");
+    const data = await Promise.resolve("data ready");
+    console.log(data);
+  }
+  console.log("script start");
+  setTimeout(() => console.log("timeout"), 0);
+  load();
+  console.log("script end");
+  // script start -> load start -> script end -> data ready -> timeout
+  ```
+
+  راستی، listenerهای رویداد هم نوعی callback هستند: در `btn.addEventListener("click", handler)` تابع
+  `handler` «بعداً»، یعنی هر وقت کاربر کلیک کرد، اجرا می‌شود.
+
+  ::: tip
+  بدنه‌ی تابع async تا رسیدن به اولین `await` **همگام** اجرا می‌شود؛ برای همین در مثال بالا `load start`
+  قبل از `script end` چاپ شد.
+  :::
+
+  ::: trap
+  - `setTimeout(fn, 0)` یعنی «حداقل بعد از ۰ میلی‌ثانیه، **هر وقت نوبتش شد**»، نه «همین الان». callbackهای
+    Promise (microtask) همیشه زودتر از آن اجرا می‌شوند.
+  - `JSON.stringify` متدها را حذف می‌کند، و `typeof null` برابر `"object"` است، با اینکه `null` شیء نیست.
+  :::
+
+  ::: summary
+  - ساختار = HTML (محتوا چیست)، ظاهر = CSS (چه شکلی است)، رفتار = JavaScript (چه واکنشی نشان می‌دهد).
+  - شیء = جفت‌های کلید–مقدار؛ داده = property و تابع = method؛ JSON قالب متنی برای ذخیره و تبادل داده است.
+  - primitiveها شیء نیستند، ولی با wrapper object موقت property و متد دارند (`"abc".length`).
+  - `this` به نحوه‌ی فراخوانی بستگی دارد؛ arrow function، `this` بیرونی را به ارث می‌برد؛ در listener
+    معمولی، `this` همان عنصر است.
+  - callback (خطای دستی)، Promise (`.catch()`)، async/await (`try...catch`)؛ ترتیب: همگام، microtask، macrotask.
+  :::
+questions:
+  - level: easy
+    stem: |
+      در مدل سه‌لایه‌ی یک وب‌سایت (اسلاید ۳)، لایه‌ای که به سؤال «صفحه چه واکنشی نشان می‌دهد؟» (How it
+      reacts) پاسخ می‌دهد کدام است و معمولاً با چه فناوری‌ای ساخته می‌شود؟
+    options:
+      - 'Structure، با HTML'
+      - 'Style، با CSS'
+      - 'Behaviour، با JavaScript'
+      - 'Behaviour، با CSS'
+    answer: 3
+    explain: |
+      طبق اسلاید ۳، لایه‌ی Behaviour (رفتار) به «How it reacts» پاسخ می‌دهد و فناوری آن JavaScript است.
+      Structure به «محتوا چیست» (HTML) و Style به «چه شکلی است» (CSS) پاسخ می‌دهند. گزینه‌ی ۴ نام لایه را
+      درست گفته ولی CSS زبان ظاهر است و منطق واکنش به کلیک و تایپ را نمی‌سازد.
+  - level: easy
+    stem: کدام عبارت درباره‌ی سه لایه‌ی وب نادرست است؟
+    options:
+      - 'HTML مشخص می‌کند محتوای صفحه چیست؛ مثلاً یک عنوان و یک دکمه.'
+      - 'CSS مشخص می‌کند صفحه چه شکلی است؛ مثلاً رنگ، اندازه و چیدمان.'
+      - 'JavaScript مشخص می‌کند صفحه به کارهای کاربر چه واکنشی نشان دهد.'
+      - 'تغییر رنگ متن فقط با CSS ممکن است و JavaScript نمی‌تواند ظاهر عنصرها را تغییر دهد.'
+    answer: 4
+    explain: |
+      گزینه‌ی ۴ نادرست است: JavaScript (لایه‌ی رفتار) می‌تواند ظاهر را هم تغییر دهد؛ مثلاً در اسلاید ۱۹ با
+      `title.style.color = 'red'` رنگ عنوان پس از کلیک قرمز می‌شود. سه گزینه‌ی دیگر دقیقاً تعریف‌های اسلاید ۳
+      هستند: محتوا (HTML)، ظاهر (CSS) و واکنش (JavaScript).
+  - level: easy
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const student = {
+        name: "Ali",
+        age: 20,
+        greet() {
+          return "Hi, I am " + this.name;
+        },
+      };
+      console.log(typeof student.name, typeof student.greet);
+      console.log(student.greet());
+    options:
+      - out: ["string function", "Hi, I am Ali"]
+      - out: ["string object", "Hi, I am Ali"]
+      - out: ["property method", "Hi, I am Ali"]
+      - out: ["string function", "Hi, I am undefined"]
+    answer: 1
+    explain: |
+      `name` یک property با مقدار رشته‌ای است، پس `typeof` آن `"string"` است؛ `greet` یک method است و
+      `typeof` هر تابعی `"function"` است (نه `"object"`؛ گزینه‌ی ۲). `typeof` هیچ‌وقت کلمه‌هایی مثل
+      `"property"` یا `"method"` برنمی‌گرداند (گزینه‌ی ۳). چون `greet` به‌صورت `student.greet()` صدا زده
+      شده، `this` همان `student` است و نتیجه `Hi, I am Ali` می‌شود، نه `undefined` (گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const student = {
+        name: "Ali",
+        age: 20,
+        greet() {
+          return "Hi";
+        },
+      };
+      const text = JSON.stringify(student);
+      console.log(text);
+      console.log(typeof text, JSON.parse(text).age + 1);
+    options:
+      - out: ['{"name":"Ali","age":20,"greet":"Hi"}', "string 21"]
+      - out: ['{"name":"Ali","age":20}', "string 21"]
+      - out: ['{name:"Ali",age:20}', "string 21"]
+      - out: ['{"name":"Ali","age":20}', "string 201"]
+    answer: 2
+    explain: |
+      `JSON.stringify` فقط داده‌ها را به متن JSON تبدیل می‌کند و **متدها را حذف می‌کند**؛ پس `greet` در
+      خروجی نیست (گزینه‌ی ۱ غلط است، چون تابع اجرا نمی‌شود و نتیجه‌اش هم ذخیره نمی‌شود). در JSON کلیدها
+      حتماً داخل `"` هستند (رد گزینه‌ی ۳). خروجی `stringify` رشته است و `JSON.parse` آن را دوباره به شیء
+      تبدیل می‌کند که `age` در آن **عدد** است؛ پس `20 + 1` برابر `21` است، نه `"201"` (گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      با توجه به جمله‌ی «در JavaScript تقریباً همه‌چیز شیء است» (اسلاید ۴)، کدام گزینه درست است؟
+    check: claims
+    options:
+      - text: '`typeof "abc"` برابر `"object"` است.'
+        expr: 'typeof "abc"'
+        equals: '"object"'
+      - text: '`typeof null` برابر `"null"` است.'
+        expr: 'typeof null'
+        equals: '"null"'
+      - text: '`typeof []` برابر `"object"` است.'
+        expr: 'typeof []'
+        equals: '"object"'
+      - text: '`typeof function () {}` برابر `"object"` است.'
+        expr: 'typeof function () {}'
+        equals: '"object"'
+    answer: 3
+    explain: |
+      آرایه‌ها شیء هستند و `typeof []` برابر `"object"` است. رشته‌ی `"abc"` یک primitive است و `typeof` آن
+      `"string"` است (برای همین اسلاید می‌گوید «تقریباً» همه‌چیز). `typeof null` به‌خاطر یک باگ تاریخی
+      `"object"` است، نه `"null"`. تابع‌ها هم با اینکه نوع خاصی از شیء هستند، `typeof` آن‌ها `"function"` است.
+  - level: hard
+    stem: خروجی کد زیر در Node.js (حالت عادی، نه strict) کدام است؟
+    check: output
+    code: |
+      const s = "abc";
+      console.log(s.length, s.toUpperCase());
+      s.extra = 42;
+      console.log(s.extra, typeof s);
+    options:
+      - out: ["3 ABC", "undefined string"]
+      - out: ["3 ABC", "42 object"]
+      - out: ["3 ABC", "42 string"]
+      - out: ["!! TypeError"]
+    answer: 1
+    explain: |
+      `s` یک primitive است، ولی وقتی روی آن نقطه می‌گذاریم JavaScript یک **wrapper object** موقت (`String`)
+      می‌سازد؛ پس `length` و `toUpperCase()` کار می‌کنند و خطایی رخ نمی‌دهد (رد گزینه‌ی ۴). مقدار `42` روی
+      همان شیء موقت نوشته می‌شود که بلافاصله دور انداخته می‌شود؛ بنابراین `s.extra` برابر `undefined` است
+      (رد گزینه‌های ۲ و ۳). `s` همچنان primitive است و `typeof` آن `"string"` می‌ماند. (در حالت strict، خط
+      `s.extra = 42` خطای `TypeError` می‌داد.)
+  - level: medium
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const obj = {
+        name: "obj",
+        regular() {
+          return this.name;
+        },
+      };
+      const other = { name: "other", regular: obj.regular };
+      const f = obj.regular;
+      console.log(obj.regular());
+      console.log(other.regular());
+      console.log(f());
+    options:
+      - out: ["obj", "obj", "obj"]
+      - out: ["obj", "other", "undefined"]
+      - out: ["obj", "obj", "undefined"]
+      - out: ["obj", "other", "obj"]
+    answer: 2
+    explain: |
+      طبق اسلاید ۵، `this` به **نحوه‌ی فراخوانی** بستگی دارد، نه محل تعریف. `obj.regular()` با `obj` صدا زده
+      شده و `other.regular()` با `other`؛ با اینکه هر دو یک تابع‌اند، نتیجه `obj` و `other` است (رد
+      گزینه‌های ۱ و ۳ که فکر می‌کنند `this` به محل تعریف چسبیده است). `f()` بدون شیء صدا زده شده؛ در حالت
+      sloppy در Node.js، `this` شیء سراسری است که `name` ندارد، پس `undefined` چاپ می‌شود (رد گزینه‌ی ۴).
+  - level: hard
+    stem: |
+      این کد در یک تگ `<script>` معمولی **در مرورگر** اجرا می‌شود (نه در Node.js). خروجی کدام است؟
+    check: dom-output
+    code: |
+      const user = {
+        name: "Ali",
+        getName() {
+          return this.name;
+        },
+      };
+      const f = user.getName;
+      console.log(user.getName());
+      console.log(JSON.stringify(f()));
+    options:
+      - out: ["Ali", '"Ali"']
+      - out: ["Ali", "undefined"]
+      - out: ["Ali", '""']
+      - out: ["Ali", "!! TypeError"]
+    answer: 3
+    explain: |
+      `f()` یک فراخوانی ساده است؛ در اسکریپت معمولی مرورگر (sloppy) `this` برابر `window` می‌شود. `window`
+      از قبل property‌ای به نام `name` دارد که مقدار پیش‌فرضش رشته‌ی خالی است؛ پس `f()` مقدار `""` برمی‌گرداند
+      و `JSON.stringify("")` متن `""` را چاپ می‌کند. گزینه‌ی ۲ جواب همین کد در **Node.js** است (آنجا
+      `undefined` می‌شود). گزینه‌ی ۱ فکر کرده تابع شیء‌اش را به خاطر می‌سپارد، و خطایی هم رخ نمی‌دهد چون
+      `this` در حالت sloppy `undefined` نیست (رد گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const counter = {
+        count: 10,
+        regular() {
+          return this.count;
+        },
+        arrow: () => this.count,
+      };
+      console.log(counter.regular(), counter.arrow());
+    options:
+      - out: "10 10"
+      - out: "undefined 10"
+      - out: "!! TypeError"
+      - out: "10 undefined"
+    answer: 4
+    explain: |
+      `regular` با `counter.regular()` صدا زده شده و `this` همان `counter` است، پس `10`. ولی arrow function
+      `this` خودش را ندارد و آن را از scope بیرونیِ object literal می‌گیرد؛ در یک ماژول CommonJS در Node.js،
+      `this` بیرونی شیء خالی `module.exports` است که `count` ندارد، پس `undefined` (در مرورگر هم `this`
+      بیرونی `window` است و باز `undefined` می‌شود). خطایی رخ نمی‌دهد، چون خواندن property ناموجود از یک
+      شیء فقط `undefined` می‌دهد (رد گزینه‌ی ۳).
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      class Timer {
+        constructor(label) {
+          this.label = label;
+        }
+        report() {
+          const show = () => this.label;
+          return show();
+        }
+      }
+      const t = new Timer("T1");
+      console.log(t.report());
+      const r = t.report;
+      console.log(r());
+    options:
+      - out: ["T1", "!! TypeError"]
+      - out: ["T1", "T1"]
+      - out: ["T1", "undefined"]
+      - out: ["undefined", "!! TypeError"]
+    answer: 1
+    explain: |
+      در `t.report()` مقدار `this` نمونه‌ی `t` است و arrow function `show` همان `this` را به ارث می‌برد، پس
+      `T1` چاپ می‌شود (رد گزینه‌ی ۴). اما `r()` یک فراخوانی ساده است و کدِ داخل کلاس همیشه **strict** است؛
+      پس `this` برابر `undefined` می‌شود و خواندن `undefined.label` خطای `TypeError` می‌دهد. گزینه‌ی ۲ فکر
+      کرده متد به نمونه چسبیده است و گزینه‌ی ۳ قانون حالت sloppy (شیء سراسری) را اشتباهی به کلاس تعمیم داده است.
+  - level: medium
+    stem: |
+      در صفحه‌ی زیر، کاربر ابتدا روی دکمه‌ی First و سپس روی دکمه‌ی Second کلیک می‌کند. خروجی Console
+      کدام است؟
+    check: dom-output
+    html: |
+      <button id="a">First</button>
+      <button id="b">Second</button>
+    code: |
+      document.getElementById("a").addEventListener("click", function () {
+        console.log(this.textContent);
+      });
+      document.getElementById("b").addEventListener("click", () => {
+        console.log(this === window);
+      });
+    events:
+      - { type: click, target: "#a" }
+      - { type: click, target: "#b" }
+    options:
+      - out: ["First", "false"]
+      - out: ["First", "true"]
+      - out: ["undefined", "true"]
+      - out: ["First", "Second"]
+    answer: 2
+    explain: |
+      در listenerی که با `function` معمولی نوشته شده، مرورگر `this` را همان عنصری قرار می‌دهد که listener
+      روی آن ثبت شده؛ پس `this.textContent` برابر `First` است (رد گزینه‌ی ۳). arrow function `this` خودش را
+      ندارد و `this` بیرونی را برمی‌دارد که در سطح بالای اسکریپت مرورگر `window` است؛ پس `true` چاپ
+      می‌شود (رد گزینه‌ی ۱). گزینه‌ی ۴ فکر کرده arrow function هم `this` را دکمه می‌گیرد، در حالی که
+      اصلاً `textContent` چاپ نمی‌شود.
+  - level: easy
+    stem: |
+      طبق اسلاید ۶، روش مدیریت خطا در هر یک از سه سبک برنامه‌نویسی ناهمگام کدام است؟
+    options:
+      - 'callback: `try...catch` — Promise: دستی — async/await: `.catch()`'
+      - 'callback: `.catch()` — Promise: `try...catch` — async/await: دستی'
+      - 'هر سه سبک فقط با `try...catch` مدیریت می‌شوند.'
+      - 'callback: دستی (مثلاً بررسی پارامتر `err`) — Promise: `.catch()` — async/await: `try...catch`'
+    answer: 4
+    explain: |
+      اسلاید ۶ صریحاً می‌گوید: «callbacks → manual, promises → .catch(), async → try...catch». در callbackها
+      معمولاً اولین پارامتر خطاست و باید آن را دستی بررسی کرد؛ Promise خطا را به `.catch()` می‌فرستد؛ و در
+      تابع async، Promise ردشده در خط `await` مثل یک خطای عادی پرتاب می‌شود و `try...catch` آن را می‌گیرد.
+      گزینه‌های ۱ و ۲ جای روش‌ها را جابه‌جا کرده‌اند، و گزینه‌ی ۳ غلط است چون `try...catch` معمولی خطای
+      callbackی را که بعداً اجرا می‌شود و خطای `.then` را نمی‌گیرد.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function load() {
+        console.log("load start");
+        const data = await Promise.resolve("data ready");
+        console.log(data);
+      }
+      console.log("script start");
+      setTimeout(() => console.log("timeout"), 0);
+      load();
+      console.log("script end");
+    options:
+      - out: ["script start", "load start", "data ready", "script end", "timeout"]
+      - out: ["script start", "script end", "load start", "data ready", "timeout"]
+      - out: ["script start", "load start", "script end", "data ready", "timeout"]
+      - out: ["script start", "load start", "script end", "timeout", "data ready"]
+    answer: 3
+    explain: |
+      بدنه‌ی تابع async تا اولین `await` همگام اجرا می‌شود؛ پس `load start` بلافاصله بعد از `script start`
+      چاپ می‌شود (رد گزینه‌ی ۲). `await` فقط همان تابع را معلق می‌کند، نه کل برنامه، پس `script end` قبل از
+      `data ready` می‌آید (رد گزینه‌ی ۱). ادامه‌ی تابع بعد از `await` یک microtask است و قبل از callback
+      `setTimeout` (macrotask) اجرا می‌شود، حتی با تأخیر `0` (رد گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function fetchUser(ok) {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => (ok ? resolve("user loaded") : reject(new Error("network down"))), 10);
+        });
+      }
+      async function main() {
+        try {
+          console.log(await fetchUser(true));
+          console.log(await fetchUser(false));
+          console.log("after");
+        } catch (err) {
+          console.log("caught:", err.message);
+        } finally {
+          console.log("done");
+        }
+      }
+      main();
+    options:
+      - out: ["user loaded", "caught: network down", "done"]
+      - out: ["user loaded", "caught: network down", "after", "done"]
+      - out: ["user loaded", "!! Error"]
+      - out: ["caught: network down", "done"]
+    answer: 1
+    explain: |
+      اولین `await` مقدار `user loaded` را می‌گیرد و چاپ می‌کند (رد گزینه‌ی ۴). دومین Promise رد می‌شود و
+      `await` آن را مثل یک خطا پرتاب می‌کند؛ اجرا مستقیم به `catch` می‌پرد و خط `after` هرگز اجرا نمی‌شود
+      (رد گزینه‌ی ۲). چون خطا با `try...catch` گرفته شده، برنامه crash نمی‌کند (رد گزینه‌ی ۳) و در پایان
+      بلوک `finally` هم `done` را چاپ می‌کند.
+  - level: easy
+    stem: |
+      چرا در صفحه‌ی وب کارهای زمان‌بر مثل درخواست شبکه را به‌صورت ناهمگام (async) انجام می‌دهیم؟
+    options:
+      - 'چون JavaScript در مرورگر هم‌زمان روی چند thread اجرا می‌شود و اجرای همگام در آن ممکن نیست.'
+      - 'چون اگر کد همگام منتظر بماند، صفحه تا پایان آن کار «یخ می‌زند» و به کلیک و تایپ کاربر پاسخ نمی‌دهد.'
+      - 'چون کد ناهمگام همیشه سریع‌تر از کد همگام اجرا می‌شود.'
+      - 'چون مرورگر اجرای توابع همگام را بعد از بارگذاری کامل صفحه ممنوع می‌کند.'
+    answer: 2
+    explain: |
+      JavaScript در مرورگر روی یک thread اصلی اجرا می‌شود که پاسخ به کاربر و رسم صفحه هم کار همان thread
+      است؛ اگر کدی همگام منتظر شبکه بماند، صفحه قفل می‌شود. پس کار را شروع می‌کنیم و callback یا Promise
+      را برای «بعداً» ثبت می‌کنیم. گزینه‌ی ۱ برعکس واقعیت است (یک thread اصلی). async کار را سریع‌تر
+      نمی‌کند، فقط منتظر ماندن را غیرمسدودکننده (non-blocking) می‌کند (رد گزینه‌ی ۳). گزینه‌ی ۴ هم ساختگی
+      است؛ کد همگام همیشه مجاز است.
+  - level: easy
+    stem: |
+      کد زیر نمونه‌ای از کدام مشکل است و راه‌حل مدرن آن چیست؟
+    manual: "Conceptual question about the shape of the code (callback hell); its output is not asked and the functions are imaginary."
+    code: |
+      getUser(1, (err, user) => {
+        getOrders(user, (err, orders) => {
+          getDetails(orders[0], (err, details) => {
+            console.log(details);
+          });
+        });
+      });
+    options:
+      - 'خطای TDZ؛ باید تعریف تابع‌ها را بالاتر برد.'
+      - 'سایه‌اندازی متغیرها (shadowing)؛ باید نام پارامترهای `err` را عوض کرد.'
+      - 'callback hell؛ بازنویسی با زنجیره‌ی Promise (`.then()`) یا `async/await`.'
+      - 'نشت حافظه در DOM؛ باید listenerها را حذف کرد.'
+    answer: 3
+    explain: |
+      callbackهای تو در تو که کد را به شکل هرم درمی‌آورند همان «callback hell» اسلاید ۶ هستند؛ خواندن و
+      مدیریت خطای آن‌ها (بررسی دستی `err` در هر سطح) سخت است. راه‌حل، Promiseهایی است که با `.then()` زنجیر
+      می‌شوند، یا `async/await` که کد را شبیه کد همگام می‌کند. هم‌نام بودن `err`ها مشکل اصلی نیست، و این کد
+      ربطی به TDZ یا DOM ندارد.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      Promise.resolve(5)
+        .then((n) => n * 2)
+        .then((n) => {
+          if (n > 5) throw new Error("too big");
+          return n;
+        })
+        .then((n) => console.log("value:", n))
+        .catch((err) => console.log("error:", err.message));
+      console.log("sync");
+    options:
+      - out: ["value: 10", "sync"]
+      - out: ["sync", "value: 10"]
+      - out: ["error: too big", "sync"]
+      - out: ["sync", "error: too big"]
+    answer: 4
+    explain: |
+      callbackهای `.then` و `.catch` همیشه ناهمگام (microtask) هستند، پس اول `sync` چاپ می‌شود (رد گزینه‌های
+      ۱ و ۳). در زنجیره، `5 * 2` برابر `10` است و چون `10 > 5` است خطا پرتاب می‌شود؛ خطا از `.then` بعدی
+      رد می‌شود و مستقیم به `.catch` می‌رسد. پس `value: 10` هرگز چاپ نمی‌شود (رد گزینه‌ی ۲) و خروجی
+      `error: too big` است.

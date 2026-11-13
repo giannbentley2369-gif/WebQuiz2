@@ -1,0 +1,706 @@
+id: ch1-primitives
+title: "انواع داده: Primitiveها و Objectها"
+slides: "Introduction to JS، اسلایدهای ۱۵ تا ۱۷"
+lesson: |
+  فرض کن یک جعبه‌ی لگو داری. بعضی چیزها **تک‌آجر** هستند: یک آجر قرمز، یک آجر آبی؛ ساده، تجزیه‌ناپذیر و همان‌طور که هستند. بعضی چیزها **سازه** هستند: یک ماشین که از چند آجر ساخته شده، هر قسمتش اسمی دارد (چرخ، سقف، در) و می‌توانی قسمت‌هایش را عوض کنی. داده‌ها در JavaScript هم همین‌طورند:
+
+  - **primitive** (مقدار پایه یا اولیه): یک مقدار ساده و تکی، مثل عدد `42` یا رشته‌ی `"Ali"`.
+  - **object** (شیء): مجموعه‌ای از مقدارها که هر کدام یک نام (کلید) دارند، مثل یک کارت دانشجویی که نام، سن و درس‌ها را با هم نگه می‌دارد.
+
+  ### داده‌ها در JavaScript (اسلاید ۱۵)
+
+  - داده دو گروه اصلی دارد: **هر چیزی یا primitive است یا object.**
+  - JavaScript **۷ نوع داده‌ی primitive** دارد: `number`، `string`، `boolean`، `undefined`، `null`، `Symbol` و `BigInt`. (با object، روی هم ۸ نوع داده می‌شود.)
+  - متغیرها می‌توانند **هر نوعی** را نگه دارند و نوعشان در زمان اجرا عوض شود؛ به این **dynamic typing** (نوع‌دهی پویا) می‌گویند.
+  - آرایه‌ها (arrays)، توابع (functions) و حتی تاریخ‌ها (dates) در واقع **objectهای خاص** هستند.
+  - تبدیل نوع‌ها یا **خودکار** انجام می‌شود که به آن **coercion** (تبدیل ضمنی) می‌گویند، یا **صریح** و به دستور ما که به آن **casting** (تبدیل صریح) می‌گویند؛ مثلاً `"5" * 2` خودکار به `10` می‌رسد، ولی `Number("5")` صریحاً رشته را عدد می‌کند. جزئیات این دو را در درس‌های Casting و Type coercion می‌بینیم.
+
+  ```js
+  let value = 7;     // number
+  value = "seven";   // now a string
+  value = true;      // now a boolean (dynamic typing)
+  ```
+
+  ### هفت primitive (اسلاید ۱۶)
+
+  | نوع | توضیح اسلاید ۱۶ | مثال | نتیجه‌ی `typeof` |
+  |---|---|---|---|
+  | `number` | اعداد صحیح و اعشاری (floating-point) | `42`، `3.14`، `-7` | `"number"` |
+  | `string` | دنباله‌ای از کاراکترها داخل علامت نقل‌قول | `"Ali"`، `'Ali'`، `` `Ali` `` | `"string"` |
+  | `boolean` | فقط `true` یا `false` | `true` | `"boolean"` |
+  | `undefined` | متغیری که تعریف شده ولی مقدار نگرفته | `let x;` | `"undefined"` |
+  | `null` | نبودِ **عمدیِ** مقدار | `let car = null;` | `"object"` (اشتباه تاریخی) |
+  | `Symbol` | شناسه‌ی یکتا و تغییرناپذیر | `Symbol("id")` | `"symbol"` |
+  | `BigInt` | اعداد صحیح بزرگ‌تر از `Number.MAX_SAFE_INTEGER` | `10n` | `"bigint"` |
+
+  #### `number`
+  JavaScript برخلاف Java یا C نوع جداگانه‌ای برای اعداد صحیح (`int`) و اعشاری (`float`/`double`) ندارد؛ **همه‌ی اعداد از یک نوع `number` هستند**. برای همین `5 === 5.0` برابر `true` است. سه مقدار ویژه هم از نوع `number` هستند: `Infinity`، `-Infinity` و `NaN` (مخفف Not a Number، یعنی «عدد نیست»؛ نتیجه‌ی محاسبه‌های بی‌معنی مثل `0 / 0` یا `"abc" * 2`). جالب است که `typeof NaN` برابر `"number"` است!
+
+  #### `string`
+  متن داخل علامت نقل‌قول: تک‌کوتیشن `'...'`، دابل‌کوتیشن `"..."` یا backtick (بک‌تیک) `` `...` ``. هر سه یک نوع `string` می‌سازند. JavaScript نوع جداگانه‌ای برای یک کاراکتر (مثل `char` در Java) ندارد؛ `'a'` یک رشته به طول ۱ است. رشته‌های backtick را در درس «رشته‌ها و Template literals» کامل می‌بینیم.
+
+  #### `boolean`
+  فقط دو مقدار دارد: `true` و `false`. نتیجه‌ی مقایسه‌ها از این نوع است: `5 > 3` برابر `true` است.
+
+  #### `undefined` و `null`
+  هر دو یعنی «مقداری نیست»، ولی فرقشان در **این است که چه کسی** آن را گذاشته:
+
+  | | `undefined` | `null` |
+  |---|---|---|
+  | معنی | هنوز مقداری داده نشده | عمداً «خالی» گذاشته شده |
+  | چه کسی می‌گذارد؟ | خود JavaScript (متغیر بی‌مقدار، کلید ناموجود در شیء) | برنامه‌نویس |
+  | `typeof` | `"undefined"` | `"object"` |
+  | در محاسبه (پیش‌نمایش) | `undefined + 1` برابر `NaN` | `null + 1` برابر `1` |
+
+  ```js
+  let a;               // JavaScript puts undefined here
+  let car = null;      // we say: "no car selected yet"
+  console.log(a, car); // undefined null
+  ```
+
+  ::: analogy
+  `undefined` مثل کشوی میزی است که هیچ‌کس هنوز سراغش نرفته؛ `null` مثل کشویی است که رویش یادداشت گذاشته‌ای: «عمداً خالی است».
+  :::
+
+  #### `Symbol`
+  `Symbol("id")` هر بار یک مقدار **کاملاً جدید و یکتا** می‌سازد. متن `"id"` فقط یک برچسب توضیحی برای خودمان است؛ پس دو Symbol با یک برچسب، با هم برابر نیستند. Symbolها تغییرناپذیرند (immutable) و معمولاً به‌عنوان **کلید ویژگی‌های شیء** به کار می‌روند تا با هیچ کلید دیگری تداخل نکنند:
+
+  ```js
+  const id = Symbol("id");
+  const user = { name: "Ali", [id]: 123 }; // [id] means: use the symbol as the key
+  console.log(user[id]);     // 123
+  console.log(user["id"]);   // undefined (the string "id" is a different key)
+  console.log(Symbol("id") === Symbol("id")); // false
+  ```
+
+  #### `BigInt`
+  نوع `number` اعداد صحیح را فقط تا `Number.MAX_SAFE_INTEGER` یعنی `9007199254740991` (برابر `2 ** 53 - 1`) **دقیق** نگه می‌دارد. بالاتر از آن، دقت از دست می‌رود و دو عدد متفاوت یکی دیده می‌شوند:
+
+  ```js
+  console.log(Number.MAX_SAFE_INTEGER);               // 9007199254740991
+  console.log(Number.MAX_SAFE_INTEGER + 2);           // 9007199254740992 (wrong!)
+  console.log(9007199254740992 === 9007199254740993); // true (precision lost)
+  ```
+
+  برای اعداد صحیحِ بزرگ از **BigInt** استفاده می‌کنیم: کافی است آخر عدد یک `n` بگذاریم (یا از `BigInt("...")` استفاده کنیم):
+
+  ```js
+  const big = 9007199254740993n;
+  console.log(big + 2n);    // 9007199254740995n (exact)
+  console.log(typeof big);  // bigint
+  console.log(7n / 2n);     // 3n (BigInt has no decimals)
+  console.log(10n + 5);     // TypeError: Cannot mix BigInt and other types, use explicit conversions
+  console.log(10n + BigInt(5)); // 15n
+  console.log(Number(10n) + 5); // 15
+  ```
+
+  پس BigInt و number را **نمی‌شود مستقیم با هم قاطی کرد**؛ باید اول یکی را صریحاً به نوع دیگر تبدیل کنی.
+
+  ### عملگر `typeof`
+  `typeof` (عملگر «نوعِ این مقدار چیست؟») نام نوع یک مقدار را به‌صورت یک **رشته‌ی حروف کوچک** برمی‌گرداند. این جدول را خوب حفظ کن؛ تست‌های زیادی از آن طرح می‌شود:
+
+  | عبارت | نتیجه | نکته |
+  |---|---|---|
+  | `typeof 42` و `typeof 3.14` | `"number"` | صحیح و اعشاری یک نوع‌اند |
+  | `typeof NaN` | `"number"` | NaN هم عدد حساب می‌شود! |
+  | `typeof "hi"` | `"string"` | |
+  | `typeof true` | `"boolean"` | |
+  | `typeof undefined` | `"undefined"` | |
+  | `typeof notDeclaredYet` | `"undefined"` | متغیر تعریف‌نشده؛ **خطا نمی‌دهد** |
+  | `typeof null` | `"object"` | اشتباه تاریخی |
+  | `typeof Symbol("id")` | `"symbol"` | با حرف کوچک |
+  | `typeof 10n` | `"bigint"` | با حرف کوچک |
+  | `typeof {}` | `"object"` | |
+  | `typeof []` | `"object"` | آرایه هم object است |
+  | `typeof new Date()` | `"object"` | تاریخ هم object است |
+  | `typeof function () {}` | `"function"` | تابع object است، ولی typeof می‌گوید `"function"` |
+  | `typeof typeof 42` | `"string"` | خروجی typeof همیشه رشته است |
+
+  - `typeof null` برابر `"object"` است؛ این یک اشتباه قدیمی از نسخه‌ی اول JavaScript است که برای این‌که کدهای قدیمی خراب نشوند، هیچ‌وقت اصلاح نشد. برای تشخیص `null` بنویس `value === null`.
+  - چون `typeof []` هم `"object"` است، برای تشخیص آرایه از `Array.isArray(value)` استفاده کن: `Array.isArray([1, 2])` برابر `true` و `Array.isArray({})` برابر `false` است.
+  - `typeof` روی متغیری که اصلاً تعریف نشده خطا نمی‌دهد و `"undefined"` برمی‌گرداند، ولی **استفاده‌ی مستقیم** از همان متغیر (مثلاً `console.log(price)`) خطای `ReferenceError` می‌دهد.
+
+  ### Objectها، آرایه‌ها و توابع (اسلاید ۱۷)
+
+  - **Objectها** داده‌ها و رفتارهای مرتبط را به شکل **جفت‌های کلید-مقدار (key-value pairs)** کنار هم نگه می‌دارند.
+  - Objectها می‌توانند objectهای دیگر، آرایه‌ها یا توابع را **درون خود** داشته باشند (تودرتو یا nested).
+  - **آرایه‌ها** مجموعه‌هایی **مرتب** هستند که با **اندیس عددی** (index، شماره‌ی خانه که از ۰ شروع می‌شود) به خانه‌هایشان دسترسی داریم.
+  - آرایه‌ها **متدهای آماده (built-in methods)** دارند، «مثل Java»؛ مثلاً `push` برای اضافه کردن به انتها. (درس‌های «آرایه‌ها» و «متدهای آرایه» را ببین.)
+  - **توابع first-class object هستند** (شهروند درجه‌یک): می‌شود آن‌ها را در متغیر **ذخیره** کرد، به تابع دیگر **پاس داد** و از یک تابع **برگرداند**.
+  - توابع می‌توانند **متد یک object** باشند یا به‌صورت **مستقل** (standalone) نوشته شوند.
+
+  ```js
+  const student = {
+    name: "Sara",                 // key: name, value: a string
+    age: 20,                      // number
+    courses: ["Web", "AI"],       // nested array
+    address: { city: "Tehran" },  // nested object
+    greet: function () {          // a function stored in an object = a method
+      console.log("Hello!");
+    },
+  };
+
+  console.log(student.name);         // Sara
+  console.log(student.courses[1]);   // AI (indices start at 0)
+  console.log(student.address.city); // Tehran
+  student.greet();                   // Hello!
+  console.log(student.phone);        // undefined (no such key)
+  ```
+
+  و این هم سه کاری که «first-class» بودن توابع ممکن می‌کند:
+
+  ```js
+  function double(n) {          // a standalone function
+    return n * 2;
+  }
+  const f = double;             // 1) stored in a variable
+  function applyTwice(fn, x) {  // 2) passed as an argument
+    return fn(fn(x));
+  }
+  console.log(applyTwice(f, 3)); // 12
+  function makeGreeter() {       // 3) returned from a function
+    return function () {
+      return "Hi!";
+    };
+  }
+  console.log(makeGreeter()());  // Hi!
+  ```
+
+  ### primitive در برابر object: کپی و مقایسه (پیش‌نمایش)
+
+  **primitiveها تغییرناپذیرند (immutable).** نمی‌شود یک حرف از یک رشته را عوض کرد؛ متدهایی مثل `toUpperCase()` یک رشته‌ی **جدید** می‌سازند:
+
+  ```js
+  let s = "cat";
+  s[0] = "b";                      // silently ignored (TypeError in strict mode)
+  console.log(s);                  // cat
+  console.log(s.toUpperCase(), s); // CAT cat
+  ```
+
+  (البته خود متغیر `let` را می‌توانی به رشته‌ی دیگری وصل کنی: `s = "bat"`؛ تغییرناپذیر بودن یعنی خود مقدار عوض نمی‌شود.)
+
+  **کپی:** وقتی یک primitive را در متغیر دیگری می‌ریزی، **خود مقدار** کپی می‌شود؛ ولی وقتی یک object را می‌ریزی، فقط **نشانی (reference)** آن کپی می‌شود و هر دو متغیر به **همان یک شیء** اشاره می‌کنند:
+
+  ```js
+  let a = 10;
+  let b = a;     // b gets a copy of the value
+  b = 20;
+  console.log(a); // 10
+
+  const obj1 = { score: 10 };
+  const obj2 = obj1;  // both names point to the SAME object
+  obj2.score = 20;
+  console.log(obj1.score); // 20
+  ```
+
+  **مقایسه:** primitiveها با **مقدار** مقایسه می‌شوند و objectها با **نشانی**. دو آرایه یا دو شیء جداگانه، حتی با محتوای یکسان، برابر نیستند:
+
+  ```js
+  console.log("web" === "web");   // true  (same value)
+  console.log([1, 2] === [1, 2]); // false (two different arrays)
+  console.log({} === {});         // false (two different objects)
+  ```
+
+  ::: tip
+  - خروجی `typeof` همیشه رشته‌ای با **حروف کوچک** است: `"bigint"` (نه `"BigInt"`) و `"symbol"` (نه `"Symbol"`).
+  - برای آرایه از `Array.isArray` و برای `null` از `=== null` استفاده کن؛ `typeof` برای هر دو `"object"` می‌گوید.
+  - برای اعداد صحیح بزرگ‌تر از `9007199254740991` از BigInt (پسوند `n`) استفاده کن و BigInt را با number قاطی نکن.
+  :::
+
+  ::: trap
+  - `typeof null` برابر `"object"`، `typeof []` برابر `"object"`، `typeof NaN` برابر `"number"` و `typeof function () {}` برابر `"function"` است.
+  - `typeof x` برای متغیر تعریف‌نشده `"undefined"` می‌دهد و **خطا نمی‌دهد**، ولی خواندن مستقیم `x` خطای `ReferenceError` می‌دهد.
+  - `Symbol("id") === Symbol("id")` برابر `false` است؛ هر Symbol یکتاست، حتی با برچسب یکسان.
+  - `9007199254740992 === 9007199254740993` برابر `true` است (از دست رفتن دقت) و `10n + 5` خطای `TypeError` می‌دهد.
+  - `[1, 2] === [1, 2]` و `{} === {}` هر دو `false` هستند؛ objectها با نشانی مقایسه می‌شوند، نه محتوا.
+  :::
+
+  ::: summary
+  - هر چیزی یا primitive است یا object. ۷ primitive: `number`، `string`، `boolean`، `undefined`، `null`، `Symbol`، `BigInt`.
+  - آرایه، تابع و تاریخ objectهای خاص‌اند. objectها جفت‌های کلید-مقدارند و می‌توانند تودرتو باشند. توابع first-class هستند.
+  - `undefined` را JavaScript می‌گذارد و `null` را برنامه‌نویس. Symbol یکتاست. BigInt برای اعداد صحیح خیلی بزرگ است.
+  - primitiveها تغییرناپذیرند و با مقدار کپی و مقایسه می‌شوند؛ objectها با نشانی (reference).
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۱۵، JavaScript چند نوع داده‌ی **primitive** دارد؟
+    options:
+      - '۵'
+      - '۶'
+      - '۷'
+      - '۸'
+    answer: 3
+    explain: |
+      هفت primitive داریم: `number`، `string`، `boolean`، `undefined`، `null`، `Symbol` و `BigInt`. عدد ۸ تعداد کل انواع داده است، یعنی ۷ primitive به‌علاوه‌ی object. عدد ۶ مربوط به قبل از اضافه شدن BigInt (ES2020) و عدد ۵ مربوط به قبل از Symbol (ES6) است.
+
+  - level: easy
+    stem: |
+      کدام مورد از انواع **primitive** در JavaScript **نیست**؟
+    options:
+      - '`Symbol`'
+      - '`BigInt`'
+      - '`null`'
+      - 'آرایه (Array)'
+    answer: 4
+    explain: |
+      طبق اسلاید ۱۵، آرایه‌ها (و توابع و تاریخ‌ها) objectهای خاص هستند، نه primitive؛ برای همین `typeof [1, 2]` برابر `"object"` است. `Symbol`، `BigInt` و `null` هر سه جزو ۷ primitive اسلاید ۱۶ هستند؛ این‌که `typeof null` برابر `"object"` است فقط یک اشتباه تاریخی است و `null` را object نمی‌کند.
+
+  - level: easy
+    stem: |
+      به تبدیل نوعی که JavaScript **خودش و بدون درخواست ما** انجام می‌دهد (مثل `"5" * 2` که `10` می‌شود) چه می‌گویند؟
+    options:
+      - 'casting'
+      - 'coercion'
+      - 'hoisting'
+      - 'parsing'
+    answer: 2
+    explain: |
+      اسلاید ۱۵: تبدیل نوع یا خودکار است (**coercion**) یا صریح (**casting**). در `"5" * 2` ما چیزی نخواسته‌ایم و خود موتور رشته را به عدد تبدیل کرده، پس coercion است. casting یعنی تبدیل صریح مثل `Number("5")`. hoisting مربوط به بالا بردن اعلان‌ها است و parsing یعنی خواندن و تجزیه‌ی کد؛ هیچ‌کدام تبدیل نوع نیستند.
+
+  - level: easy
+    stem: |
+      کدام مقدار را **برنامه‌نویس عمداً** در متغیر می‌گذارد تا نشان دهد «این‌جا مقداری وجود ندارد»؟
+    options:
+      - '`undefined`'
+      - '`NaN`'
+      - '`0`'
+      - '`null`'
+    answer: 4
+    explain: |
+      اسلاید ۱۶: `null` یعنی «نبودِ **عمدیِ** مقدار» و آن را برنامه‌نویس می‌گذارد. `undefined` را خود JavaScript برای متغیری که تعریف شده ولی مقدار نگرفته قرار می‌دهد. `NaN` نتیجه‌ی محاسبه‌ی عددیِ بی‌معنی است و `0` یک عدد واقعی است، نه «نبودِ مقدار».
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(typeof "42");
+      console.log(typeof 42);
+      console.log(typeof true);
+    options:
+      - out: ["string", "number", "boolean"]
+      - out: ["number", "number", "boolean"]
+      - out: ["string", "number", "string"]
+      - out: ["string", "int", "boolean"]
+    answer: 1
+    explain: |
+      `"42"` داخل علامت نقل‌قول است، پس یک **رشته** است، نه عدد (گزینه‌ی ۲ همین را اشتباه گرفته). `42` از نوع `number` است؛ JavaScript نوعی به نام `int` ندارد (رد گزینه‌ی ۴). `true` یک مقدار `boolean` است، نه رشته (رد گزینه‌ی ۳).
+
+  - level: easy
+    stem: |
+      حاصل `typeof 10n` چیست؟
+    check: value
+    expr: 'typeof 10n'
+    options:
+      - '`"number"`'
+      - '`"BigInt"`'
+      - '`"bigint"`'
+      - '`"integer"`'
+    answer: 3
+    explain: |
+      پسوند `n` یک **BigInt** می‌سازد و `typeof` برای آن `"bigint"` را **با حروف کوچک** برمی‌گرداند. گزینه‌ی ۲ نام نوع را با حرف بزرگ نوشته، ولی خروجی `typeof` همیشه حروف کوچک است. گزینه‌ی ۱ پسوند `n` را نادیده گرفته و نوعی به نام `integer` هم وجود ندارد.
+
+  - level: easy
+    stem: |
+      مقدار `Number.MAX_SAFE_INTEGER` (بزرگ‌ترین عدد صحیحی که نوع `number` دقیق نگه می‌دارد) کدام است؟
+    check: value
+    expr: 'Number.MAX_SAFE_INTEGER'
+    options:
+      - '`9007199254740991`'
+      - '`2147483647`'
+      - '`9007199254740992`'
+      - '`Infinity`'
+    answer: 1
+    explain: |
+      `Number.MAX_SAFE_INTEGER` برابر `9007199254740991` یعنی `2 ** 53 - 1` است و BigInt برای اعداد صحیح بزرگ‌تر از آن ساخته شده (اسلاید ۱۶). `2147483647` بیشینه‌ی نوع `int` در Java است، `9007199254740992` یکی بیشتر از حد امن است و `Infinity` بزرگ‌ترین عدد «امن» نیست، بلکه مقدار ویژه‌ی بی‌نهایت است.
+
+  - level: medium
+    stem: |
+      حاصل `typeof null` چیست؟
+    check: value
+    expr: 'typeof null'
+    options:
+      - '`"null"`'
+      - '`"undefined"`'
+      - '`"object"`'
+      - '`null`'
+    answer: 3
+    explain: |
+      `null` یک primitive است، اما `typeof null` به‌خاطر یک اشتباه قدیمی در نسخه‌ی اول JavaScript، `"object"` برمی‌گرداند و برای سازگاری با کدهای قدیمی هیچ‌وقت اصلاح نشد. گزینه‌ی ۱ منطقی به نظر می‌رسد ولی واقعیت ندارد. گزینه‌ی ۴ هم غلط است چون `typeof` همیشه یک **رشته** برمی‌گرداند. برای تشخیص `null` بنویس `value === null`.
+
+  - level: medium
+    stem: |
+      حاصل `typeof` برای کدام مقدار، `"number"` **نیست**؟
+    check: claims
+    want: false
+    options:
+      - text: '`10n`'
+        expr: 'typeof 10n'
+        equals: '"number"'
+      - text: '`NaN`'
+        expr: 'typeof NaN'
+        equals: '"number"'
+      - text: '`Infinity`'
+        expr: 'typeof Infinity'
+        equals: '"number"'
+      - text: '`3.14`'
+        expr: 'typeof 3.14'
+        equals: '"number"'
+    answer: 1
+    explain: |
+      `10n` یک BigInt است و `typeof` آن `"bigint"` است؛ BigInt نوع جداگانه‌ای است، نه بخشی از `number`. سه مقدار دیگر همه از نوع `number` هستند: `3.14` یک عدد اعشاری معمولی است و `NaN` و `Infinity` مقدارهای ویژه‌ی همین نوع‌اند. دام اصلی `NaN` است: با این‌که نامش مخفف Not a Number است، `typeof NaN` برابر `"number"` است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟ (متغیر `price` هیچ‌جا تعریف نشده است.)
+    check: output
+    code: |
+      console.log(typeof price);
+      console.log(price);
+    options:
+      - out: ["undefined", "undefined"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["object", "null"]
+    answer: 3
+    explain: |
+      `typeof` روی متغیر تعریف‌نشده **خطا نمی‌دهد** و رشته‌ی `"undefined"` را برمی‌گرداند، پس خط اول `undefined` چاپ می‌کند. اما خواندن مستقیم `price` در خط دوم خطای `ReferenceError: price is not defined` می‌دهد. گزینه‌ی ۱ «تعریف‌نشده» را با «بی‌مقدار» یکی گرفته و گزینه‌ی ۲ فکر کرده `typeof` هم خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const list = [1, 2, 3];
+      console.log(typeof list);
+      console.log(Array.isArray(list));
+      console.log(Array.isArray("123"));
+    options:
+      - out: ["array", "true", "false"]
+      - out: ["object", "true", "false"]
+      - out: ["object", "true", "true"]
+      - out: ["array", "false", "false"]
+    answer: 2
+    explain: |
+      آرایه‌ها objectهای خاص‌اند، پس `typeof list` برابر `"object"` است (نوعی به نام `"array"` در خروجی `typeof` وجود ندارد). برای تشخیص آرایه باید از `Array.isArray` استفاده کرد که برای `list` مقدار `true` و برای رشته‌ی `"123"` مقدار `false` می‌دهد؛ یک رشته آرایه نیست، حتی اگر شبیه فهرستی از کاراکترها باشد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let a;
+      let b = null;
+      console.log(a, b);
+      console.log(typeof a, typeof b);
+    options:
+      - out: ["undefined null", "undefined object"]
+      - out: ["undefined null", "undefined null"]
+      - out: ["null null", "object object"]
+      - out: ["undefined undefined", "undefined undefined"]
+    answer: 1
+    explain: |
+      `a` تعریف شده ولی مقدار نگرفته، پس `undefined` است؛ `b` عمداً `null` شده است. در خط دوم `typeof undefined` برابر `"undefined"` و `typeof null` (به‌خاطر اشتباه تاریخی) برابر `"object"` است. گزینه‌ی ۲ فکر کرده `typeof null` می‌شود `"null"` و گزینه‌های ۳ و ۴ تفاوت `undefined` و `null` را نادیده گرفته‌اند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const id1 = Symbol("id");
+      const id2 = Symbol("id");
+      console.log(id1 === id2);
+      console.log(typeof id1);
+    options:
+      - out: ["true", "symbol"]
+      - out: ["false", "symbol"]
+      - out: ["false", "string"]
+      - out: ["true", "string"]
+    answer: 2
+    explain: |
+      هر بار `Symbol(...)` صدا زده شود یک مقدار **کاملاً یکتا** ساخته می‌شود و متن `"id"` فقط یک برچسب توضیحی است؛ پس دو Symbol با برچسب یکسان برابر نیستند و `false` چاپ می‌شود. `typeof` برای Symbol رشته‌ی `"symbol"` را برمی‌گرداند، نه `"string"`؛ برچسب رشته‌ای، Symbol را رشته نمی‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const id = Symbol("id");
+      const user = { name: "Ali", [id]: 123 };
+      console.log(user[id]);
+      console.log(user["id"]);
+    options:
+      - out: ["123", "123"]
+      - out: ["undefined", "123"]
+      - out: ["!! TypeError"]
+      - out: ["123", "undefined"]
+    answer: 4
+    explain: |
+      `[id]: 123` یعنی Symbol ذخیره‌شده در `id` را کلید ویژگی قرار بده؛ پس `user[id]` مقدار `123` را می‌دهد. رشته‌ی `"id"` کلید کاملاً متفاوتی است و چنین کلیدی در شیء نداریم، پس `user["id"]` برابر `undefined` است. گزینه‌ی ۱ برچسب Symbol را با یک کلید رشته‌ای یکی گرفته، در حالی که دقیقاً به همین دلیل از Symbol برای کلیدها استفاده می‌شود: با هیچ کلید دیگری تداخل نمی‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(9007199254740992 === 9007199254740993);
+      console.log(9007199254740992n === 9007199254740993n);
+    options:
+      - out: ["false", "false"]
+      - out: ["true", "false"]
+      - out: ["false", "true"]
+      - out: ["true", "true"]
+    answer: 2
+    explain: |
+      این اعداد از `Number.MAX_SAFE_INTEGER` (یعنی `9007199254740991`) بزرگ‌ترند و نوع `number` آن‌ها را دقیق نگه نمی‌دارد؛ `9007199254740993` در حافظه همان `9007199254740992` ذخیره می‌شود و مقایسه `true` می‌دهد. با پسوند `n` اعداد BigInt هستند که دقیق‌اند، پس مقایسه‌ی دوم `false` است. همین مشکل دلیل وجود BigInt است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const big = 10n;
+      console.log(big + 5n);
+      console.log(big + 5);
+    options:
+      - out: ["15n", "15"]
+      - out: ["15n", "15n"]
+      - out: ["15n", "!! TypeError"]
+      - out: ["15", "15"]
+    answer: 3
+    explain: |
+      جمع دو BigInt یک BigInt است و `console.log` آن را با `n` نشان می‌دهد: `15n`. اما BigInt و number را نمی‌شود مستقیم با هم قاطی کرد: `big + 5` خطای `TypeError: Cannot mix BigInt and other types` می‌دهد. گزینه‌های ۱ و ۲ فرض کرده‌اند JavaScript خودش تبدیل می‌کند؛ راه درست تبدیل صریح است، مثل `big + BigInt(5)` یا `Number(big) + 5`.
+
+  - level: easy
+    stem: |
+      کدام گزینه درباره‌ی نوشتن رشته‌ها در JavaScript درست است؟
+    check: claims
+    options:
+      - text: 'فقط دابل‌کوتیشن (`"`) مجاز است و تک‌کوتیشن خطای `SyntaxError` می‌دهد.'
+        expr: '(() => { try { eval("''x''"); return "ok"; } catch (e) { return e.name; } })()'
+        equals: '"SyntaxError"'
+      - text: '`''a''` از نوع `char` است، نه `string`.'
+        expr: "typeof 'a'"
+        equals: '"char"'
+      - text: 'رشته‌ای که با backtick نوشته شود، نوع جداگانه‌ای به نام `template` دارد.'
+        expr: 'typeof `a`'
+        equals: '"template"'
+      - text: 'رشته را می‌توان با تک‌کوتیشن، دابل‌کوتیشن یا backtick نوشت و نوع هر سه `string` است.'
+        expr: "[typeof 'a', typeof \"a\", typeof `a`].join()"
+        equals: '"string,string,string"'
+    answer: 4
+    explain: |
+      اسلاید ۱۶: string یعنی دنباله‌ای از کاراکترها داخل علامت نقل‌قول، و هر سه شکل `'...'`، `"..."` و `` `...` `` یک `string` می‌سازند. JavaScript نوعی به نام `char` ندارد (برخلاف Java) و `'a'` فقط یک رشته به طول ۱ است. backtick هم فقط شکل دیگری از نوشتن رشته (template literal) است و `typeof` آن `"string"` است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let value = 7;
+      value = "seven";
+      value = value + 1;
+      console.log(value, typeof value);
+    options:
+      - out: "seven1 string"
+      - out: "8 number"
+      - out: "!! TypeError"
+      - out: "NaN number"
+    answer: 1
+    explain: |
+      متغیرها در JavaScript نوع ثابت ندارند (dynamic typing)، پس ریختن رشته در متغیری که عدد بود خطا ندارد (رد گزینه‌ی ۳). در خط سوم `value` رشته‌ی `"seven"` است و `+` با یک رشته، **الحاق** (چسباندن) انجام می‌دهد: `"seven1"` که نوعش `string` است. گزینه‌ی ۲ مقدار قبلی `7` را در نظر گرفته و گزینه‌ی ۴ فکر کرده رشته به عدد تبدیل می‌شود.
+
+  - level: medium
+    stem: |
+      طبق اسلاید ۱۷، این جمله که «توابع در JavaScript first-class object هستند» یعنی چه؟
+    options:
+      - 'توابع همیشه قبل از بقیه‌ی کد اجرا می‌شوند.'
+      - 'توابع فقط داخل کلاس‌ها و به‌عنوان متد تعریف می‌شوند.'
+      - 'می‌توان توابع را در متغیر ذخیره کرد، به تابع دیگر پاس داد و از یک تابع برگرداند.'
+      - 'توابع از نوع primitive هستند و مثل عدد کپی می‌شوند.'
+    answer: 3
+    explain: |
+      اسلاید ۱۷: «Functions are first-class objects (can be passed, stored, and returned)»؛ یعنی تابع هم مثل هر مقدار دیگری قابل ذخیره، پاس دادن و برگرداندن است. گزینه‌ی ۱ ربطی به first-class بودن ندارد. گزینه‌ی ۲ غلط است چون طبق همان اسلاید، تابع می‌تواند متد یا کد مستقل (standalone) باشد. گزینه‌ی ۴ هم غلط است: تابع object است، نه primitive.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function shout(text) {
+        return text.toUpperCase() + "!";
+      }
+      function apply(fn, value) {
+        return fn(value);
+      }
+      const myFn = shout;
+      console.log(apply(myFn, "hi"));
+      console.log(typeof myFn);
+    options:
+      - out: ["hi!", "function"]
+      - out: ["HI!", "object"]
+      - out: ["!! TypeError"]
+      - out: ["HI!", "function"]
+    answer: 4
+    explain: |
+      تابع `shout` در متغیر `myFn` **ذخیره** شده و به‌عنوان آرگومان به `apply` **پاس داده** شده است؛ این همان first-class بودن توابع است و خطایی ندارد. `apply` آن را با `"hi"` صدا می‌زند و `toUpperCase()` حروف را بزرگ می‌کند: `HI!`. تابع object است، ولی `typeof` برای آن `"function"` برمی‌گرداند، نه `"object"`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const student = {
+        name: "Sara",
+        courses: ["Web", "AI"],
+        address: { city: "Tehran" },
+      };
+      console.log(student.courses[1]);
+      console.log(student.address.city);
+      console.log(student.phone);
+    options:
+      - out: ["Web", "Tehran", "undefined"]
+      - out: ["AI", "Tehran", "undefined"]
+      - out: ["AI", "Tehran", "null"]
+      - out: ["AI", "Tehran", "!! ReferenceError"]
+    answer: 2
+    explain: |
+      اندیس آرایه‌ها از ۰ شروع می‌شود، پس `courses[1]` دومین خانه یعنی `AI` است (گزینه‌ی ۱ از ۱ شمرده). `address` یک شیء تودرتو است و `address.city` برابر `Tehran` است. خواندن کلیدی که در شیء وجود ندارد خطا نمی‌دهد و `undefined` برمی‌گرداند؛ `null` را فقط برنامه‌نویس می‌گذارد و `ReferenceError` مخصوص **متغیر** تعریف‌نشده است، نه کلید ناموجود.
+
+  - level: medium
+    stem: |
+      کدام مقدار از نوع **primitive** است؟
+    check: claims
+    setup: |
+      const isPrimitive = (v) => v === null || (typeof v !== "object" && typeof v !== "function");
+    options:
+      - text: '`new Date()`'
+        expr: 'isPrimitive(new Date())'
+        equals: 'true'
+      - text: '`[1, 2, 3]`'
+        expr: 'isPrimitive([1, 2, 3])'
+        equals: 'true'
+      - text: '`"2026-11-13"`'
+        expr: 'isPrimitive("2026-11-13")'
+        equals: 'true'
+      - text: '`function () {}`'
+        expr: 'isPrimitive(function () {})'
+        equals: 'true'
+    answer: 3
+    explain: |
+      `"2026-11-13"` داخل علامت نقل‌قول است، پس یک **رشته** (primitive) است، هرچند شکل تاریخ دارد. طبق اسلاید ۱۵، تاریخ‌ها (`new Date()`)، آرایه‌ها و توابع همه objectهای خاص هستند و primitive حساب نمی‌شوند.
+
+  - level: medium
+    stem: |
+      کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: 'حاصل `typeof function () {}` برابر `"function"` است.'
+        expr: 'typeof function () {}'
+        equals: '"function"'
+      - text: 'حاصل `typeof new Date()` برابر `"date"` است.'
+        expr: 'typeof new Date()'
+        equals: '"date"'
+      - text: 'حاصل `typeof undefined` برابر `"undefined"` است.'
+        expr: 'typeof undefined'
+        equals: '"undefined"'
+      - text: 'حاصل `typeof Symbol("id")` برابر `"symbol"` است.'
+        expr: 'typeof Symbol("id")'
+        equals: '"symbol"'
+    answer: 2
+    explain: |
+      تاریخ یک object خاص است و `typeof new Date()` برابر `"object"` است؛ `typeof` هیچ‌وقت `"date"` برنمی‌گرداند. بقیه‌ی گزینه‌ها درست‌اند: تابع با این‌که object است، `typeof` آن `"function"` است؛ `typeof undefined` برابر `"undefined"` و `typeof` یک Symbol برابر `"symbol"` است.
+
+  - level: hard
+    stem: |
+      حاصل `typeof typeof 10n` چیست؟
+    check: value
+    expr: 'typeof typeof 10n'
+    options:
+      - '`"bigint"`'
+      - '`"number"`'
+      - '`"object"`'
+      - '`"string"`'
+    answer: 4
+    explain: |
+      از راست به چپ حساب کن: `typeof 10n` رشته‌ی `"bigint"` را می‌دهد. حالا `typeof "bigint"` نوعِ یک **رشته** را می‌پرسد که `"string"` است. خروجی `typeof` همیشه رشته است، پس `typeof typeof` هر چیزی همیشه `"string"` می‌شود. گزینه‌ی ۱ فقط `typeof` اول را حساب کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let a = 10;
+      let b = a;
+      b = 20;
+      const obj1 = { score: 10 };
+      const obj2 = obj1;
+      obj2.score = 20;
+      console.log(a, obj1.score);
+    options:
+      - out: "10 10"
+      - out: "20 20"
+      - out: "10 20"
+      - out: "20 10"
+    answer: 3
+    explain: |
+      `b = a` **مقدارِ** `10` را کپی می‌کند؛ عوض کردن `b` روی `a` اثری ندارد، پس `a` همان `10` می‌ماند. اما `obj2 = obj1` فقط **نشانی (reference)** شیء را کپی می‌کند و هر دو نام به یک شیء اشاره می‌کنند؛ پس تغییر `obj2.score` همان شیئی را عوض می‌کند که `obj1` به آن اشاره دارد و `20` چاپ می‌شود. گزینه‌ی ۱ objectها را هم مثل primitiveها کپی‌شونده فرض کرده و گزینه‌ی ۲ primitiveها را مثل objectها.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log("web" === "web");
+      console.log([1, 2] === [1, 2]);
+      console.log({} === {});
+    options:
+      - out: ["true", "false", "false"]
+      - out: ["true", "true", "true"]
+      - out: ["false", "false", "false"]
+      - out: ["true", "true", "false"]
+    answer: 1
+    explain: |
+      primitiveها (مثل رشته) با **مقدار** مقایسه می‌شوند، پس دو رشته‌ی یکسان برابرند. اما objectها (از جمله آرایه‌ها) با **نشانی** مقایسه می‌شوند: `[1, 2]` اول و دوم دو آرایه‌ی جداگانه در حافظه‌اند و `{}` اول و دوم هم دو شیء جدا؛ پس هر دو مقایسه `false` است، حتی با محتوای یکسان.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر (بدون `"use strict"`) چیست؟
+    check: output
+    code: |
+      let word = "cat";
+      word[0] = "b";
+      console.log(word);
+      word = "bat";
+      console.log(word);
+    options:
+      - out: ["cat", "bat"]
+      - out: ["bat", "bat"]
+      - out: ["!! TypeError"]
+      - out: ["cat", "cat"]
+    answer: 1
+    explain: |
+      رشته‌ها primitive و **تغییرناپذیر** هستند؛ `word[0] = "b"` نمی‌تواند حرفی از رشته را عوض کند و در حالت عادی بی‌صدا نادیده گرفته می‌شود (در حالت strict خطای `TypeError` می‌دهد). پس اول `cat` چاپ می‌شود. اما `word = "bat"` خود متغیر `let` را به رشته‌ی **جدیدی** وصل می‌کند که مجاز است. گزینه‌ی ۲ رشته را قابل‌تغییر فرض کرده و گزینه‌ی ۴ انتساب دوباره را هم ممنوع پنداشته است.
+
+  - level: hard
+    stem: |
+      کدام گزینه درباره‌ی نوع `number` درست است؟
+    check: claims
+    options:
+      - text: 'برای اعداد اعشاری نوع جداگانه‌ای وجود دارد و `typeof 5.5` برابر `"float"` است.'
+        expr: 'typeof 5.5'
+        equals: '"float"'
+      - text: '`5` و `5.0` دو مقدار از دو نوع متفاوت‌اند و `5 === 5.0` برابر `false` است.'
+        expr: '5 === 5.0'
+        equals: 'false'
+      - text: 'نوشتن عددی بزرگ‌تر از `Number.MAX_SAFE_INTEGER` بدون پسوند `n`، خطای `RangeError` می‌دهد.'
+        expr: '(() => { try { return eval("9007199254740993"); } catch (e) { return e.name; } })()'
+        equals: '"RangeError"'
+      - text: 'اعداد صحیح و اعشاری هر دو از یک نوع `number` هستند؛ `typeof 5` و `typeof 5.5` هر دو `"number"` است.'
+        expr: 'typeof 5 === "number" && typeof 5.5 === "number"'
+        equals: 'true'
+    answer: 4
+    explain: |
+      اسلاید ۱۶: `number` شامل اعداد صحیح **و** اعشاری است؛ JavaScript نوع جداگانه‌ی `int` یا `float` ندارد و `5 === 5.0` برابر `true` است (رد گزینه‌های ۱ و ۲). نوشتن عدد بزرگ‌تر از حد امن خطا نمی‌دهد، فقط **دقتش از دست می‌رود** (`9007199254740993` به `9007199254740992` گرد می‌شود)؛ برای همین گزینه‌ی ۳ غلط است و برای دقت باید از BigInt استفاده کرد.

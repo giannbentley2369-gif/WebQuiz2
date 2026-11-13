@@ -1,0 +1,680 @@
+id: ch2-events
+title: "رویدادها (Events) و addEventListener"
+slides: "JS in HTML، اسلایدهای ۱۸ تا ۲۱"
+lesson: |
+  تا اینجا کدهای ما فقط یک بار، هنگام بارگذاری صفحه، اجرا می‌شدند. برای اینکه صفحه **تعاملی** شود (هدف دوم
+  این جلسه در اسلاید ۲)، باید بتوانیم به کارهای کاربر واکنش نشان دهیم. ابزار این کار **رویدادها (events)**
+  هستند.
+
+  ::: analogy زنگ در
+  روی در خانه یک زنگ نصب می‌کنی و می‌گویی «هر وقت کسی زنگ زد، در را باز کن». تا کسی زنگ نزند اتفاقی
+  نمی‌افتد؛ وقتی زنگ زده شد، کاری که سپرده بودی انجام می‌شود. حتی می‌توانی چند کار را به همان زنگ وصل کنی
+  (هم چراغ روشن شود، هم آهنگی پخش شود). در وب، «زنگ زدن» همان **رویداد** است (مثلاً کلیک) و «کاری که
+  سپرده‌ای» یک تابع است که به آن **event handler** یا **event listener** (شنونده‌ی رویداد) می‌گوییم.
+  :::
+
+  **رویداد (event)** یعنی اتفاقی که در صفحه رخ می‌دهد: کلیک، تایپ، ارسال فرم، فشردن کلید، تمام شدن بارگذاری
+  صفحه و ... . **event listener** تابعی است که به مرورگر می‌سپاریم تا هر بار آن رویداد روی یک عنصر رخ داد،
+  اجرایش کند. خلاصه‌ی اسلاید ۱۸:
+
+  - رویدادها به صفحه‌ی وب اجازه می‌دهند به **کارهای کاربر واکنش نشان دهد**.
+  - رویدادهای رایج: `click`، `input`، `submit`، `keydown`، `load` و ... .
+  - handlerها را می‌توان با **attributeهای HTML** یا با **JavaScript** تنظیم کرد.
+  - `addEventListener` روش **مدرن** وصل کردن رویداد است.
+  - برای یک رویداد می‌توان **چند handler** اضافه کرد.
+  - رویدادها تجربه‌ی کاربری **تعاملی و پویا** را ممکن می‌کنند.
+
+  ### رویدادهای رایج
+
+  | رویداد | چه زمانی رخ می‌دهد | معمولاً روی |
+  |---|---|---|
+  | `click` | کلیک روی عنصر | دکمه، لینک یا هر عنصری |
+  | `input` | **هر بار** که مقدار یک کادر ورودی عوض شود (با هر حرفی که تایپ می‌شود) | `<input>`، `<textarea>` |
+  | `change` | وقتی تغییر مقدار «قطعی» شود: برای کادر متنی وقتی از کادر بیرون می‌رویم؛ برای چک‌باکس و `<select>` بلافاصله | `<input>`، `<select>` |
+  | `submit` | ارسال فرم (کلیک روی دکمه‌ی ارسال یا زدن Enter در فرم) | `<form>` |
+  | `keydown` | فشردن یک کلید صفحه‌کلید | کادرهای ورودی یا `document` |
+  | `load` | بارگذاری کامل صفحه همراه همه‌ی منابعش (تصاویر، CSS و ...) | `window` |
+  | `DOMContentLoaded` | آماده شدن درخت DOM (درس قبل) | `document` |
+  | `mouseover` | رفتن نشانگر ماوس روی عنصر | هر عنصری |
+
+  ### سه راه وصل کردن handler
+
+  #### ۱) attribute در HTML
+
+  ```html
+  <button id="save" onclick="console.log('saved', this.id)">Save</button>
+  <!-- click -> saved save -->
+  ```
+
+  کد به‌صورت یک **رشته** داخل HTML نوشته می‌شود و داخل آن `this` همان عنصر است. مرورگر این رشته را به یک
+  تابع تبدیل می‌کند و در property `onclick` عنصر می‌گذارد (پس `typeof btn.onclick` برابر `"function"` است).
+  عیبش این است که ساختار (HTML) و رفتار (JavaScript) را قاطی می‌کند؛ برای پروژه‌های واقعی توصیه نمی‌شود.
+
+  #### ۲) property در JavaScript
+
+  ```js
+  const btn = document.getElementById("btn");
+  btn.onclick = () => console.log("A");
+  btn.onclick = () => console.log("B"); // replaces A!
+  // click -> B
+  btn.onclick = null;                   // removes the handler
+  ```
+
+  هر عنصر برای هر رویداد فقط **یک** property مثل `onclick` دارد؛ پس مقداردهی دوباره، handler قبلی را
+  **بازنویسی** می‌کند. اگر عنصر از قبل یک `onclick="..."` در HTML داشته باشد، همین مقداردهی آن را هم جایگزین
+  می‌کند، چون attribute و property در واقع یک خانه‌ی مشترک دارند.
+
+  #### ۳) `addEventListener` (روش مدرن)
+
+  ```js
+  btn.addEventListener("click", () => console.log("listener 1"));
+  btn.addEventListener("click", () => console.log("listener 2"));
+  // click -> listener 1, listener 2   (in the order they were added)
+  ```
+
+  - نام رویداد **بدون** `on` نوشته می‌شود: `"click"`، نه `"onclick"`. اگر بنویسی
+    `addEventListener("onclick", ...)` هیچ خطایی نمی‌گیری، ولی listener منتظر رویدادی به نام «onclick»
+    می‌ماند که هرگز رخ نمی‌دهد.
+  - می‌توان **چند listener** برای یک رویداد ثبت کرد و همه، **به ترتیب ثبت**، اجرا می‌شوند.
+  - اگر **همان تابع** (همان مرجع) را دو بار برای یک رویداد ثبت کنی، فقط یک بار ثبت می‌شود.
+  - آرگومان سوم تنظیمات است، مثلاً `{ once: true }` (پایین‌تر) یا مرحله‌ی capture (درس بعد).
+  - با `removeEventListener` قابل حذف است.
+
+  | روش | چند handler برای یک رویداد؟ | نکته |
+  |---|---|---|
+  | `onclick="..."` در HTML | خیر | کد داخل رشته؛ قاطی شدن HTML و JavaScript |
+  | `el.onclick = fn` | خیر؛ آخرین مقدار می‌ماند | حذف با `el.onclick = null` |
+  | `el.addEventListener("click", fn)` | بله؛ به ترتیب ثبت | روش مدرن؛ حذف با `removeEventListener` |
+
+  ### تابع را بده، صدا نزن!
+
+  ```js
+  function sayHi() {
+    console.log("hi");
+  }
+  btn.addEventListener("click", sayHi);   // correct: pass the function itself
+  btn.addEventListener("click", sayHi()); // WRONG: runs sayHi right now and passes undefined
+  ```
+
+  در خط دوم، پرانتزها باعث می‌شوند `sayHi` **همان لحظه** اجرا شود (و `hi` بلافاصله چاپ شود)؛ مقدار
+  برگشتی‌اش (`undefined`) به‌عنوان listener ثبت می‌شود که یعنی هیچ‌چیز، پس کلیک کاری نمی‌کند. خطایی هم رخ
+  نمی‌دهد و همین پیدا کردن این باگ را سخت می‌کند.
+
+  اگر لازم است به تابع آرگومان بدهی، آن را داخل یک arrow function بپیچ:
+
+  ```js
+  function greet(name) {
+    console.log("Hello " + name);
+  }
+  btn.addEventListener("click", () => greet("Sara")); // click -> Hello Sara
+  btn.addEventListener("click", greet);               // click -> Hello [object MouseEvent]
+  ```
+
+  در خط دوم، مرورگر هنگام کلیک، `greet` را با **شیء رویداد** (event object) به‌عنوان اولین آرگومان صدا
+  می‌زند؛ پس `name` همان شیء `MouseEvent` است و در الحاق رشته به `[object MouseEvent]` تبدیل می‌شود. (شیء
+  event را در درس بعد کامل می‌بینیم.)
+
+  ### حذف listener با `removeEventListener`
+
+  ```js
+  function onClick() {
+    console.log("clicked");
+  }
+  btn.addEventListener("click", onClick);
+  btn.removeEventListener("click", onClick); // removed: same type and the SAME function reference
+
+  btn.addEventListener("click", () => console.log("anon"));
+  btn.removeEventListener("click", () => console.log("anon")); // NOT removed: a different function object
+  // click -> anon
+  ```
+
+  برای حذف باید **همان نوع رویداد** و **همان شیء تابع** را بدهی. دو arrow function با متن یکسان، دو شیء
+  متفاوت‌اند (همان‌طور که `{} === {}` برابر `false` است)؛ پس listener ناشناس (anonymous) را نمی‌توان حذف کرد.
+  اگر قرار است بعداً حذفش کنی، اول آن را در یک متغیر یا تابع نام‌دار نگه دار. یک listener می‌تواند خودش را
+  هم حذف کند (`removeEventListener` داخل بدنه‌اش)، و برای «فقط یک بار اجرا شو» راه ساده‌تری هم هست:
+
+  ```js
+  btn.addEventListener("click", () => console.log("welcome!"), { once: true });
+  // first click -> welcome!   further clicks -> nothing
+  ```
+
+  ### مثال اسلایدهای ۱۹ تا ۲۱: Button Action
+
+  ```html title=doc.html
+  <!DOCTYPE html>
+  <html>
+    <body>
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+
+      <script>
+        const btn = document.querySelector('button');
+
+        btn.addEventListener('click', () => {
+          const title = document.querySelector('#title');
+          title.textContent = 'Goodbye World';
+          title.style.color = 'red';
+        });
+      </script>
+    </body>
+  </html>
+  ```
+
+  - `document.querySelector('button')` با selector تگ، **اولین** `<button>` صفحه را پیدا می‌کند.
+  - `addEventListener('click', () => { ... })` یک arrow function برای کلیک ثبت می‌کند.
+  - داخل listener، `querySelector('#title')` عنوان را پیدا می‌کند (اینجا `#` لازم است چون ورودی CSS
+    selector است؛ برخلاف `getElementById("title")`).
+  - `title.textContent = 'Goodbye World'` متن را عوض می‌کند و `title.style.color = 'red'` رنگ را قرمز
+    می‌کند (درس «تغییر متن، HTML و استایل»).
+
+  اسلاید ۲۰ صفحه را **قبل** از کلیک نشان می‌دهد: عنوان سیاه «Hello World» و دکمه‌ی «CLICK ME!». اسلاید ۲۱
+  **بعد** از کلیک را نشان می‌دهد: عنوان «Goodbye World» به رنگ **قرمز** و دکمه بدون تغییر. در DOM، عنوان
+  به `<h1 id="title" style="color: red;">Goodbye World</h1>` تبدیل شده است. کلیک‌های بعدی هم همین مقدارها را
+  دوباره می‌نویسند و تغییر تازه‌ای دیده نمی‌شود.
+
+  ### `input` در برابر `change`، و `keydown` با `event.key`
+
+  ```html
+  <input id="name">
+  <script>
+    const nameBox = document.getElementById("name");
+    nameBox.addEventListener("input", (e) => console.log("input:", e.target.value));
+    nameBox.addEventListener("change", (e) => console.log("change:", e.target.value));
+  </script>
+  ```
+
+  اگر کاربر حرف `A` و بعد `l` را تایپ کند و سپس از کادر بیرون برود، خروجی این است: `input: A`، `input: Al`،
+  `change: Al`. یعنی `input` با هر تغییر و `change` یک بار در پایان. (`e.target` همان عنصری است که رویداد
+  رویش رخ داده؛ درس بعد.)
+
+  برای `keydown`، property `e.key` می‌گوید کدام کلید فشرده شده: `"a"`، `"Enter"`، `"Escape"`، `"ArrowUp"`
+  و ... :
+
+  ```js
+  searchBox.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") console.log("search for", searchBox.value);
+  });
+  ```
+
+  ### `load` روی `window`
+
+  ```js
+  window.addEventListener("load", () => console.log("page fully loaded"));
+  console.log("script runs first");
+  // script runs first -> page fully loaded
+  ```
+
+  `load` وقتی رخ می‌دهد که صفحه همراه **همه‌ی** منابعش (تصاویر، فایل‌های CSS و ...) بارگذاری شده باشد؛ پس از
+  `DOMContentLoaded` دیرتر است.
+
+  ::: tip
+  - همیشه نام رویداد را بدون `on` به `addEventListener` بده: `"click"`، `"input"`، `"keydown"`.
+  - اگر قرار است listener را بعداً حذف کنی، آن را تابع نام‌دار تعریف کن؛ اگر فقط یک بار لازم است،
+    `{ once: true }` بگذار.
+  :::
+
+  ::: trap
+  - `addEventListener("click", handler())` تابع را **همان لحظه** اجرا می‌کند و چیزی برای کلیک ثبت نمی‌شود.
+  - `el.onclick = ...` فقط یک handler نگه می‌دارد؛ مقداردهی دوم اولی را (و حتی `onclick` داخل HTML را) پاک
+    می‌کند. ولی `addEventListener` چندتایی است.
+  - `removeEventListener` با یک تابع ناشناسِ تازه هیچ‌چیزی را حذف نمی‌کند.
+  - `addEventListener("onclick", ...)` نه خطا می‌دهد نه هیچ‌وقت اجرا می‌شود.
+  - `querySelector('button')` فقط **اولین** دکمه را برمی‌گرداند؛ اگر دکمه‌ی دیگری قبل از دکمه‌ی موردنظرت
+    باشد، listener روی آن یکی ثبت می‌شود.
+  :::
+
+  ::: summary
+  - رویداد = اتفاقی در صفحه؛ listener = تابعی که با رخ دادن آن اجرا می‌شود.
+  - سه روش: `onclick="..."` در HTML، `el.onclick = fn` (فقط یکی)، `addEventListener` (مدرن، چندتایی، به ترتیب ثبت).
+  - مرجع تابع را بده (`fn`)، صدایش نزن (`fn()`)؛ برای آرگومان از `() => fn(arg)` استفاده کن.
+  - `removeEventListener` همان تابع را لازم دارد؛ `{ once: true }` برای اجرای یک‌باره.
+  - `input` با هر تغییر، `change` در پایان؛ `e.key` برای کلید؛ `load` بعد از همه‌ی منابع.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۱۸، روش **مدرن** وصل کردن رویداد که اجازه می‌دهد چند handler برای یک رویداد ثبت شود کدام
+      است؟
+    options:
+      - 'attribute `onclick` در HTML'
+      - 'property `onclick` در JavaScript (`el.onclick = fn`)'
+      - '`addEventListener`'
+      - '`document.write`'
+    answer: 3
+    explain: |
+      اسلاید ۱۸ می‌گوید «addEventListener is the modern way to attach events» و «Multiple handlers can be added
+      to the same event». attribute و property `onclick` هر کدام فقط یک handler نگه می‌دارند و مقداردهی دوباره
+      قبلی را پاک می‌کند (رد گزینه‌های ۱ و ۲). `document.write` اصلاً ربطی به رویدادها ندارد و فقط متن در سند
+      می‌نویسد.
+  - level: easy
+    stem: |
+      برای اجرای `handler` با کلیک روی دکمه، در جای خالی `btn.addEventListener("______", handler)` کدام گزینه
+      قرار می‌گیرد؟
+    options:
+      - '`onclick`'
+      - '`click`'
+      - '`onClick`'
+      - '`clicked`'
+    answer: 2
+    explain: |
+      در `addEventListener` نام رویداد **بدون پیشوند on** نوشته می‌شود: `"click"`. پیشوند `on` فقط در attribute
+      و property به کار می‌رود (`onclick`). `"onclick"` و `"onClick"` رویدادهایی هستند که هرگز رخ نمی‌دهند
+      (نام‌ها به حروف بزرگ و کوچک هم حساس‌اند)، و رویدادی به نام `"clicked"` هم وجود ندارد؛ در هیچ‌کدام خطایی
+      نمی‌گیری، فقط listener هیچ‌وقت اجرا نمی‌شود.
+  - level: medium
+    stem: کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      const btn = document.getElementById("btn");
+      btn.addEventListener("onclick", () => console.log("clicked"));
+      btn.addEventListener("click", () => console.log("click!"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["clicked", "click!"]
+      - out: "clicked"
+      - out: ""
+      - out: "click!"
+    answer: 4
+    explain: |
+      listener اول برای رویدادی به نام `"onclick"` ثبت شده که هیچ‌وقت رخ نمی‌دهد؛ مرورگر هم خطایی نمی‌دهد و
+      فقط آن listener هرگز اجرا نمی‌شود (رد گزینه‌های ۱ و ۲). listener دوم با نام درست `"click"` ثبت شده و با
+      کلیک اجرا می‌شود، پس خروجی خالی هم نیست (رد گزینه‌ی ۳).
+  - level: hard
+    stem: کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      const btn = document.getElementById("btn");
+      btn.onclick = () => console.log("A");
+      btn.onclick = () => console.log("B");
+      btn.addEventListener("click", () => console.log("C"));
+      btn.addEventListener("click", () => console.log("D"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["A", "B", "C", "D"]
+      - out: ["B", "C", "D"]
+      - out: ["A", "C", "D"]
+      - out: ["C", "D", "B"]
+    answer: 2
+    explain: |
+      property `onclick` فقط یک handler نگه می‌دارد و مقداردهی دوم، `A` را با `B` جایگزین می‌کند (رد گزینه‌های
+      ۱ و ۳). listenerهای `addEventListener` روی هم جمع می‌شوند و به ترتیب ثبت اجرا می‌شوند. خانه‌ی `onclick`
+      اولین بار قبل از دو listener دیگر پر شده، پس جایگاهش در صف قبل از آن‌هاست و `B` اول اجرا می‌شود (رد
+      گزینه‌ی ۴).
+  - level: hard
+    stem: کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn" onclick="console.log('attr')">Go</button>
+    code: |
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", () => console.log("listener"));
+      btn.onclick = () => console.log("property");
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["property", "listener"]
+      - out: ["attr", "listener", "property"]
+      - out: ["attr", "property", "listener"]
+      - out: ["listener", "property"]
+    answer: 1
+    explain: |
+      attribute `onclick="..."` و property `btn.onclick` در واقع **یک خانه‌ی مشترک** هستند؛ مقداردهی property
+      همان handler HTML را جایگزین می‌کند، پس `attr` دیگر چاپ نمی‌شود (رد گزینه‌های ۲ و ۳). آن خانه از
+      لحظه‌ی خوانده شدن HTML، یعنی قبل از `addEventListener`، در صف listenerها جا گرفته؛ پس `property` قبل از
+      `listener` اجرا می‌شود (رد گزینه‌ی ۴).
+  - level: medium
+    stem: کاربر **دو بار** روی دکمه کلیک می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      function sayHi() {
+        console.log("hi");
+      }
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", sayHi());
+      console.log("ready");
+    events:
+      - { type: click, target: "#btn", times: 2 }
+    options:
+      - out: ["ready", "hi", "hi"]
+      - out: ["hi", "ready", "hi", "hi"]
+      - out: ["hi", "ready"]
+      - out: ["!! TypeError"]
+    answer: 3
+    explain: |
+      `sayHi()` با پرانتز یعنی «همین الان اجرا کن»؛ پس `hi` هنگام اجرای اسکریپت و قبل از `ready` چاپ می‌شود.
+      مقدار برگشتی آن `undefined` است که به‌عنوان listener ثبت می‌شود، یعنی هیچ‌چیز؛ در نتیجه کلیک‌ها هیچ
+      خروجی‌ای ندارند (رد گزینه‌های ۱ و ۲). `addEventListener` با listener برابر `undefined` خطا نمی‌دهد و آن
+      را بی‌صدا نادیده می‌گیرد (رد گزینه‌ی ۴). درست آن است که `sayHi` را بدون پرانتز بدهیم.
+  - level: hard
+    stem: کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      function sayHi() {
+        console.log("hi");
+      }
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", sayHi);
+      btn.addEventListener("click", sayHi);
+      btn.addEventListener("click", () => console.log("arrow"));
+      btn.addEventListener("click", () => console.log("arrow"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["hi", "hi", "arrow", "arrow"]
+      - out: ["hi", "arrow"]
+      - out: ["hi", "hi", "arrow"]
+      - out: ["hi", "arrow", "arrow"]
+    answer: 4
+    explain: |
+      ثبت دوباره‌ی **همان مرجع تابع** (`sayHi`) برای همان رویداد نادیده گرفته می‌شود، پس `hi` فقط یک بار چاپ
+      می‌شود (رد گزینه‌های ۱ و ۳). اما دو arrow function با متن یکسان دو **شیء تابع متفاوت** هستند و هر دو ثبت
+      می‌شوند، پس `arrow` دو بار چاپ می‌شود (رد گزینه‌ی ۲).
+  - level: medium
+    stem: کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", () => console.log("anon"));
+      btn.removeEventListener("click", () => console.log("anon"));
+      function named() {
+        console.log("named");
+      }
+      btn.addEventListener("click", named);
+      btn.removeEventListener("click", named);
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ""
+      - out: "anon"
+      - out: ["anon", "named"]
+      - out: "named"
+    answer: 2
+    explain: |
+      `removeEventListener` فقط وقتی کار می‌کند که **همان شیء تابع** را بگیرد. در خط سوم یک arrow function
+      **تازه** ساخته شده که با listener ثبت‌شده فقط هم‌متن است، نه یکی؛ پس چیزی حذف نمی‌شود و `anon` چاپ
+      می‌شود (رد گزینه‌های ۱ و ۴). ولی `named` با همان مرجع حذف شده و اجرا نمی‌شود (رد گزینه‌ی ۳).
+  - level: medium
+    stem: کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      const btn = document.getElementById("btn");
+      let n = 0;
+      btn.addEventListener("click", () => console.log("once", ++n), { once: true });
+      btn.addEventListener("click", () => console.log("always"));
+    events:
+      - { type: click, target: "#btn", times: 3 }
+    options:
+      - out: ["once 1", "always"]
+      - out: ["once 1", "always", "once 2", "always", "once 3", "always"]
+      - out: ["once 1", "always", "always", "always"]
+      - out: ["always", "always", "always"]
+    answer: 3
+    explain: |
+      گزینه‌ی `{ once: true }` یعنی listener بعد از **اولین** اجرا خودبه‌خود حذف شود؛ پس `once 1` فقط با کلیک
+      اول چاپ می‌شود (رد گزینه‌ی ۲) و اجرا هم می‌شود (رد گزینه‌ی ۴). listener دوم چنین تنظیمی ندارد و با هر سه
+      کلیک اجرا می‌شود (رد گزینه‌ی ۱ که فکر کرده `once` روی همه‌ی listenerهای دکمه اثر دارد).
+  - level: medium
+    stem: |
+      کاربر در کادر متنی حرف `A` و سپس حرف `l` را تایپ می‌کند و بعد بیرون کادر کلیک می‌کند (کادر از حالت
+      فعال خارج می‌شود). خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <input id="name">
+    code: |
+      const nameBox = document.getElementById("name");
+      nameBox.addEventListener("input", (e) => console.log("input:", e.target.value));
+      nameBox.addEventListener("change", (e) => console.log("change:", e.target.value));
+    events:
+      - { type: input, target: "#name", value: "A" }
+      - { type: input, target: "#name", value: "Al" }
+      - { type: change, target: "#name" }
+    options:
+      - out: ["input: A", "input: Al", "change: Al"]
+      - out: ["change: A", "change: Al", "input: Al"]
+      - out: ["input: Al", "change: Al"]
+      - out: ["input: A", "change: A", "input: Al", "change: Al"]
+    answer: 1
+    explain: |
+      `input` با **هر** تغییر مقدار رخ می‌دهد، یعنی یک بار بعد از `A` و یک بار بعد از `Al` (رد گزینه‌ی ۳). در
+      کادر متنی، `change` فقط وقتی رخ می‌دهد که کاربر کارش را تمام کند و از کادر بیرون برود، پس فقط یک بار و در
+      پایان با مقدار نهایی `Al` (رد گزینه‌های ۲ و ۴ که `change` را با هر حرف فرض کرده‌اند).
+  - level: easy
+    stem: کاربر داخل کادر، کلید `a` و سپس کلید Enter را فشار می‌دهد. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <input id="box">
+    code: |
+      document.getElementById("box").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") console.log("submit search");
+        else console.log("key:", e.key);
+      });
+    events:
+      - { type: keydown, target: "#box", key: "a" }
+      - { type: keydown, target: "#box", key: "Enter" }
+    options:
+      - out: ["submit search", "key: a"]
+      - out: ["key: a", "key: Enter"]
+      - out: ["key: a", "submit search"]
+      - out: "submit search"
+    answer: 3
+    explain: |
+      `keydown` با هر کلید رخ می‌دهد و `e.key` نام کلید را می‌دهد. برای کلید اول `e.key` برابر `"a"` است و
+      شاخه‌ی `else` اجرا می‌شود؛ برای کلید دوم برابر `"Enter"` است و `submit search` چاپ می‌شود. ترتیب خروجی
+      همان ترتیب فشردن کلیدهاست (رد گزینه‌ی ۱)، شرط برای Enter درست است (رد گزینه‌ی ۲)، و کلید `a` هم
+      رویداد دارد (رد گزینه‌ی ۴).
+  - level: easy
+    stem: 'کدام جفتِ «رویداد: زمان رخ دادن» نادرست است؟'
+    options:
+      - '`click`: وقتی کاربر روی عنصر کلیک می‌کند'
+      - '`input`: هر بار که مقدار یک کادر ورودی تغییر می‌کند'
+      - '`submit`: وقتی یک فرم ارسال می‌شود'
+      - '`load`: هر بار که کاربر کلیدی را روی صفحه‌کلید فشار می‌دهد'
+    answer: 4
+    explain: |
+      `load` وقتی رخ می‌دهد که صفحه (یا یک منبع مثل تصویر) کاملاً بارگذاری شده باشد؛ رویداد فشردن کلید
+      `keydown` است. سه جفت دیگر درست‌اند و همه از رویدادهای رایج اسلاید ۱۸ هستند: `click` برای کلیک، `input`
+      برای تغییر مقدار کادر ورودی و `submit` برای ارسال فرم.
+  - level: hard
+    stem: |
+      کد مثال Button Action (اسلاید ۱۹) روی صفحه‌ی زیر اجرا می‌شود که یک دکمه‌ی اضافی دارد. کاربر روی دکمه‌ی
+      **CLICK ME!** کلیک می‌کند و بعد در Console متن و رنگ inline عنوان را چاپ می‌کنیم. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+      <button id="reset">Reset</button>
+      <button id="go">CLICK ME!</button>
+    code: |
+      const btn = document.querySelector('button');
+
+      btn.addEventListener('click', () => {
+        const title = document.querySelector('#title');
+        title.textContent = 'Goodbye World';
+        title.style.color = 'red';
+      });
+    events:
+      - { type: click, target: "#go" }
+    after: |
+      const t = document.querySelector("#title");
+      console.log(t.textContent, JSON.stringify(t.style.color));
+    options:
+      - out: 'Goodbye World "red"'
+      - out: 'Hello World ""'
+      - out: 'Goodbye World ""'
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      `querySelector('button')` فقط **اولین** `<button>` صفحه را برمی‌گرداند که اینجا دکمه‌ی Reset است؛ پس
+      listener روی Reset ثبت شده و کلیک روی CLICK ME! هیچ کاری نمی‌کند. متن عنوان همان `Hello World` می‌ماند و
+      رنگ inline آن خالی است (رد گزینه‌های ۱ و ۳). خطایی هم رخ نمی‌دهد، چون عنصرها وجود دارند (رد گزینه‌ی ۴).
+      برای انتخاب دکمه‌ی درست باید از `querySelector('#go')` استفاده می‌کردیم.
+  - level: medium
+    stem: |
+      نسخه‌ی زیر همان مثال Button Action است که یک شمارنده هم دارد. کاربر **سه بار** روی دکمه کلیک می‌کند و
+      سپس در Console دستور `console.log(clicks, document.querySelector("#title").textContent)` را اجرا
+      می‌کنیم. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+    code: |
+      const btn = document.querySelector('button');
+      let clicks = 0;
+      btn.addEventListener('click', () => {
+        clicks++;
+        const title = document.querySelector('#title');
+        title.textContent = 'Goodbye World';
+        title.style.color = 'red';
+      });
+    events:
+      - { type: click, target: "button", times: 3 }
+    after: |
+      console.log(clicks, document.querySelector("#title").textContent);
+    options:
+      - out: "3 Goodbye World"
+      - out: "1 Goodbye World"
+      - out: "3 Goodbye WorldGoodbye WorldGoodbye World"
+      - out: "0 Hello World"
+    answer: 1
+    explain: |
+      listener با **هر** کلیک اجرا می‌شود، پس `clicks` سه بار زیاد می‌شود و `3` است (رد گزینه‌ی ۲ که فکر کرده
+      listener یک بار مصرف است). `textContent = ...` متن را **جایگزین** می‌کند، نه اینکه به آن اضافه کند؛ پس
+      متن نهایی یک بار `Goodbye World` است (رد گزینه‌ی ۳). گزینه‌ی ۴ فرض کرده کلیک‌ها اثری نداشته‌اند.
+  - level: easy
+    stem: کدام عبارت درباره‌ی رویدادها (اسلاید ۱۸) نادرست است؟
+    options:
+      - 'رویدادها به صفحه‌ی وب اجازه می‌دهند به کارهای کاربر واکنش نشان دهد.'
+      - 'handlerها را می‌توان هم با attributeهای HTML و هم با JavaScript تنظیم کرد.'
+      - 'با `addEventListener` برای یک نوع رویداد روی یک عنصر فقط یک handler می‌توان ثبت کرد.'
+      - 'رویدادها تجربه‌ی کاربری تعاملی و پویا را ممکن می‌کنند.'
+    answer: 3
+    explain: |
+      اسلاید ۱۸ صریحاً می‌گوید «Multiple handlers can be added to the same event»؛ با `addEventListener` هر
+      تعداد listener می‌توان ثبت کرد و همه به ترتیب ثبت اجرا می‌شوند. محدودیت «فقط یک handler» مربوط به
+      `onclick` (attribute یا property) است. سه گزینه‌ی دیگر عیناً بندهای همان اسلاید هستند.
+  - level: medium
+    stem: برای اینکه `removeEventListener` یک listener را واقعاً حذف کند، کدام شرط لازم است؟
+    options:
+      - 'همان نوع رویداد و **همان مرجع تابع** (همان شیء تابع) که به `addEventListener` داده شده بود'
+      - 'فقط نوع رویداد کافی است و همه‌ی listenerهای آن نوع حذف می‌شوند'
+      - 'تابعی با همان بدنه (همان متن کد)، حتی اگر شیء تابع جدیدی باشد'
+      - 'listener حتماً باید arrow function باشد'
+    answer: 1
+    explain: |
+      مرورگر listener را با مقایسه‌ی **مرجع** پیدا می‌کند: نوع رویداد باید یکی باشد و تابع باید دقیقاً همان
+      شیء باشد (و اگر capture تنظیم شده، همان تنظیم). دو تابع هم‌متن، دو شیء متفاوت‌اند (رد گزینه‌ی ۳)؛ برای
+      همین listener ناشناس قابل حذف نیست. `removeEventListener` بدون تابع چیزی حذف نمی‌کند (رد گزینه‌ی ۲)،
+      و نوع تابع (arrow یا معمولی) هم اهمیتی ندارد (رد گزینه‌ی ۴).
+  - level: easy
+    stem: رویداد `load` روی `window` چه زمانی رخ می‌دهد؟
+    options:
+      - 'بلافاصله بعد از اجرای اولین تگ `<script>`'
+      - 'هر بار که کاربر روی صفحه کلیک کند'
+      - 'قبل از اینکه مرورگر شروع به parse کردن HTML کند'
+      - 'وقتی کل صفحه همراه همه‌ی منابعش (مثل تصاویر و فایل‌های CSS) کامل بارگذاری شده باشد'
+    answer: 4
+    explain: |
+      `load` روی `window` آخرین رویداد بارگذاری است و منتظر همه‌ی منابع می‌ماند؛ حتی بعد از `DOMContentLoaded`
+      رخ می‌دهد. اسکریپت‌های صفحه قبل از آن اجرا می‌شوند (رد گزینه‌ی ۱)، با کلیک ربطی ندارد (رد گزینه‌ی ۲)، و
+      قبل از parse هم نمی‌تواند باشد، چون اسکریپتی که listener را ثبت می‌کند خودش بخشی از HTML است (رد
+      گزینه‌ی ۳).
+  - level: hard
+    stem: کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      function greet(name) {
+        console.log("Hello " + name);
+      }
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", () => greet("Sara"));
+      btn.addEventListener("click", greet);
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["Hello Sara", "Hello undefined"]
+      - out: ["Hello Sara", "Hello Sara"]
+      - out: ["Hello Sara", "Hello [object MouseEvent]"]
+      - out: ["Hello Sara", "!! TypeError"]
+    answer: 3
+    explain: |
+      listener اول یک arrow function است که خودش `greet("Sara")` را صدا می‌زند: `Hello Sara`. در listener دوم،
+      خودِ `greet` ثبت شده و مرورگر هنگام کلیک آن را با **شیء رویداد** (یک `MouseEvent`) به‌عنوان اولین آرگومان
+      صدا می‌زند؛ پس `name` همان شیء است و در الحاق با رشته به `[object MouseEvent]` تبدیل می‌شود. مرورگر
+      آرگومان می‌فرستد، پس `undefined` نیست (رد گزینه‌ی ۱)، `"Sara"` به خاطر سپرده نمی‌شود (رد گزینه‌ی ۲)، و
+      الحاق شیء با رشته هم خطا نمی‌دهد (رد گزینه‌ی ۴).
+  - level: medium
+    stem: کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      const btn = document.getElementById("btn");
+      function handler() {
+        console.log("clicked");
+        btn.removeEventListener("click", handler);
+      }
+      btn.addEventListener("click", handler);
+    events:
+      - { type: click, target: "#btn", times: 3 }
+    options:
+      - out: ["clicked", "clicked", "clicked"]
+      - out: "clicked"
+      - out: ""
+      - out: ["clicked", "!! TypeError"]
+    answer: 2
+    explain: |
+      با کلیک اول، `handler` اجرا می‌شود، `clicked` را چاپ می‌کند و بعد **خودش** را با همان مرجع حذف می‌کند؛
+      پس کلیک‌های دوم و سوم هیچ listenerی ندارند (رد گزینه‌ی ۱). حذف بعد از چاپ انجام شده، پس خروجی خالی
+      نیست (رد گزینه‌ی ۳)، و حذف یک listener از داخل خودش کاملاً مجاز است (رد گزینه‌ی ۴). این رفتار معادل
+      `{ once: true }` است.
+  - level: easy
+    stem: کدام عبارت درباره‌ی `btn.onclick = fn` درست است؟
+    options:
+      - 'فقط یک handler نگه می‌دارد و مقداردهی دوباره، handler قبلی را جایگزین می‌کند.'
+      - 'مثل `addEventListener` همه‌ی handlerهای مقداردهی‌شده را پشت سر هم اجرا می‌کند.'
+      - 'فقط داخل کد HTML قابل استفاده است.'
+      - 'نام رویداد را باید بدون on نوشت، یعنی `btn.click = fn`.'
+    answer: 1
+    explain: |
+      `onclick` یک property معمولی است و مثل هر property دیگری فقط یک مقدار دارد؛ مقداردهی دوم، اولی را پاک
+      می‌کند (رد گزینه‌ی ۲). این property در JavaScript استفاده می‌شود و نسخه‌ی HTML آن attribute `onclick` است
+      (رد گزینه‌ی ۳). «بدون on» قاعده‌ی `addEventListener` است؛ `btn.click` یک متد دیگر است (کلیک
+      برنامه‌نویسی‌شده روی دکمه) و مقداردهی آن handler ثبت نمی‌کند (رد گزینه‌ی ۴).
+  - level: hard
+    stem: |
+      صفحه بارگذاری می‌شود و سپس کاربر یک بار روی دکمه کلیک می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="save" onclick="console.log(this.id)">Save</button>
+    code: |
+      const btn = document.getElementById("save");
+      console.log(typeof btn.onclick, btn.getAttribute("onclick"));
+      btn.addEventListener("click", () => console.log("listener"));
+    events:
+      - { type: click, target: "#save" }
+    options:
+      - out: ["string console.log(this.id)", "save", "listener"]
+      - out: ["function console.log(this.id)", "undefined", "listener"]
+      - out: ["function console.log(this.id)", "listener", "save"]
+      - out: ["function console.log(this.id)", "save", "listener"]
+    answer: 4
+    explain: |
+      مرورگر رشته‌ی attribute را به یک **تابع** تبدیل می‌کند و در property `onclick` می‌گذارد، پس `typeof`
+      آن `"function"` است، در حالی که `getAttribute` همان متن خام را برمی‌گرداند (رد گزینه‌ی ۱). داخل handler
+      attribute، `this` همان دکمه است و `save` چاپ می‌شود (رد گزینه‌ی ۲). این handler از هنگام parse شدن HTML
+      ثبت شده، یعنی قبل از `addEventListener`، پس قبل از `listener` اجرا می‌شود (رد گزینه‌ی ۳).

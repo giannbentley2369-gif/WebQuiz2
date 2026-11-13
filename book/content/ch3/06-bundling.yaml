@@ -1,0 +1,340 @@
+id: ch3-bundling
+title: "Bundling برای مرورگر"
+slides: "NodeJS & TS، اسلاید ۱۲"
+lesson: |
+  فرض کن برای یک سفر، وسایلت را در پنجاه کیسه‌ی کوچک جدا گذاشته‌ای. حمل کردنشان عذاب است. راه بهتر: همه را در **یک چمدان** بگذاری، چیزهایی را که اصلاً استفاده نمی‌کنی **بیرون بیاوری** و لباس‌ها را **وکیوم کنی** تا جای کمتری بگیرند. **Bundling** (بسته‌بندی) برای کد JavaScript دقیقاً همین کار را می‌کند: یکی کردن فایل‌ها (چمدان)، **tree-shaking** (بیرون آوردن چیزهای بی‌استفاده) و **minification** (وکیوم کردن).
+
+  ### مشکل: برنامه‌ی مرورگر با فایل‌های زیاد
+  یک برنامه‌ی واقعی ده‌ها یا صدها فایل JavaScript دارد. اگر بخواهیم همه را مستقیم به مرورگر بدهیم:
+
+  ```html
+  <script src="utils.js"></script>
+  <script src="cart.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js"></script> <!-- order matters: app.js needs the others -->
+  ```
+
+  - برای **هر فایل** یک **درخواست HTTP** (HTTP request: پیامی که مرورگر برای گرفتن یک فایل به سرور می‌فرستد) جدا لازم است و هر درخواست سربار و تأخیر خودش را دارد.
+  - **ترتیب** تگ‌ها مهم است و با زیاد شدن فایل‌ها، مدیریتش سخت می‌شود.
+  - پکیج‌های npm در پوشه‌ی `node_modules` هستند، ولی مرورگر از `node_modules` خبر ندارد و `require` را هم نمی‌شناسد. حتی `import _ from "lodash"` در مرورگر کار نمی‌کند، چون مرورگر فقط آدرس‌هایی را می‌فهمد که با `./`، `../` یا `/` شروع شوند (یا آدرس کامل باشند). Chrome در این حالت خطای `Failed to resolve module specifier "lodash"` می‌دهد.
+
+  راه‌حل، یک **bundler** (بسته‌بند) است.
+
+  ### Bundling برای مرورگرها (اسلاید ۱۲)
+  bundler از یک فایل شروع (**entry point**: نقطه‌ی ورود، مثلاً `src/app.js`) را می‌خواند، همه‌ی `import`ها و `require`هایش را دنبال می‌کند، **گراف وابستگی‌ها** (dependency graph: نقشه‌ی اینکه کدام فایل به کدام فایل نیاز دارد) را می‌سازد و همه را در یک فایل خروجی به اسم **bundle** می‌ریزد. اسلاید ۱۲ پنج نکته دارد:
+
+  ۱. **Combines multiple JS files into a single output for browsers.** چند فایل JavaScript را در **یک خروجی** برای مرورگر ترکیب می‌کند.
+
+  ۲. **Reduces HTTP requests and improves load performance.** تعداد درخواست‌های HTTP کم و سرعت بارگذاری صفحه بیشتر می‌شود.
+
+  ۳. **Handles module resolution, imports, and exports automatically.** کار **module resolution** (پیدا کردن فایل واقعی هر `import`؛ چه مسیر نسبی مثل `./math.js` باشد و چه اسم یک پکیج مثل `lodash` در `node_modules`) و وصل کردن `import`ها و `export`ها را **خودکار** انجام می‌دهد.
+
+  ۴. **Often includes optimizations like minification and tree-shaking.** معمولاً **بهینه‌سازی‌هایی** مثل minification و tree-shaking را هم انجام می‌دهد (پایین‌تر می‌بینیم).
+
+  ۵. **Popular tools: Webpack, Rollup, and Parcel.** ابزارهای معروف: **Webpack** (قدیمی‌ترینِ این سه و پرامکانات‌ترینشان)، **Rollup** (محبوب برای ساختن کتابخانه‌ها و معروف به tree-shaking) و **Parcel** (تقریباً بدون نیاز به تنظیمات).
+
+  #### یک مثال واقعی
+  دو فایل زیر را با bundler سریع **esbuild** (یک bundler مدرن) bundle کرده‌ایم. خروجی Webpack ظاهر متفاوتی دارد، ولی ایده همین است:
+
+  ```js title=src/math.js
+  // Math helpers
+  export function add(a, b) {
+    return a + b;
+  }
+
+  export function multiply(a, b) {
+    return a * b;
+  }
+  ```
+
+  ```js title=src/app.js
+  import { add } from "./math.js";
+
+  // Show the result of a small calculation
+  const result = add(2, 3);
+  console.log("Result:", result);
+  ```
+
+  ```js title=dist/bundle.js
+  (() => {
+    // src/math.js
+    function add(a, b) {
+      return a + b;
+    }
+
+    // src/app.js
+    var result = add(2, 3);
+    console.log("Result:", result);
+  })();
+  ```
+
+  به خروجی دقت کن:
+  - هر دو فایل در **یک** فایل آمده‌اند و `import`/`export` دیگر لازم نیست؛ bundler خودش آن‌ها را به هم وصل کرده است.
+  - تابع `multiply` **حذف شده**، چون هیچ‌جا استفاده نشده بود (tree-shaking).
+  - توضیح‌های اصلی (`// Math helpers`) حذف شده‌اند؛ خط‌هایی مثل `// src/math.js` را خود bundler گذاشته تا معلوم باشد هر تکه از کجا آمده.
+  - کل کد داخل یک تابع `(() => { … })()` پیچیده شده تا اسم‌هایش وارد محدوده‌ی سراسری (global scope) نشوند.
+
+  حالا در HTML فقط یک خط لازم است:
+
+  ```html
+  <script src="dist/bundle.js"></script>
+  ```
+
+  ### Minification (کوچک‌سازی)
+  **minification** یعنی کوچک کردن حجم کد **بدون تغییر رفتارش**: فاصله‌ها، خط‌های خالی و توضیح‌ها حذف و اسم متغیرهای محلی کوتاه می‌شوند. مرورگر به خوانایی کد اهمیتی نمی‌دهد، ولی فایل کوچک‌تر سریع‌تر دانلود می‌شود.
+
+  قبل از minification:
+
+  ```js title=total.js
+  // Calculate the total price
+  function calculateTotal(price, quantity) {
+    const total = price * quantity;
+    return total;
+  }
+
+  console.log(calculateTotal(10, 3));
+  ```
+
+  بعد از bundle و minify با esbuild (گزینه‌های `--bundle --minify`):
+
+  ```js title=total.min.js
+  (()=>{function l(t,o){return t*o}console.log(l(10,3));})();
+  ```
+
+  هر دو نسخه `30` چاپ می‌کنند. اسم `calculateTotal` به `l` و پارامترها به `t` و `o` تغییر کرده‌اند؛ چون همه‌ی استفاده‌ها **با هم** عوض شده‌اند، رفتار برنامه دست نخورده است.
+
+  ### Tree-shaking (تکاندن درخت)
+  درختی را تصور کن که برگ‌های خشک دارد؛ اگر تکانش بدهی، برگ‌های مرده می‌ریزند. **tree-shaking** کدی را که **export شده ولی هیچ‌جا استفاده نشده** (dead code: کد مرده) از bundle نهایی حذف می‌کند؛ مثل `multiply` در مثال بالا. حتی اگر تابعی را `import` کنی ولی هیچ‌وقت صدایش نزنی، باز هم حذف می‌شود.
+
+  tree-shaking به **ES Modules** تکیه دارد، چون `import` و `export` **ایستا** (static) هستند: باید در بالاترین سطح فایل و با اسم‌های ثابت نوشته شوند. پس bundler **قبل از اجرای برنامه**، فقط با خواندن کد، دقیقاً می‌فهمد چه چیزی از کجا استفاده شده است. اما `require` در CommonJS یک فراخوانی معمولی تابع است و می‌تواند **پویا** باشد:
+
+  ```js
+  const lib = require(useFast ? "./fast.js" : "./slow.js"); // decided only at runtime
+  exports[name] = value;                                     // export name decided at runtime
+  ```
+
+  bundler در این حالت نمی‌تواند مطمئن باشد چه چیزی لازم است و معمولاً همه را نگه می‌دارد. ما همان `math.js` را به شکل CommonJS (`exports.add = …` و `exports.multiply = …`) نوشتیم و bundle کردیم: `multiply` این بار در bundle **باقی ماند**.
+
+  ### Bundling، Transpiling و Minifying را قاطی نکن
+
+  | کار | چه می‌کند؟ | ابزار نمونه |
+  |---|---|---|
+  | **Transpiling** (ترجمه‌ی کد) | کد جدید (ES2022، TypeScript، JSX) را به JavaScript قدیمی‌تر یا ساده‌تر تبدیل می‌کند؛ تعداد فایل‌ها عوض نمی‌شود | Babel و SWC (فصل اول)، `tsc` |
+  | **Bundling** (یکی کردن) | چند ماژول را در یک (یا چند) فایل خروجی ترکیب می‌کند | Webpack، Rollup، Parcel |
+  | **Minifying** (کوچک‌سازی) | حجم کد را بدون تغییر رفتار کم می‌کند | Terser، esbuild |
+
+  در عمل، bundler معمولاً transpiler و minifier را هم در مسیر کارش صدا می‌زند و همه با یک اسکریپت npm اجرا می‌شوند؛ مثلاً `"build": "webpack --mode production"` که در حالت production، minification و tree-shaking را هم روشن می‌کند.
+
+  ### Source map
+  اشکال‌زدایی (debug) کد minify‌شده تقریباً غیرممکن است: خطا در «خط ۱، ستون ۸۴۳۲» یک فایل یک‌خطی! **source map** (نقشه‌ی منبع) فایل جداگانه‌ای مثل `bundle.js.map` است که هر تکه از کد bundle را به **فایل و خط اصلی‌اش** وصل می‌کند. ابزار توسعه‌دهنده‌ی مرورگر (DevTools) با کمک آن، کد اصلی و خوانا را نشان می‌دهد. وقتی مثال بالا را با گزینه‌ی source map ساختیم، کنار `bundle.js` فایل `bundle.js.map` هم ساخته شد که در آن آمده بود این bundle از `src/math.js` و `src/app.js` ساخته شده است.
+
+  ::: info ابزارهای مدرن‌تر
+  - **esbuild**: bundler بسیار سریعی که با زبان Go نوشته شده است.
+  - **Vite**: ابزار محبوبی که در زمان توسعه خیلی سریع است و برای خروجی نهایی هم bundle می‌سازد.
+  - در پروژه‌های بزرگ، bundler می‌تواند خروجی را به چند تکه (chunk) هم تقسیم کند تا هر صفحه فقط کد لازم خودش را دانلود کند (code splitting).
+  :::
+
+  ::: tip
+  bundler کد **ما** را برای مرورگر آماده می‌کند، ولی پکیج‌ها را دانلود نمی‌کند؛ دانلود هنوز کار `npm install` است و bundler از چیزهایی استفاده می‌کند که در `node_modules` هست. bundler معمولاً یک devDependency است و با اسکریپتی مثل `npm run build` اجرا می‌شود.
+  :::
+
+  ::: trap
+  - **tree-shaking** کدِ استفاده‌نشده را از **bundle** حذف می‌کند، **نه** پکیج‌ها را از `node_modules`.
+  - **minification** کد را کوچک می‌کند ولی کد مرده را لزوماً حذف نمی‌کند؛ حذف کد مرده کار tree-shaking است. این دو را با هم عوض نکن.
+  - Babel یک **transpiler** است، نه bundler؛ Webpack یک **bundler** است، نه transpiler.
+  :::
+
+  ::: summary
+  - bundler: چند فایل ← یک خروجی برای مرورگر، درخواست HTTP کمتر و بارگذاری سریع‌تر، module resolution و `import`/`export` خودکار.
+  - بهینه‌سازی‌ها: minification (کوچک‌سازی بدون تغییر رفتار) و tree-shaking (حذف کد مرده؛ به `import`/`export` ایستای ES Modules تکیه دارد).
+  - ابزارها: Webpack، Rollup، Parcel (و ابزارهای مدرن‌تری مثل esbuild و Vite).
+  - transpiling ≠ bundling ≠ minifying؛ source map برای debug کد bundle‌شده است.
+  :::
+questions:
+  - level: easy
+    stem: کار اصلی یک **bundler** چیست؟
+    options:
+      - 'تبدیل کد TypeScript به JavaScript'
+      - 'ترکیب چند فایل JavaScript (ماژول) در یک فایل خروجی برای مرورگر'
+      - 'اجرای کد JavaScript روی سرور'
+      - 'دانلود و نصب پکیج‌ها از registry'
+    answer: 2
+    explain: |
+      اسلاید ۱۲: «Combines multiple JS files into a single output for browsers». تبدیل TypeScript به JavaScript کار transpiler/کامپایلر (مثل `tsc` یا Babel) است، اجرای JS روی سرور کار Node.js است و دانلود پکیج‌ها کار `npm install`.
+  - level: easy
+    stem: کدام گزینه جزو ابزارهای bundling که اسلاید ۱۲ نام می‌برد **نیست**؟
+    options:
+      - 'Webpack'
+      - 'Rollup'
+      - 'Parcel'
+      - 'Express'
+    answer: 4
+    explain: |
+      اسلاید ۱۲: «Popular tools: Webpack, Rollup, and Parcel». Express یک فریم‌ورک وب برای ساختن سرور و API در Node.js است و هیچ ربطی به bundling ندارد.
+  - level: medium
+    stem: چرا bundling سرعت بارگذاری صفحه را بیشتر می‌کند؟
+    options:
+      - 'چون مرورگر به‌جای ده‌ها درخواست HTTP برای فایل‌های جدا، فقط یک (یا چند) فایل دانلود می‌کند.'
+      - 'چون bundle کد را چندنخی (multi-threaded) می‌کند.'
+      - 'چون با bundle دیگر به سرور نیازی نیست.'
+      - 'چون مرورگر کد bundle‌شده را بدون خواندن و پردازش (parse) اجرا می‌کند.'
+    answer: 1
+    explain: |
+      اسلاید ۱۲: «Reduces HTTP requests and improves load performance». هر فایل یک درخواست HTTP با سربار و تأخیر خودش است و کم شدن تعداد درخواست‌ها بارگذاری را سریع‌تر می‌کند (minification هم با کوچک کردن حجم کمک می‌کند). bundle کد را چندنخی نمی‌کند، خودش هم باید از سرور دانلود شود و مرورگر مثل هر کد دیگری آن را parse می‌کند.
+  - level: medium
+    stem: کدام گزینه **minification** را درست توصیف می‌کند؟
+    options:
+      - 'حذف توابعی که در هیچ‌جای برنامه استفاده نشده‌اند'
+      - 'فشرده کردن تصاویر و فونت‌های سایت'
+      - 'حذف فاصله‌ها و توضیح‌ها و کوتاه کردن اسم متغیرهای محلی، بدون تغییر رفتار کد'
+      - 'تبدیل کد JavaScript به TypeScript'
+    answer: 3
+    explain: |
+      minification متن کد را کوچک می‌کند: فاصله‌ها، خط‌های خالی و توضیح‌ها حذف و اسم‌های محلی کوتاه می‌شوند، ولی خروجی برنامه همان می‌ماند. گزینه‌ی ۱ تعریف **tree-shaking** است (دام اصلی این تست). فشرده‌سازی تصویر و فونت موضوع دیگری است و تبدیل JS به TS هم معنایی ندارد.
+  - level: medium
+    stem: کدام گزینه **tree-shaking** را درست توصیف می‌کند؟
+    options:
+      - 'حذف پکیج‌های بلااستفاده از پوشه‌ی `node_modules`'
+      - 'حذف کدهای مرده (exportهایی که هیچ‌جا استفاده نشده‌اند) از bundle نهایی'
+      - 'مرتب کردن فایل‌های پروژه به شکل درخت پوشه‌ها'
+      - 'کوتاه کردن اسم متغیرها در کد خروجی'
+    answer: 2
+    explain: |
+      tree-shaking در زمان ساختن bundle، کدی را که export شده ولی هیچ‌جا استفاده نشده حذف می‌کند تا bundle کوچک‌تر شود. به `node_modules` دست نمی‌زند (رد گزینه‌ی ۱) و ربطی به ساختار پوشه‌ها ندارد (رد گزینه‌ی ۳). کوتاه کردن اسم‌ها هم کار minification است (رد گزینه‌ی ۴).
+  - level: hard
+    stem: |
+      دو ماژول زیر را با یک bundler که tree-shaking انجام می‌دهد (مثل esbuild یا Rollup) bundle می‌کنیم و `app.js` نقطه‌ی ورود است. کدام تابع(ها) در bundle نهایی باقی می‌مانند؟
+    files:
+      math.js: |
+        export function add(a, b) {
+          return a + b;
+        }
+        export function subtract(a, b) {
+          return a - b;
+        }
+        export function multiply(a, b) {
+          return a * b;
+        }
+      app.js: |
+        import { add, multiply } from "./math.js";
+
+        console.log(add(2, 3));
+    manual: Bundling cannot run in the automatic checker; verified with esbuild 0.28.2 (--bundle), whose output contained only the function add.
+    options:
+      - 'هر سه تابع `add`، `subtract` و `multiply`'
+      - '`add` و `multiply`'
+      - 'هیچ‌کدام؛ فقط `console.log` باقی می‌ماند'
+      - 'فقط `add`'
+    answer: 4
+    explain: |
+      `subtract` هیچ‌جا import نشده و `multiply` با اینکه import شده، هیچ‌وقت **صدا زده نشده** است؛ پس هر دو کد مرده‌اند و tree-shaking حذفشان می‌کند. خروجی esbuild فقط تابع `add` و خط `console.log(add(2, 3))` را دارد. گزینه‌ی ۲ فکر کرده «import شدن» کافی است، در حالی که ملاک «استفاده شدن» است. `add` واقعاً استفاده شده، پس حذف نمی‌شود (رد گزینه‌ی ۳).
+  - level: hard
+    stem: چرا tree-shaking با **ES Modules** خیلی بهتر از **CommonJS** کار می‌کند؟
+    options:
+      - 'چون `import` و `export` ایستا (static) هستند و bundler قبل از اجرای برنامه می‌فهمد دقیقاً چه چیزی استفاده شده؛ ولی `require` یک فراخوانی معمولی تابع است و می‌تواند پویا باشد.'
+      - 'چون فایل‌های ES Module همیشه از فایل‌های CommonJS کوچک‌ترند.'
+      - 'چون در CommonJS اصلاً نمی‌توان چیزی را export کرد.'
+      - 'چون مرورگرها فقط ES Module را اجرا می‌کنند و کد CommonJS را نادیده می‌گیرند.'
+    answer: 1
+    explain: |
+      `import`/`export` باید در بالاترین سطح فایل و با اسم‌های ثابت بیایند، پس با خواندن کد (بدون اجرا) معلوم است چه چیزی استفاده شده. `require` می‌تواند مسیرش را هنگام اجرا بسازد (مثلاً `require(cond ? "./a.js" : "./b.js")`) و `exports[name] = …` هم اسم export را پویا می‌کند؛ پس bundler مطمئن نیست و معمولاً همه را نگه می‌دارد. اندازه‌ی فایل ربطی ندارد (رد گزینه‌ی ۲)، CommonJS با `module.exports` export دارد (رد گزینه‌ی ۳) و مرورگر کد CommonJS را «نادیده» نمی‌گیرد؛ فقط `require` را نمی‌شناسد (رد گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      کد اصلی زیر `30` چاپ می‌کند. کدام گزینه یک نسخه‌ی minify‌شده‌ی **درست** از آن است، یعنی دقیقاً همان خروجی `30` را چاپ می‌کند؟
+
+      ```js
+      // Calculate the total price
+      function calculateTotal(price, quantity) {
+        const total = price * quantity;
+        return total;
+      }
+      console.log(calculateTotal(10, 3));
+      ```
+    check: option-output
+    expect: "30"
+    options:
+      - code: 'function c(t,n){return t+n}console.log(c(10,3));'
+      - code: 'function c(t,n){return t*n}console.log(calculateTotal(10,3));'
+      - code: 'function c(t,n){return t*n}console.log(c(10,3));'
+      - code: 'function c(t,n){t*n}console.log(c(10,3));'
+    answer: 3
+    explain: |
+      minification فقط شکل کد را عوض می‌کند و رفتارش باید همان بماند. گزینه‌ی ۳ اسم تابع و پارامترها را **یکجا** کوتاه کرده و `30` چاپ می‌کند. گزینه‌ی ۱ عملگر را عوض کرده (`13` چاپ می‌کند). گزینه‌ی ۲ اسم تابع را فقط در تعریفش عوض کرده و هنگام صدا زدن خطای `ReferenceError: calculateTotal is not defined` می‌دهد. گزینه‌ی ۴ کلمه‌ی `return` را حذف کرده و `undefined` چاپ می‌کند.
+  - level: medium
+    stem: کدام جفت «ابزار ← کار اصلی» درست است؟
+    options:
+      - 'Babel ← bundler (یکی کردن فایل‌ها)؛ Webpack ← transpiler (تبدیل نسخه‌ی کد)'
+      - 'Babel ← transpiler (تبدیل کد جدید به JavaScript قدیمی‌تر)؛ Webpack ← bundler (یکی کردن ماژول‌ها)'
+      - 'Babel و Webpack هر دو موتور اجرای JavaScript هستند، مثل V8.'
+      - 'Babel ← مدیر بسته (مثل npm)؛ Webpack ← فریم‌ورک سرور (مثل Express)'
+    answer: 2
+    explain: |
+      Babel (و SWC) کد جدید را به JavaScript قدیمی‌تر یا ساده‌تر **ترجمه** می‌کنند؛ یعنی transpiler هستند. Webpack (و Rollup و Parcel) ماژول‌ها را در یک خروجی **یکی** می‌کنند؛ یعنی bundler هستند. گزینه‌ی ۱ این دو را جابه‌جا کرده است. هیچ‌کدام موتور اجرا (مثل V8)، مدیر بسته یا فریم‌ورک سرور نیستند.
+  - level: medium
+    stem: منظور از **module resolution** که bundler انجام می‌دهد چیست؟
+    options:
+      - 'پیدا کردن فایل واقعی هر `import` یا `require`؛ چه مسیر نسبی مثل `./math.js` باشد و چه اسم یک پکیج مثل `lodash` در `node_modules`'
+      - 'دانلود پکیج‌ها از registry در زمان ساختن bundle'
+      - 'بررسی نوع متغیرها، مثل کاری که TypeScript انجام می‌دهد'
+      - 'حل کردن تداخل‌ها (conflict) هنگام ادغام کد در git'
+    answer: 1
+    explain: |
+      resolution یعنی «پیدا کردن»: bundler برای هر `import "./math.js"` یا `import _ from "lodash"` معلوم می‌کند دقیقاً کدام فایل منظور است (برای اسم پکیج، داخل `node_modules`). bundler پکیجی دانلود نمی‌کند (کار `npm install`)، نوع‌ها را بررسی نمی‌کند (کار `tsc`) و با git هم کاری ندارد.
+  - level: hard
+    stem: کدام عبارت **نادرست** است؟
+    options:
+      - 'bundle نهایی را معمولاً با یک تگ `<script>` در HTML بارگذاری می‌کنیم.'
+      - 'bundlerها معمولاً می‌توانند minification و tree-shaking را هم انجام دهند.'
+      - 'bundler جای `npm install` را می‌گیرد و خودش پکیج‌ها را از registry دانلود می‌کند.'
+      - 'source map کمک می‌کند خطاهای کد minify‌شده را در فایل و خط اصلی‌شان ببینیم.'
+    answer: 3
+    explain: |
+      bundler فقط از کدی استفاده می‌کند که از قبل در پروژه و `node_modules` هست؛ نصب پکیج‌ها هنوز کار `npm install` است. پس گزینه‌ی ۳ نادرست است. گزینه‌ی ۱ درست است (مثل `<script src="dist/bundle.js"></script>`)، گزینه‌ی ۲ همان «Often includes optimizations like minification and tree-shaking» اسلاید ۱۲ است و گزینه‌ی ۴ کار اصلی source map است.
+  - level: easy
+    stem: فایل **source map** (مثلاً `bundle.js.map`) به چه دردی می‌خورد؟
+    options:
+      - 'فهرست همه‌ی پکیج‌های نصب‌شده‌ی پروژه را نگه می‌دارد.'
+      - 'نقشه‌ی صفحه‌های سایت را برای موتورهای جست‌وجو می‌سازد.'
+      - 'ترتیب بارگذاری تگ‌های `<script>` را مشخص می‌کند.'
+      - 'هر بخش از کد bundle یا minify‌شده را به فایل و خط اصلی‌اش وصل می‌کند تا اشکال‌زدایی (debug) ساده شود.'
+    answer: 4
+    explain: |
+      source map «نقشه‌ی» بین کد خروجی و کد منبع است؛ DevTools با آن خطاها و کد اصلی و خوانا را نشان می‌دهد. فهرست پکیج‌ها در `package.json` و `package-lock.json` است، نقشه‌ی سایت برای موتور جست‌وجو (sitemap) چیز دیگری است و source map ربطی به ترتیب تگ‌ها ندارد.
+  - level: medium
+    stem: bundler خروجی را در فایل `dist/bundle.js` ساخته است. برای بارگذاری این خروجی در `index.html` چه می‌نویسیم؟
+    options:
+      - '`<link rel="stylesheet" href="dist/bundle.js">`'
+      - '`<script src="dist/bundle.js"></script>`'
+      - 'برای هر فایل پوشه‌ی `src` یک تگ `<script>` جداگانه، مثل قبل از bundling'
+      - '`require("dist/bundle.js")` را مستقیم داخل HTML می‌نویسیم.'
+    answer: 2
+    explain: |
+      bundle یک فایل JavaScript معمولی است و با یک تگ `<script>` بارگذاری می‌شود؛ همین یک خط جای همه‌ی تگ‌های قبلی را می‌گیرد. `<link rel="stylesheet">` برای فایل CSS است. نوشتن تگ جدا برای هر فایل `src` یعنی اصلاً از bundle استفاده نکرده‌ایم. `require` هم در HTML و در مرورگر وجود ندارد.
+  - level: hard
+    stem: |
+      بدون هیچ bundler و تنظیم اضافه‌ای، فایل `app.js` زیر را با `<script type="module" src="app.js"></script>` در مرورگر بارگذاری می‌کنیم. پکیج `lodash` با `npm install` در `node_modules` نصب شده است. چه اتفاقی می‌افتد؟
+    code: |
+      import _ from "lodash";
+      console.log(_.chunk([1, 2, 3, 4], 2));
+    manual: Browser module loading cannot run in Node.js or jsdom; per the HTML module-resolution rules, a bare specifier such as "lodash" cannot be resolved without an import map (Chrome reports Failed to resolve module specifier "lodash").
+    options:
+      - 'مرورگر نمی‌داند `"lodash"` کجاست (فقط آدرس‌هایی را که با `./`، `../` یا `/` شروع می‌شوند یا آدرس کامل‌اند می‌فهمد و از `node_modules` خبر ندارد)، پس بارگذاری ماژول با خطا متوقف می‌شود.'
+      - 'مرورگر خودکار پوشه‌ی `node_modules` را جست‌وجو می‌کند و آرایه‌ی تکه‌تکه‌شده را چاپ می‌کند.'
+      - 'مرورگر پکیج `lodash` را خودش از registry npm دانلود و اجرا می‌کند.'
+      - 'مرورگر اصلاً از `import` پشتیبانی نمی‌کند، پس هر فایلی که `import` داشته باشد خطا می‌دهد.'
+    answer: 1
+    explain: |
+      `"lodash"` یک اسم خالی (bare specifier) است، نه یک مسیر. Node.js یاد گرفته چنین اسمی را در `node_modules` جست‌وجو کند، ولی مرورگر نه؛ برای همین Chrome خطای `Failed to resolve module specifier "lodash"` می‌دهد. مرورگر نه `node_modules` را می‌گردد (رد گزینه‌ی ۲) و نه چیزی از npm دانلود می‌کند (رد گزینه‌ی ۳). `<script type="module">` از `import` با مسیرهای نسبی مثل `./math.js` پشتیبانی می‌کند (رد گزینه‌ی ۴). یکی از کارهای اصلی bundler حل همین مشکل است.
+  - level: easy
+    stem: |
+      جای خالی را کامل کن:
+
+      «اسلاید ۱۲ ابزارهای معروف bundling را این‌طور نام می‌برد: Webpack، Rollup و ………»
+    options:
+      - 'Babel'
+      - 'Jest'
+      - 'Parcel'
+      - 'Lodash'
+    answer: 3
+    explain: |
+      متن اسلاید: «Popular tools: Webpack, Rollup, and Parcel». Babel یک transpiler است، Jest فریم‌ورک تست و Lodash کتابخانه‌ی توابع کمکی؛ هیچ‌کدام bundler نیستند.
