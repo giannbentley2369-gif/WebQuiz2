@@ -1,0 +1,856 @@
+id: ch1-objects
+title: "اشیاء (Objects) و Object literal"
+slides: "Introduction to JS، اسلایدهای ۴۰ و ۴۱"
+lesson: |
+  تا این‌جا بیشتر با مقدارهای ساده (primitive) مثل عدد و رشته کار کردیم. اما داده‌های دنیای واقعی تنها نیستند: یک «کاربر» نام دارد، سن دارد، شهر دارد و کارهایی هم انجام می‌دهد (مثلاً سلام می‌کند). اگر برای هر کدام یک متغیر جدا بسازیم (`userName`، `userAge`، `userCity`، …) خیلی زود گم می‌شویم. **object** (شیء) راه JavaScript برای کنار هم نگه داشتن همه‌ی این‌هاست.
+
+  ::: analogy
+  یک شیء را مثل یک **کمد با کشوهای برچسب‌دار** تصور کن. روی هر کشو یک برچسب نوشته شده (مثل `name` یا `age`) که به آن **کلید** (key) می‌گوییم، و داخل کشو یک چیز هست (مثل `"Barry Allen"` یا `24`) که به آن **مقدار** (value) می‌گوییم. برای برداشتن چیزی فقط کافی است برچسب کشو را بدانی.
+  :::
+
+  ### شیء چیست؟ (اسلاید ۴۰)
+  اسلاید ۴۰ چهار جمله‌ی کلیدی دارد:
+
+  1. شیءها **داده** (data) و **رفتار** (behavior) مرتبط را کنار هم گروه‌بندی می‌کنند.
+  2. هر شیء از **جفت‌های کلید-مقدار** (key-value pairs) ساخته شده است.
+  3. مقدارها می‌توانند **داده** باشند که به آن‌ها **property** (ویژگی) می‌گوییم، یا **تابع** باشند که به آن‌ها **method** (متد؛ تابعی که متعلق به یک شیء است) می‌گوییم.
+  4. **JSON** (مخفف JavaScript Object Notation؛ یک قالب متنی برای نوشتن داده‌ها) رایج‌ترین راه برای **ذخیره** و **به اشتراک گذاشتن** داده‌های یک شیء است؛ مثلاً وقتی سرور اطلاعات یک کاربر را برای مرورگر می‌فرستد. جزئیات JSON را در درس JSON می‌خوانیم.
+
+  ```js
+  const user = {
+    name: "Barry Allen", // property: key "name", value "Barry Allen"
+    age: 24,             // property: key "age", value 24
+    greet() {            // method: a function stored in the object
+      console.log("Hi!");
+    }
+  };
+  ```
+
+  | اصطلاح | یعنی | در مثال بالا |
+  |---|---|---|
+  | key (کلید) | نام یک خانه از شیء | `name`، `age` و `greet` |
+  | value (مقدار) | چیزی که در آن خانه است | `"Barry Allen"`، `24` و یک تابع |
+  | property | جفتی که مقدارش **داده** است | `name: "Barry Allen"` |
+  | method | جفتی که مقدارش **تابع** است | `greet() { ... }` |
+
+  #### «تقریباً همه چیز شیء است» (میم اسلاید ۴۰)
+  در میم اسلاید ۴۰، کره‌ی زمین با لوگوی JS دیده می‌شود. فضانورد اول با تعجب می‌گوید: «صبر کن… همه‌اش **شیء** است؟!» و فضانورد دوم که از پشت سر به او اسلحه گرفته جواب می‌دهد: «همیشه همین‌طور بوده (Always has been)». زیرنویس اسلاید هم می‌گوید: «از نظر فنی، در JavaScript **تقریباً** همه چیز یک شیء است.»
+
+  منظور این است که آرایه‌ها، توابع، تاریخ‌ها (`Date`) و خیلی چیزهای دیگر در اصل شیء هستند. اما کلمه‌ی «**تقریباً**» مهم است: هفت نوع **primitive** (عدد، رشته، boolean، `undefined`، `null`، Symbol و BigInt) شیء **نیستند**.
+
+  ```js
+  console.log(typeof { a: 1 });       // "object"
+  console.log(typeof [1, 2]);         // "object"   (arrays are objects)
+  console.log(typeof new Date());     // "object"
+  console.log(typeof function () {}); // "function" (functions are special objects)
+  console.log(typeof "hello");        // "string"   (a primitive, NOT an object)
+  ```
+
+  پس چرا می‌توانیم بنویسیم `"hello".length` یا `"hello".toUpperCase()`، انگار رشته یک شیء با property و method است؟ چون وقتی بعد از یک primitive نقطه می‌گذاری، JavaScript **برای یک لحظه** آن را داخل یک **شیء پوشاننده** (wrapper object؛ مثلاً `String` برای رشته‌ها و `Number` برای عددها) می‌گذارد، property یا method را از آن شیء موقت می‌خواند و بلافاصله آن را دور می‌اندازد. برای همین primitiveها «مثل شیء رفتار می‌کنند» ولی شیء نیستند:
+
+  ```js
+  const word = "hello";
+  console.log(word.length);        // 5
+  console.log(word.toUpperCase()); // "HELLO"
+  word.extra = 42;                 // stored on a temporary wrapper (in strict mode: TypeError)
+  console.log(word.extra);         // undefined -> that wrapper is already gone
+  ```
+
+  `null` و `undefined` هیچ شیء پوشاننده‌ای ندارند؛ برای همین `null.length` یا `undefined.x` خطای `TypeError` می‌دهند.
+
+  ### ساختن شیء با object literal (اسلاید ۴۱)
+  ساده‌ترین راه ساختن شیء، **object literal** است؛ یعنی نوشتن مستقیم خود شیء با آکولاد: داخل `{ }` جفت‌های `key: value` را می‌نویسیم و آن‌ها را با ویرگول از هم جدا می‌کنیم. اسلاید ۴۱ می‌گوید:
+
+  - شیءها با جفت‌های `{ key: value }` تعریف می‌شوند.
+  - داده و رفتار مرتبط را کنار هم نگه می‌دارند.
+  - **کلیدها رشته (string) هستند (یا Symbol)** و **مقدارها از هر نوعی** می‌توانند باشند.
+  - از **متد** و **شیء تودرتو** (nested object؛ شیئی که مقدارِ یک کلیدِ شیء دیگر است) پشتیبانی می‌کنند.
+  - **پایه‌ی ساختار JSON** در JavaScript هستند.
+
+  کد اسلاید ۴۱:
+
+  ```js title=ol.js
+  const user = {
+    name: "Barry Allen",
+    age: 24,
+    isTheFlash: true,
+    greet() {
+      console.log(`Hello, I'm ${this.name}`);
+    }
+  };
+
+  user.greet(); // Hello, I'm Barry Allen
+  ```
+
+  بیا خط‌به‌خط ببینیم:
+
+  - `user` یک شیء با چهار کلید است: سه property (`name` از نوع رشته، `age` عدد و `isTheFlash` boolean) و یک method (`greet`).
+  - `greet() { ... }` شکل کوتاه‌شده‌ی (shorthand) نوشتن متد است و دقیقاً یعنی `greet: function () { ... }`.
+  - داخل متد کلمه‌ی **`this`** آمده است: وقتی متدی را به شکل `user.greet()` صدا می‌زنیم، `this` همان شیءِ **قبل از نقطه**، یعنی `user` است؛ پس `this.name` می‌شود `"Barry Allen"`. (قاعده‌های کامل `this` را در درس `this` می‌خوانیم.)
+  - رشته‌ی داخل backtick یک template literal است و `${this.name}` مقدار را وسط رشته می‌گذارد؛ پس خروجی `Hello, I'm Barry Allen` است.
+
+  اگر کل یک شیء را چاپ کنیم، Node.js متدش را به شکل `[Function: greet]` نشان می‌دهد:
+
+  ```js
+  const hero = {
+    name: "Barry Allen",
+    age: 24,
+    greet() {
+      console.log(`Hello, I'm ${this.name}`);
+    }
+  };
+  console.log(hero); // { name: 'Barry Allen', age: 24, greet: [Function: greet] }
+  ```
+
+  #### مقدار می‌تواند هر چیزی باشد؛ حتی آرایه و شیء دیگر
+  ```js
+  const student = {
+    name: "Sara",
+    scores: [18, 20, 17],      // an array as a value
+    address: {                 // a nested object
+      city: "Tehran",
+      zip: "12345"
+    },
+    "favorite color": "blue",  // a key with a space must be quoted
+    isActive: true
+  };
+
+  console.log(student.address.city); // "Tehran"
+  console.log(student.scores[1]);    // 20
+  ```
+
+  برای رسیدن به داده‌های تودرتو، نقطه‌ها (و براکت‌ها) را پشت سر هم می‌نویسیم: `student.address.city` یعنی «از `student` برو داخل `address` و از آن‌جا `city` را بردار».
+
+  ### خواندن propertyها: نقطه یا براکت؟
+  دو راه برای خواندن (و نوشتن) یک property داریم:
+
+  | روش | مثال | کی؟ |
+  |---|---|---|
+  | dot notation (نقطه) | `user.name` | نام کلید را موقع نوشتن کد می‌دانی و یک نام معمولی است |
+  | bracket notation (براکت) | `user["name"]` | کلید داخل یک **متغیر** است، یا فاصله یا خط تیره دارد، یا با رقم شروع می‌شود |
+
+  ```js
+  const user = { name: "Barry", age: 24, "first-name": "Bartholomew" };
+
+  console.log(user.name);          // "Barry"
+  console.log(user["name"]);       // "Barry" (exactly the same thing)
+
+  const key = "age";
+  console.log(user[key]);          // 24        -> uses the VALUE of the variable key
+  console.log(user.key);           // undefined -> looks for a key literally named "key"
+
+  console.log(user["first-name"]); // "Bartholomew"
+  // user.first-name would mean (user.first) - name: a subtraction, not a key!
+  ```
+
+  ::: trap دام تستی: `obj.key` با `obj[key]` فرق دارد
+  بعد از نقطه، JavaScript **خودِ کلمه** را نام کلید می‌گیرد؛ پس `user.key` یعنی «کلیدی به نام `"key"`». اما داخل براکت یک **عبارت** نوشته می‌شود و اول مقدارش حساب می‌شود؛ پس `user[key]` یعنی «کلیدی که نامش داخل متغیر `key` است». `user["key"]` (با کوتیشن) هم دوباره همان `user.key` است. اگر داخل براکت نام یک متغیرِ **تعریف‌نشده** را بی‌کوتیشن بنویسی (مثلاً `user[age]` وقتی متغیری به نام `age` نداری)، خطای `ReferenceError` می‌گیری.
+  :::
+
+  #### کلیدها همیشه رشته‌اند (یا Symbol)
+  هر کلیدی که بنویسی، اگر Symbol نباشد، به **رشته** تبدیل می‌شود. پس کلید عددی `1` در واقع رشته‌ی `"1"` است و `obj[1]` و `obj["1"]` به **یک** خانه اشاره می‌کنند:
+
+  ```js
+  const obj = { 1: "one" };
+  console.log(obj[1]);           // "one"
+  console.log(obj["1"]);         // "one" (the same property)
+  console.log(Object.keys(obj)); // [ '1' ] -> the key is the string "1"
+  ```
+
+  حتی اگر یک شیء را کلید کنی، به رشته‌ی `"[object Object]"` تبدیل می‌شود (پس دو شیءِ متفاوت به‌عنوان کلید، **یک** کلید می‌شوند!). تنها کلیدهای غیررشته‌ای، **Symbol**ها هستند: هر `Symbol()` یکتاست (اسلاید ۱۶) و برای کلیدهایی به کار می‌رود که نباید تصادفاً با کلید دیگری یکی شوند.
+
+  اگر داخل خودِ literal کلید را در براکت بنویسی (computed property name؛ کلید محاسبه‌شده)، **مقدارِ** عبارت داخل براکت کلید می‌شود:
+
+  ```js
+  const id = Symbol("id");
+  const field = "score";
+  const item = { name: "Pen", [id]: 123, [field]: 95 };
+
+  console.log(item.score);        // 95  -> [field] became the key "score"
+  console.log(item[id]);          // 123
+  console.log(Object.keys(item)); // [ 'name', 'score' ] -> symbol keys are not listed
+  ```
+
+  ### اگر property وجود نداشته باشد؟
+  خواندن کلیدی که وجود ندارد **خطا نمی‌دهد** و فقط `undefined` برمی‌گرداند. اما اگر روی همان `undefined` دوباره نقطه بگذاری، خطای `TypeError` می‌گیری:
+
+  ```js
+  const user = { name: "Barry", address: { city: "Central City" } };
+  console.log(user.phone);        // undefined (no error)
+  console.log(user.address.city); // "Central City"
+  console.log(user.job?.title);   // undefined (optional chaining stops safely)
+  console.log(user.job.title);    // TypeError: Cannot read properties of undefined (reading 'title')
+  ```
+
+  عملگر **optional chaining** یعنی `?.` (زنجیره‌ی اختیاری) می‌گوید: «اگر سمت چپ `undefined` یا `null` بود، همان‌جا بایست و `undefined` بده؛ وگرنه مثل نقطه‌ی معمولی ادامه بده.»
+
+  ### اضافه کردن، تغییر دادن و حذف کردن
+  شیءها **تغییرپذیر** (mutable) هستند؛ یعنی بعد از ساختن هم می‌توانی propertyهایشان را عوض کنی:
+
+  ```js
+  const user = { name: "Barry", age: 24 };
+
+  user.city = "Central City"; // add: the key did not exist, so it is created
+  user.age = 25;              // update: the key exists, so its value is replaced
+  delete user.name;           // remove the whole property (key and value)
+
+  console.log(user);          // { age: 25, city: 'Central City' }
+  console.log(user.name);     // undefined
+  ```
+
+  - انتساب به کلیدی که **نیست** آن را **می‌سازد**؛ انتساب به کلیدی که **هست** مقدارش را **عوض می‌کند**.
+  - عملگر `delete` خودِ کلید را حذف می‌کند، نه فقط مقدارش را.
+  - اگر در یک literal یک کلید دو بار بیاید، **آخرین مقدار برنده است**: `{ a: 1, a: 2 }` همان `{ a: 2 }` است.
+
+  #### `const` شیء را قفل نمی‌کند
+  همان‌طور که در درس متغیرها دیدیم، `const` فقط **انتساب دوباره‌ی خود متغیر** را منع می‌کند، نه تغییر **محتوای** شیء:
+
+  ```js
+  const user = { name: "Barry" };
+  user.name = "Wally";     // OK: changing a property
+  user.age = 25;           // OK: adding a property
+  user = { name: "Iris" }; // TypeError: Assignment to constant variable.
+  ```
+
+  ### آیا این کلید وجود دارد؟ `in` و `hasOwnProperty`
+  ```js
+  const user = { name: "Barry", nickname: undefined };
+
+  console.log("name" in user);                  // true
+  console.log("email" in user);                 // false
+  console.log(user.hasOwnProperty("name"));     // true
+  console.log("nickname" in user);              // true  (the key exists; its value is undefined)
+  console.log(user.nickname === user.email);    // true  (both undefined: cannot tell them apart)
+  console.log("toString" in user);              // true  (inherited from Object.prototype)
+  console.log(user.hasOwnProperty("toString")); // false (not the object's OWN key)
+  ```
+
+  - `"key" in obj` نام کلید را به‌صورت **رشته** می‌گیرد (کوتیشن را فراموش نکن) و می‌گوید آیا این کلید در شیء هست یا نه. این عملگر کلیدهای **ارث‌برده** را هم حساب می‌کند؛ هر شیء معمولی چند متد مثل `toString` را از یک شیء پایه به نام `Object.prototype` به ارث می‌برد.
+  - `obj.hasOwnProperty("key")` فقط کلیدهای **خودِ** شیء را حساب می‌کند. (شکل جدیدترش `Object.hasOwn(obj, "key")` است.)
+  - مقایسه با `undefined` فرقِ «کلید نیست» و «کلید هست ولی مقدارش `undefined` است» را نمی‌فهمد؛ `in` می‌فهمد.
+
+  ### گرفتن همه‌ی کلیدها و مقدارها
+  ```js
+  const prices = { tea: 2, coffee: 3, cake: 5 };
+
+  console.log(Object.keys(prices));    // [ 'tea', 'coffee', 'cake' ]
+  console.log(Object.values(prices));  // [ 2, 3, 5 ]
+  console.log(Object.entries(prices)); // [ [ 'tea', 2 ], [ 'coffee', 3 ], [ 'cake', 5 ] ]
+
+  for (const key in prices) {          // for...in walks over the keys
+    console.log(key, prices[key]);     // tea 2, then coffee 3, then cake 5
+  }
+  ```
+
+  این سه تابع همیشه **آرایه** برمی‌گردانند (کلیدها در آن‌ها رشته‌اند)، پس بعداً می‌توانی متدهای آرایه مثل `map` و `filter` را رویشان صدا بزنی. `Object.entries` برای هر کلید یک آرایه‌ی دوتایی `[key, value]` می‌سازد. در حلقه‌ی `for...in` (درس حلقه‌ها) حتماً بنویس `prices[key]`، نه `prices.key`؛ چون `key` یک متغیر است.
+
+  ### نوشتن کوتاه: shorthand property
+  وقتی نام متغیر و نام کلید یکی است، لازم نیست دو بار بنویسی:
+
+  ```js
+  const name = "Sara";
+  const age = 21;
+
+  const student1 = { name: name, age: age }; // long form
+  const student2 = { name, age };            // shorthand: exactly the same object
+  console.log(student2);                     // { name: 'Sara', age: 21 }
+  ```
+
+  ### شیءها با reference کپی و مقایسه می‌شوند
+  متغیری که یک شیء در آن است، خودِ شیء را نگه نمی‌دارد؛ فقط **نشانیِ** آن را نگه می‌دارد که به آن **reference** (مرجع) می‌گوییم. پس `const b = a` شیء جدیدی **نمی‌سازد**؛ فقط نشانی را کپی می‌کند و حالا دو نام به **یک** شیء اشاره می‌کنند:
+
+  ```js
+  const a = { score: 10 };
+  const b = a;          // copies the reference, not the object
+  b.score = 99;         // changes the ONE shared object
+  console.log(a.score); // 99
+  console.log(a === b); // true (the same object)
+  ```
+
+  ::: analogy
+  reference مثل **آدرس یک خانه** است که روی کاغذ نوشته شده. `const b = a` یعنی همان آدرس را روی یک کاغذ دیگر هم بنویسی؛ هنوز فقط **یک** خانه داریم. اگر با کاغذ دوم بروی و دیوار را رنگ کنی، کسی که با کاغذ اول بیاید هم دیوار رنگ‌شده را می‌بیند.
+  :::
+
+  همین اتفاق وقتی شیء را به یک تابع می‌دهیم هم می‌افتد: تابع همان شیء را می‌گیرد، نه یک کپی را. مقایسه‌ی شیءها با `==` یا `===` هم فقط می‌پرسد «آیا هر دو **همان یک** شیء‌اند؟»، نه «آیا محتوایشان یکی است؟»:
+
+  ```js
+  console.log({} === {});             // false (two different objects)
+  console.log({ x: 1 } === { x: 1 }); // false (same content, different objects)
+  const p = { x: 1 };
+  const q = p;
+  console.log(p === q);               // true  (same reference)
+  ```
+
+  ### کپی سطحی با spread: `{ ...obj }`
+  برای ساختن یک شیء **واقعاً جدید** با همان propertyها، از **spread** (عملگر پخش؛ سه نقطه‌ی `...`) استفاده می‌کنیم. `{ ...obj }` یعنی «همه‌ی propertyهای `obj` را در این شیء تازه بریز». اسلاید ۴۸ (درس متدهای آرایه) دقیقاً از همین روش استفاده می‌کند.
+
+  ```js
+  const original = { name: "Ali", age: 20 };
+  const copy = { ...original };   // a NEW object with the same properties
+  copy.age = 30;
+  console.log(original.age);      // 20 (unchanged)
+  console.log(copy === original); // false
+  ```
+
+  **ترتیب مهم است:** propertyها از چپ به راست در شیء جدید ریخته می‌شوند و اگر کلیدی تکراری باشد، **آخری برنده است**:
+
+  ```js
+  const base = { name: "Ali", role: "user" };
+  console.log({ ...base, role: "admin" }); // { name: 'Ali', role: 'admin' } -> role overridden
+  console.log({ role: "admin", ...base }); // { role: 'user', name: 'Ali' } -> base wins
+  ```
+
+  **«سطحی» (shallow) یعنی چه؟** spread فقط **سطح اول** را کپی می‌کند. اگر مقدار یک property خودش یک شیء باشد، فقط **reference** آن کپی می‌شود و آن شیء داخلی بین نسخه‌ی اصلی و کپی **مشترک** می‌ماند:
+
+  ```js
+  const user = { name: "Ali", address: { city: "Tehran" } };
+  const copy = { ...user };
+  copy.name = "Reza";             // top level: only the copy changes
+  copy.address.city = "Shiraz";   // nested object: SHARED by both
+  console.log(user.name);         // "Ali"
+  console.log(user.address.city); // "Shiraz"
+  ```
+
+  ### شیءها و JSON
+  اسلاید ۴۱ می‌گوید object literal «پایه‌ی ساختار JSON» است. JSON شبیه object literal است ولی سخت‌گیرتر: کلیدها و رشته‌ها **حتماً** داخل دابل‌کوتیشن‌اند و تابع (متد) در آن جایی ندارد. با `JSON.stringify` یک شیء را به متن JSON تبدیل می‌کنیم:
+
+  ```js
+  const user = { name: "Barry Allen", age: 24, greet() {} };
+  console.log(JSON.stringify(user)); // {"name":"Barry Allen","age":24} -> the method is dropped
+  ```
+
+  ::: tip نکته
+  - property یعنی مقدارِ داده‌ای و method یعنی مقدارِ تابعی. `greet() {}` کوتاه‌شده‌ی `greet: function () {}` است.
+  - کلیدی که فاصله یا خط تیره دارد یا با رقم شروع می‌شود، فقط با براکت و کوتیشن خوانده می‌شود: `obj["first-name"]`.
+  - خواندن کلیدِ ناموجود `undefined` می‌دهد، ولی خواندن property از `undefined` یا `null` خطای `TypeError` می‌دهد؛ `?.` جلوی این خطا را می‌گیرد.
+  - `Object.keys`، `Object.values` و `Object.entries` همیشه آرایه برمی‌گردانند.
+  - `in` کلیدهای ارث‌برده (مثل `toString`) را هم می‌بیند؛ `hasOwnProperty` فقط کلیدهای خودِ شیء را.
+  :::
+
+  ::: trap دام‌های تستی شیءها
+  - `obj.key` دنبال کلیدی به نام `"key"` می‌گردد؛ برای کلیدی که نامش در متغیر `key` است بنویس `obj[key]`.
+  - `obj[1]` و `obj["1"]` یک خانه‌اند، چون کلیدها رشته‌اند.
+  - `{} === {}` و `{ a: 1 } === { a: 1 }` هر دو `false` هستند؛ شیءها با reference مقایسه می‌شوند.
+  - `const b = a` کپی نمی‌سازد؛ تغییر `b.x` همان `a.x` را عوض می‌کند. کپی با `{ ...a }` ساخته می‌شود، ولی شیءهای تودرتو در آن هنوز مشترک‌اند.
+  - شیءِ `const` را می‌توان تغییر داد (`user.age = 25`)، ولی نمی‌توان متغیر را به شیء دیگری وصل کرد (`user = {}` خطای `TypeError` می‌دهد).
+  - در `{ ...base, role: "admin" }` نتیجه `"admin"` است، ولی در `{ role: "admin", ...base }` مقدار `base.role` برنده است.
+  - رشته‌ها property دارند (`"hi".length`) ولی شیء نیستند: `typeof "hi"` برابر `"string"` است.
+  :::
+
+  ::: summary
+  - شیء = مجموعه‌ای از جفت‌های کلید-مقدار که داده (property) و رفتار (method) را کنار هم نگه می‌دارد.
+  - object literal: `{ key: value, method() { ... } }`؛ کلیدها رشته یا Symbol، مقدارها هر نوعی (حتی شیء و آرایه‌ی تودرتو).
+  - دسترسی: `obj.key` برای نام‌های ثابت و معمولی، `obj[expr]` برای کلیدهای پویا یا عجیب.
+  - شیءها تغییرپذیرند و با reference کپی و مقایسه می‌شوند؛ کپی سطحی با `{ ...obj }`.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۰، در یک شیء به مقدارهایی که **تابع** هستند و به مقدارهایی که **داده** هستند، به ترتیب چه می‌گوییم؟
+    options:
+      - key و value
+      - property و method
+      - method و property
+      - literal و JSON
+    answer: 3
+    explain: |
+      اسلاید ۴۰: «Values can be data (properties) or functions (methods)»؛ پس مقدار تابعی **method** و مقدار داده‌ای **property** نام دارد. گزینه‌ی ۲ همین دو را برعکس گفته است. key و value (گزینه‌ی ۱) دو بخشِ **هر** جفت‌اند (نام خانه و محتوای آن)، نه دو نوع مقدار. literal یعنی «نوشتن مستقیم شیء با آکولاد» و JSON یک قالب متنی برای ذخیره‌ی داده است (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      طبق اسلایدهای ۴۰ و ۴۱، کدام گزینه **درست** است؟
+    options:
+      - شیء از جفت‌های کلید-مقدار ساخته می‌شود؛ کلیدها رشته (یا Symbol) هستند و مقدارها می‌توانند از هر نوعی باشند.
+      - کلیدها می‌توانند از هر نوعی (مثلاً عدد یا شیء) باشند و نوعشان حفظ می‌شود، ولی مقدارها فقط عدد یا رشته‌اند.
+      - یک شیء نمی‌تواند شیء، آرایه یا تابع دیگری را به‌عنوان مقدار نگه دارد.
+      - JSON یک نوع داده‌ی primitive است که در JavaScript جای شیء را گرفته است.
+    answer: 1
+    explain: |
+      اسلاید ۴۱: «Keys are strings (or symbols), values any type» و «Support methods and nested objects». گزینه‌ی ۲ برعکس است: مقدارها هر نوعی می‌توانند باشند و کلیدِ عددی یا شیء به **رشته** تبدیل می‌شود (نوعش حفظ نمی‌شود). گزینه‌ی ۳ با «nested objects» و متدها در تضاد است. JSON هم نوع داده نیست؛ یک قالب **متنی** برای ذخیره و تبادل داده‌های شیء است (اسلاید ۴۰).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر (کد اسلاید ۴۱) چیست؟
+    check: output
+    code: |
+      const user = {
+        name: "Barry Allen",
+        age: 24,
+        isTheFlash: true,
+        greet() {
+          console.log(`Hello, I'm ${this.name}`);
+        }
+      };
+
+      user.greet();
+    options:
+      - out: "Hello, I'm undefined"
+      - out: "Hello, I'm ${this.name}"
+      - out: "!! ReferenceError"
+      - out: "Hello, I'm Barry Allen"
+    answer: 4
+    explain: |
+      `greet` با `user.greet()` صدا زده شده، پس داخل آن `this` همان شیءِ قبل از نقطه یعنی `user` است و `this.name` برابر `"Barry Allen"` می‌شود. گزینه‌ی ۱ فرض کرده `this` به شیء اشاره نمی‌کند، که فقط وقتی متد **بدون** شیءِ قبل از نقطه صدا زده شود پیش می‌آید. گزینه‌ی ۲ فراموش کرده رشته با backtick نوشته شده و `${...}` در آن جایگزین می‌شود. `ReferenceError` هم رخ نمی‌دهد چون `name` با `this.name` خوانده شده، نه به‌عنوان یک متغیر.
+
+  - level: easy
+    stem: |
+      با فرض `const car = { brand: "BMW", year: 2020 };` حاصل `car.color` کدام است؟
+    check: value
+    setup: |
+      const car = { brand: "BMW", year: 2020 };
+    expr: 'car.color'
+    options:
+      - value: 'null'
+      - value: 'undefined'
+      - value: '""'
+      - text: 'خطای `ReferenceError`'
+        value: '!! ReferenceError'
+    answer: 2
+    explain: |
+      خواندن کلیدی که در شیء وجود ندارد **خطا نمی‌دهد** و فقط `undefined` برمی‌گرداند. `null` (گزینه‌ی ۱) را JavaScript خودش برنمی‌گرداند و فقط برنامه‌نویس آن را عمداً می‌گذارد؛ رشته‌ی خالی (گزینه‌ی ۳) هم مقدار پیش‌فرضی نیست. `ReferenceError` مخصوص **متغیرِ** تعریف‌نشده است، نه **کلیدِ** ناموجود در یک شیء.
+
+  - level: easy
+    stem: |
+      شیء `person` به شکل زیر تعریف شده است. کدام دستور، `Ali` را چاپ می‌کند؟
+    check: option-output
+    code: |
+      const person = { "first-name": "Ali", age: 20 };
+    prelude: |
+      const person = { "first-name": "Ali", age: 20 };
+    expect: "Ali"
+    options:
+      - code: 'console.log(person.first-name);'
+      - code: 'console.log(person.first_name);'
+      - code: 'console.log(person["first-name"]);'
+      - code: 'console.log(person[first-name]);'
+    answer: 3
+    explain: |
+      کلیدی که خط تیره دارد فقط با براکت و کوتیشن خوانده می‌شود: `person["first-name"]`. در گزینه‌ی ۱، JavaScript عبارت را `person.first - name` می‌فهمد (یک تفریق!)؛ چون متغیری به نام `name` نداریم، در Node.js خطای `ReferenceError` می‌گیریم. گزینه‌ی ۲ دنبال کلید دیگری (`first_name`) می‌گردد و `undefined` می‌دهد. در گزینه‌ی ۴ کوتیشن نیست، پس داخل براکت عبارتِ `first - name` حساب می‌شود و چون متغیر `first` وجود ندارد، `ReferenceError` رخ می‌دهد.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = { name: "Barry", age: 24 };
+      user.age = 25;
+      user.city = "Central City";
+      console.log(user.age, user.city);
+    options:
+      - out: "25 Central City"
+      - out: "24 undefined"
+      - out: "!! TypeError"
+      - out: "25 undefined"
+    answer: 1
+    explain: |
+      `const` فقط اجازه نمی‌دهد متغیر `user` به شیء **دیگری** وصل شود؛ تغییر محتوای همان شیء آزاد است. `user.age = 25` مقدار کلید موجود را عوض می‌کند و `user.city = ...` چون این کلید وجود نداشت آن را **می‌سازد**. گزینه‌ی ۳ همان تصور غلطِ «شیءِ `const` تغییرناپذیر است» را دارد؛ گزینه‌ی ۲ فرض کرده تغییرها نادیده گرفته می‌شوند و گزینه‌ی ۴ فکر کرده نمی‌توان کلید جدید اضافه کرد.
+
+  - level: easy
+    stem: |
+      کدام مورد را می‌توان در یک **object literal** نوشت، ولی در **JSON** جایی ندارد؟
+    options:
+      - یک رشته در دابل‌کوتیشن، مثل `"Ali"`
+      - یک متد، مثل `greet() { ... }`
+      - یک عدد، مثل `24`
+      - یک شیء تودرتو، مثل `{ "city": "Tehran" }`
+    answer: 2
+    explain: |
+      JSON فقط **داده** نگه می‌دارد (رشته، عدد، boolean، `null`، آرایه و شیء) و تابع در آن جایی ندارد؛ برای همین `JSON.stringify` متدها را کنار می‌گذارد. رشته‌ی داخل دابل‌کوتیشن، عدد و شیء تودرتو (گزینه‌های ۱، ۳ و ۴) همه در JSON مجازند؛ اسلاید ۴۱ هم می‌گوید object literal «پایه‌ی ساختار JSON» است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = { name: "Barry", age: 24 };
+      const key = "age";
+      console.log(user.key);
+      console.log(user[key]);
+      console.log(user["key"]);
+    options:
+      - out: ["24", "24", "24"]
+      - out: ["undefined", "24", "undefined"]
+      - out: ["24", "undefined", "24"]
+      - out: ["undefined", "24", "24"]
+    answer: 2
+    explain: |
+      بعد از نقطه، خودِ کلمه نام کلید است: `user.key` دنبال کلیدی به نام `"key"` می‌گردد که وجود ندارد، پس `undefined`. داخل براکت یک **عبارت** است: `user[key]` مقدار متغیر `key` یعنی `"age"` را کلید می‌کند و `24` می‌دهد. `user["key"]` (با کوتیشن) دقیقاً همان `user.key` است و `undefined` می‌دهد. گزینه‌ی ۴ همین سومی را با `user[key]` اشتباه گرفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const obj = { 1: "one", "2": "two" };
+      console.log(obj[1]);
+      console.log(obj["2"]);
+      console.log(obj[2]);
+      console.log(Object.keys(obj));
+    options:
+      - out: ["one", "two", "undefined", "[1, '2']"]
+      - out: ["one", "two", "undefined", "['1', '2']"]
+      - out: ["undefined", "two", "two", "[1, 2]"]
+      - out: ["one", "two", "two", "['1', '2']"]
+    answer: 4
+    explain: |
+      کلیدهای شیء همیشه رشته‌اند: کلید `1` در واقع `"1"` است، پس `obj[1]` و `obj["1"]` یک خانه‌اند و `one` چاپ می‌شود. به همین دلیل `obj[2]` هم عدد `2` را به `"2"` تبدیل می‌کند و `two` می‌دهد (رد گزینه‌های ۱ و ۲). `Object.keys` هم کلیدها را به‌صورت **رشته** برمی‌گرداند: `['1', '2']`؛ پس `[1, '2']` و `[1, 2]` (گزینه‌های ۱ و ۳) غلط‌اند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = { name: "Barry", age: 24 };
+      user.city = "Central City";
+      user.age = 25;
+      delete user.name;
+      console.log(user);
+      console.log(user.name);
+    options:
+      - out: ["{ name: undefined, age: 25, city: 'Central City' }", "undefined"]
+      - out: ["{ age: 25, city: 'Central City' }", "undefined"]
+      - out: ["{ name: 'Barry', age: 25, city: 'Central City' }", "Barry"]
+      - out: ["!! TypeError"]
+    answer: 2
+    explain: |
+      `user.city = ...` کلید تازه‌ای می‌سازد، `user.age = 25` مقدار کلید موجود را عوض می‌کند و `delete user.name` **کل** property را (کلید و مقدار) حذف می‌کند؛ پس در چاپ شیء اصلاً اثری از `name` نیست و خواندنش `undefined` می‌دهد. گزینه‌ی ۱ فکر کرده `delete` فقط مقدار را خالی می‌کند و کلید می‌ماند؛ گزینه‌ی ۳ فرض کرده `delete` کاری نمی‌کند؛ و گزینه‌ی ۴ تغییر محتوای شیءِ `const` را ممنوع پنداشته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = { x: 1 };
+      const b = a;
+      const c = { x: 1 };
+      b.x = 5;
+      console.log(a.x, c.x);
+      console.log(a === b, a === c);
+    options:
+      - out: ["1 1", "true true"]
+      - out: ["5 5", "true true"]
+      - out: ["5 1", "true false"]
+      - out: ["1 1", "false false"]
+    answer: 3
+    explain: |
+      `const b = a` شیء تازه‌ای نمی‌سازد و فقط **reference** (نشانی) همان شیء را کپی می‌کند؛ پس `b.x = 5` همان شیئی را عوض می‌کند که `a` به آن اشاره دارد و `a.x` می‌شود `5`. اما `c` یک شیء **جداگانه** است (هرچند محتوای اولیه‌اش یکی بود) و `1` می‌ماند. `===` برای شیءها فقط می‌پرسد «همان یک شیء‌اند؟»: `a === b` درست و `a === c` نادرست است. گزینه‌ی ۱ کپی را مستقل فرض کرده و گزینه‌ی ۲ شیءها را با محتوا مقایسه کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const base = { name: "Ali", role: "user" };
+      const a = { ...base, role: "admin" };
+      const b = { role: "admin", ...base };
+      console.log(a.role, b.role, base.role);
+    options:
+      - out: "admin admin user"
+      - out: "user admin user"
+      - out: "admin admin admin"
+      - out: "admin user user"
+    answer: 4
+    explain: |
+      spread propertyها را **از چپ به راست** در شیء جدید می‌ریزد و برای کلید تکراری، **آخری برنده است**. در `a` اول `role: "user"` از `base` می‌آید و بعد `role: "admin"` جایش را می‌گیرد. در `b` اول `"admin"` نوشته می‌شود و بعد `...base` آن را با `"user"` بازنویسی می‌کند. `base` هم دست‌نخورده می‌ماند، چون spread یک شیء **جدید** می‌سازد (رد گزینه‌ی ۳). گزینه‌ی ۱ ترتیب را نادیده گرفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const name = "Sara";
+      const age = 21;
+      const student = {
+        name,
+        age,
+        intro() {
+          return "I'm " + this.name;
+        },
+      };
+      console.log(student.intro());
+      console.log(Object.keys(student));
+    options:
+      - out: ["I'm Sara", "['name', 'age', 'intro']"]
+      - out: ["I'm Sara", "['name', 'age']"]
+      - out: ["I'm undefined", "['name', 'age', 'intro']"]
+      - out: ["!! SyntaxError"]
+    answer: 1
+    explain: |
+      `{ name, age }` شکل کوتاه (shorthand) `{ name: name, age: age }` است و کاملاً مجاز است (رد گزینه‌ی ۴). `intro` با `student.intro()` صدا زده شده، پس `this` همان `student` است و `I'm Sara` برمی‌گردد (رد گزینه‌ی ۳). متد هم یک کلید معمولی شیء است، پس `Object.keys` آن را هم می‌آورد: `['name', 'age', 'intro']`؛ گزینه‌ی ۲ متدها را از کلیدها جدا فرض کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const prices = { tea: 2, coffee: 3 };
+      console.log(Object.values(prices));
+      console.log(Object.entries(prices));
+    options:
+      - out: ["['tea', 'coffee']", "[['tea', 2], ['coffee', 3]]"]
+      - out: ["[2, 3]", "{ tea: 2, coffee: 3 }"]
+      - out: ["[2, 3]", "[['tea', 2], ['coffee', 3]]"]
+      - out: ["[2, 3]", "['tea', 2, 'coffee', 3]"]
+    answer: 3
+    explain: |
+      `Object.values` آرایه‌ی **مقدارها** را می‌دهد: `[2, 3]` (گزینه‌ی ۱ آن را با `Object.keys` اشتباه گرفته). `Object.entries` برای هر کلید یک آرایه‌ی دوتایی `[key, value]` می‌سازد و همه را در یک آرایه برمی‌گرداند: `[['tea', 2], ['coffee', 3]]`. خروجی‌اش شیء نیست (رد گزینه‌ی ۲) و جفت‌ها هم در یک آرایه‌ی تخت پشت سر هم نمی‌آیند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const user = { name: "Barry", address: { city: "Central City" } };
+      console.log(user.address.city);
+      console.log(user.phone);
+      console.log(user.address.zip);
+      console.log(user.job.title);
+      console.log(user.job?.title);
+    options:
+      - line: 3
+      - line: 4
+      - line: 5
+      - line: 0
+    answer: 3
+    explain: |
+      خواندن کلیدِ ناموجود خطا نمی‌دهد: `user.phone` (خط ۳) و `user.address.zip` (خط ۴) فقط `undefined` می‌دهند. اما در خط ۵، `user.job` برابر `undefined` است و خواندن `title` از `undefined` خطای `TypeError: Cannot read properties of undefined (reading 'title')` می‌دهد و برنامه همان‌جا می‌ایستد. خط ۶ با `?.` امن نوشته شده و به‌تنهایی `undefined` می‌داد، ولی اصلاً به آن نمی‌رسیم.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی کد `24` باشد؟
+    check: option-output
+    code: |
+      const user = { name: "Barry", age: 24 };
+      const key = "age";
+      console.log(user___);
+    prelude: |
+      const user = { name: "Barry", age: 24 };
+      const key = "age";
+    expect: "24"
+    options:
+      - text: '`.key`'
+        code: 'console.log(user.key);'
+      - text: '`["key"]`'
+        code: 'console.log(user["key"]);'
+      - text: '`.[key]`'
+        code: 'console.log(user.[key]);'
+      - text: '`[key]`'
+        code: 'console.log(user[key]);'
+    answer: 4
+    explain: |
+      نام کلید (`"age"`) داخل متغیر `key` است، پس باید از براکت بدون کوتیشن استفاده کنیم تا مقدارِ متغیر حساب شود: `user[key]` همان `user["age"]` است. گزینه‌های ۱ و ۲ هر دو دنبال کلیدی به نام `"key"` می‌گردند و `undefined` چاپ می‌کنند. گزینه‌ی ۳ اصلاً نوشتار درستی ندارد و `SyntaxError` می‌دهد (`?.[key]` درست است، ولی `.[key]` نه).
+
+  - level: medium
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const user = { name: "Barry" };
+      user.name = "Wally";
+      user["age"] = 25;
+      delete user.age;
+      user = { name: "Iris" };
+      console.log(user.name);
+    options:
+      - line: 0
+      - line: 2
+      - line: 4
+      - line: 5
+    answer: 4
+    explain: |
+      خط‌های ۲ تا ۴ فقط **محتوای** شیء را تغییر می‌دهند (عوض کردن، اضافه کردن و حذف کردن property)، که برای شیءِ `const` کاملاً مجاز است. اما خط ۵ می‌خواهد خودِ متغیر `user` را به یک شیء **دیگر** وصل کند؛ این انتساب دوباره است و خطای `TypeError: Assignment to constant variable.` می‌دهد. پس گزینه‌ی «بدون خطا» هم نادرست است.
+
+  - level: medium
+    stem: |
+      کدام تعریفِ شیء **خطا** می‌دهد؟
+    check: option-throws
+    options:
+      - code: 'const o = { function greet() { return "hi"; } };'
+      - code: 'const o = { greet() { return "hi"; } };'
+      - code: 'const o = { greet: function () { return "hi"; } };'
+      - code: 'const o = { greet: () => "hi" };'
+    answer: 1
+    explain: |
+      داخل object literal هر عضو باید شکل `key: value` (یا shorthand) داشته باشد. گزینه‌ی ۲ شکل کوتاهِ متد است (مثل `greet()` در اسلاید ۴۱)، گزینه‌ی ۳ شکل کامل آن و گزینه‌ی ۴ یک arrow function را به‌عنوان مقدار نگه می‌دارد؛ هر سه مجازند. اما نوشتن کلمه‌ی `function` قبل از نام متد (گزینه‌ی ۱) در object literal معتبر نیست و `SyntaxError` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function birthday(person) {
+        person.age = person.age + 1;
+      }
+      const sara = { name: "Sara", age: 20 };
+      birthday(sara);
+      birthday(sara);
+      console.log(sara.age);
+    options:
+      - out: "20"
+      - out: "21"
+      - out: "22"
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      وقتی یک شیء را به تابع می‌دهیم، تابع **همان شیء** را می‌گیرد (reference کپی می‌شود، نه خود شیء). پس هر بار `person.age` یکی زیاد می‌شود و بعد از دو فراخوانی، `sara.age` برابر `22` است. گزینه‌ی ۱ فرض کرده تابع روی یک کپی کار می‌کند، گزینه‌ی ۲ اثر فراخوانی دوم را جا انداخته و گزینه‌ی ۴ تغییر محتوای شیءِ `const` را ممنوع پنداشته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر در حالت عادی (غیر strict) چیست؟
+    check: output
+    code: |
+      const word = "hi";
+      word.extra = 42;
+      console.log(word.extra);
+      console.log(word.length, word.toUpperCase());
+    options:
+      - out: ["42", "2 HI"]
+      - out: ["!! TypeError"]
+      - out: ["undefined", "2 HI"]
+      - out: ["undefined", "undefined undefined"]
+    answer: 3
+    explain: |
+      رشته primitive است، نه شیء. وقتی روی آن نقطه می‌گذاریم، JavaScript برای یک لحظه یک شیء پوشاننده (wrapper) می‌سازد؛ `extra` روی همان شیء موقت نوشته می‌شود که بلافاصله دور انداخته می‌شود، پس خواندن بعدی `undefined` می‌دهد (رد گزینه‌ی ۱). خواندن `length` و صدا زدن `toUpperCase` از همین مکانیزم استفاده می‌کنند و کار می‌کنند: `2 HI` (رد گزینه‌ی ۴). خطای `TypeError` (گزینه‌ی ۲) فقط در حالت strict رخ می‌داد: `Cannot create property 'extra' on string 'hi'`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const settings = { theme: "dark", font: undefined };
+      console.log(settings.font === settings.size);
+      console.log("font" in settings, "size" in settings);
+      console.log(settings.hasOwnProperty("toString"), "toString" in settings);
+    options:
+      - out: ["false", "true false", "false false"]
+      - out: ["true", "false false", "false true"]
+      - out: ["true", "true false", "true true"]
+      - out: ["true", "true false", "false true"]
+    answer: 4
+    explain: |
+      `settings.font` مقدارش `undefined` است و `settings.size` اصلاً وجود ندارد و آن هم `undefined` می‌دهد؛ پس خط اول `true` است و مقایسه با `undefined` فرق این دو حالت را نمی‌فهمد (رد گزینه‌ی ۱). `in` فقط می‌پرسد «کلید هست؟»: `font` هست (هرچند مقدارش `undefined` است) و `size` نیست (رد گزینه‌ی ۲). `toString` از `Object.prototype` به ارث رسیده: `in` آن را می‌بیند، ولی `hasOwnProperty` فقط کلیدهای **خودِ** شیء را حساب می‌کند و `false` می‌دهد (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = { name: "Ali", address: { city: "Tehran" } };
+      const copy = { ...user };
+      copy.name = "Reza";
+      copy.address.city = "Shiraz";
+      console.log(user.name, user.address.city);
+      console.log(copy.address === user.address);
+    options:
+      - out: ["Ali Tehran", "false"]
+      - out: ["Ali Shiraz", "true"]
+      - out: ["Reza Shiraz", "true"]
+      - out: ["Ali Tehran", "true"]
+    answer: 2
+    explain: |
+      spread یک کپی **سطحی** (shallow) می‌سازد: `copy` شیء جدیدی است، پس عوض کردن `copy.name` روی `user.name` اثری ندارد (رد گزینه‌ی ۳). اما مقدار `address` یک شیء است و فقط **reference** آن کپی شده؛ هر دو به **همان** شیء آدرس اشاره می‌کنند (`true` در خط آخر)، پس تغییر `copy.address.city` در `user` هم دیده می‌شود. گزینه‌های ۱ و ۴ spread را کپی کامل (deep) فرض کرده‌اند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = { id: 1 };
+      const b = { id: 2 };
+      const labels = {};
+      labels[a] = "first";
+      labels[b] = "second";
+      console.log(labels[a]);
+      console.log(Object.keys(labels));
+    options:
+      - out: ["second", "['[object Object]']"]
+      - out: ["first", "['[object Object]', '[object Object]']"]
+      - out: ["first", "['a', 'b']"]
+      - out: ["undefined", "[]"]
+    answer: 1
+    explain: |
+      کلیدهای شیء فقط رشته (یا Symbol) هستند؛ پس شیءهای `a` و `b` موقع کلید شدن به رشته تبدیل می‌شوند و رشته‌ی هر دو `"[object Object]"` است. یعنی `labels[a]` و `labels[b]` **یک** خانه‌اند: اول `"first"` در آن نوشته می‌شود و بعد `"second"` جایش را می‌گیرد. برای همین `labels[a]` مقدار `second` را می‌دهد و فقط یک کلید وجود دارد. گزینه‌ی ۲ دو کلید جدا فرض کرده و گزینه‌ی ۳ فکر کرده نام متغیرها کلید می‌شوند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const settings = { theme: "dark", size: 12, theme: "light" };
+      const updated = { ...settings, size: settings.size + 2 };
+      console.log(settings.theme, updated.size);
+      console.log(Object.keys(updated));
+    options:
+      - out: ["dark 14", "['theme', 'size', 'theme']"]
+      - out: ["!! SyntaxError"]
+      - out: ["light 14", "['theme', 'size']"]
+      - out: ["light 12", "['size', 'theme']"]
+    answer: 3
+    explain: |
+      کلید تکراری در object literal خطا نیست (رد گزینه‌ی ۲) و **آخرین مقدار برنده است**، پس `theme` برابر `"light"` می‌شود و شیء فقط دو کلید دارد (رد گزینه‌ی ۱). در `updated`، اول همه‌ی propertyهای `settings` ریخته می‌شوند و بعد `size` با `12 + 2` یعنی `14` بازنویسی می‌شود؛ بازنویسی جای کلید را عوض نمی‌کند، پس ترتیب کلیدها `['theme', 'size']` است. گزینه‌ی ۴ بازنویسی را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: 'حاصل `"hello".length` برابر `5` است، چون رشته برای یک لحظه در یک شیء پوشاننده (wrapper) قرار می‌گیرد.'
+        expr: '"hello".length'
+        equals: '5'
+      - text: 'حاصل `typeof new Date()` برابر `"object"` است.'
+        expr: 'typeof new Date()'
+        equals: '"object"'
+      - text: 'حاصل `typeof function () {}` برابر `"function"` است، هرچند توابع هم نوعی شیء‌اند.'
+        expr: 'typeof function () {}'
+        equals: '"function"'
+      - text: 'حاصل `typeof "hello"` برابر `"object"` است، چون در JavaScript همه چیز شیء است.'
+        expr: 'typeof "hello"'
+        equals: '"object"'
+    answer: 4
+    explain: |
+      زیرنویس اسلاید ۴۰ می‌گوید «**تقریباً** همه چیز شیء است»، نه همه چیز: رشته یک primitive است و `typeof "hello"` برابر `"string"` است. گزینه‌ی ۱ درست است، چون primitiveها از طریق شیء پوشاننده‌ی موقت property و method دارند. تاریخ‌ها شیء‌اند (گزینه‌ی ۲) و توابع شیءهای خاصی هستند که `typeof` برایشان `"function"` می‌دهد (گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = {
+        name: "Barry Allen",
+        greet() {
+          return `Hello, I'm ${this.name}`;
+        },
+      };
+      const action = "greet";
+      console.log(user[action]());
+      console.log(typeof user.greet, typeof user.greet());
+    options:
+      - out: ["!! TypeError"]
+      - out: ["Hello, I'm Barry Allen", "function string"]
+      - out: ["Hello, I'm undefined", "function string"]
+      - out: ["Hello, I'm Barry Allen", "object string"]
+    answer: 2
+    explain: |
+      `user[action]` همان `user["greet"]` یعنی متد `greet` است و با `()` بلافاصله صدا زده می‌شود؛ این هنوز «صدا زدن روی شیء» است، پس `this` همان `user` است و نام درست چاپ می‌شود (رد گزینه‌های ۱ و ۳). در خط آخر، `user.greet` **خودِ تابع** است و `typeof` آن `"function"` است (نه `"object"`؛ رد گزینه‌ی ۴)، ولی `user.greet()` تابع را **اجرا** می‌کند و رشته‌ی برگشتی را می‌دهد، پس `"string"`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const id = Symbol("id");
+      const field = "score";
+      const item = { name: "Pen", [id]: 7, [field]: 20 };
+      console.log(Object.keys(item));
+      console.log(item[id], item.field, item.score);
+    options:
+      - out: ["['name', 'id', 'field']", "7 20 20"]
+      - out: ["['name', 'Symbol(id)', 'score']", "7 undefined 20"]
+      - out: ["['name', 'score']", "undefined undefined 20"]
+      - out: ["['name', 'score']", "7 undefined 20"]
+    answer: 4
+    explain: |
+      براکت داخل literal یعنی «**مقدارِ** این عبارت را کلید کن»: `[field]` کلید `"score"` می‌سازد (نه `"field"`) و `[id]` خودِ Symbol را کلید می‌کند. `Object.keys` فقط کلیدهای رشته‌ای را برمی‌گرداند و Symbolها را نشان نمی‌دهد: `['name', 'score']` (رد گزینه‌های ۱ و ۲). `item[id]` با همان Symbol مقدار `7` را پیدا می‌کند (رد گزینه‌ی ۳)، `item.field` دنبال کلیدی به نام `"field"` می‌گردد که نیست (`undefined`) و `item.score` برابر `20` است.
