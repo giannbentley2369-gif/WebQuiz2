@@ -215,6 +215,13 @@ lesson: |
   console.log(createUser());                 // Guest (user)
   ```
 
+  همین کار در callbackهای متدهای آرایه هم خیلی رایج است؛ پارامتر هر عضو را همان‌جا باز می‌کنیم:
+
+  ```js
+  const users = [{ name: "Ali", age: 20 }, { name: "Sara", age: 17 }];
+  console.log(users.map(({ name }) => name)); // [ 'Ali', 'Sara' ]
+  ```
+
   ### destructuring مقدار `null` یا `undefined`
 
   `null` و `undefined` هیچ خاصیتی ندارند، پس باز کردن آن‌ها **همیشه** خطای `TypeError` می‌دهد:
@@ -242,7 +249,7 @@ lesson: |
   console.log([..."hi"]);      // [ 'h', 'i' ] (a string is iterable)
   ```
 
-  **۲. داخل شیء (کپی، افزودن و بازنویسی):**
+  **۲. داخل شیء (کپی، افزودن و بازنویسی؛ مروری بر درس «اشیاء (Objects) و Object literal»):**
 
   ```js
   const base = { a: 1, b: 2 };
@@ -259,11 +266,17 @@ lesson: |
   const nums = [5, 1, 9];
   console.log(Math.max(...nums)); // 9   (same as Math.max(5, 1, 9))
   console.log(Math.max(nums));    // NaN (one argument: the whole array)
+
+  const list = [1, 2];
+  list.push(...[3, 4]);           // same as list.push(3, 4)
+  console.log(list);              // [ 1, 2, 3, 4 ]
   ```
+
+  بدون `...`، دستور `list.push([3, 4])` کل آرایه را به‌صورت **یک** عضو اضافه می‌کند و حاصل `[ 1, 2, [ 3, 4 ] ]` می‌شود.
 
   #### spread در اسلاید ۴۸
 
-  در مثال اسلاید ۴۸ (درس متدهای آرایه) این بخش را دیدیم:
+  در مثال اسلاید ۴۸ (درس «متدهای forEach، map، filter، find، findIndex و reduce») این بخش را دیدیم:
 
   ```js
   const students = [{ name: "Alice", score: 85 }, { name: "Bob", score: 72 }];
@@ -312,7 +325,7 @@ lesson: |
   - `const { a = 5 } = { a: null };` مقدار `null` می‌دهد، نه `5`.
   - باز کردن `null` یا `undefined` خطای `TypeError` می‌دهد؛ مثلاً تابعی با پارامتر `{ title }` که بدون آرگومان صدا زده شود. پیش‌فرض `= {}` برای کل پارامتر این مشکل را حل می‌کند.
   - `[...rest, last]` خطای `SyntaxError` است و هیچ خطی از فایل اجرا نمی‌شود.
-  - `Math.max(nums)` برابر `NaN` است؛ باید بنویسی `Math.max(...nums)`.
+  - `Math.max(nums)` برابر `NaN` است؛ باید بنویسی `Math.max(...nums)`. همین‌طور `arr.push(other)` کل آرایه‌ی `other` را **یک** عضو حساب می‌کند، ولی `arr.push(...other)` اعضایش را تک‌تک اضافه می‌کند.
   - کپی با spread سطحی است: آرایه‌ها و اشیای درونی بین کپی و اصلی **مشترک** می‌مانند.
   - destructuring چیزی را «نابود» نمی‌کند؛ آرایه یا شیء اصلی دست‌نخورده می‌ماند.
   :::
@@ -705,74 +718,78 @@ questions:
       خروجی کد زیر چیست؟
     check: output
     code: |
-      const base = { a: 1, b: 2 };
-      const x = { ...base, b: 3 };
-      const y = { b: 3, ...base };
-      console.log(x.b, y.b);
+      const a = [1, 2];
+      const b = [3, 4];
+      const c = [0, ...a, 9, ...b];
+      console.log(c.length, c[3]);
     options:
-      - out: "3 3"
-      - out: "2 2"
-      - out: "2 3"
-      - out: "3 2"
+      - out: "4 [3, 4]"
+      - out: "6 2"
+      - out: "!! TypeError"
+      - out: "6 9"
     answer: 4
     explain: |
-      در object literal اگر یک کلید دو بار مقدار بگیرد، **آخرین** مقدار برنده است. در `x` اول `b: 2` از `base` کپی می‌شود و بعد `b: 3` آن را بازنویسی می‌کند، پس `3`. در `y` اول `b: 3` نوشته می‌شود و بعد spread، مقدار `2` را از `base` روی آن می‌ریزد، پس `2`. گزینه‌ی ۱ فکر کرده مقدار صریح همیشه برنده است، گزینه‌ی ۲ تصور کرده مقدار `base` همیشه برنده است و گزینه‌ی ۳ ترتیب را برعکس خوانده است.
+      spread اعضای `a` و `b` را **تک‌تک** و در همان جایی که نوشته شده‌اند در آرایه‌ی جدید می‌ریزد: `c` برابر `[0, 1, 2, 9, 3, 4]` است؛ پس طولش `6` و `c[3]` (عضو چهارم، چون index از ۰ شروع می‌شود) برابر `9` است. گزینه‌ی ۱ فکر کرده خودِ آرایه‌ها تودرتو قرار می‌گیرند (`[0, [1, 2], 9, [3, 4]]`) که فقط بدون `...` پیش می‌آید. گزینه‌ی ۲ شمارش index را از ۱ شروع کرده و گزینه‌ی ۳ تصور کرده spread فقط در ابتدا یا انتهای آرایه مجاز است.
 
   - level: medium
     stem: |
       خروجی کد زیر چیست؟
     check: output
     code: |
-      const a = [1, 2];
-      const b = a;
-      const c = [...a];
-      a.push(3);
-      console.log(b.length, c.length);
+      const list = [1, 2];
+      const more = [3, 4];
+      const x = [...list];
+      x.push(more);
+      const y = [...list];
+      y.push(...more);
+      console.log(x.length, y.length, list.length);
     options:
-      - out: "2 2"
-      - out: "3 3"
-      - out: "3 2"
-      - out: "2 3"
+      - out: "4 4 2"
+      - out: "3 3 2"
+      - out: "3 4 2"
+      - out: "5 5 5"
     answer: 3
     explain: |
-      `const b = a;` آرایه‌ی جدیدی نمی‌سازد؛ `b` فقط نام دیگری برای **همان** آرایه است، پس `push` روی `a` در `b` هم دیده می‌شود و طولش `3` است. `[...a]` با spread یک آرایه‌ی **جدید** با اعضای آن لحظه (`1` و `2`) می‌سازد که به `a` وابسته نیست، پس طولش `2` می‌ماند. گزینه‌ی ۱ فکر کرده `b` هم کپی است، گزینه‌ی ۲ فکر کرده spread هم فقط ارجاع را کپی می‌کند و گزینه‌ی ۴ این دو را برعکس کرده است.
+      `x` و `y` هر دو با `[...list]` ساخته شده‌اند، پس دو آرایه‌ی **جدید** و مستقل از `list` هستند و طول `list` همان `2` می‌ماند (رد گزینه‌ی ۴ که فکر کرده هر سه یک آرایه‌اند). `x.push(more)` خودِ آرایه‌ی `more` را **یک** عضو حساب می‌کند: `[1, 2, [3, 4]]` با طول `3`. اما `y.push(...more)` همان `y.push(3, 4)` است و طولش `4` می‌شود. گزینه‌ی ۱ فکر کرده `push` خودش آرایه را باز می‌کند و گزینه‌ی ۲ اثر spread در آرگومان‌ها را نادیده گرفته است.
 
   - level: hard
     stem: |
       خروجی کد زیر چیست؟
     check: output
     code: |
-      const original = { name: "Ali", tags: ["x"] };
-      const clone = { ...original };
-      clone.name = "Sara";
-      clone.tags.push("y");
-      console.log(original.name, original.tags.length);
+      function sum(first, ...rest) {
+        return first + rest.length;
+      }
+      const nums = [10, 20, 30];
+      console.log(sum(...nums));
+      console.log(sum(nums));
     options:
-      - out: "Ali 1"
-      - out: "Sara 2"
-      - out: "Sara 1"
-      - out: "Ali 2"
+      - out: ["60", "60"]
+      - out: ["12", "NaN"]
+      - out: ["60", "10,20,300"]
+      - out: ["12", "10,20,300"]
     answer: 4
     explain: |
-      spread یک کپی **سطحی** (shallow) می‌سازد: `clone` شیء جدیدی است، پس تغییر `clone.name` روی `original` اثری ندارد و نام همان `Ali` می‌ماند. اما خاصیت `tags` در هر دو شیء به **همان** آرایه اشاره می‌کند؛ `push` روی آرایه‌ی مشترک انجام می‌شود و طول آن در `original` هم `2` است. گزینه‌ی ۱ کپی را عمیق فرض کرده و گزینه‌های ۲ و ۳ فکر کرده‌اند `clone` اصلاً شیء جدیدی نیست.
+      `sum(...nums)` همان `sum(10, 20, 30)` است: `first` برابر `10` می‌شود و rest parameter باقی را جمع می‌کند (`[20, 30]` با طول `2`)؛ پس `10 + 2 = 12`. در `sum(nums)` فقط **یک** آرگومان (خودِ آرایه) داده شده: `first` کل آرایه است و `rest` خالی (طول `0`). حاصل `[10, 20, 30] + 0` است؛ `+` آرایه را به رشته‌ی `"10,20,30"` تبدیل می‌کند و `0` به آن چسبانده می‌شود: `"10,20,300"`. گزینه‌های ۱ و ۳ فکر کرده‌اند تابع اعداد را جمع می‌زند (`rest.length` تعداد است، نه مجموع) و گزینه‌ی ۲ تبدیل آرایه به رشته در `+` را با `NaN` اشتباه گرفته است.
 
   - level: hard
     stem: |
-      کد زیر نسخه‌ی تغییریافته‌ی مثال اسلاید ۴۸ است. خروجی آن چیست؟
+      خروجی کد زیر چیست؟
     check: output
     code: |
-      const students = [
-        { name: "Alice", score: 85 },
-        { name: "Bob", score: 62 },
+      const users = [
+        { name: "Ali", age: 20 },
+        { name: "Sara", age: 17 },
       ];
-      const results = students.map((s) => ({ ...s, passed: s.score >= 70 }));
-      console.log(results[1].passed, students[1].passed);
-      console.log(results[0] === students[0]);
+      const names = users.map(({ name }) => name);
+      const older = users.map(({ age, ...rest }) => ({ ...rest, age: age + 1 }));
+      console.log(names);
+      console.log(older[1], users[1].age);
     options:
-      - out: ["false false", "true"]
-      - out: ["false undefined", "false"]
-      - out: ["true undefined", "false"]
-      - out: ["false false", "false"]
+      - out: ["['Ali', 'Sara']", "{ name: 'Sara', age: 18 } 18"]
+      - out: ["['Ali', 'Sara']", "{ name: 'Sara', age: 18 } 17"]
+      - out: ["[{ name: 'Ali' }, { name: 'Sara' }]", "{ name: 'Sara', age: 18 } 17"]
+      - out: "!! SyntaxError"
     answer: 2
     explain: |
-      `{ ...s, passed: ... }` برای هر دانشجو یک شیء **جدید** می‌سازد که خاصیت‌های `s` به‌علاوه‌ی `passed` را دارد. نمره‌ی Bob برابر `62` است، پس `passed` برابر `false` است؛ ولی شیء اصلی Bob تغییری نکرده و خاصیت `passed` ندارد، پس `undefined`. چون شیء‌ها جدیدند، `results[0] === students[0]` برابر `false` است. گزینه‌های ۱ و ۴ فکر کرده‌اند spread شیء اصلی را تغییر می‌دهد و گزینه‌ی ۳ نتیجه‌ی مقایسه‌ی `62 >= 70` را اشتباه حساب کرده است.
+      پارامتر `({ name })` هر کاربر را همان‌جا destructure می‌کند و فقط رشته‌ی `name` برمی‌گردد، پس `names` برابر `[ 'Ali', 'Sara' ]` است (رد گزینه‌ی ۳ که فکر کرده شیء برگردانده می‌شود). در `map` دوم، `age` جدا می‌شود و بقیه (یعنی `name`) در `rest` جمع می‌شود؛ بعد `({ ...rest, age: age + 1 })` یک شیء **جدید** می‌سازد و شیء اصلی تغییری نمی‌کند، پس `users[1].age` همان `17` است (رد گزینه‌ی ۱). destructuring در پارامترهای arrow function کاملاً مجاز است و پرانتزِ دور شیء هم برگرداندن آن را درست کرده است (رد گزینه‌ی ۴).

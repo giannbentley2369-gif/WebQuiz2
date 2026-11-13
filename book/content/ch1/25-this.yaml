@@ -180,14 +180,14 @@ lesson: |
   وقتی تابعی با `new` صدا زده شود، یک شیء تازه ساخته می‌شود و `this` به آن اشاره می‌کند. کلاس‌ها (درس «کلاس‌ها (Classes) در JavaScript») همین کار را می‌کنند و قبل از ES6 همین کار با تابع‌های معمولی انجام می‌شد:
 
   ```js
-  function Car(model) {
-    this.model = model; // "this" is the brand-new object
+  function Phone(brand) {
+    this.brand = brand; // "this" is the brand-new object
   }
-  const c = new Car("Pride");
-  console.log(c.model); // Pride
+  const p = new Phone("Samsung");
+  console.log(p.brand); // Samsung
   ```
 
-  اگر چنین تابعی را **بدون** `new` صدا بزنی، یک صدا زدن ساده است: در حالت عادی `this` شیء سراسری می‌شود و `model` به‌اشتباه روی شیء سراسری ساخته می‌شود! کلاس‌ها برای جلوگیری از همین اشتباه، بدون `new` خطای `TypeError` می‌دهند.
+  اگر چنین تابعی را **بدون** `new` صدا بزنی، یک صدا زدن ساده است: در حالت عادی `this` شیء سراسری می‌شود و `brand` به‌اشتباه روی شیء سراسری ساخته می‌شود! کلاس‌ها برای جلوگیری از همین اشتباه، بدون `new` خطای `TypeError` می‌دهند.
 
   ### arrow function و lexical this
 
@@ -221,6 +221,8 @@ lesson: |
   };
   console.log(team.list()); // [ 'Ali of Blue', 'Sara of Blue' ]
   ```
+
+  arrowی که داخل یک متد ساخته (و مثلاً برگردانده) شود، `this`ِ همان لحظه را **برای همیشه** نگه می‌دارد؛ حتی اگر بعداً به شکل `other.fn()` روی شیء دیگری صدا زده شود، قانون «شیء قبل از نقطه» روی آن اثری ندارد.
 
   در مقابل، یک تابع **معمولی** تودرتو `this` را گم می‌کند، چون به‌صورت ساده صدا زده می‌شود:
 
@@ -402,15 +404,15 @@ questions:
 
   - level: easy
     stem: |
-      اسلاید ۳۶ می‌گوید: «تابع‌های معمولی `this` مخصوص خودشان را دارند، ولی arrow functionها `this` را ......». جای خالی کدام است؟
+      در کد اسلاید ۴۴، چرا `f()` (بعد از `const f = obj.say;`) دیگر `Robert` را چاپ نمی‌کند؟
     options:
-      - 'همیشه برابر `undefined` می‌گیرند'
-      - 'از اولین آرگومانی که به آن‌ها داده می‌شود می‌گیرند'
-      - 'از شیئی که قبل از نقطه آمده می‌گیرند'
-      - 'از محدوده‌ی بیرونی به ارث می‌برند'
+      - 'چون `const` اتصال تابع به شیء را پاک می‌کند.'
+      - 'چون `say` یک arrow function است.'
+      - 'چون با اجرای `obj.say()`، شیء `obj` از حافظه حذف شده است.'
+      - 'چون هنگام صدا زدن `f()` هیچ شیئی قبل از نقطه نیست و `this` به نحوه‌ی صدا زدن بستگی دارد.'
     answer: 4
     explain: |
-      اسلاید ۳۶: «Functions have their own `this`; arrows inherit `this`» و اسلاید ۴۴ آن را lexical this می‌نامد: arrow function `this` را از محدوده‌ای که در آن نوشته شده می‌گیرد. `this`ِ arrow همیشه `undefined` نیست (مثلاً داخل یک متد، همان شیء است؛ رد گزینه‌ی ۱)، آرگومان‌ها روی آن اثری ندارند (رد گزینه‌ی ۲) و «شیء قبل از نقطه» قانونِ تابع‌های معمولی است، نه arrow (رد گزینه‌ی ۳).
+      `const f = obj.say;` فقط خودِ تابع را در `f` می‌ریزد و تابع هیچ اتصال دائمی به `obj` ندارد. `this` در لحظه‌ی صدا زدن تعیین می‌شود و در `f()` هیچ شیئی قبل از نقطه نیست؛ پس یک صدا زدن ساده است و `this` دیگر `obj` نیست. `const` یا `let` بودن متغیر هیچ اثری ندارد (رد گزینه‌ی ۱). `say` با شکل کوتاه متد نوشته شده و یک تابع معمولی است، نه arrow (رد گزینه‌ی ۲). `obj` هم هنوز وجود دارد و `obj.say()` دوباره `Robert` چاپ می‌کند (رد گزینه‌ی ۳).
 
   - level: easy
     stem: |
@@ -740,22 +742,22 @@ questions:
       کد زیر در Node.js (فایل CommonJS، بدون strict mode) اجرا می‌شود. خروجی چیست؟
     check: output
     code: |
-      function Car(model) {
-        this.model = model;
+      function Phone(brand) {
+        this.brand = brand;
       }
-      const c = new Car("Pride");
-      console.log(c.model);
-      const d = Car("Tiba");
-      console.log(d);
-      console.log(globalThis.model);
+      const p = new Phone("Samsung");
+      console.log(p.brand);
+      const q = Phone("Nokia");
+      console.log(q);
+      console.log(globalThis.brand);
     options:
-      - out: ["Pride", "undefined", "Tiba"]
-      - out: ["Pride", "Car { model: 'Tiba' }", "undefined"]
-      - out: ["Pride", "!! TypeError"]
-      - out: ["Pride", "undefined", "undefined"]
+      - out: ["Samsung", "undefined", "Nokia"]
+      - out: ["Samsung", "Phone { brand: 'Nokia' }", "undefined"]
+      - out: ["Samsung", "!! TypeError"]
+      - out: ["Samsung", "undefined", "undefined"]
     answer: 1
     explain: |
-      با `new`، شیء تازه‌ای ساخته می‌شود و `this` به آن اشاره می‌کند، پس `c.model` برابر `Pride` است. `Car("Tiba")` بدون `new` یک صدا زدن ساده است: تابع چیزی برنمی‌گرداند (`d` برابر `undefined`) و چون strict نیست، `this` شیء سراسری است و `model` به‌اشتباه روی `globalThis` ساخته می‌شود. گزینه‌ی ۲ فکر کرده بدون `new` هم شیء ساخته می‌شود، گزینه‌ی ۳ تابع معمولی را با کلاس (که بدون `new` خطا می‌دهد) اشتباه گرفته و گزینه‌ی ۴ اثر جانبی روی شیء سراسری را ندیده است.
+      با `new`، شیء تازه‌ای ساخته می‌شود و `this` به آن اشاره می‌کند، پس `p.brand` برابر `Samsung` است. `Phone("Nokia")` بدون `new` یک صدا زدن ساده است: تابع چیزی برنمی‌گرداند (`q` برابر `undefined`) و چون strict نیست، `this` شیء سراسری است و `brand` به‌اشتباه روی `globalThis` ساخته می‌شود. گزینه‌ی ۲ فکر کرده بدون `new` هم شیء ساخته می‌شود، گزینه‌ی ۳ تابع معمولی را با کلاس (که بدون `new` خطا می‌دهد) اشتباه گرفته و گزینه‌ی ۴ اثر جانبی روی شیء سراسری را ندیده است.
 
   - level: medium
     stem: |
@@ -771,25 +773,27 @@ questions:
 
   - level: hard
     stem: |
-      کد زیر در Node.js (فایل CommonJS) اجرا می‌شود. خروجی چیست؟
+      خروجی کد زیر چیست؟
     check: output
     code: |
-      const counter = {
-        count: 10,
-        regular() {
-          return this.count;
+      const obj = {
+        name: "obj",
+        make() {
+          return () => this.name;
         },
-        arrow: () => this.count,
       };
-      console.log(counter.regular(), counter.arrow());
+      const fn = obj.make();
+      const other = { name: "other", fn };
+      console.log(fn());
+      console.log(other.fn());
     options:
-      - out: "10 10"
-      - out: "10 undefined"
-      - out: "undefined undefined"
-      - out: "!! TypeError"
+      - out: ["obj", "other"]
+      - out: ["obj", "obj"]
+      - out: ["undefined", "other"]
+      - out: ["undefined", "undefined"]
     answer: 2
     explain: |
-      `regular` یک متد معمولی است و در `counter.regular()` مقدار `this` برابر `counter` است، پس `10`. اما `arrow` یک arrow function است و `this` را از بیرونِ object literal می‌گیرد؛ در بالاترین سطح فایل CommonJS، `this` برابر `module.exports` (یعنی `{}`) است که `count` ندارد، پس `undefined`. گزینه‌ی ۱ دام اصلی است (فکر کرده arrow هم شیء را می‌شناسد). گزینه‌ی ۳ متد معمولی را هم بی‌`this` فرض کرده و خطایی هم رخ نمی‌دهد، چون `this` در این‌جا `undefined` نیست (رد گزینه‌ی ۴).
+      arrow function داخل `make` **نوشته شده** و `this` آن همیشه همان `this`ِ `make` در لحظه‌ی ساخته شدنش است. `obj.make()` یک فراخوانی متد بود، پس آن `this` برابر `obj` است. حتی وقتی arrow بعداً به شکل `other.fn()` صدا زده شود، قانون «شیء قبل از نقطه» روی arrow اثری ندارد؛ پس هر دو بار `obj` چاپ می‌شود. گزینه‌های ۱ و ۳ قانون تابع‌های معمولی را روی arrow اعمال کرده‌اند و گزینه‌های ۳ و ۴ فکر کرده‌اند arrow بیرون از متد، `this` را از دست می‌دهد.
 
   - level: hard
     stem: |
