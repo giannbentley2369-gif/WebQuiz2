@@ -1,0 +1,695 @@
+id: ch1-classes
+title: "کلاس‌ها (Classes) در JavaScript"
+slides: "Introduction to JS، اسلاید ۳۹"
+lesson: |
+  فرض کن یک شرکت ساختمانی **نقشه‌ی** (blueprint) یک خانه را کشیده است. خود نقشه خانه نیست و نمی‌شود در آن زندگی کرد؛ ولی با همین یک نقشه می‌شود ده خانه ساخت. همه‌ی خانه‌ها یک شکل‌اند (همان اتاق‌ها، همان درها)، ولی هر کدام صاحب، رنگ و وسایل **خودش** را دارد. در JavaScript، **class** (کلاس) همین نقشه است و هر شیئی که از روی آن ساخته می‌شود یک **instance** (نمونه) نام دارد.
+
+  ### چرا کلاس؟
+
+  فرض کن می‌خواهی چند کاربر بسازی. با object literal (که در درس اشیاء دیدیم) باید ساختار و متد هر کاربر را **تکرار** کنی:
+
+  ```js
+  const kermit = { name: "Kermit", age: 22, greet() { console.log("Hello, " + this.name); } };
+  const piggy = { name: "Piggy", age: 30, greet() { console.log("Hello, " + this.name); } };
+  // ...and the same code again for every new user
+  ```
+
+  اگر روزی بخواهی پیام `greet` را عوض کنی، باید همه‌جا را تغییر دهی. کلاس این مشکل را حل می‌کند: ساختار را **یک بار** تعریف می‌کنی و هر چند نمونه که بخواهی می‌سازی.
+
+  اسلاید ۳۹ درباره‌ی کلاس‌ها سه نکته می‌گوید:
+
+  - در **ES6** به‌عنوان راهی **تمیزتر** (cleaner) برای ساختن اشیاء معرفی شدند.
+  - با کلمه‌ی کلیدی **`class`** تعریف می‌شوند.
+  - کلاس‌ها یک **blueprint** (نقشه یا الگو) برای ساختن اشیاء تعریف می‌کنند.
+
+  ### کد اسلاید ۳۹
+
+  ```js title=classes.js
+  class User {
+    constructor(name, age) {
+      this.name = name;
+      this.age = age;
+    }
+    greet() {
+      console.log("Hello, " + this.name);
+    }
+  }
+
+  const kermit = new User("Kermit", 22);
+  kermit.greet(); // Hello, Kermit
+  ```
+
+  بیا خط‌به‌خط بخوانیم:
+
+  - `class User { ... }`: کلاسی به نام `User` تعریف می‌کند. طبق قرارداد، نام کلاس با حرف **بزرگ** شروع می‌شود (PascalCase).
+  - `constructor(name, age) { ... }`: **constructor** (سازنده) متد ویژه‌ای است که هر بار با `new` یک نمونه‌ی جدید ساخته شود، **خودکار** اجرا می‌شود. کارش مقداردهی اولیه به خاصیت‌های شیء تازه است.
+  - `this.name = name;`: این‌جا `this` همان **شیء تازه‌ای است که در حال ساخته شدن است**. این خط روی آن شیء خاصیتی (property) به نام `name` می‌سازد و پارامتر `name` را در آن می‌ریزد.
+  - `greet() { ... }`: یک **method** (متد؛ تابعی که متعلق به شیء است). در بدنه‌ی کلاس کلمه‌ی `function` نمی‌نویسیم و بین متدها **کاما نمی‌گذاریم**.
+  - `new User("Kermit", 22)`: یک نمونه‌ی جدید می‌سازد؛ آرگومان‌ها به `constructor` می‌روند.
+  - `kermit.greet()`: متد را روی `kermit` صدا می‌زند. چون `kermit` قبل از نقطه آمده، داخل `greet` مقدار `this` برابر `kermit` است و `Hello, Kermit` چاپ می‌شود.
+
+  | اصطلاح | یعنی | در مثال |
+  |---|---|---|
+  | class | نقشه یا الگوی ساخت اشیاء | `User` |
+  | instance (نمونه) | شیئی که از روی کلاس ساخته شده | `kermit` |
+  | constructor (سازنده) | متدی که موقع `new` خودکار اجرا می‌شود | `constructor(name, age)` |
+  | property (خاصیت) | داده‌ی هر نمونه | `name` و `age` |
+  | method (متد) | رفتار مشترک نمونه‌ها | `greet` |
+
+  ### `new` دقیقاً چه کار می‌کند؟
+
+  وقتی می‌نویسی `new User("Kermit", 22)`، این چهار قدم انجام می‌شود:
+
+  1. یک شیء خالی جدید `{}` ساخته می‌شود.
+  2. این شیء به `User.prototype` وصل می‌شود؛ جایی که متدهای کلاس (مثل `greet`) نگه‌داری می‌شوند.
+  3. `constructor` با `this` برابر همان شیء جدید اجرا می‌شود و خاصیت‌ها را پر می‌کند.
+  4. شیء ساخته‌شده **خودکار** برگردانده می‌شود (لازم نیست در `constructor` دستور `return` بنویسی).
+
+  ```js
+  class User {
+    constructor(name, age) {
+      this.name = name;
+      this.age = age;
+    }
+    greet() {
+      console.log("Hello, " + this.name);
+    }
+  }
+  const kermit = new User("Kermit", 22);
+  console.log(kermit);                 // User { name: 'Kermit', age: 22 }
+  console.log(typeof kermit);          // object
+  console.log(kermit instanceof User); // true
+  ```
+
+  عملگر **`instanceof`** می‌پرسد: «آیا این شیء از روی این کلاس (یا یکی از کلاس‌های فرزندش) ساخته شده است؟».
+
+  ### داده‌ها جدا، متدها مشترک
+
+  هر نمونه خاصیت‌های **خودش** را دارد و تغییر یکی روی بقیه اثر نمی‌گذارد. اما متدها برای هر نمونه کپی **نمی‌شوند**: فقط یک نسخه از `greet` در `User.prototype` هست و همه‌ی نمونه‌ها از همان استفاده می‌کنند.
+
+  ```js
+  // (User is the class of slide 39)
+  const kermit = new User("Kermit", 22);
+  const piggy = new User("Piggy", 30);
+  piggy.name = "Miss Piggy";                 // changes only piggy
+  console.log(kermit.name);                  // Kermit
+  console.log(kermit.greet === piggy.greet); // true: one shared method
+  console.log(Object.keys(kermit));          // [ 'name', 'age' ] (greet is not an own property)
+  ```
+
+  این همان **Prototype-based OO** (شیءگرایی مبتنی بر prototype) است که در درس «Transpile و ویژگی‌های زبان JavaScript» دیدیم: اگر شیء خاصیتی را خودش نداشته باشد، JavaScript آن را در **prototype** (الگوی والدِ شیء) جست‌وجو می‌کند. کلاس‌های ES6 در واقع **syntactic sugar** (ظاهر شیرین‌تر و تمیزتر) برای همین سازوکار قدیمی‌اند؛ برای همین `typeof User` برابر `"function"` است، نه `"class"`. به همین دلیل `Object.keys` و `JSON.stringify` فقط داده‌های خودِ نمونه (`name` و `age`) را نشان می‌دهند، نه متدها را.
+
+  ### چند قانون مهم
+
+  **۱. بدون `new` نمی‌شود کلاس را صدا زد.**
+
+  ```js
+  // (User is the class of slide 39)
+  const piggy = User("Piggy", 30);
+  // TypeError: Class constructor User cannot be invoked without 'new'
+  ```
+
+  **۲. کلاس قبل از خط تعریفش قابل استفاده نیست.** اعلان کلاس **hoist** (بالا برده) می‌شود ولی مقداردهی نمی‌شود و تا خط تعریفش در **TDZ** (Temporal Dead Zone، منطقه‌ی مرده‌ی زمانی) می‌ماند؛ درست مثل `let` و `const`. این همان hoisting «جزئی» (partially) است که اسلاید ۳۸ درباره‌ی `class` گفته بود:
+
+  ```js
+  const a = new Animal("Rex"); // ReferenceError: Cannot access 'Animal' before initialization
+  class Animal {
+    constructor(name) {
+      this.name = name;
+    }
+  }
+  ```
+
+  در مقابل، یک **function declaration** (تابعی که با کلمه‌ی `function` اعلان شده) را می‌شود قبل از خط تعریفش صدا زد.
+
+  **۳. آرگومانی که داده نشود، `undefined` است.** `new User("Kermit")` نمونه‌ای می‌سازد که `age` آن `undefined` است؛ خطایی رخ نمی‌دهد.
+
+  **۴. نوشتن `constructor` اختیاری است.** اگر ننویسی، یک constructor خالی به‌طور پیش‌فرض در نظر گرفته می‌شود.
+
+  **۵. بین متدها کاما نگذار.** در object literal بین اعضا کاما لازم است، ولی در بدنه‌ی کلاس کاما خطای `SyntaxError` (خطای نحوی) است:
+
+  ```js
+  class Bad {
+    a() { return 1; },  // SyntaxError: Unexpected token ','
+    b() { return 2; }
+  }
+  ```
+
+  **۶. بدنه‌ی کلاس همیشه در strict mode (حالت سخت‌گیرانه) است.** اگر متدی را از نمونه جدا کنی و تنها صدا بزنی، `this` آن `undefined` می‌شود و خواندن `this.name` خطای `TypeError` (خطای نوع) می‌دهد. جزئیاتش را در درس «کلمه‌ی کلیدی this» می‌بینیم.
+
+  ### class field و static (آشنایی کوتاه)
+
+  - **class field** (فیلد کلاس): خاصیتی که مستقیم در بدنه‌ی کلاس (بیرون از `constructor`) تعریف می‌شود. هر نمونه نسخه‌ی **خودش** را می‌گیرد.
+  - **static** (ایستا): متد یا فیلدی که به **خود کلاس** تعلق دارد، نه به نمونه‌ها. با `ClassName.member` استفاده می‌شود و روی نمونه‌ها وجود ندارد.
+
+  ```js
+  class Cart {
+    items = [];       // class field: every instance gets its OWN array
+    static count = 0; // static field: belongs to the class itself
+    constructor(owner) {
+      this.owner = owner;
+      Cart.count++;
+    }
+    add(item) {
+      this.items.push(item);
+      return this;    // returning this allows chaining: cart.add(a).add(b)
+    }
+    static describe() {
+      return "A shopping cart";
+    }
+  }
+  const c1 = new Cart("Ali");
+  const c2 = new Cart("Sara");
+  c1.add("pen").add("book");
+  console.log(c1.items.length, c2.items.length); // 2 0
+  console.log(Cart.count, Cart.describe());       // 2 A shopping cart
+  console.log(typeof c1.describe);                // undefined (static is not on instances)
+  ```
+
+  ### ارث‌بری: `extends` و `super`
+
+  گاهی یک کلاس نسخه‌ی خاص‌ترِ کلاس دیگری است: هر «سگ» یک «حیوان» است. با **`extends`** کلاس فرزند (child) همه‌ی متدهای کلاس والد (parent) را **ارث** می‌برد (inheritance):
+
+  ```js
+  class Animal {
+    constructor(name) {
+      this.name = name;
+    }
+    speak() {
+      return this.name + " makes a sound";
+    }
+  }
+
+  class Dog extends Animal {
+    constructor(name, breed) {
+      super(name);        // run the parent constructor FIRST
+      this.breed = breed; // only now "this" can be used
+    }
+    speak() {             // overriding: replaces the parent's speak for dogs
+      return super.speak() + " (woof)"; // super.speak() calls the parent's version
+    }
+  }
+
+  const rex = new Dog("Rex", "Husky");
+  console.log(rex.speak());           // Rex makes a sound (woof)
+  console.log(rex.breed);             // Husky
+  console.log(rex instanceof Dog);    // true
+  console.log(rex instanceof Animal); // true (a Dog is also an Animal)
+  ```
+
+  - **`super(...)`** در constructor فرزند، constructor والد را اجرا می‌کند. در کلاس فرزند، تا وقتی `super(...)` صدا زده نشده، **نمی‌شود از `this` استفاده کرد**؛ نوشتن `this.breed = breed;` قبل از `super(name);` خطای `ReferenceError: Must call super constructor in derived class before accessing 'this' ...` می‌دهد.
+  - اگر کلاس فرزند `constructor` نداشته باشد، constructor پیش‌فرضش همه‌ی آرگومان‌ها را به والد می‌دهد: با `class Cat extends Animal {}`، عبارت `new Cat("Tom").name` برابر `"Tom"` است.
+  - **override** (بازنویسی متد): اگر فرزند متدی هم‌نام با والد تعریف کند، برای نمونه‌های فرزند نسخه‌ی فرزند اجرا می‌شود. با **`super.method()`** می‌توان نسخه‌ی والد را هم صدا زد.
+  - `instanceof` کل زنجیره را بررسی می‌کند: `rex instanceof Animal` برابر `true` است، ولی `new Animal("x") instanceof Dog` برابر `false`.
+
+  ::: info بیشتر بدانیم
+  در فصل سوم (TypeScript) دوباره به کلاس‌ها برمی‌گردیم؛ آنجا نوع‌ها و access modifierهایی مثل `public` و `private` هم اضافه می‌شوند. این‌جا فقط کلاس‌های خودِ JavaScript را دیدیم.
+  :::
+
+  ::: tip نکته
+  - کلاس = نقشه؛ نمونه = شیئی که با `new` ساخته می‌شود. `typeof` کلاس `"function"` و `typeof` نمونه `"object"` است.
+  - `constructor` با هر `new` یک بار و خودکار اجرا می‌شود و `this` داخل آن، نمونه‌ی تازه است.
+  - داده‌ها (خاصیت‌ها و class fieldها) برای هر نمونه جداست؛ متدها در prototype هستند و بین همه‌ی نمونه‌ها مشترک‌اند.
+  - با `extends` متدها ارث می‌رسند و با `super` به constructor و متدهای والد دسترسی داری.
+  :::
+
+  ::: trap دام تستی
+  - صدا زدن کلاس بدون `new` خطای `TypeError` می‌دهد.
+  - استفاده از کلاس قبل از خط تعریفش `ReferenceError` (TDZ) است، در حالی که function declaration قبل از تعریف هم کار می‌کند.
+  - در constructor کلاس فرزند، استفاده از `this` قبل از `super(...)` خطای `ReferenceError` می‌دهد.
+  - کاما بین متدهای کلاس `SyntaxError` است.
+  - متد `static` روی نمونه وجود ندارد: `instance.staticMethod()` خطای `TypeError: ... is not a function` می‌دهد.
+  - متد جداشده از نمونه (`const g = kermit.greet; g();`) `this` را از دست می‌دهد و چون کلاس همیشه strict است، `TypeError` می‌دهد.
+  :::
+
+  ::: summary
+  - `class` (از ES6) راهی تمیزتر برای ساختن اشیای هم‌شکل است: نقشه یک بار تعریف می‌شود و با `new` هر تعداد نمونه ساخته می‌شود.
+  - `new` یک شیء خالی می‌سازد، آن را به prototype وصل می‌کند، `constructor` را با `this` برابر آن شیء اجرا می‌کند و شیء را برمی‌گرداند.
+  - کلاس روی prototypeها ساخته شده (`typeof` آن `"function"` است) و hoist می‌شود، ولی تا خط تعریفش در TDZ است.
+  - `extends` و `super` برای ارث‌بری، `static` برای اعضای خودِ کلاس و class field برای خاصیت‌های هر نمونه.
+  :::
+questions:
+  - level: easy
+    stem: |
+      خروجی کد زیر (کد اسلاید ۳۹) چیست؟
+    check: output
+    code: |
+      class User {
+        constructor(name, age) {
+          this.name = name;
+          this.age = age;
+        }
+        greet() {
+          console.log("Hello, " + this.name);
+        }
+      }
+
+      const kermit = new User("Kermit", 22);
+      kermit.greet();
+    options:
+      - out: "Hello, undefined"
+      - out: "Hello, Kermit"
+      - out: "Hello, name"
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      `new User("Kermit", 22)` یک نمونه می‌سازد و constructor با `this` برابر همان نمونه اجرا می‌شود، پس `kermit.name` برابر `"Kermit"` است. در `kermit.greet()` شیء قبل از نقطه `kermit` است، پس `this.name` همان `"Kermit"` است. گزینه‌ی ۱ فکر کرده خاصیت‌ها در شیء ذخیره نمی‌شوند، گزینه‌ی ۳ رشته‌ی `"name"` را با مقدار خاصیت اشتباه گرفته و گزینه‌ی ۴ تصور کرده متدِ بدون کلمه‌ی `function` خطا می‌دهد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۹، کدام جمله درباره‌ی کلاس‌ها در JavaScript **درست** است؟
+    options:
+      - 'کلاس‌ها در ES5 معرفی شدند و با کلمه‌ی کلیدی `object` تعریف می‌شوند.'
+      - 'از هر کلاس فقط یک شیء می‌توان ساخت.'
+      - 'کلاس‌ها در ES6 به‌عنوان راهی تمیزتر برای ساختن اشیاء معرفی شدند و یک blueprint (نقشه) برای ساختن اشیاء تعریف می‌کنند.'
+      - 'خود کلاس یک نمونه (instance) است که با `new` ساخته شده است.'
+    answer: 3
+    explain: |
+      اسلاید ۳۹ دقیقاً همین را می‌گوید: «Introduced in ES6 as a cleaner way to create objects» و «Classes define a blueprint for creating objects». کلاس‌ها در ES6 (نه ES5) آمدند و کلمه‌ی کلیدی آن‌ها `class` است (رد گزینه‌ی ۱). نقشه برای ساختن **هر تعداد** شیء است (رد گزینه‌ی ۲). نمونه‌ها با `new` از روی کلاس ساخته می‌شوند و خود کلاس نمونه نیست (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      در کد اسلاید ۳۹، شیء `kermit` که با `const kermit = new User("Kermit", 22);` ساخته شده، نسبت به `User` چیست؟
+    options:
+      - 'یک نمونه (instance) از کلاس `User`'
+      - 'یک کلاس فرزند (subclass) از `User`'
+      - 'constructor کلاس `User`'
+      - 'یک متد (method) از کلاس `User`'
+    answer: 1
+    explain: |
+      هر شیئی که با `new` از روی یک کلاس ساخته شود، یک **instance** (نمونه) از آن کلاس است؛ مثل خانه‌ای که از روی نقشه ساخته شده. کلاس فرزند با `class X extends User` تعریف می‌شود (رد گزینه‌ی ۲)، constructor متد سازنده‌ی داخل کلاس است (رد گزینه‌ی ۳) و متد، تابعی مثل `greet` است (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      در جای خالی کدام کلمه قرار بگیرد تا کد زیر یک نمونه از کلاس `User` بسازد و `Hello, Kermit` را چاپ کند؟
+    check: option-output
+    expect: "Hello, Kermit"
+    code: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+        greet() {
+          console.log("Hello, " + this.name);
+        }
+      }
+      const kermit = ____ User("Kermit");
+      kermit.greet();
+    prelude: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+        greet() {
+          console.log("Hello, " + this.name);
+        }
+      }
+    options:
+      - text: '`this`'
+        code: 'const kermit = this User("Kermit"); kermit.greet();'
+      - text: '`create`'
+        code: 'const kermit = create User("Kermit"); kermit.greet();'
+      - text: '`class`'
+        code: 'const kermit = class User("Kermit"); kermit.greet();'
+      - text: '`new`'
+        code: 'const kermit = new User("Kermit"); kermit.greet();'
+    answer: 4
+    explain: |
+      نمونه‌ها با کلمه‌ی کلیدی `new` ساخته می‌شوند: `new User("Kermit")` شیء تازه را می‌سازد و constructor را اجرا می‌کند. `create` در JavaScript کلمه‌ی کلیدی نیست، `this` و `class` هم در این جایگاه معنایی ندارند؛ هر سه گزینه‌ی دیگر خطای `SyntaxError` می‌دهند.
+
+  - level: easy
+    stem: |
+      متد `constructor` یک کلاس چه زمانی اجرا می‌شود؟
+    options:
+      - 'یک بار، هنگام تعریف کلاس، حتی اگر هیچ نمونه‌ای ساخته نشود.'
+      - 'هر بار که با `new` یک نمونه‌ی جدید ساخته می‌شود، به‌طور خودکار.'
+      - 'فقط وقتی برنامه‌نویس آن را مستقیم با `kermit.constructor()` صدا بزند.'
+      - 'هر بار که یکی از متدهای نمونه (مثل `greet`) صدا زده می‌شود.'
+    answer: 2
+    explain: |
+      constructor (سازنده) با **هر** `new` یک بار و خودکار اجرا می‌شود و کارش مقداردهی اولیه به خاصیت‌های نمونه‌ی تازه است. تعریف کلاس به‌تنهایی آن را اجرا نمی‌کند (رد گزینه‌ی ۱)، لازم نیست دستی صدایش بزنیم (رد گزینه‌ی ۳) و صدا زدن متدهای دیگر هم آن را دوباره اجرا نمی‌کند (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+      const kermit = new User("Kermit");
+      console.log(typeof User, typeof kermit, kermit instanceof User);
+    options:
+      - out: "class object true"
+      - out: "object object true"
+      - out: "function object true"
+      - out: "function function false"
+    answer: 3
+    explain: |
+      کلاس در پشت صحنه یک تابع ویژه است (syntactic sugar روی prototypeها)، پس `typeof User` برابر `"function"` است؛ در JavaScript نوعی به نام `"class"` نداریم (رد گزینه‌ی ۱). نمونه‌ی ساخته‌شده یک شیء معمولی است: `"object"` (رد گزینه‌ی ۴). `kermit` با `new User` ساخته شده، پس `instanceof User` برابر `true` است. گزینه‌ی ۲ کلاس را هم شیء فرض کرده است.
+
+  - level: hard
+    stem: |
+      درباره‌ی اجرای `new User("Kermit", 22)` (با کلاس اسلاید ۳۹) کدام جمله **نادرست** است؟
+    options:
+      - 'یک شیء خالی جدید ساخته می‌شود.'
+      - '`constructor` با `this` برابر همان شیء جدید اجرا می‌شود.'
+      - 'شیء ساخته‌شده خودکار برگردانده می‌شود، با اینکه `constructor` دستور `return` ندارد.'
+      - 'متد `greet` برای این نمونه جداگانه کپی می‌شود و جزو خاصیت‌های خودِ (own) آن شیء است.'
+    answer: 4
+    explain: |
+      متدهای کلاس فقط **یک بار** در `User.prototype` ذخیره می‌شوند و همه‌ی نمونه‌ها از طریق prototype به همان نسخه دسترسی دارند؛ برای همین `Object.keys(kermit)` فقط `name` و `age` را نشان می‌دهد و گزینه‌ی ۴ نادرست است. سه گزینه‌ی دیگر قدم‌های `new` هستند: ساختن شیء خالی، اجرای constructor با `this` برابر آن شیء و برگرداندن خودکار شیء.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class User {
+        constructor(name, age) {
+          this.name = name;
+          this.age = age;
+        }
+        greet() {
+          console.log("Hello, " + this.name);
+        }
+      }
+      const kermit = new User("Kermit", 22);
+      console.log(Object.keys(kermit));
+    options:
+      - out: "['name', 'age']"
+      - out: "['name', 'age', 'greet']"
+      - out: "['constructor', 'greet']"
+      - out: "[]"
+    answer: 1
+    explain: |
+      `Object.keys` فقط کلیدهای **خودِ** شیء را برمی‌گرداند. `name` و `age` در constructor روی خود نمونه ساخته شده‌اند، ولی `greet` (و `constructor`) در `User.prototype` هستند و بین همه‌ی نمونه‌ها مشترک‌اند. گزینه‌ی ۲ فکر کرده متد در هر نمونه کپی می‌شود، گزینه‌ی ۳ اعضای prototype را با خاصیت‌های نمونه اشتباه گرفته و گزینه‌ی ۴ تصور کرده خاصیت‌های ساخته‌شده با `this` جزو شیء حساب نمی‌شوند.
+
+  - level: medium
+    stem: |
+      با فرض کد زیر، کدام گزاره **درست** است؟
+    check: claims
+    code: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+        greet() {
+          return "Hello, " + this.name;
+        }
+      }
+      const a = new User("Ali");
+      const b = new User("Sara");
+    setup: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+        greet() {
+          return "Hello, " + this.name;
+        }
+      }
+      const a = new User("Ali");
+      const b = new User("Sara");
+    options:
+      - text: '`a === b` برابر `true` است، چون هر دو از یک کلاس ساخته شده‌اند.'
+        expr: 'a === b'
+        equals: 'true'
+      - text: '`a.greet === b.greet` برابر `true` است.'
+        expr: 'a.greet === b.greet'
+        equals: 'true'
+      - text: '`typeof a` برابر `"function"` است.'
+        expr: 'typeof a'
+        equals: '"function"'
+      - text: 'آرایه‌ی `Object.keys(a)` شامل `"greet"` است.'
+        expr: 'Object.keys(a).includes("greet")'
+        equals: 'true'
+    answer: 2
+    explain: |
+      `greet` فقط یک بار در `User.prototype` تعریف شده و هر دو نمونه به **همان** تابع می‌رسند، پس `a.greet === b.greet` برابر `true` است. اما `a` و `b` دو شیء جدا هستند (هر `new` شیء تازه‌ای می‌سازد)، پس `a === b` برابر `false` است (رد گزینه‌ی ۱). `typeof` یک نمونه `"object"` است، نه `"function"` (رد گزینه‌ی ۳)، و چون `greet` خاصیتِ خودِ `a` نیست، در `Object.keys(a)` نمی‌آید (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class Counter {
+        constructor() {
+          this.count = 0;
+        }
+        inc() {
+          this.count++;
+          return this.count;
+        }
+      }
+      const a = new Counter();
+      const b = new Counter();
+      a.inc();
+      a.inc();
+      b.inc();
+      console.log(a.count, b.count);
+    options:
+      - out: "3 3"
+      - out: "2 2"
+      - out: "1 1"
+      - out: "2 1"
+    answer: 4
+    explain: |
+      هر `new Counter()` شیء جدیدی با `count` **خودش** می‌سازد. `a.inc()` دو بار روی `a` اجرا می‌شود (`this` برابر `a`)، پس `a.count` برابر `2` است؛ `b.inc()` یک بار، پس `b.count` برابر `1`. متد `inc` مشترک است ولی داده‌ها جدا هستند. گزینه‌ی ۱ فکر کرده `count` بین نمونه‌ها مشترک است، گزینه‌ی ۲ تعداد فراخوانی‌ها را اشتباه شمرده و گزینه‌ی ۳ تصور کرده هر فراخوانی از صفر شروع می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class User {
+        constructor(name, age) {
+          this.name = name;
+          this.age = age;
+        }
+        greet() {
+          console.log("Hello, " + this.name);
+        }
+      }
+      const kermit = new User("Kermit");
+      kermit.greet();
+      console.log(kermit.age);
+    options:
+      - out: ["Hello, Kermit", "undefined"]
+      - out: ["Hello, Kermit", "null"]
+      - out: ["Hello, Kermit", "0"]
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      در JavaScript تعداد آرگومان‌ها لازم نیست با پارامترها برابر باشد؛ پارامتری که مقدار نگیرد `undefined` است. پس `this.age = age` مقدار `undefined` را در `age` می‌ریزد و `greet` هم بدون مشکل `Hello, Kermit` چاپ می‌کند. گزینه‌ی ۴ فکر کرده کمبود آرگومان خطا می‌دهد و گزینه‌های ۲ و ۳ مقدار پیش‌فرض را `null` یا `0` تصور کرده‌اند.
+
+  - level: medium
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+      const a = new User("Ali");
+      console.log(a.name);
+      const b = User("Sara");
+      console.log(b.name);
+    options:
+      - line: 6
+      - line: 7
+      - line: 8
+      - line: 0
+    answer: 3
+    explain: |
+      خط‌های ۶ و ۷ درست‌اند و `Ali` چاپ می‌شود. در خط ۸ کلاس **بدون `new`** صدا زده شده و JavaScript خطای `TypeError: Class constructor User cannot be invoked without 'new'` می‌دهد؛ پس اجرا به خط ۹ نمی‌رسد. برخلاف تابع‌های معمولی، کلاس را نمی‌شود مثل یک تابع ساده صدا زد، پس گزینه‌ی «هیچ خطایی رخ نمی‌دهد» غلط است.
+
+  - level: hard
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      const a = makeUser("Ali");
+      console.log(a.name);
+      const b = new Person("Sara");
+      class Person {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+      function makeUser(name) {
+        return { name };
+      }
+    options:
+      - line: 1
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 2
+    explain: |
+      `makeUser` یک function declaration است و کاملاً hoist می‌شود، پس صدا زدنش در خط ۱ قبل از تعریف مشکلی ندارد و خط ۲ `Ali` را چاپ می‌کند (رد گزینه‌ی خط ۱). اعلان کلاس هم hoist می‌شود ولی مقداردهی نمی‌شود و تا خط ۴ در TDZ است؛ پس خط ۳ خطای `ReferenceError: Cannot access 'Person' before initialization` می‌دهد. خود تعریف کلاس در خط ۴ خطایی ندارد و گزینه‌ی «هیچ خطایی» هم فرض کرده کلاس مثل function declaration کامل hoist می‌شود.
+
+  - level: medium
+    stem: |
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
+    errorName: SyntaxError
+    options:
+      - code: 'class A { a() { return 1; }, b() { return 2; } }'
+      - code: 'const o = { a() { return 1; }, b() { return 2; } };'
+      - code: 'class A { a() { return 1; } b() { return 2; } }'
+      - code: 'class A { constructor() { this.x = 1; } }'
+    answer: 1
+    explain: |
+      در بدنه‌ی کلاس متدها پشت سر هم و **بدون کاما** نوشته می‌شوند؛ کاما در گزینه‌ی ۱ خطای `SyntaxError: Unexpected token ','` می‌دهد. گزینه‌ی ۲ یک object literal است که در آن کاما بین اعضا **لازم** است. گزینه‌ی ۳ همان کلاس بدون کاماست و گزینه‌ی ۴ یک constructor معمولی است؛ هر دو درست‌اند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class MathUtil {
+        static square(x) {
+          return x * x;
+        }
+      }
+      console.log(MathUtil.square(4));
+      const m = new MathUtil();
+      console.log(m.square(4));
+    options:
+      - out: ["16", "16"]
+      - out: ["16", "undefined"]
+      - out: "!! TypeError"
+      - out: ["16", "!! TypeError"]
+    answer: 4
+    explain: |
+      متد `static` به **خود کلاس** تعلق دارد، پس `MathUtil.square(4)` برابر `16` است. اما روی نمونه‌ها وجود ندارد: `m.square` برابر `undefined` است و صدا زدن `undefined` خطای `TypeError: m.square is not a function` می‌دهد. گزینه‌ی ۱ فکر کرده متدهای static به نمونه‌ها هم می‌رسند، گزینه‌ی ۲ فراموش کرده که صدا زدنِ `undefined` خطاست و گزینه‌ی ۳ تصور کرده خط اول هم خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class Cart {
+        items = [];
+        add(item) {
+          this.items.push(item);
+          return this;
+        }
+      }
+      const c1 = new Cart();
+      const c2 = new Cart();
+      c1.add("pen").add("book");
+      console.log(c1.items.length, c2.items.length);
+    options:
+      - out: "2 2"
+      - out: "1 0"
+      - out: "2 0"
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      `items = [];` یک class field است و **هر نمونه آرایه‌ی خودش** را می‌گیرد. `add` در پایان `this` (همان `c1`) را برمی‌گرداند، پس `.add("book")` دوباره روی `c1` اجرا می‌شود و `c1` دو آیتم دارد؛ `c2` دست‌نخورده می‌ماند. گزینه‌ی ۱ فکر کرده آرایه بین نمونه‌ها مشترک است، گزینه‌ی ۲ زنجیره‌ی دوم را نادیده گرفته و گزینه‌ی ۴ تصور کرده زنجیر کردن متدها (chaining) خطا می‌دهد؛ در حالی که چون `add` خودِ شیء را برمی‌گرداند، کاملاً مجاز است.
+
+  - level: hard
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      class Animal {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+      class Dog extends Animal {
+        constructor(name, breed) {
+          this.breed = breed;
+          super(name);
+        }
+      }
+      const d = new Dog("Rex", "Husky");
+      console.log(d.name);
+    options:
+      - line: 3
+      - line: 8
+      - line: 9
+      - line: 0
+    answer: 2
+    explain: |
+      در constructor کلاس فرزند (کلاسی که `extends` دارد)، تا `super(...)` صدا زده نشده، شیء هنوز ساخته نشده و **`this` قابل استفاده نیست**. خط ۸ قبل از `super` از `this` استفاده کرده و خطای `ReferenceError: Must call super constructor in derived class before accessing 'this' ...` می‌دهد؛ اجرا به خط ۹ نمی‌رسد. خط ۳ (constructor والد) اصلاً اجرا نمی‌شود و ترتیب این دو خط مهم است، پس گزینه‌ی «هیچ خطایی» هم غلط است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class Animal {
+        constructor(name) {
+          this.name = name;
+        }
+        speak() {
+          return this.name + " makes a sound";
+        }
+      }
+      class Dog extends Animal {
+        speak() {
+          return super.speak() + " (woof)";
+        }
+      }
+      const d = new Dog("Rex");
+      console.log(d.speak());
+      console.log(d instanceof Animal, d instanceof Dog);
+    options:
+      - out: ["Rex makes a sound", "true true"]
+      - out: ["undefined makes a sound (woof)", "false true"]
+      - out: ["Rex makes a sound (woof)", "true true"]
+      - out: ["Rex makes a sound (woof)", "false true"]
+    answer: 3
+    explain: |
+      `Dog` constructor ندارد، پس constructor پیش‌فرضش آرگومان `"Rex"` را به constructor والد می‌دهد و `name` درست مقدار می‌گیرد (رد گزینه‌ی ۲). `speak` در `Dog` بازنویسی (override) شده و با `super.speak()` نسخه‌ی والد را صدا می‌زند، سپس ` (woof)` را اضافه می‌کند (رد گزینه‌ی ۱). یک `Dog` هم‌زمان نمونه‌ای از `Animal` هم هست، چون `instanceof` کل زنجیره‌ی ارث‌بری را بررسی می‌کند (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class Animal {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+      class Cat extends Animal {}
+      const tom = new Cat("Tom");
+      console.log(tom.name, tom instanceof Animal);
+    options:
+      - out: "Tom true"
+      - out: "undefined true"
+      - out: "Tom false"
+      - out: "!! ReferenceError"
+    answer: 1
+    explain: |
+      کلاس فرزندی که `constructor` ندارد، یک constructor پیش‌فرض می‌گیرد که همه‌ی آرگومان‌ها را با `super(...)` به والد می‌دهد؛ پس `name` برابر `"Tom"` می‌شود (رد گزینه‌ی ۲). چون `Cat` از `Animal` ارث می‌برد، `tom instanceof Animal` برابر `true` است (رد گزینه‌ی ۳). خطای `ReferenceError` فقط وقتی رخ می‌دهد که خودمان constructor بنویسیم و قبل از `super` از `this` استفاده کنیم یا اصلاً `super` را صدا نزنیم (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      class Shape {}
+      class Circle extends Shape {}
+      const c = new Circle();
+      console.log(c instanceof Circle, c instanceof Shape, new Shape() instanceof Circle);
+    options:
+      - out: "true false false"
+      - out: "true true true"
+      - out: "false true false"
+      - out: "true true false"
+    answer: 4
+    explain: |
+      `c` با `new Circle()` ساخته شده، پس نمونه‌ی `Circle` است؛ چون `Circle` از `Shape` ارث می‌برد، `c` نمونه‌ی `Shape` هم هست (هر دایره یک شکل است). اما یک `Shape` معمولی دایره نیست، پس سومی `false` است. گزینه‌ی ۱ زنجیره‌ی ارث‌بری را نادیده گرفته، گزینه‌ی ۲ رابطه را دوطرفه فرض کرده و گزینه‌ی ۳ فکر کرده نمونه فقط به کلاس والد تعلق دارد.
