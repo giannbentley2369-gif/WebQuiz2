@@ -263,10 +263,12 @@ lesson: |
   <p id="p">Hi<!-- note --></p>
   <script>
     const p = document.getElementById("p");
-    console.log(p instanceof HTMLParagraphElement, p instanceof Element, p instanceof Node); // true true true
-    console.log(p.firstChild instanceof Text, p.firstChild instanceof CharacterData);       // true true
-    console.log(p.firstChild instanceof Element);                                           // false
-    console.log(p.lastChild instanceof Comment, document instanceof HTMLDocument);          // true true
+    console.log(p instanceof HTMLParagraphElement, p instanceof Element); // true true
+    console.log(p instanceof Node, p.firstChild instanceof Text);         // true true
+    console.log(p.firstChild instanceof CharacterData);                   // true
+    console.log(p.firstChild instanceof Element);                         // false
+    console.log(p.lastChild instanceof Comment);                          // true
+    console.log(document instanceof HTMLDocument);                        // true
   </script>
   ```
 
@@ -496,7 +498,11 @@ questions:
       </ul>
     code: |
       const ul = document.getElementById("list");
-      console.log(ul.firstChild.nodeName, ul.firstElementChild.nodeName, ul.lastElementChild.textContent);
+      console.log(
+        ul.firstChild.nodeName,
+        ul.firstElementChild.nodeName,
+        ul.lastElementChild.textContent
+      );
     options:
       - out: "LI LI B"
       - out: "#text LI A"
@@ -533,7 +539,11 @@ questions:
       <p id="p">Hi</p>
     code: |
       const p = document.getElementById("p");
-      console.log(document.nodeName, document.documentElement.nodeName, p.firstChild.nodeName);
+      console.log(
+        document.nodeName,
+        document.documentElement.nodeName,
+        p.firstChild.nodeName
+      );
     options:
       - out: "document html text"
       - out: "#document BODY #text"
@@ -764,7 +774,11 @@ questions:
     code: |
       const h1 = document.getElementById("head");
       const a = document.getElementById("link");
-      console.log(a.parentNode.tagName, a.previousElementSibling.id, h1.nextElementSibling.getAttribute("href"));
+      console.log(
+        a.parentNode.tagName,
+        a.previousElementSibling.id,
+        h1.nextElementSibling.getAttribute("href")
+      );
     options:
       - out: "BODY head #"
       - out: "H1 head #"
