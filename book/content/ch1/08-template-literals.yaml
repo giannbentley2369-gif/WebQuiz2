@@ -1,0 +1,581 @@
+id: ch1-template-literals
+title: "رشته‌ها و Template literals"
+slides: "Introduction to JS، اسلاید ۵۱"
+lesson: |
+  یک فرم کاغذی را تصور کن که جاهای خالی دارد: «سلام ____، شما ____ عدد ____ سفارش داده‌اید». کافی است جاهای خالی را پر کنی تا متن کامل شود. **template literal** (رشته‌ی الگو) در JavaScript دقیقاً همین فرم است: متن را می‌نویسی، جاهای خالی را با `${...}` مشخص می‌کنی و JavaScript خودش آن‌ها را با مقدار درست پر می‌کند. ولی قبل از آن، چند نکته‌ی پایه درباره‌ی رشته‌ها را مرور کنیم.
+
+  ### رشته‌ها: مرور پایه
+
+  **رشته (string)** یعنی متن؛ دنباله‌ای از کاراکترها داخل علامت نقل‌قول. سه راه برای نوشتنش داریم:
+
+  - تک‌کوتیشن: `'Hello'`
+  - دابل‌کوتیشن: `"Hello"`
+  - backtick (بک‌تیک؛ کلید بالای Tab و سمت چپ عدد ۱ در حالت انگلیسی کیبورد): `` `Hello` ``
+
+  تک‌کوتیشن و دابل‌کوتیشن هیچ فرقی با هم ندارند؛ فقط آن را انتخاب کن که با متنت تداخل نکند: `"It's fine"` یا `'He said "hi"'`. اگر همان علامتی که رشته را باز کرده داخل متن بیاید، رشته زودتر از موعد بسته می‌شود و `SyntaxError` می‌گیری؛ مثلاً `'It's broken'`.
+
+  **کاراکترهای گریز (escape sequences):** با بک‌اسلش `\` می‌توانی کاراکترهای خاص را داخل رشته بنویسی:
+
+  | دنباله | معنی |
+  |---|---|
+  | `\n` | رفتن به خط جدید (new line) |
+  | `\t` | فاصله‌ی تب (tab) |
+  | `\"` | دابل‌کوتیشن داخل رشته‌ی دابل‌کوتیشنی |
+  | `\'` | تک‌کوتیشن داخل رشته‌ی تک‌کوتیشنی |
+  | `\\` | خود بک‌اسلش |
+
+  ```js
+  const a = 'It\'s fine';     // escaped single quote
+  const b = "She said \"hi\""; // escaped double quotes
+  const c = "Line 1\nLine 2";  // \n starts a new line
+  console.log(b);              // She said "hi"
+  console.log(c);              // Line 1
+                               // Line 2
+  ```
+
+  **طول و اندیس:** ویژگی `length` تعداد کاراکترها را می‌دهد و با `[i]` به کاراکتر شماره‌ی `i` (از ۰) می‌رسی. دقت کن که `\n` **یک** کاراکتر حساب می‌شود:
+
+  ```js
+  console.log("hello".length);        // 5
+  console.log("".length);             // 0 (empty string)
+  console.log("JavaScript"[4]);       // S (indices start at 0)
+  console.log("Hello\nWorld".length); // 11 (5 + 1 + 5)
+  ```
+
+  **چسباندن با `+`:** اگر یک طرف `+` رشته باشد، دو طرف به هم چسبانده می‌شوند (concatenation یا الحاق): `"Hello, " + "Sara"` می‌شود `"Hello, Sara"`.
+
+  **رشته‌ی معمولی چندخطی نمی‌شود:** اگر وسط `"..."` یا `'...'` کلید Enter بزنی، `SyntaxError` می‌گیری؛ برای خط جدید باید `\n` بنویسی.
+
+  ### دردسرهای چسباندن با `+`
+
+  ```js
+  const name = "Sara";
+  const age = 20;
+  const text = "Name: " + name + ", next year: " + (age + 1) + "\n" + "Done!";
+  ```
+
+  این همه `+` و علامت نقل‌قول هم خواندن را سخت می‌کند و هم راه را برای اشتباه باز می‌گذارد: فاصله‌ها را فراموش می‌کنی، و اگر پرانتز `(age + 1)` را ننویسی، به‌جای جمع، چسباندن رخ می‌دهد:
+
+  ```js
+  console.log("Sum: " + 2 + 3);   // Sum: 23 (left to right: "Sum: 2" + 3)
+  console.log("Sum: " + (2 + 3)); // Sum: 5
+  ```
+
+  ### Template literals (اسلاید ۵۱)
+
+  - در **ES6** معرفی شدند و با **backtick** (`` ` ``) نوشته می‌شوند.
+  - اجازه می‌دهند رشته‌ی **چندخطی** بنویسی، **بدون** نیاز به `\n`.
+  - از **string interpolation** (جاسازی مقدار در رشته) با `${expression}` پشتیبانی می‌کنند؛ هر چیزی داخل `${ }` حساب می‌شود و نتیجه‌اش در متن قرار می‌گیرد.
+
+  همان مثال بالا با template literal:
+
+  ```js
+  const text2 = `Name: ${name}, next year: ${age + 1}
+  Done!`;
+  console.log(text2); // Name: Sara, next year: 21
+                      // Done!
+  ```
+
+  #### کد اسلاید ۵۱
+
+  ```js title=templateliterals.js
+  const product = "Laptop";
+  const price = 1200;
+  const quantity = 2;
+
+  const message = `
+  You ordered: ${quantity} × ${product}
+  Total price: $${price * quantity}
+  Thank you for shopping with us!
+  `;
+
+  console.log(message);
+  ```
+
+  خروجی این کد **پنج خط** است:
+
+  | خط خروجی | متن چاپ‌شده |
+  |---|---|
+  | ۱ | (خالی) |
+  | ۲ | `You ordered: 2 × Laptop` |
+  | ۳ | `Total price: $2400` |
+  | ۴ | `Thank you for shopping with us!` |
+  | ۵ | (خالی) |
+
+  بیا خط‌به‌خط ببینیم چرا:
+
+  - **خط خالی اول:** بلافاصله بعد از backtick بازکننده Enter زده شده، پس رشته با یک `\n` **شروع** می‌شود.
+  - **`${quantity}`** با `2` و **`${product}`** با `Laptop` جایگزین می‌شود. علامت `×` بین آن‌ها فقط یک **کاراکتر معمولی متن** (علامت ضرب) است، نه عملگر؛ عیناً چاپ می‌شود.
+  - **`$${price * quantity}`:** `$` اول چون بعدش `{` نیامده، یک علامت دلار معمولی است. بعد از آن `${price * quantity}` می‌آید که حاصل `1200 * 2` یعنی `2400` را می‌گذارد؛ نتیجه: `$2400`.
+  - **خط خالی آخر:** قبل از backtick بسته‌کننده هم Enter زده شده، پس رشته با یک `\n` **تمام** می‌شود.
+
+  برای این‌که این خط‌های خالیِ اول و آخر را با چشم ببینی، پیام را بین دو کروشه چاپ کن:
+
+  ```js
+  console.log("[" + message + "]");
+  ```
+
+  ```text
+  [
+  You ordered: 2 × Laptop
+  Total price: $2400
+  Thank you for shopping with us!
+  ]
+  ```
+
+  ### هر «عبارتی» داخل `${}` مجاز است
+
+  داخل `${}` می‌توانی هر **عبارت (expression)** بنویسی؛ یعنی هر تکه‌کدی که یک **مقدار** تولید می‌کند: محاسبه، صدا زدن تابع یا متد، مقایسه، یا عملگر سه‌تایی `شرط ? الف : ب` (اگر شرط درست بود «الف»، وگرنه «ب»):
+
+  ```js
+  const nm = "sara";
+  function double(n) {
+    return n * 2;
+  }
+  console.log(`Next year: ${age + 1}`);                    // Next year: 21
+  console.log(`Status: ${age >= 18 ? "adult" : "minor"}`); // Status: adult
+  console.log(`Name: ${nm.toUpperCase()}`);                // Name: SARA
+  console.log(`Double: ${double(21)}`);                    // Double: 42
+  ```
+
+  ولی **دستورها (statements)** مثل `if`، `for` یا `let` مقدار تولید نمی‌کنند و داخل `${}` مجاز نیستند: `` `${if (x) { "yes" }}` `` خطای `SyntaxError` می‌دهد. به‌جای `if` از عملگر سه‌تایی استفاده کن.
+
+  ### مقدارها چطور به متن تبدیل می‌شوند؟
+
+  نتیجه‌ی هر `${}` به رشته تبدیل می‌شود و خود template literal همیشه یک **رشته‌ی معمولی** است (`typeof` آن `"string"` است):
+
+  | مقدار داخل `${}` | چیزی که در متن قرار می‌گیرد |
+  |---|---|
+  | `2400` | `2400` |
+  | `true` | `true` |
+  | `null` | `null` |
+  | `undefined` | `undefined` |
+  | `[1, 2, 3]` | `1,2,3` (عضوها با کاما، بدون کروشه و فاصله) |
+  | `[]` | هیچ (رشته‌ی خالی) |
+  | `{ a: 1 }` | `[object Object]` |
+
+  برای دیدن محتوای یک شیء داخل متن، از `JSON.stringify` استفاده کن (درس JSON): `` `${JSON.stringify({ a: 1 })}` `` می‌شود `{"a":1}`.
+
+  ### فقط backtick، جاسازی می‌کند
+
+  `${}` فقط داخل backtick معنا دارد. داخل تک‌کوتیشن یا دابل‌کوتیشن، همان حروف عیناً چاپ می‌شوند:
+
+  ```js
+  console.log(`Hello ${name}`); // Hello Sara
+  console.log("Hello ${name}"); // Hello ${name}
+  ```
+
+  ### template literal تودرتو (nested)
+
+  داخل `${}` می‌شود یک template literal دیگر نوشت:
+
+  ```js
+  const isOnline = true;
+  const user = "Reza";
+  console.log(`${user} is ${isOnline ? `online (${2 + 3} friends)` : "offline"}`);
+  // Reza is online (5 friends)
+  ```
+
+  ### گریز (escape) داخل template literal
+
+  ```js
+  console.log(`Use \` to write a template`); // Use ` to write a template
+  console.log(`Price: \${price}`);           // Price: ${price} (no interpolation)
+  console.log(`a\nb`);                       // a and b on two lines (\n still works)
+  ```
+
+  ### فاصله‌ها و Enterها جزو رشته‌اند
+
+  در template literal چندخطی، **هر** Enter و **هر** فاصله‌ی ابتدای خط جزو رشته است:
+
+  ```js
+  const text3 = `A
+    B`;
+  console.log(text3.length); // 5 ("A" + new line + 2 spaces + "B")
+  ```
+
+  ### مقایسه‌ی دو روش
+
+  | | چسباندن با `+` | template literal |
+  |---|---|---|
+  | علامت | `'...'` یا `"..."` | `` `...` `` |
+  | جاسازی مقدار | `"Hi " + name` | `` `Hi ${name}` `` |
+  | چندخطی | فقط با `\n` | مستقیم با Enter |
+  | محاسبه داخل متن | نیاز به پرانتز: `"Sum: " + (a + b)` | `` `Sum: ${a + b}` `` |
+
+  ::: tip
+  - هر وقت متغیر یا محاسبه‌ای داخل متن داری، template literal خواناتر و کم‌خطاتر از `+` است.
+  - `$` معمولی (بدون `{` بعدش) فقط یک کاراکتر است؛ برای همین `$${price}` می‌شود علامت دلار و بعد قیمت.
+  - برای نوشتن خود backtick یا `${` به‌صورت متن، از `` \` `` و `\${` استفاده کن.
+  :::
+
+  ::: trap
+  - `"Hello ${name}"` (با دابل‌کوتیشن) جاسازی **نمی‌کند** و عیناً `Hello ${name}` چاپ می‌کند.
+  - `"Sum: " + 2 + 3` برابر `"Sum: 23"` است، ولی `` `Sum: ${2 + 3}` `` برابر `"Sum: 5"`.
+  - آرایه داخل `${}` به شکل `1,2,3` و شیء به شکل `[object Object]` درمی‌آید.
+  - خروجی کد اسلاید ۵۱ یک خط خالی در **ابتدا** و یک خط خالی در **انتها** دارد، چون رشته با Enter شروع و تمام شده است.
+  - `\n` یک کاراکتر است: `"Hello\nWorld".length` برابر `11` است، نه `12`.
+  - داخل `${}` فقط **عبارت** مجاز است؛ `if` و `for` خطای `SyntaxError` می‌دهند.
+  :::
+
+  ::: summary
+  - رشته‌ها با `'...'`، `"..."` یا backtick نوشته می‌شوند؛ کاراکترهای خاص با `\` (مثل `\n`، `\"`، `` \` ``).
+  - template literal (ES6، با backtick): چندخطی بدون `\n` و جاسازی با `${expression}`.
+  - داخل `${}` هر عبارتی مجاز است (محاسبه، تابع، سه‌تایی، حتی template دیگر)، ولی دستور نه. نتیجه همیشه به رشته تبدیل می‌شود.
+  - در کد اسلاید ۵۱، `$${price * quantity}` می‌شود `$2400` و خروجی با یک خط خالی شروع و تمام می‌شود.
+  :::
+questions:
+  - level: easy
+    stem: |
+      template literal با کدام علامت نوشته می‌شود؟
+    options:
+      - '`''`'
+      - '`"`'
+      - '`` ` ``'
+      - '`$`'
+    answer: 3
+    explain: |
+      طبق اسلاید ۵۱، template literalها با **backtick** نوشته می‌شوند. تک‌کوتیشن و دابل‌کوتیشن رشته‌ی معمولی می‌سازند که نه جاسازی `${}` دارد و نه چندخطی مستقیم. علامت `$` فقط بخشی از `${...}` داخل template literal است و رشته را باز یا بسته نمی‌کند.
+
+  - level: easy
+    stem: |
+      template literalها در کدام نسخه‌ی ECMAScript به JavaScript اضافه شدند؟
+    options:
+      - 'ES5 (سال ۲۰۰۹)'
+      - 'ES6 یا همان ES2015'
+      - 'ES1 (سال ۱۹۹۷)'
+      - 'ES2020'
+    answer: 2
+    explain: |
+      اسلاید ۵۱ می‌گوید template literalها در **ES6** (که نام دیگرش ES2015 است) معرفی شدند؛ همان نسخه‌ای که بزرگ‌ترین به‌روزرسانی زبان بود و `let`، `const` و توابع arrow را هم آورد. ES1 اولین استاندارد بود، ES5 هنوز template literal نداشت و ES2020 خیلی بعدتر آمد (مثلاً BigInt را اضافه کرد).
+
+  - level: easy
+    stem: |
+      کدام مورد از ویژگی‌های template literal که در اسلاید ۵۱ آمده **نیست**؟
+    options:
+      - 'نوشتن رشته‌ی چندخطی بدون نیاز به `\n`'
+      - 'جاسازی (interpolation) مقدار عبارت‌ها با `${expression}`'
+      - 'نوشته شدن بین دو backtick'
+      - 'تبدیل خودکار رشته به عدد'
+    answer: 4
+    explain: |
+      اسلاید ۵۱ سه ویژگی را می‌گوید: با backtick نوشته می‌شود (ES6)، رشته‌ی چندخطی بدون `\n` را ممکن می‌کند و از جاسازی با `${expression}` پشتیبانی می‌کند. template literal همیشه یک **رشته** می‌سازد و کاری با تبدیل رشته به عدد ندارد؛ برعکس، مقدار داخل `${}` را به رشته تبدیل می‌کند.
+
+  - level: easy
+    stem: |
+      حاصل ``typeof `Hello ${1 + 1}` `` چیست؟
+    check: value
+    expr: 'typeof `Hello ${1 + 1}`'
+    options:
+      - '`"template"`'
+      - '`"object"`'
+      - '`"number"`'
+      - '`"string"`'
+    answer: 4
+    explain: |
+      template literal فقط **روش دیگری برای نوشتن رشته** است و نتیجه‌اش یک رشته‌ی معمولی (`"Hello 2"`) است؛ پس `typeof` آن `"string"` است. نوع جداگانه‌ای به نام `"template"` وجود ندارد، template literal یک object نیست و با این‌که داخلش محاسبه‌ی عددی انجام شده، نتیجه‌ی نهایی رشته است، نه عدد.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const name = "Sara";
+      console.log(`Hello, ${name}!`);
+      console.log("Hello, ${name}!");
+    options:
+      - out: ["Hello, Sara!", "Hello, ${name}!"]
+      - out: ["Hello, Sara!", "Hello, Sara!"]
+      - out: ["Hello, ${name}!", "Hello, Sara!"]
+      - out: ["Hello, Sara!", "!! SyntaxError"]
+    answer: 1
+    explain: |
+      جاسازی با `${}` فقط داخل **backtick** انجام می‌شود؛ پس خط اول `Hello, Sara!` چاپ می‌کند. در خط دوم رشته با دابل‌کوتیشن نوشته شده و `${name}` فقط چند کاراکتر معمولی است که عیناً چاپ می‌شود. این خط خطا هم نمی‌دهد (رد گزینه‌ی ۴)؛ یک رشته‌ی کاملاً معتبر است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = 5;
+      const b = 10;
+      console.log(`${a} + ${b} = ${a + b}`);
+    options:
+      - out: "5 + 10 = 15"
+      - out: "${a} + ${b} = ${a + b}"
+      - out: "5 + 10 = 510"
+      - out: "a + b = 15"
+    answer: 1
+    explain: |
+      هر `${}` جداگانه حساب می‌شود: `${a}` می‌شود `5`، `${b}` می‌شود `10` و `${a + b}` جمع **عددی** دو عدد یعنی `15` است. علامت `+` و `=` که بیرون از `${}` نوشته شده‌اند فقط متن هستند. گزینه‌ی ۳ فکر کرده جمع داخل `${}` به‌صورت رشته‌ای انجام می‌شود، در حالی که `a` و `b` عددند و تبدیل به رشته فقط **بعد از** محاسبه رخ می‌دهد.
+
+  - level: medium
+    stem: |
+      حاصل `"Hello\nWorld".length` چیست؟
+    check: value
+    expr: '"Hello\nWorld".length'
+    options:
+      - '`12`'
+      - '`10`'
+      - '`13`'
+      - '`11`'
+    answer: 4
+    explain: |
+      `\n` با این‌که با دو علامت نوشته می‌شود، **یک** کاراکتر (خط جدید) است: ۵ حرف `Hello` + ۱ کاراکتر خط جدید + ۵ حرف `World` = ۱۱. گزینه‌ی ۱ بک‌اسلش و `n` را دو کاراکتر شمرده و گزینه‌ی ۲ خط جدید را اصلاً نشمرده است.
+
+  - level: medium
+    stem: |
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
+    errorName: SyntaxError
+    options:
+      - code: 'const c = ''It''s broken'';'
+      - code: 'const a = "It''s fine";'
+      - code: 'const b = ''He said "hi"'';'
+      - code: 'const d = `It''s "fine"`;'
+    answer: 1
+    explain: |
+      در گزینه‌ی ۱ رشته با تک‌کوتیشن باز شده و تک‌کوتیشنِ داخل `It's` رشته را زودتر می‌بندد؛ بقیه‌ی متن (`s broken'`) برای JavaScript بی‌معنی است و `SyntaxError` می‌دهد. راه درست `'It\'s broken'` یا `"It's broken"` است. در گزینه‌های ۲ و ۳ علامت داخل متن با علامت دور رشته فرق دارد و در گزینه‌ی ۴ با backtick، هر دو نوع کوتیشن داخل متن آزادند.
+
+  - level: medium
+    stem: |
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
+    errorName: SyntaxError
+    options:
+      - code: |
+          const a = `line 1
+          line 2`;
+      - code: |
+          const c = "line 1
+          line 2";
+      - code: 'const b = "line 1\nline 2";'
+      - code: 'const d = `line 1` + "\n" + `line 2`;'
+    answer: 2
+    explain: |
+      رشته‌ی معمولی (تک‌کوتیشن یا دابل‌کوتیشن) نمی‌تواند Enter خام داشته باشد؛ پس گزینه‌ی ۲ خطای `SyntaxError: Invalid or unexpected token` می‌دهد. template literal (گزینه‌ی ۱) دقیقاً برای همین ساخته شده: رشته‌ی چندخطی بدون `\n`. گزینه‌ی ۳ خط جدید را با `\n` نوشته و گزینه‌ی ۴ سه رشته را با `+` چسبانده که هر دو درست‌اند.
+
+  - level: medium
+    stem: |
+      خروجی کد اسلاید ۵۱ (کد زیر) کدام است؟
+    check: output
+    code: |
+      const product = "Laptop";
+      const price = 1200;
+      const quantity = 2;
+
+      const message = `
+      You ordered: ${quantity} × ${product}
+      Total price: $${price * quantity}
+      Thank you for shopping with us!
+      `;
+
+      console.log(message);
+    options:
+      - out: ["", "You ordered: ${quantity} × ${product}", "Total price: $${price * quantity}", "Thank you for shopping with us!", ""]
+      - out: ["", "You ordered: 2 × Laptop", "Total price: $2400", "Thank you for shopping with us!", ""]
+      - out: ["", "You ordered: 2 × Laptop", "Total price: $1200 * 2", "Thank you for shopping with us!", ""]
+      - out: ["", "You ordered: 2 × Laptop", "Total price: 2400", "Thank you for shopping with us!", ""]
+    answer: 2
+    explain: |
+      داخل backtick هر `${...}` حساب و جایگزین می‌شود: `2`، `Laptop` و حاصل **ضرب** `price * quantity` یعنی `2400` (رد گزینه‌ی ۱ که جاسازی را ندیده و گزینه‌ی ۳ که عبارت را حساب نکرده). در `$${...}` علامت `$` اول یک دلار معمولی است که چاپ می‌شود، پس `$2400` درست است و گزینه‌ی ۴ آن را جا انداخته. چون رشته با Enter شروع و تمام شده، خروجی یک خط خالی در ابتدا و یک خط خالی در انتها دارد.
+
+  - level: hard
+    stem: |
+      کد اسلاید ۵۱ را طوری تغییر داده‌ایم که پیام بین دو کروشه چاپ شود. خروجی کدام است؟
+    check: output
+    code: |
+      const product = "Laptop";
+      const price = 1200;
+      const quantity = 2;
+
+      const message = `
+      You ordered: ${quantity} × ${product}
+      Total price: $${price * quantity}
+      Thank you for shopping with us!
+      `;
+
+      console.log("[" + message + "]");
+    options:
+      - out: ["[You ordered: 2 × Laptop", "Total price: $2400", "Thank you for shopping with us!]"]
+      - out: "[You ordered: 2 × Laptop Total price: $2400 Thank you for shopping with us!]"
+      - out: ["[", "You ordered: 2 × Laptop", "Total price: $2400", "Thank you for shopping with us!", "]"]
+      - out: ["[", "You ordered: 2 × Laptop", "Total price: 2400", "Thank you for shopping with us!", "]"]
+    answer: 3
+    explain: |
+      رشته‌ی `message` بلافاصله بعد از backtick بازکننده یک Enter دارد و قبل از backtick بسته‌کننده هم یک Enter؛ پس با `\n` شروع و تمام می‌شود. برای همین `[` تنها در خط اول و `]` تنها در خط آخر می‌آید. گزینه‌ی ۱ این دو Enter را ندیده، گزینه‌ی ۲ فکر کرده Enterهای داخل template literal حذف می‌شوند و گزینه‌ی ۴ علامت `$` معمولیِ قبل از `${...}` را جا انداخته است.
+
+  - level: medium
+    stem: |
+      می‌خواهیم خروجی دقیقاً `Total: $30` باشد. در جای خالی کدام گزینه قرار بگیرد؟
+    check: option-output
+    prelude: 'const price = 10; const qty = 3;'
+    expect: 'Total: $30'
+    code: |
+      const price = 10;
+      const qty = 3;
+      console.log(___); // should print: Total: $30
+    options:
+      - text: '`` `Total: ${price * qty}` ``'
+        code: 'console.log(`Total: ${price * qty}`);'
+      - text: '`"Total: $${price * qty}"`'
+        code: 'console.log("Total: $${price * qty}");'
+      - text: '`` `Total: $${price * qty}` ``'
+        code: 'console.log(`Total: $${price * qty}`);'
+      - text: '`` `Total: $$price * qty` ``'
+        code: 'console.log(`Total: $$price * qty`);'
+    answer: 3
+    explain: |
+      در گزینه‌ی ۳، `$` اول یک علامت دلار معمولی است و `${price * qty}` حاصل `30` را جاسازی می‌کند: `Total: $30` (درست مثل `$$` در کد اسلاید ۵۱). گزینه‌ی ۱ علامت دلار را ندارد و `Total: 30` چاپ می‌کند. گزینه‌ی ۲ با دابل‌کوتیشن نوشته شده و اصلاً جاسازی نمی‌کند. در گزینه‌ی ۴ آکولاد `{ }` نیامده، پس هیچ جاسازی‌ای رخ نمی‌دهد و متن `Total: $$price * qty` عیناً چاپ می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const age = 20;
+      console.log(`Status: ${age >= 18 ? "adult" : "minor"}`);
+      console.log(`Next year: ${age + 1}`);
+      console.log(`Name: ${"sara".toUpperCase()}`);
+    options:
+      - out: ["Status: adult", "Next year: 201", "Name: SARA"]
+      - out: ["Status: adult", "Next year: 21", "Name: SARA"]
+      - out: ["Status: adult", "Next year: 21", "Name: sara.toUpperCase()"]
+      - out: ["!! SyntaxError"]
+    answer: 2
+    explain: |
+      داخل `${}` هر **عبارتی** مجاز است: عملگر سه‌تایی (`20 >= 18` درست است، پس `adult`)، محاسبه (`age + 1` جمع عددی است و `21` می‌دهد) و صدا زدن متد (`toUpperCase()` حروف را بزرگ می‌کند). گزینه‌ی ۱ فکر کرده `age` قبل از جمع به رشته تبدیل می‌شود، گزینه‌ی ۳ صدا زدن متد را متن فرض کرده و گزینه‌ی ۴ استفاده از `? :` یا متد را داخل `${}` غیرمجاز پنداشته است.
+
+  - level: hard
+    stem: |
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
+    errorName: SyntaxError
+    options:
+      - code: 'const s = `${1 > 0 ? "yes" : "no"}`;'
+      - code: 'const s = `${Math.max(1, 2)}`;'
+      - code: 'const s = `${if (true) { "yes" }}`;'
+      - code: 'const s = `${(2 + 3) * 4}`;'
+    answer: 3
+    explain: |
+      داخل `${}` فقط **عبارت (expression)** مجاز است، یعنی چیزی که مقدار تولید می‌کند. `if` یک **دستور (statement)** است و مقداری تولید نمی‌کند، پس گزینه‌ی ۳ خطای `SyntaxError` می‌دهد. عملگر سه‌تایی (گزینه‌ی ۱)، صدا زدن تابع (گزینه‌ی ۲) و محاسبه‌ی پرانتزدار (گزینه‌ی ۴) همه عبارت‌اند و مجازند؛ برای شرط داخل template literal باید از `? :` استفاده کرد.
+
+  - level: medium
+    stem: |
+      حاصل عبارت ``  `${[1, 2, 3]}`  `` چیست؟
+    check: value
+    expr: '`${[1, 2, 3]}`'
+    options:
+      - '`"1,2,3"`'
+      - '`"[1, 2, 3]"`'
+      - '`"1 2 3"`'
+      - '`"[object Array]"`'
+    answer: 1
+    explain: |
+      وقتی آرایه به رشته تبدیل می‌شود، عضوهایش با **کاما و بدون فاصله** به هم چسبانده می‌شوند و کروشه‌ها حذف می‌شوند: `"1,2,3"`. گزینه‌ی ۲ شکل نمایش آرایه در کنسول است، نه تبدیلش به رشته. گزینه‌ی ۳ جداکننده را فاصله فرض کرده و `"[object Array]"` هم شکل تبدیل آرایه نیست (چیزی شبیه آن، یعنی `"[object Object]"`، برای شیء‌های معمولی است).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = { name: "Ali" };
+      const tags = ["js", "web"];
+      console.log(`User: ${user}`);
+      console.log(`Tags: ${tags}`);
+    options:
+      - out: ["User: { name: 'Ali' }", "Tags: ['js', 'web']"]
+      - out: ["User: Ali", "Tags: js web"]
+      - out: ["User: [object Object]", "Tags: [js,web]"]
+      - out: ["User: [object Object]", "Tags: js,web"]
+    answer: 4
+    explain: |
+      `${}` هر مقداری را به **رشته** تبدیل می‌کند. یک شیء معمولی به رشته‌ی `[object Object]` تبدیل می‌شود (محتوایش نمایش داده نمی‌شود) و آرایه به عضوهایش با کاما و بدون کروشه: `js,web`. گزینه‌ی ۱ شکل نمایش `console.log(user)` است که با تبدیل به رشته فرق دارد. گزینه‌ی ۳ کروشه‌ها را نگه داشته و گزینه‌ی ۲ فرض کرده JavaScript خودش مقدار `name` را پیدا می‌کند. برای دیدن محتوای شیء باید از `JSON.stringify(user)` استفاده کرد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let city;
+      const phone = null;
+      const active = false;
+      console.log(`City: ${city}, Phone: ${phone}, Active: ${active}`);
+    options:
+      - out: "City: , Phone: , Active: false"
+      - out: "City: undefined, Phone: null, Active: false"
+      - out: "City: undefined, Phone: undefined, Active: false"
+      - out: "!! ReferenceError"
+    answer: 2
+    explain: |
+      `city` تعریف شده ولی مقدار ندارد، پس `undefined` است؛ `${}` آن را به رشته‌ی `"undefined"` تبدیل می‌کند و `null` و `false` هم به `"null"` و `"false"`. template literal مقدارهای «خالی» را حذف نمی‌کند (رد گزینه‌ی ۱) و `null` را با `undefined` یکی نمی‌کند (رد گزینه‌ی ۳). `ReferenceError` فقط برای متغیر تعریف‌نشده است، در حالی که `city` با `let` تعریف شده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = 2;
+      const b = 3;
+      console.log("Sum: " + a + b);
+      console.log(`Sum: ${a + b}`);
+      console.log("Sum: " + (a + b));
+    options:
+      - out: ["Sum: 5", "Sum: 5", "Sum: 5"]
+      - out: ["Sum: 23", "Sum: 23", "Sum: 5"]
+      - out: ["Sum: 23", "Sum: 5", "Sum: 5"]
+      - out: ["Sum: 23", "Sum: 5", "Sum: 23"]
+    answer: 3
+    explain: |
+      خط اول از چپ به راست حساب می‌شود: `"Sum: " + 2` رشته‌ی `"Sum: 2"` می‌شود و بعد `+ 3` آن را به `"Sum: 23"` می‌رساند. در خط دوم `a + b` داخل `${}` اول به‌صورت **عددی** حساب می‌شود (`5`) و بعد در متن قرار می‌گیرد. در خط سوم پرانتز باعث می‌شود جمع عددی اول انجام شود: `"Sum: 5"`. گزینه‌ی ۱ دام خط اول را ندیده و گزینه‌های ۲ و ۴ جاسازی یا پرانتز را بی‌اثر فرض کرده‌اند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const isOnline = true;
+      const user = "Reza";
+      console.log(`${user} is ${isOnline ? `online (${2 + 3} friends)` : "offline"}`);
+    options:
+      - out: "Reza is offline"
+      - out: "Reza is online (${2 + 3} friends)"
+      - out: "!! SyntaxError"
+      - out: "Reza is online (5 friends)"
+    answer: 4
+    explain: |
+      داخل `${}` بیرونی یک عملگر سه‌تایی است؛ چون `isOnline` برابر `true` است، شاخه‌ی اول انتخاب می‌شود که خودش یک template literal **تودرتو** است و `${2 + 3}` داخلش به `5` تبدیل می‌شود. backtickهای تودرتو داخل `${}` کاملاً مجازند (رد گزینه‌ی ۳)، template داخلی هم جاسازی می‌کند (رد گزینه‌ی ۲) و شرط درست است (رد گزینه‌ی ۱).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟ (متغیری به نام `price` تعریف نشده است.)
+    check: output
+    code: |
+      console.log(`Use \` to write a template`);
+      console.log(`Price: \${price}`);
+      console.log("She said \"hi\"");
+    options:
+      - out: ["Use ` to write a template", "Price: ${price}", 'She said "hi"']
+      - out: ["Use ` to write a template", "!! ReferenceError"]
+      - out: ["!! SyntaxError"]
+      - out: ['Use \` to write a template', 'Price: \${price}', 'She said \"hi\"']
+    answer: 1
+    explain: |
+      `` \` `` یک backtick معمولی داخل template literal می‌گذارد و رشته را نمی‌بندد (رد گزینه‌ی ۳). `\${` جاسازی را غیرفعال می‌کند و `${price}` عیناً چاپ می‌شود؛ چون `price` اصلاً خوانده نمی‌شود، `ReferenceError` هم رخ نمی‌دهد (رد گزینه‌ی ۲). `\"` هم یک دابل‌کوتیشن معمولی است. خود بک‌اسلش‌ها فقط علامت گریز هستند و چاپ نمی‌شوند (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟ (خط دوم رشته با **دو فاصله** شروع شده است.)
+    check: output
+    code: |
+      const text = `A
+        B`;
+      console.log(text.length);
+    options:
+      - out: "3"
+      - out: "5"
+      - out: "2"
+      - out: "4"
+    answer: 2
+    explain: |
+      در template literal چندخطی، هر Enter و هر فاصله جزو رشته است: `A` (۱) + خط جدید (۱) + دو فاصله (۲) + `B` (۱) = ۵. گزینه‌ی ۳ فقط حروف را شمرده، گزینه‌ی ۱ فاصله‌ها را نادیده گرفته و گزینه‌ی ۴ خط جدید را نشمرده است.
