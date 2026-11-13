@@ -1,0 +1,531 @@
+id: ch2-window
+title: "شیء window: پنجره‌ی مرورگر"
+slides: "JS in HTML، اسلایدهای ۳۶ و ۳۷"
+lesson: |
+  تا این‌جا بیشتر با `document` (خودِ صفحه) کار کردیم. اما `document` داخل شیء بزرگ‌تری زندگی می‌کند: **`window`**، یعنی پنجره (یا تب) مرورگری که صفحه در آن باز شده است. در نمودار اسلاید ۱۲ دیدیم که `window` در بالاترین سطح است و `document` فقط یکی از فرزندان آن است.
+
+  ::: analogy
+  `window` را یک آپارتمان در نظر بگیر و `document` را اتاق نشیمنش که مبلمان (محتوای صفحه) در آن است. آپارتمان اتاق‌ها و وسایل دیگری هم دارد: پلاک آدرس روی در (`location`)، راهرویی که اتاق‌های قبلاً دیده‌شده را به یاد دارد (`history`)، شناسنامه‌ی ساختمان (`navigator`)، اطلاعات پنجره‌ی بزرگ رو به خیابان (`screen`)، کمد (`localStorage`) و ساعت زنگ‌دار (تایمرها).
+  :::
+
+  ```text
+  window
+  ├── document ── anchors, links, images, scripts, forms ── elements, ...
+  ├── event
+  ├── frames
+  ├── location
+  ├── history
+  ├── navigator ── plugins, mimeTypes
+  └── screen
+  ```
+
+  اسلاید ۳۶ درباره‌ی `window` می‌گوید:
+
+  - پنجره‌ی مرورگری را نشان می‌دهد که صفحه‌ی وب در آن است.
+  - همه‌ی اشیا، توابع و متغیرهای **سراسری** (global) JavaScript به آن تعلق دارند.
+  - متدهایی مثل `alert()`، `confirm()` و `prompt()` دارد.
+  - به `location`، `history`، `navigator` و موارد دیگر دسترسی می‌دهد.
+  - تایمرهای `setTimeout()` و `setInterval()` را فراهم می‌کند.
+  - propertyهای `innerWidth`، `innerHeight`، `scrollX` و `scrollY` را دارد.
+
+  ### ۱) `window` همان شیء سراسری است
+
+  در مرورگر، `window` شیء سراسری (global object) است؛ یعنی هر چیزی که «همه‌جا در دسترس است» در واقع property آن است:
+
+  ```js
+  var a = 1;            // global var           -> becomes window.a
+  function greet() {}   // global function      -> becomes window.greet
+  let b = 2;            // global let           -> NOT a window property
+  const c = 3;          // global const         -> NOT a window property
+  class Car {}          // global class         -> NOT a window property
+  console.log(window.a, window.b, window.c, typeof window.greet);  // 1 undefined undefined "function"
+  ```
+
+  - `var` و اعلان تابع (function declaration) در سطح بالای یک اسکریپت، property شیء `window` می‌شوند.
+  - `let`، `const` و `class` هم سراسری‌اند (از همه‌جا قابل استفاده‌اند) ولی در جای جداگانه‌ای نگه داشته می‌شوند و property `window` **نمی‌شوند**.
+  - همه‌ی چیزهای آماده‌ی مرورگر روی `window` هستند: `window.document`، `window.console`، `window.alert`، `window.setTimeout`، `window.localStorage` و… . به همین دلیل نوشتن `window.` **اختیاری** است: `alert("Hi")` همان `window.alert("Hi")` است و `alert === window.alert` برابر `true`.
+  - در سطح بالای یک اسکریپت معمولی `this === window` است؛ و در حالت غیر strict، تابعی که به‌تنهایی صدا زده شود (`show()`) هم `this` را برابر `window` می‌بیند (یادآوری `this` از فصل اول).
+  - `globalThis` نام استاندارد شیء سراسری در **هر** محیطی است: در مرورگر همان `window` و در Node.js شیء `global`. در Node.js اصلاً `window` وجود ندارد (`ReferenceError: window is not defined`) و `var` سطح بالای یک فایل هم property شیء سراسری نمی‌شود.
+
+  ### ۲) پنجره‌های گفت‌وگو: `alert`، `confirm` و `prompt`
+
+  ```js
+  alert("Saved!");                              // message + OK          -> undefined
+  const sure = confirm("Delete this item?");    // OK / Cancel           -> true / false
+  const name = prompt("Your name?", "Guest");   // text box + OK/Cancel  -> string or null
+  ```
+
+  | تابع | کاربر چه می‌بیند؟ | مقدار برگشتی |
+  |---|---|---|
+  | `alert(msg)` | پیام + دکمه‌ی OK | `undefined` |
+  | `confirm(msg)` | پیام + OK و Cancel | OK ← `true`، Cancel ← `false` |
+  | `prompt(msg, default)` | پیام + کادر متن (با مقدار پیش‌فرض اختیاری) + OK و Cancel | متن تایپ‌شده به‌صورت **رشته** (حتی اگر عدد تایپ شود؛ کادر خالی ← `""`)، و با Cancel ← `null` |
+
+  هر سه پنجره **مودال و مسدودکننده** (modal و blocking) هستند: تا کاربر جواب ندهد، صفحه قفل است و اجرای JavaScript **در همان خط منتظر می‌ماند**؛ حتی callbackهای تایمرها و رویدادها هم تا بعد از تمام شدن کد فعلی صبر می‌کنند. ظاهرشان را هم نمی‌شود با CSS تغییر داد؛ برای همین سایت‌های امروزی معمولاً پنجره‌های دلخواه با HTML و CSS می‌سازند، ولی این سه برای یادگیری و آزمایش خیلی راحت‌اند.
+
+  ```js
+  const input = prompt("How old are you?");
+  if (input === null) {
+    console.log("User cancelled");
+  } else {
+    const age = Number(input);   // "20" -> 20
+    console.log("Next year you will be " + (age + 1));
+  }
+  ```
+
+  ### ۳) `location`: آدرس صفحه
+
+  `window.location` شیئی است که **آدرس (URL) صفحه‌ی فعلی** را نگه می‌دارد؛ نه موقعیت جغرافیایی کاربر (آن کارِ `navigator.geolocation` است). برای آدرس `https://shop.example.com:8080/products/list.html?page=2#reviews`:
+
+  | property | مقدار |
+  |---|---|
+  | `href` | کل آدرس |
+  | `protocol` | `"https:"` |
+  | `host` | `"shop.example.com:8080"` (نام میزبان + پورت) |
+  | `hostname` | `"shop.example.com"` |
+  | `port` | `"8080"` |
+  | `pathname` | `"/products/list.html"` |
+  | `search` | `"?page=2"` (رشته‌ی پرس‌وجو، query string) |
+  | `hash` | `"#reviews"` |
+  | `origin` | `"https://shop.example.com:8080"` |
+
+  `location` فقط خواندنی نیست:
+
+  ```js
+  location.href = "https://example.com";   // navigate to a new page (adds a history entry)
+  location.assign("https://example.com");  // the same as above
+  location.replace("https://example.com"); // navigate WITHOUT a history entry (Back will not return here)
+  location.reload();                       // reload the current page
+  ```
+
+  ### ۴) `history`، `navigator` و `screen`
+
+  - **`history`** (تاریخچه‌ی همین تب): `history.back()` مثل دکمه‌ی Back مرورگر، `history.forward()` مثل دکمه‌ی Forward، `history.go(-2)` دو صفحه به عقب و `history.go(1)` یک صفحه به جلو؛ `history.length` تعداد صفحه‌های تاریخچه‌ی این تب است. برای حفظ حریم خصوصی، آدرس صفحه‌های تاریخچه را **نمی‌شود خواند**.
+  - **`navigator`** (اطلاعات مرورگر): `navigator.userAgent` (رشته‌ای که مرورگر و سیستم‌عامل را معرفی می‌کند)، `navigator.language` (زبان مرورگر، مثلاً `"fa-IR"` یا `"en-US"`)، `navigator.onLine` (آیا به اینترنت وصل است؟) و امکاناتی مثل `navigator.geolocation` و `navigator.clipboard`. `plugins` و `mimeTypes` نمودار اسلاید ۱۲ هم زیرمجموعه‌ی همین شیء‌اند.
+  - **`screen`** (اطلاعات **مانیتور** کاربر): `screen.width`، `screen.height` و `screen.availWidth`. این‌ها اندازه‌ی کل صفحه‌نمایش است، نه اندازه‌ی پنجره‌ی مرورگر.
+
+  ### ۵) تایمرها: `setTimeout` و `setInterval`
+
+  ```js
+  const id = setTimeout(() => {
+    console.log("runs once, after about 2 seconds");
+  }, 2000);
+  clearTimeout(id);   // cancel it before it runs
+
+  let count = 0;
+  const timer = setInterval(() => {
+    count++;
+    console.log("tick", count);
+    if (count === 3) clearInterval(timer);   // stop after 3 ticks
+  }, 1000);
+  ```
+
+  - `setTimeout(fn, ms)` تابع را **یک بار**، دست‌کم `ms` میلی‌ثانیه بعد اجرا می‌کند و یک **شناسه** (id؛ در مرورگر یک عدد) برمی‌گرداند. `clearTimeout(id)` آن را قبل از اجرا لغو می‌کند.
+  - `setInterval(fn, ms)` تابع را هر `ms` میلی‌ثانیه **تکرار** می‌کند تا با `clearInterval(id)` متوقف شود.
+  - callback تایمر فقط **بعد از تمام شدن کد همگامِ فعلی** اجرا می‌شود (event loop در فصل اول)؛ پس تأخیر `0` هم یعنی «بعداً»، نه «فوراً».
+  - خودِ تابع را بده، نه نتیجه‌ی صدا زدنش را: `setTimeout(sayHi, 1000)` درست است؛ `setTimeout(sayHi(), 1000)` تابع را **همین الان** اجرا می‌کند و نتیجه‌اش (`undefined`) را به `setTimeout` می‌دهد.
+
+  ### ۶) اندازه و اسکرول: `innerWidth`، `innerHeight`، `scrollX` و `scrollY`
+
+  - `innerWidth` و `innerHeight`: عرض و ارتفاع **viewport** (ناحیه‌ای از پنجره‌ی مرورگر که صفحه در آن دیده می‌شود، شامل نوار اسکرول) بر حسب پیکسل. با تغییر اندازه‌ی پنجره عوض می‌شوند.
+  - `outerWidth` و `outerHeight`: اندازه‌ی **کل** پنجره‌ی مرورگر همراه با نوار ابزار و حاشیه‌ها. `screen.width` هم اندازه‌ی مانیتور است.
+  - `scrollX` و `scrollY`: صفحه چند پیکسل به‌ترتیب به **راست** و به **پایین** اسکرول شده است (بالای صفحه `scrollY` برابر `0` است).
+
+  ```js
+  const backToTop = document.getElementById("backToTop");
+  window.addEventListener("scroll", () => {
+    backToTop.hidden = window.scrollY < 300;   // show the button only after scrolling down
+  });
+  ```
+
+  ### ۷) صفحه‌ی واکنش‌گرا (responsive) با `window`
+
+  ```js
+  function applyLayout() {
+    if (window.innerWidth < 600) {
+      document.body.classList.add("mobile");
+    } else {
+      document.body.classList.remove("mobile");
+    }
+  }
+  applyLayout();                                   // once when the page loads
+  window.addEventListener("resize", applyLayout);  // and every time the window size changes
+  ```
+
+  رویداد `resize` روی `window` هر بار که اندازه‌ی پنجره تغییر کند رخ می‌دهد. البته برای تغییرات **فقط ظاهری**، ابزار معمول CSS media query است (قاعده‌ای در CSS که فقط در اندازه‌های مشخصی از صفحه اعمال می‌شود، مثل `@media (max-width: 600px) { … }`) و JavaScript برای تغییر **رفتار** به کار می‌رود (مثلاً جمع کردن منو یا نمایش تعداد کمتری آیتم). `window.matchMedia("(max-width: 600px)").matches` همان شرط media query را در JavaScript بررسی می‌کند.
+
+  ### فعالیت کلاسی اسلاید ۳۷
+
+  **۱. `alert` چه می‌کند و چه فرقی با `prompt` و `confirm` دارد؟** هر سه متد `window` هستند و پنجره‌ای مسدودکننده باز می‌کنند. `alert` فقط پیام و دکمه‌ی OK نشان می‌دهد و `undefined` برمی‌گرداند. `confirm` دکمه‌های OK و Cancel دارد و `true` یا `false` برمی‌گرداند. `prompt` یک کادر متن هم دارد و متن تایپ‌شده را به‌صورت رشته، یا با Cancel مقدار `null` را برمی‌گرداند.
+
+  **۲. `location` چه چیزی را نشان می‌دهد؟** آدرس (URL) صفحه‌ی فعلی را، با بخش‌هایش (`href`، `protocol`، `host`، `hostname`، `port`، `pathname`، `search`، `hash`) و متدهایی برای رفتن به آدرس دیگر یا بارگذاری دوباره (`assign`، `replace`، `reload`). مقداردهی `location.href` کاربر را به صفحه‌ی جدید می‌برد.
+
+  **۳. چطور با `window` صفحه را واکنش‌گرا کنیم؟** `window.innerWidth` و `innerHeight` را بخوانیم، به رویداد `resize` روی `window` گوش بدهیم و بر اساس اندازه کلاس‌ها یا استایل‌ها را عوض کنیم یا عنصرهایی را نشان دهیم یا پنهان کنیم (مثل کد بالا). برای رفتارهای وابسته به اسکرول هم `scrollX` و `scrollY` به کار می‌آیند.
+
+  **۴. آیا `window` به‌جز `document` فرزندان دیگری دارد؟** **بله.** طبق نمودار اسلاید ۱۲: `event`، `frames`، `location`، `history`، `navigator` (با `plugins` و `mimeTypes`) و `screen`. علاوه بر این‌ها `localStorage`، `sessionStorage`، `console`، توابع تایمر و هر متغیر `var` یا تابع سراسری هم روی `window` هستند.
+
+  ::: tip
+  - هر چیز سراسری در مرورگر property `window` است، پس `window.` را می‌توانی ننویسی: `alert === window.alert`.
+  - `confirm` بولی برمی‌گرداند و `prompt` رشته یا `null`؛ خروجی `prompt` را قبل از محاسبه با `Number()` تبدیل کن و `null` را جدا بررسی کن.
+  - `location` = آدرس صفحه؛ `history` = عقب و جلو؛ `navigator` = اطلاعات مرورگر؛ `screen` = مانیتور؛ `innerWidth` = viewport.
+  - هر `setInterval` را با `clearInterval` و شناسه‌ی خودش متوقف کن.
+  :::
+
+  ::: trap
+  - `let`، `const` و `class` سراسری property `window` نمی‌شوند: `window.b` برای `let b = 2` برابر `undefined` است.
+  - `prompt("Age?") + 1` با ورودی ۲۰ می‌شود `"201"`؛ و اگر کاربر Cancel بزند، `Number(null)` برابر `0` است، نه `NaN`.
+  - `alert` مقدار `undefined` برمی‌گرداند، نه `true`.
+  - `location` موقعیت جغرافیایی نیست؛ آدرس صفحه است.
+  - `innerWidth` اندازه‌ی viewport است، نه مانیتور (`screen.width`) و نه کل پنجره (`outerWidth`).
+  - `setTimeout(sayHi(), 1000)` تابع را فوراً اجرا می‌کند؛ و حتی `setTimeout(fn, 0)` بعد از کد همگام اجرا می‌شود.
+  - در Node.js شیء `window` وجود ندارد؛ نام مشترک شیء سراسری `globalThis` است.
+  :::
+
+  ::: summary
+  `window` = پنجره‌ی مرورگر + شیء سراسری. فرزندانش: `document`، `location` (آدرس)، `history` (عقب و جلو)، `navigator` (مرورگر)، `screen` (مانیتور)، `localStorage` و… . پنجره‌های گفت‌وگو: `alert` ← `undefined`، `confirm` ← بولی، `prompt` ← رشته یا `null` (همه مسدودکننده). تایمرها: `setTimeout`/`clearTimeout` و `setInterval`/`clearInterval`. اندازه‌ها: `innerWidth`/`innerHeight` (viewport)، `scrollX`/`scrollY` (اسکرول) و رویداد `resize` برای صفحه‌ی واکنش‌گرا.
+  :::
+questions:
+  - level: easy
+    stem: طبق اسلاید ۳۶، شیء `window` چه چیزی را نشان می‌دهد؟
+    options:
+      - پنجره (یا تب) مرورگر که صفحه در آن باز است؛ همه‌ی متغیرها، توابع و اشیای سراسری JavaScript به آن تعلق دارند.
+      - فقط محتوای HTML صفحه؛ دقیقاً همان چیزی که `document` نشان می‌دهد.
+      - پنجره‌های سیستم‌عامل (مثلاً همه‌ی پنجره‌های باز روی دسکتاپ) را مدیریت می‌کند.
+      - فقط عنصر `<body>` صفحه را نشان می‌دهد.
+    answer: 1
+    explain: |
+      `window` بالاترین شیء مرورگر است: پنجره‌ای که صفحه در آن باز شده و در عین حال شیء سراسری JavaScript. گزینه‌ی ۲ تعریف `document` است که فقط یکی از فرزندان `window` است، گزینه‌ی ۳ اشتباه است چون JavaScript صفحه به پنجره‌های سیستم‌عامل دسترسی ندارد و گزینه‌ی ۴ همان `document.body` است.
+
+  - level: easy
+    stem: طبق فعالیت کلاسی اسلاید ۳۷، آیا `window` به‌جز `document` فرزندان (اشیای زیرمجموعه‌ی) دیگری هم دارد؟
+    options:
+      - خیر؛ `document` تنها فرزند `window` است.
+      - فقط `frames` (برای iframeها).
+      - بله؛ مثلاً `location`، `history`، `navigator` و `screen` (و همچنین `localStorage`، `console` و توابع تایمر).
+      - فقط در Node.js فرزند دیگری دارد.
+    answer: 3
+    explain: |
+      طبق نمودار اسلاید ۱۲، `window` علاوه بر `document` فرزندانی مثل `event`، `frames`، `location`، `history`، `navigator` و `screen` دارد؛ `localStorage`، `sessionStorage`، `console`، تایمرها و همه‌ی متغیرها و توابع سراسری هم روی آن هستند. پس گزینه‌های ۱ و ۲ ناقص و غلط‌اند و گزینه‌ی ۴ هم غلط است، چون در Node.js اصلاً شیء `window` وجود ندارد.
+
+  - level: medium
+    stem: خروجی کد زیر در مرورگر کدام است؟
+    check: dom-output
+    code: |
+      var a = 1;
+      let b = 2;
+      const c = 3;
+      function d() {}
+      console.log(window.a, window.b, window.c, typeof window.d);
+    options:
+      - out: "1 2 3 function"
+      - out: "1 undefined undefined function"
+      - out: "undefined undefined undefined undefined"
+      - out: "1 2 undefined function"
+    answer: 2
+    explain: |
+      در سطح بالای یک اسکریپت مرورگر، `var` و اعلان تابع property شیء `window` می‌شوند؛ پس `window.a` برابر ۱ و `typeof window.d` برابر `"function"` است. `let` و `const` هم سراسری‌اند ولی property `window` نمی‌شوند و خواندنشان از `window` مقدار `undefined` می‌دهد. گزینه‌ی ۱ همه را property دانسته، گزینه‌ی ۳ هیچ‌کدام را (این تقریباً رفتار Node.js است) و گزینه‌ی ۴ بین `let` و `const` فرق گذاشته است.
+
+  - level: easy
+    stem: خروجی کد زیر در مرورگر کدام است؟
+    check: dom-output
+    code: |
+      console.log(alert === window.alert, window.document === document, globalThis === window);
+    options:
+      - out: "false true true"
+      - out: "true false true"
+      - out: "true true false"
+      - out: "true true true"
+    answer: 4
+    explain: |
+      `alert` و `document` در واقع propertyهای شیء سراسری `window` هستند، پس با یا بدون پیشوند `window.` به همان چیز اشاره می‌کنیم. `globalThis` نام استاندارد شیء سراسری است که در مرورگر همان `window` است. هر گزینه‌ای که یکی از این سه را `false` بداند، اختیاری بودن پیشوند `window.` یا معنای `globalThis` را اشتباه فهمیده است.
+
+  - level: hard
+    stem: 'خروجی کد زیر **در مرورگر** (یک اسکریپت معمولی، بدون `"use strict"`) کدام است؟'
+    check: dom-output
+    code: |
+      var color = "red";
+      function show() {
+        console.log(this.color);
+      }
+      show();
+      console.log(this === window);
+    options:
+      - out: ["red", "true"]
+      - out: ["undefined", "true"]
+      - out: ["undefined", "false"]
+      - out: ["red", "false"]
+    answer: 1
+    explain: |
+      `var color` در مرورگر به `window.color` تبدیل می‌شود. `show()` به‌تنهایی و در حالت غیر strict صدا زده شده، پس `this` داخل آن `window` است و `this.color` همان `"red"` است. در سطح بالای اسکریپت هم `this === window` است. گزینه‌ی ۳ دقیقاً خروجی همین کد در Node.js است (آن‌جا `var` property شیء سراسری نمی‌شود و `this` سطح بالا `module.exports` است)؛ گزینه‌های ۲ و ۴ هم هر کدام فقط نیمی از رفتار مرورگر را درست گفته‌اند.
+
+  - level: medium
+    stem: کدام جمله **درست** است؟
+    options:
+      - در Node.js هم شیء `window` وجود دارد و همان کار مرورگر را انجام می‌دهد.
+      - '`globalThis` در مرورگر به `window` و در Node.js به شیء سراسری Node (`global`) اشاره می‌کند.'
+      - متغیر سراسری‌ای که با `let` تعریف شود، در مرورگر به property شیء `window` تبدیل می‌شود.
+      - برای صدا زدن `alert` حتماً باید `window.alert(...)` نوشت.
+    answer: 2
+    explain: |
+      `globalThis` دقیقاً برای همین ساخته شده که در هر محیطی به شیء سراسری همان محیط اشاره کند: `window` در مرورگر و `global` در Node.js. گزینه‌ی ۱ غلط است چون Node.js مرورگر نیست و `window` ندارد (`ReferenceError`)، گزینه‌ی ۳ غلط است چون فقط `var` و توابع سراسری property `window` می‌شوند و گزینه‌ی ۴ غلط است چون پیشوند `window.` اختیاری است.
+
+  - level: easy
+    stem: کدام تابع پنجره‌ای با دو دکمه‌ی OK و Cancel نشان می‌دهد و مقدار بولی (`true` یا `false`) برمی‌گرداند؟
+    options:
+      - '`alert`'
+      - '`prompt`'
+      - '`confirm`'
+      - '`console.log`'
+    answer: 3
+    explain: |
+      `confirm` برای گرفتن تأیید است: OK مقدار `true` و Cancel مقدار `false` برمی‌گرداند. `alert` فقط دکمه‌ی OK دارد و `undefined` برمی‌گرداند، `prompt` کادر متن دارد و رشته یا `null` برمی‌گرداند و `console.log` اصلاً پنجره‌ای نشان نمی‌دهد و فقط در کنسول می‌نویسد.
+
+  - level: medium
+    stem: کدام گزینه مقدار برگشتی سه تابع `alert`، `confirm` و `prompt` را درست بیان می‌کند؟
+    options:
+      - '`alert` ← `true`؛ `confirm` ← `true`/`false`؛ `prompt` ← عدد یا `null`'
+      - '`alert` ← `undefined`؛ `confirm` ← `"OK"` یا `"Cancel"`؛ `prompt` ← رشته یا `""`'
+      - هر سه یک Promise برمی‌گردانند که بعد از جواب کاربر resolve می‌شود.
+      - '`alert` ← `undefined`؛ `confirm` ← `true`/`false`؛ `prompt` ← رشته‌ی تایپ‌شده، یا `null` اگر Cancel زده شود'
+    answer: 4
+    explain: |
+      `alert` چیزی برنمی‌گرداند (`undefined`)، `confirm` بولی برمی‌گرداند و `prompt` متن تایپ‌شده را همیشه به‌صورت **رشته** (حتی وقتی عدد تایپ شود) و با Cancel مقدار `null` را برمی‌گرداند. گزینه‌ی ۱ خروجی `prompt` را عدد دانسته، گزینه‌ی ۲ خروجی `confirm` را رشته و خروجی Cancel در `prompt` را `""` دانسته و گزینه‌ی ۳ غلط است چون این سه تابع **همگام و مسدودکننده**‌اند و Promise برنمی‌گردانند.
+
+  - level: medium
+    stem: 'کاربر در پنجره‌ی confirm روی **Cancel** کلیک می‌کند. خروجی کدام است؟ (سطر `[confirm] …` یعنی پنجره‌ی confirm با آن پیام نمایش داده شده است.)'
+    check: dom-output
+    dialogs: { confirm: false }
+    code: |
+      const ok = confirm("Delete this item?");
+      if (ok) {
+        console.log("deleted");
+      } else {
+        console.log("kept");
+      }
+      console.log(typeof ok);
+    options:
+      - out: ["[confirm] Delete this item?", "kept", "boolean"]
+      - out: ["[confirm] Delete this item?", "deleted", "boolean"]
+      - out: ["[confirm] Delete this item?", "kept", "string"]
+      - out: ["[confirm] Delete this item?", "kept", "undefined"]
+    answer: 1
+    explain: |
+      با Cancel، `confirm` مقدار بولی `false` برمی‌گرداند؛ پس شاخه‌ی `else` اجرا می‌شود و نوع `ok` هم `boolean` است. گزینه‌ی ۲ فرض کرده هر جوابی به معنی تأیید است، گزینه‌ی ۳ خروجی را رشته‌ای مثل `"Cancel"` دانسته و گزینه‌ی ۴ آن را با `alert` اشتباه گرفته که `undefined` برمی‌گرداند.
+
+  - level: medium
+    stem: 'کاربر در پنجره‌ی prompt عدد ۲۰ را تایپ می‌کند و OK را می‌زند. خروجی کدام است؟ (سطر `[prompt] …` یعنی پنجره‌ی prompt با آن پیام نمایش داده شده است.)'
+    check: dom-output
+    dialogs: { prompt: "20" }
+    code: |
+      const age = prompt("How old are you?");
+      console.log(age + 1);
+      console.log(Number(age) + 1);
+    options:
+      - out: ["[prompt] How old are you?", "21", "21"]
+      - out: ["[prompt] How old are you?", "201", "21"]
+      - out: ["[prompt] How old are you?", "201", "201"]
+      - out: ["[prompt] How old are you?", "NaN", "21"]
+    answer: 2
+    explain: |
+      `prompt` همیشه **رشته** برمی‌گرداند؛ پس `age` برابر `"20"` است و `"20" + 1` به‌صورت رشته‌ای `"201"` می‌شود. بعد از تبدیل با `Number()` جمع عددی انجام می‌شود: `21`. گزینه‌ی ۱ خروجی `prompt` را عدد دانسته، گزینه‌ی ۳ اثر `Number()` را ندیده و گزینه‌ی ۴ فکر کرده جمع رشته و عدد `NaN` می‌دهد.
+
+  - level: hard
+    stem: 'کاربر در پنجره‌ی prompt روی **Cancel** کلیک می‌کند. خروجی کدام است؟ (سطر `[prompt] …` یعنی پنجره‌ی prompt نمایش داده شده است.)'
+    check: dom-output
+    code: |
+      const userName = prompt("Your name?");
+      console.log("Hello " + userName);
+      console.log(Number(userName));
+    options:
+      - out: ["[prompt] Your name?", "Hello", "0"]
+      - out: ["[prompt] Your name?", "Hello undefined", "NaN"]
+      - out: ["[prompt] Your name?", "Hello null", "0"]
+      - out: ["[prompt] Your name?", "Hello null", "NaN"]
+    answer: 3
+    explain: |
+      با Cancel، `prompt` مقدار `null` برمی‌گرداند. چسباندن `null` به رشته، کلمه‌ی `"null"` را می‌سازد و `Number(null)` برابر `0` است (نه `NaN`)؛ پس اگر خروجی را بدون بررسی `null` به عدد تبدیل کنیم، Cancel مثل «صفر» رفتار می‌کند. گزینه‌ی ۱ خروجی Cancel را رشته‌ی خالی دانسته (این حالتِ OK با کادر خالی است)، گزینه‌ی ۲ آن را `undefined` فرض کرده و گزینه‌ی ۴ تبدیل `null` به عدد را اشتباه گفته است.
+
+  - level: hard
+    stem: کاربر پنج ثانیه به پنجره‌ی confirm نگاه می‌کند و سپس OK را می‌زند. خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      setTimeout(() => console.log("timer"), 0);
+      const ok = confirm("Continue?");
+      console.log("answer:", ok);
+    options:
+      - out: ["timer", "[confirm] Continue?", "answer: true"]
+      - out: ["[confirm] Continue?", "timer", "answer: true"]
+      - out: ["[confirm] Continue?", "answer: OK", "timer"]
+      - out: ["[confirm] Continue?", "answer: true", "timer"]
+    answer: 4
+    explain: |
+      `confirm` **همگام و مسدودکننده** است: اجرای کد روی همان خط می‌ایستد تا کاربر جواب بدهد. با اینکه زمان تایمر (۰ میلی‌ثانیه) خیلی زودتر گذشته، callback تایمر فقط **بعد از تمام شدن کد همگام** فرصت اجرا دارد؛ پس اول پیام confirm، بعد `answer: true` و در آخر `timer`. گزینه‌های ۱ و ۲ فکر کرده‌اند تایمر می‌تواند وسط کد همگام یا هنگام باز بودن پنجره اجرا شود و گزینه‌ی ۳ خروجی `confirm` را رشته دانسته است.
+
+  - level: easy
+    stem: طبق فعالیت کلاسی اسلاید ۳۷، `window.location` چه چیزی را نشان می‌دهد؟
+    options:
+      - آدرس (URL) صفحه‌ی فعلی، با بخش‌هایی مثل `hostname` و `pathname`؛ با مقداردهی `location.href` هم مرورگر به صفحه‌ی جدید می‌رود.
+      - موقعیت جغرافیایی (طول و عرض جغرافیایی) کاربر
+      - مختصات نشانگر ماوس روی صفحه
+      - محل قرار گرفتن پنجره‌ی مرورگر روی مانیتور
+    answer: 1
+    explain: |
+      `location` شیئی برای **آدرس صفحه** است: بخش‌های URL را می‌دهد و با `location.href = "..."`، `assign`، `replace` یا `reload` می‌توان صفحه را عوض یا دوباره بارگذاری کرد. موقعیت جغرافیایی کار `navigator.geolocation` است، مختصات ماوس از شیء رویدادهای ماوس به دست می‌آید و محل پنجره ربطی به `location` ندارد.
+
+  - level: medium
+    stem: 'صفحه‌ای با آدرس `https://shop.example.com:8080/products/list.html?page=2#reviews` باز است. خروجی کد زیر کدام است؟'
+    check: dom-output
+    url: https://shop.example.com:8080/products/list.html?page=2#reviews
+    code: |
+      console.log(location.host);
+      console.log(location.pathname);
+      console.log(location.search + location.hash);
+    options:
+      - out: ["shop.example.com", "/products/list.html", "?page=2#reviews"]
+      - out: ["shop.example.com:8080", "/products/list.html", "?page=2#reviews"]
+      - out: ["shop.example.com:8080", "/products/list.html?page=2", "#reviews"]
+      - out: ["https://shop.example.com:8080", "products/list.html", "page=2reviews"]
+    answer: 2
+    explain: |
+      `host` نام میزبان **همراه با پورت** است (`hostname` بدون پورت است)، `pathname` فقط مسیر را با `/` ابتدایی می‌دهد و `search` و `hash` علامت‌های `?` و `#` خود را دارند. گزینه‌ی ۱ `host` را با `hostname` اشتباه گرفته، گزینه‌ی ۳ رشته‌ی پرس‌وجو را جزو `pathname` دانسته و گزینه‌ی ۴ `host` را با `origin` یکی گرفته و علامت‌ها را حذف کرده است.
+
+  - level: easy
+    stem: کدام دستور معادل `history.go(-1)` است؟
+    options:
+      - '`history.forward()`'
+      - '`history.go(1)`'
+      - '`history.back()`'
+      - '`location.reload()`'
+    answer: 3
+    explain: |
+      `history.go(-1)` یک قدم در تاریخچه‌ی تب به **عقب** می‌رود؛ دقیقاً کاری که `history.back()` و دکمه‌ی Back مرورگر انجام می‌دهند. `history.forward()` و `history.go(1)` یک قدم به **جلو** می‌روند و `location.reload()` همان صفحه را دوباره بارگذاری می‌کند.
+
+  - level: medium
+    stem: کدام جمله **نادرست** است؟
+    options:
+      - '`navigator.userAgent` رشته‌ای است که مرورگر و سیستم‌عامل کاربر را معرفی می‌کند.'
+      - '`screen.width` عرض صفحه‌نمایش (مانیتور) کاربر است.'
+      - '`history.back()` مثل دکمه‌ی Back مرورگر یک صفحه به عقب برمی‌گردد.'
+      - '`location` موقعیت جغرافیایی کاربر (طول و عرض جغرافیایی) را نگه می‌دارد.'
+    answer: 4
+    explain: |
+      `location` آدرس (URL) صفحه است، نه موقعیت جغرافیایی؛ برای موقعیت جغرافیایی باید از `navigator.geolocation` (با اجازه‌ی کاربر) استفاده کرد. پس گزینه‌ی ۴ نادرست و پاسخ است. سه جمله‌ی دیگر رفتار واقعی `navigator`، `screen` و `history` را توصیف می‌کنند.
+
+  - level: medium
+    stem: خروجی کد زیر **در مرورگر** کدام است؟
+    check: dom-output
+    code: |
+      console.log("A");
+      const id = setTimeout(() => console.log("B"), 0);
+      console.log(typeof id);
+      console.log("C");
+    options:
+      - out: ["A", "number", "C", "B"]
+      - out: ["A", "B", "number", "C"]
+      - out: ["A", "undefined", "C", "B"]
+      - out: ["A", "object", "C", "B"]
+    answer: 1
+    explain: |
+      callback تایمر حتی با تأخیر `0` بعد از تمام شدن کد همگام اجرا می‌شود؛ پس `B` آخر چاپ می‌شود. `setTimeout` در مرورگر یک **عدد** به‌عنوان شناسه برمی‌گرداند (برای `clearTimeout`). گزینه‌ی ۲ تأخیر صفر را «فوری» دانسته، گزینه‌ی ۳ فکر کرده `setTimeout` چیزی برنمی‌گرداند و گزینه‌ی ۴ خروجی Node.js است که در آن شناسه یک شیء `Timeout` است، نه عدد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    wait: 100
+    code: |
+      const t1 = setTimeout(() => console.log("first"), 10);
+      const t2 = setTimeout(() => console.log("second"), 20);
+      clearTimeout(t1);
+      console.log("scheduled");
+    options:
+      - out: ["scheduled", "first", "second"]
+      - out: ["scheduled", "second"]
+      - out: ["first", "scheduled"]
+      - out: ["scheduled"]
+    answer: 2
+    explain: |
+      `clearTimeout(t1)` تایمر اول را قبل از اجرا لغو می‌کند، ولی تایمر دوم دست نمی‌خورد. `scheduled` همگام است و اول چاپ می‌شود و حدود ۲۰ میلی‌ثانیه بعد `second`. گزینه‌ی ۱ اثر `clearTimeout` را ندیده، گزینه‌ی ۳ ترتیب همگام و ناهمگام را برعکس کرده و گزینه‌ی ۴ فکر کرده `clearTimeout` همه‌ی تایمرها را لغو می‌کند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    wait: 200
+    code: |
+      let count = 0;
+      const id = setInterval(() => {
+        count++;
+        console.log("tick", count);
+        if (count === 3) clearInterval(id);
+      }, 10);
+      console.log("started");
+    options:
+      - out: ["tick 1", "tick 2", "tick 3", "started"]
+      - out: ["started", "tick 1", "tick 2"]
+      - out: ["started", "tick 1", "tick 2", "tick 3"]
+      - out: ["started", "tick 1", "tick 2", "tick 3", "tick 4"]
+    answer: 3
+    explain: |
+      `setInterval` فقط زمان‌بندی می‌کند و بلافاصله برمی‌گردد؛ پس `started` (کد همگام) اول چاپ می‌شود. بعد callback هر ۱۰ میلی‌ثانیه اجرا می‌شود و در اجرای سوم، **بعد از** چاپ `tick 3`، `clearInterval` تکرار را متوقف می‌کند. گزینه‌ی ۱ ترتیب همگام و ناهمگام را برعکس کرده، گزینه‌ی ۲ فکر کرده اجرای سوم قبل از چاپ متوقف می‌شود و گزینه‌ی ۴ تصور کرده `clearInterval` یک دور دیرتر اثر می‌کند.
+
+  - level: hard
+    stem: خروجی کد زیر **در مرورگر** کدام است؟
+    check: dom-output
+    wait: 120
+    code: |
+      function hello() {
+        console.log("hello");
+      }
+      setTimeout(hello(), 50);
+      console.log("end");
+    options:
+      - out: ["end", "hello"]
+      - out: ["end"]
+      - out: ["hello", "end", "hello"]
+      - out: ["hello", "end"]
+    answer: 4
+    explain: |
+      `hello()` با پرانتز یعنی «همین الان صدا بزن»؛ پس `hello` فوراً چاپ می‌شود و نتیجه‌اش (`undefined`) به `setTimeout` داده می‌شود که بعد از ۵۰ میلی‌ثانیه چیزی برای اجرا ندارد. شکل درست `setTimeout(hello, 50)` است که خروجی گزینه‌ی ۱ را می‌دهد. گزینه‌ی ۲ اجرای فوری را ندیده و گزینه‌ی ۳ فکر کرده تابع دو بار اجرا می‌شود. (در Node.js همین کد بعد از چاپ `hello` خطای `TypeError` می‌دهد، چون آن‌جا آرگومان اول حتماً باید تابع باشد.)
+
+  - level: medium
+    stem: '`window.innerWidth` چه چیزی را نشان می‌دهد؟'
+    options:
+      - عرض viewport، یعنی ناحیه‌ای از پنجره‌ی مرورگر که صفحه در آن دیده می‌شود، بر حسب پیکسل
+      - عرض صفحه‌نمایش (مانیتور) کاربر
+      - عرض کل پنجره‌ی مرورگر همراه با نوار ابزار و حاشیه‌ها
+      - میزان اسکرول افقی صفحه
+    answer: 1
+    explain: |
+      `innerWidth` عرض viewport است و با کوچک و بزرگ کردن پنجره عوض می‌شود؛ برای همین در طراحی واکنش‌گرا به کار می‌رود. عرض مانیتور `screen.width` است، عرض کل پنجره با نوار ابزار `outerWidth` و میزان اسکرول افقی `scrollX`.
+
+  - level: easy
+    stem: کدام property نشان می‌دهد صفحه چند پیکسل به **پایین** اسکرول شده است؟
+    options:
+      - '`window.scrollX`'
+      - '`window.scrollY`'
+      - '`window.innerHeight`'
+      - '`screen.height`'
+    answer: 2
+    explain: |
+      `scrollY` میزان اسکرول عمودی (به پایین) و `scrollX` میزان اسکرول افقی است؛ بالای صفحه `scrollY` برابر `0` است. `innerHeight` ارتفاع viewport است و ربطی به اسکرول ندارد و `screen.height` ارتفاع مانیتور است.
+
+  - level: hard
+    stem: 'کاربر صفحه را در پنجره‌ای به عرض ۱۲۰۰ پیکسل باز می‌کند، سپس پنجره را تا عرض ۵۰۰ پیکسل کوچک و بعد تا ۸۰۰ پیکسل بزرگ می‌کند. مقدار `document.body.classList.contains("mobile")` در این سه وضعیت به‌ترتیب کدام است؟'
+    manual: innerWidth depends on a real browser window (jsdom has a fixed 1024 px viewport). The logic was checked in jsdom by setting innerWidth to 1024, 500 and 800 and dispatching resize events (false, true, false).
+    code: |
+      function applyLayout() {
+        if (window.innerWidth < 600) {
+          document.body.classList.add("mobile");
+        } else {
+          document.body.classList.remove("mobile");
+        }
+      }
+      applyLayout();
+      window.addEventListener("resize", applyLayout);
+    options:
+      - '`false`، `false`، `false`'
+      - '`true`، `false`، `true`'
+      - '`false`، `true`، `false`'
+      - '`false`، `true`، `true`'
+    answer: 3
+    explain: |
+      `applyLayout()` یک بار هنگام بارگذاری اجرا می‌شود (عرض ۱۲۰۰، پس کلاس `mobile` نیست) و بعد با هر رویداد `resize` دوباره اجرا می‌شود: در عرض ۵۰۰ کلاس اضافه و در عرض ۸۰۰ دوباره حذف می‌شود. گزینه‌ی ۱ فراموش کرده listener `resize` تابع را دوباره اجرا می‌کند، گزینه‌ی ۲ جهت شرط `<` را برعکس فهمیده و گزینه‌ی ۴ شاخه‌ی `else` (حذف کلاس) را نادیده گرفته است.
