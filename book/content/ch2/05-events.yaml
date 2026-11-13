@@ -107,11 +107,13 @@ lesson: |
     console.log("Hello " + name);
   }
   btn.addEventListener("click", () => greet("Sara")); // click -> Hello Sara
-  btn.addEventListener("click", greet);               // click -> Hello [object MouseEvent]
+  btn.addEventListener("click", greet);               // click -> Hello [object PointerEvent]  (the event object!)
   ```
 
   در خط دوم، مرورگر هنگام کلیک، `greet` را با **شیء رویداد** (event object) به‌عنوان اولین آرگومان صدا
-  می‌زند؛ پس `name` همان شیء `MouseEvent` است و در الحاق رشته به `[object MouseEvent]` تبدیل می‌شود. (شیء
+  می‌زند؛ پس `name` دیگر یک رشته نیست، خودِ شیء رویداد است و در الحاق با رشته به چیزی مثل
+  `[object PointerEvent]` تبدیل می‌شود. (در Chrome و مرورگرهای جدید، رویداد کلیک از نوع `PointerEvent` است که
+  نوعی `MouseEvent` به حساب می‌آید؛ در بعضی محیط‌های قدیمی‌تر همان `[object MouseEvent]` چاپ می‌شود. شیء
   event را در درس بعد کامل می‌بینیم.)
 
   ### حذف listener با `removeEventListener`
@@ -598,7 +600,7 @@ questions:
       <button id="btn">Go</button>
     code: |
       function greet(name) {
-        console.log("Hello " + name);
+        console.log(typeof name, name instanceof Event ? "an event object" : name);
       }
       const btn = document.getElementById("btn");
       btn.addEventListener("click", () => greet("Sara"));
@@ -606,17 +608,18 @@ questions:
     events:
       - { type: click, target: "#btn" }
     options:
-      - out: ["Hello Sara", "Hello undefined"]
-      - out: ["Hello Sara", "Hello Sara"]
-      - out: ["Hello Sara", "Hello [object MouseEvent]"]
-      - out: ["Hello Sara", "!! TypeError"]
+      - out: ["string Sara", "undefined undefined"]
+      - out: ["string Sara", "string Sara"]
+      - out: ["string Sara", "object an event object"]
+      - out: ["string Sara", "!! TypeError"]
     answer: 3
     explain: |
-      listener اول یک arrow function است که خودش `greet("Sara")` را صدا می‌زند: `Hello Sara`. در listener دوم،
-      خودِ `greet` ثبت شده و مرورگر هنگام کلیک آن را با **شیء رویداد** (یک `MouseEvent`) به‌عنوان اولین آرگومان
-      صدا می‌زند؛ پس `name` همان شیء است و در الحاق با رشته به `[object MouseEvent]` تبدیل می‌شود. مرورگر
-      آرگومان می‌فرستد، پس `undefined` نیست (رد گزینه‌ی ۱)، `"Sara"` به خاطر سپرده نمی‌شود (رد گزینه‌ی ۲)، و
-      الحاق شیء با رشته هم خطا نمی‌دهد (رد گزینه‌ی ۴).
+      listener اول یک arrow function است که خودش `greet("Sara")` را صدا می‌زند، پس `name` رشته‌ی `"Sara"` است:
+      `string Sara`. در listener دوم، خودِ `greet` ثبت شده و مرورگر هنگام کلیک آن را با **شیء رویداد** به‌عنوان
+      اولین آرگومان صدا می‌زند؛ پس `name` یک شیء است (`typeof` برابر `"object"`) که نمونه‌ای از `Event` است.
+      مرورگر حتماً آرگومان می‌فرستد، پس `undefined` نیست (رد گزینه‌ی ۱)، `"Sara"` هم به خاطر سپرده نمی‌شود (رد
+      گزینه‌ی ۲)، و هیچ عملی در این کد روی شیء رویداد خطا نمی‌دهد (رد گزینه‌ی ۴). اگر `greet` می‌نوشت
+      `"Hello " + name`، برای کلیک دوم چیزی مثل `Hello [object PointerEvent]` چاپ می‌شد.
   - level: medium
     stem: کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی Console کدام است؟
     check: dom-output
@@ -678,3 +681,49 @@ questions:
       آن `"function"` است، در حالی که `getAttribute` همان متن خام را برمی‌گرداند (رد گزینه‌ی ۱). داخل handler
       attribute، `this` همان دکمه است و `save` چاپ می‌شود (رد گزینه‌ی ۲). این handler از هنگام parse شدن HTML
       ثبت شده، یعنی قبل از `addEventListener`، پس قبل از `listener` اجرا می‌شود (رد گزینه‌ی ۳).
+  - level: medium
+    stem: |
+      صفحه فقط یک دکمه دارد:
+
+      ```html
+      <button id="save">Save</button>
+      ```
+
+      کد زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const save = document.getElementById("save");
+      save.addEventListener("click", () => console.log("saved"));
+      const cancel = document.getElementById("cancel");
+      console.log("cancel is", cancel);
+      cancel.addEventListener("click", () => console.log("cancelled"));
+      console.log("ready");
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <button id="save">Save</button>
+    code: |
+      const save = document.getElementById("save"); console.log("~1");
+      save.addEventListener("click", () => console.log("saved")); console.log("~2");
+      const cancel = document.getElementById("cancel"); console.log("~3");
+      console.log("cancel is", cancel); console.log("~4");
+      cancel.addEventListener("click", () => console.log("cancelled")); console.log("~5");
+      console.log("ready"); console.log("~6");
+    options:
+      - text: 'خط ۲'
+        out: ["~1", "!! TypeError"]
+      - text: 'خط ۳'
+        out: ["~1", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "~2", "~3", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "~2", "~3", "cancel is null", "~4", "!! TypeError"]
+    answer: 4
+    explain: |
+      دکمه‌ی `save` وجود دارد، پس خط ۲ بدون مشکل listener ثبت می‌کند (رد گزینه‌ی ۱). عنصری با id برابر `cancel`
+      نیست؛ `getElementById` در این حالت خطا نمی‌دهد و فقط `null` برمی‌گرداند (رد گزینه‌ی ۲)، و چاپ `null` هم
+      مشکلی ندارد و `cancel is null` نمایش داده می‌شود (رد گزینه‌ی ۳). در خط ۵ متد `addEventListener` روی `null`
+      صدا زده می‌شود و خطای `TypeError` رخ می‌دهد؛ پس `ready` هرگز چاپ نمی‌شود. (listener `save` که در خط ۲
+      ثبت شده، همچنان با کلیک کار می‌کند.)
