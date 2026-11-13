@@ -1,0 +1,1141 @@
+id: ch1-array-methods
+title: "متدهای forEach، map، filter، find، findIndex و reduce"
+slides: "Introduction to JS، اسلایدهای ۲۱ و ۴۶ تا ۴۹"
+lesson: |
+  در درس قبل با `push`، `pop`، `shift` و `unshift` عضو اضافه و کم کردیم. حالا به ابزارهایی می‌رسیم که احتمالاً بیشترین تست‌های کوییز از آن‌ها طرح می‌شود: متدهایی که روی **همه‌ی عضوهای** آرایه راه می‌روند و با هر عضو کاری انجام می‌دهند: `forEach`، `map`، `filter`، `find`، `findIndex` و `reduce` (اسلایدهای ۴۶ و ۴۷). بعد مثال اسلاید ۴۸ و فعالیت کلاسی اسلاید ۴۹ را کامل حل می‌کنیم و در آخر سراغ `sort` و میم معروف اسلاید ۲۱ می‌رویم.
+
+  ### پیش‌نیاز: callback یعنی چه؟
+  همه‌ی این متدها یک **تابع** را به‌عنوان ورودی می‌گیرند. به تابعی که به یک تابع (یا متد) دیگر می‌دهیم تا **خودش** آن را صدا بزند، **callback** (تابعِ فراخوانی‌شونده) می‌گوییم. متد، callback ما را **برای هر عضو یک بار** و به ترتیب صدا می‌زند و هر بار سه چیز به آن می‌دهد:
+
+  1. **element**: خودِ عضو؛
+  2. **index**: اندیس آن عضو؛
+  3. **array**: کل آرایه.
+
+  ```js
+  const fruits = ["apple", "kiwi"];
+  fruits.forEach((fruit, index, arr) => {
+    console.log(index, fruit, arr.length); // 0 apple 2, then 1 kiwi 2
+  });
+  ```
+
+  بیشتر وقت‌ها فقط پارامتر اول را لازم داریم و بقیه را نمی‌نویسیم. ترتیب پارامترها مهم است، نه نامشان. callbackها را معمولاً با **arrow function** (تابع پیکانی؛ جزئیاتش در درس arrow functionها) می‌نویسیم:
+
+  | نوشتار | یعنی |
+  |---|---|
+  | `n => n * 2` | تابعی که `n` را می‌گیرد و `n * 2` را **برمی‌گرداند** (بدون آکولاد، `return` خودکار است) |
+  | `(acc, n) => acc + n` | وقتی دو پارامتر یا بیشتر داریم، پرانتز لازم است |
+  | `n => { return n * 2; }` | با آکولاد (بدنه‌ی بلوکی)، `return` را **باید** خودت بنویسی |
+
+  ::: analogy کارخانه‌ی آرایه‌ها
+  آرایه را مثل یک **نوار نقاله** پر از جعبه تصور کن:
+
+  - `forEach` یک **بازرس** است که سراغ تک‌تک جعبه‌ها می‌رود و کاری انجام می‌دهد (مثلاً چیزی یادداشت می‌کند)، ولی هیچ محصول تازه‌ای تحویل نمی‌دهد.
+  - `map` یک **دستگاه تبدیل** است: هر جعبه وارد می‌شود و یک جعبه‌ی **تازه** روی نوار نقاله‌ی دیگری بیرون می‌آید؛ تعداد جعبه‌ها همان است.
+  - `filter` یک **الک** است: فقط جعبه‌هایی که از آزمون رد می‌شوند روی نوار جدید می‌روند.
+  - `find` یک **کارآگاه** است: به اولین جعبه‌ای که با مشخصات جور است برسد، همان را برمی‌دارد و بقیه را نگاه نمی‌کند.
+  - `reduce` یک **مخلوط‌کن** است: همه‌ی جعبه‌ها را یکی‌یکی داخلش می‌ریزی و در آخر **یک** چیز تحویل می‌گیری (مثلاً یک عدد یا یک شیء).
+  :::
+
+  ### `forEach`: برای هر عضو یک کار انجام بده (اسلاید ۴۶)
+  اسلاید ۴۶: `forEach` تابع داده‌شده را **برای هر عضو** اجرا می‌کند.
+
+  ```js
+  const nums = [1, 2, 3];
+  const result = nums.forEach(n => console.log(n * 10)); // prints 10, 20, 30
+  console.log(result); // undefined -> forEach always returns undefined
+  ```
+
+  - `forEach` همیشه `undefined` برمی‌گرداند و هر چه callback برگرداند نادیده گرفته می‌شود؛ پس برای «ساختن» چیزی از خروجی‌اش استفاده نکن.
+  - `forEach` را **نمی‌توان** با `break` متوقف کرد: `break` فقط داخل حلقه معنا دارد و نوشتنش داخل callback خطای `SyntaxError` می‌دهد. `return` داخل callback هم فقط **همان یک فراخوانی** را تمام می‌کند و `forEach` سراغ عضو بعدی می‌رود؛ یعنی مثل `continue` عمل می‌کند:
+
+  ```js
+  [1, 2, 3, 4].forEach(n => {
+    if (n === 2) return; // ends ONLY this call, like "continue"
+    console.log(n);      // 1, then 3, then 4
+  });
+  ```
+
+  اسلاید ۴۶ کنار این متدها `for...of` را هم آورده (درس قبل)؛ اگر لازم است وسط کار متوقف شوی، `for...of` با `break` بهترین انتخاب است (یا `find` و `some` که خودشان زود متوقف می‌شوند).
+
+  ### `map`: هر عضو را به یک عضو جدید تبدیل کن (اسلاید ۴۷)
+  اسلاید ۴۷ درباره‌ی `map` سه نکته می‌گوید:
+
+  - هر عضو را به یک عضو تازه **تبدیل** می‌کند و نتیجه را در یک آرایه‌ی **جدید** برمی‌گرداند؛
+  - آرایه‌ی **اصلی را تغییر نمی‌دهد**؛
+  - اغلب برای **قالب‌بندی** (formatting) یا **محاسبه** به کار می‌رود.
+
+  ```js
+  const prices = [100, 250, 40];
+  const doubled = prices.map(p => p * 2);   // calculation
+  const labels = prices.map(p => p + " $"); // formatting
+  console.log(doubled); // [ 200, 500, 80 ]
+  console.log(labels);  // [ '100 $', '250 $', '40 $' ]
+  console.log(prices);  // [ 100, 250, 40 ] (unchanged)
+  ```
+
+  قانون طلایی `map`: **هر چه callback برگرداند، عضوِ آرایه‌ی جدید می‌شود** و طول آرایه‌ی جدید **همیشه برابر** طول آرایه‌ی اصلی است (یک خروجی به ازای هر ورودی). پس اگر callback چیزی برنگرداند، آن خانه `undefined` می‌شود:
+
+  ```js
+  const nums = [1, 2, 3];
+  console.log(nums.map(n => n * 2));                    // [ 2, 4, 6 ] (no braces: automatic return)
+  console.log(nums.map(n => { return n * 2; }));        // [ 2, 4, 6 ] (braces + return)
+  console.log(nums.map(n => { n * 2; }));               // [ undefined, undefined, undefined ] (forgot return!)
+  console.log(nums.map(n => { if (n > 1) return n; })); // [ undefined, 2, 3 ] (map cannot skip elements)
+  ```
+
+  `map` نمی‌تواند عضوی را «جا بیندازد»؛ برای حذف عضوها `filter` لازم است.
+
+  #### برگرداندن یک شیء از arrow function: پرانتز لازم است
+  اگر بلافاصله بعد از `=>` آکولاد بیاید، JavaScript آن را **بدنه‌ی تابع** می‌فهمد، نه یک object literal. برای برگرداندن شیء، آن را در **پرانتز** بگذار:
+
+  ```js
+  const ids = [1, 2];
+  console.log(ids.map(id => ({ id }))); // [ { id: 1 }, { id: 2 } ]
+  console.log(ids.map(id => { id }));   // [ undefined, undefined ] -> { } was a function body!
+  ```
+
+  در خط دوم، `{ id }` یک بدنه‌ی تابع است که فقط عبارت `id` را حساب می‌کند و چیزی برنمی‌گرداند. همین نکته دلیل پرانتزهای `({ ...s, passed: ... })` در اسلاید ۴۸ است.
+
+  ### `filter`: فقط عضوهایی که شرط را دارند (اسلاید ۴۶)
+  اسلاید ۴۶: `filter` فقط عضوهایی را **نگه می‌دارد** که با یک شرط جور باشند. callback برای هر عضو یک جواب «درست یا نادرست» برمی‌گرداند؛ اگر جواب truthy باشد (یعنی در شرط مثل `true` رفتار کند)، عضو در آرایه‌ی جدید می‌ماند.
+
+  ```js
+  const nums = [1, 2, 3, 4, 5, 6];
+  console.log(nums.filter(n => n % 2 === 0));         // [ 2, 4, 6 ]
+  console.log(nums.filter(n => n > 10));              // [] (no match: an EMPTY array, not undefined)
+  console.log([0, 1, "", "hi", null].filter(v => v)); // [ 1, 'hi' ] (keeps truthy values)
+  console.log(nums);                                  // [ 1, 2, 3, 4, 5, 6 ] (unchanged)
+  ```
+
+  - خروجی `filter` همیشه یک آرایه‌ی **جدید** است، با طول **کمتر یا مساوی** آرایه‌ی اصلی؛ اگر هیچ عضوی جور نباشد، `[]`.
+  - خودِ عضوها عوض نمی‌شوند، فقط انتخاب می‌شوند. خروجی callback فقط تعیین می‌کند «بماند یا نماند»؛ برای همین `[0, 1, 2].filter(n => n * 2)` حاصل `[1, 2]` را می‌دهد، نه عددهای دوبرابرشده را!
+
+  ### `find` و `findIndex`: اولین عضوی که شرط را دارد (اسلاید ۴۶)
+  اسلاید ۴۶: `find` / `findIndex` **اولین عضوی** را که با شرط جور است (یا **اندیس** آن را) می‌دهند.
+
+  ```js
+  const users = [
+    { name: "Ali", age: 17 },
+    { name: "Sara", age: 22 },
+    { name: "Reza", age: 30 },
+  ];
+  console.log(users.find(u => u.age > 18));          // { name: 'Sara', age: 22 } (only the FIRST match)
+  console.log(users.findIndex(u => u.age > 18));     // 1
+  console.log(users.filter(u => u.age > 18).length); // 2 (filter returns ALL matches)
+  console.log(users.find(u => u.age > 50));          // undefined (no match)
+  console.log(users.findIndex(u => u.age > 50));     // -1 (no match)
+  ```
+
+  | | `find` | `findIndex` | `filter` |
+  |---|---|---|---|
+  | خروجی | **خودِ** اولین عضوِ جور | **اندیسِ** اولین عضوِ جور | **آرایه‌ی** همه‌ی عضوهای جور |
+  | اگر پیدا نشود | `undefined` | `-1` | `[]` |
+  | بعد از اولین پیدا شدن | متوقف می‌شود | متوقف می‌شود | تا آخر می‌رود |
+
+  `find` خودِ عضو را برمی‌گرداند، نه کپی آن را؛ پس اگر عضو یک شیء باشد و آن را تغییر دهی، شیءِ داخل آرایه هم تغییر می‌کند (یادت هست؟ شیءها با reference دست‌به‌دست می‌شوند).
+
+  ### `reduce`: همه را به یک مقدار تبدیل کن (اسلاید ۴۷)
+  اسلاید ۴۷ درباره‌ی `reduce` می‌گوید:
+
+  - همه‌ی عضوها را **با هم ترکیب** می‌کند و **یک مقدار** تحویل می‌دهد؛
+  - از یک **accumulator** (انباشتگر؛ «نتیجه‌ی تا این لحظه») به‌همراه **مقدار فعلی** (current value) استفاده می‌کند؛
+  - برای **جمع**، **میانگین**، ساختن **شیء** و … مفید است.
+
+  شکل کلی:
+
+  ```js
+  array.reduce((acc, current) => newAcc, initialValue);
+  ```
+
+  callback برای هر عضو یک بار اجرا می‌شود. `acc` نتیجه‌ی قبلی است و **هر چه callback برگرداند، `acc` دور بعد می‌شود**. `initialValue` مقدار `acc` در دور اول است و آخرین `acc` خروجیِ `reduce` است.
+
+  ```js
+  const total = [5, 10, 20].reduce((acc, n) => acc + n, 0);
+  console.log(total); // 35
+  ```
+
+  | دور | `acc` | `n` | خروجی callback (یعنی `acc` دور بعد) |
+  |---|---|---|---|
+  | ۱ | `0` (مقدار اولیه) | `5` | `5` |
+  | ۲ | `5` | `10` | `15` |
+  | ۳ | `15` | `20` | `35` (خروجی نهایی) |
+
+  #### با مقدار اولیه یا بدون آن؟
+  اگر `initialValue` را ندهی، **اولین عضو** مقدار اولیه‌ی `acc` می‌شود و پیمایش از **عضو دوم** شروع می‌شود؛ یعنی callback یک بار کمتر اجرا می‌شود:
+
+  ```js
+  const sum = [5, 10, 20].reduce((acc, n) => {
+    console.log(acc, n); // 5 10, then 15 20 (only two calls)
+    return acc + n;
+  });
+  console.log(sum);      // 35
+  ```
+
+  اما روی آرایه‌ی **خالی** بدون مقدار اولیه، `reduce` چیزی برای شروع ندارد و خطا می‌دهد:
+
+  ```js
+  console.log([].reduce((acc, n) => acc + n, 0)); // 0 (just the initial value)
+  console.log([].reduce((acc, n) => acc + n));    // TypeError: Reduce of empty array with no initial value
+  ```
+
+  **نوع مقدار اولیه هم مهم است**، چون نوع `acc` را تعیین می‌کند:
+
+  ```js
+  console.log([1, 2, 3, 4].reduce((acc, n) => acc + n, 0));  // 10
+  console.log([1, 2, 3, 4].reduce((acc, n) => acc + n, "")); // "1234" (string + number = concatenation)
+  ```
+
+  قاعده‌ی عملی: همیشه مقدار اولیه بده؛ `0` برای جمع، `""` برای ساختن رشته، `{}` برای ساختن شیء و `[]` برای ساختن آرایه.
+
+  #### میانگین و بیشینه
+  ```js
+  const scores = [18, 15, 20, 11];
+  const sum = scores.reduce((acc, s) => acc + s, 0);
+  console.log(sum / scores.length);                            // 16 (average = sum / count)
+  console.log(scores.reduce((max, s) => (s > max ? s : max))); // 20 (the maximum)
+  ```
+
+  #### ساختن شیء با `reduce`: شمردن تکرارها
+  ```js
+  const votes = ["yes", "no", "yes", "yes"];
+  const count = votes.reduce((acc, v) => {
+    acc[v] = (acc[v] || 0) + 1; // first time: acc[v] is undefined, and (undefined || 0) is 0
+    return acc;                 // never forget to return the accumulator!
+  }, {});
+  console.log(count); // { yes: 3, no: 1 }
+  ```
+
+  این‌جا `acc` یک شیء است که کلیدهایش رأی‌ها و مقدارهایش تعداد آن‌هاست (`acc[v]` با براکت، چون کلید داخل متغیر `v` است). اگر `return acc` را فراموش کنی، در دور دوم `acc` برابر `undefined` است و خواندن `acc[v]` خطای `TypeError` می‌دهد.
+
+  ### مثال اسلاید ۴۸: `map` و `reduce` با هم
+  ```js title=mapred.js
+  const students = [{ name: "Alice", score: 85 }, { name: "Bob", score: 72 }];
+
+  const scores = students.map(s => s.score);
+  console.log("Scores:", scores);
+
+  const total = scores.reduce((acc, s) => acc + s, 0);
+  const average = total / scores.length;
+
+  console.log("Total:", total);
+  console.log("Average:", average);
+
+  const results = students.map(s => ({
+    ...s,
+    passed: s.score >= 70
+  }));
+
+  console.log("Results:", results);
+  ```
+
+  خروجی در Node.js:
+
+  ```text
+  Scores: [ 85, 72 ]
+  Total: 157
+  Average: 78.5
+  Results: [
+    { name: 'Alice', score: 85, passed: true },
+    { name: 'Bob', score: 72, passed: true }
+  ]
+  ```
+
+  گام‌به‌گام:
+
+  1. **استخراج یک فیلد با `map`**: `s => s.score` از هر شیءِ دانشجو فقط نمره‌اش را برمی‌گرداند؛ پس `scores` آرایه‌ی `[85, 72]` است.
+  2. **جمع با `reduce`**: با مقدار اولیه‌ی `0`: اول `0 + 85 = 85` و بعد `85 + 72 = 157`.
+  3. **میانگین**: `157 / 2 = 78.5` (`scores.length` برابر `2` است و تقسیم در JavaScript اعشاری است).
+  4. **ساختن شیءهای جدید با `map` و spread**: برای هر دانشجو یک شیء **تازه** ساخته می‌شود؛ `...s` (spread؛ درس شیءها) همه‌ی propertyهای `s` (یعنی `name` و `score`) را در شیء جدید کپی می‌کند و بعد `passed` به آن اضافه می‌شود. `s.score >= 70` یک boolean است: `85 >= 70` و `72 >= 70` هر دو `true` هستند، پس هر دو دانشجو قبول‌اند.
+  5. **پرانتز دور شیء**: بدون پرانتز (`s => { ...s, passed: ... }`) آکولاد بدنه‌ی تابع حساب می‌شد و این کد اصلاً اجرا نمی‌شد (`SyntaxError`).
+  6. آرایه‌ی `students` دست‌نخورده است و عضوهایش `passed` ندارند؛ `results` شیءهای **جدید** دارد. Node.js آرایه‌ی `results` را چون طولانی است در چند خط چاپ می‌کند.
+
+  ### فعالیت کلاسی اسلاید ۴۹
+  سؤال اسلاید: «خروجی این کد را پیش‌بینی کن. وضعیت عضوهای `nums` را در هر مرحله دنبال کن و صریحاً بگو چه اتفاقی برایشان می‌افتد.»
+
+  ```js lines title=arraymethods.js
+  const nums = [1, 2, 3, 4];
+
+  nums.push(5);
+  nums.pop();
+
+  nums.unshift(0);
+  nums.shift();
+
+  const doubled = nums.map(n => n * 2);
+
+  const evens = nums.filter(n => n % 2 === 0);
+
+  nums.forEach(n => console.log(n));
+
+  console.log(nums.find(n => n > 2));
+  console.log(nums.findIndex(n => n > 2));
+  ```
+
+  | خط | دستور | مقدار برگشتی | `nums` بعد از این خط |
+  |---|---|---|---|
+  | ۱ | `const nums = [1, 2, 3, 4]` | — | `[1, 2, 3, 4]` |
+  | ۳ | `nums.push(5)` | `5` (طول جدید) | `[1, 2, 3, 4, 5]` |
+  | ۴ | `nums.pop()` | `5` (عضو حذف‌شده) | `[1, 2, 3, 4]` |
+  | ۶ | `nums.unshift(0)` | `5` (طول جدید) | `[0, 1, 2, 3, 4]` |
+  | ۷ | `nums.shift()` | `0` (عضو حذف‌شده) | `[1, 2, 3, 4]` |
+  | ۹ | `nums.map(n => n * 2)` | آرایه‌ی جدید `[2, 4, 6, 8]` در `doubled` | `[1, 2, 3, 4]` (بدون تغییر) |
+  | ۱۱ | `nums.filter(n => n % 2 === 0)` | آرایه‌ی جدید `[2, 4]` در `evens` | `[1, 2, 3, 4]` (بدون تغییر) |
+  | ۱۳ | `nums.forEach(n => console.log(n))` | `undefined` (و چاپ `1`، `2`، `3`، `4`) | `[1, 2, 3, 4]` |
+  | ۱۵ | `nums.find(n => n > 2)` | `3` (چاپ می‌شود) | `[1, 2, 3, 4]` |
+  | ۱۶ | `nums.findIndex(n => n > 2)` | `2` (چاپ می‌شود) | `[1, 2, 3, 4]` |
+
+  **خروجی نهایی** (هر عدد در یک خط): `1`، `2`، `3`، `4`، `3`، `2`.
+
+  نکته‌های این فعالیت:
+
+  - چهار متد اول `nums` را **درجا تغییر می‌دهند**، ولی اثرشان همدیگر را خنثی می‌کند (`push` با `pop`، و `unshift` با `shift`) و `nums` به `[1, 2, 3, 4]` برمی‌گردد.
+  - `map` و `filter` آرایه‌ی **جدید** می‌سازند و `nums` را تغییر نمی‌دهند. `doubled` و `evens` ساخته می‌شوند ولی هیچ‌جا چاپ نمی‌شوند؛ پس در خروجی اثری ندارند.
+  - `forEach` هر عضو را در یک خط چاپ می‌کند و خودش `undefined` برمی‌گرداند.
+  - `find` **اولین عضوِ** بزرگ‌تر از ۲ یعنی `3` را می‌دهد و `findIndex` **اندیسِ** همان عضو یعنی `2` را. اگر کسی فکر کند `map` آرایه‌ی `nums` را دوبرابر کرده، به اشتباه `2`، `4`، `6`، `8` و بعد `4` و `1` را جواب می‌دهد.
+
+  ### زنجیر کردن متدها (chaining)
+  چون `map` و `filter` آرایه برمی‌گردانند، می‌شود متد بعدی را مستقیم روی نتیجه‌شان صدا زد:
+
+  ```js
+  const orders = [120, 40, 300, 80];
+  const total = orders
+    .filter(p => p >= 100)           // [ 120, 300 ]
+    .map(p => p - 20)                // [ 100, 280 ] (a discount of 20)
+    .reduce((sum, p) => sum + p, 0); // 380
+  console.log(total);                // 380
+  ```
+
+  هر متد روی **خروجیِ متد قبلی** کار می‌کند، نه روی آرایه‌ی اصلی. `forEach` چون `undefined` برمی‌گرداند، فقط می‌تواند **آخرِ** زنجیر بیاید.
+
+  ### مقایسه‌ی `map`، `forEach` و `reduce` (و بقیه)
+  | متد | callback چه برمی‌گرداند؟ | خروجی متد | کاربرد |
+  |---|---|---|---|
+  | `forEach` | مهم نیست (نادیده گرفته می‌شود) | همیشه `undefined` | یک کار برای هر عضو (چاپ، ارسال، …) |
+  | `map` | عضو جدید | آرایه‌ی **جدید** با **همان طول** | تبدیل هر عضو (قالب‌بندی، محاسبه) |
+  | `filter` | شرط (truthy یا falsy) | آرایه‌ی **جدید** با طول کمتر یا مساوی | نگه داشتن عضوهای جور |
+  | `find` | شرط | **اولین** عضو جور یا `undefined` | پیدا کردن یک عضو |
+  | `findIndex` | شرط | اندیس اولین عضو جور یا `-1` | پیدا کردن جای یک عضو |
+  | `reduce` | `acc` جدید | **یک** مقدار از هر نوعی | جمع، میانگین، ساختن شیء |
+  | `some` / `every` | شرط | `true` یا `false` | «آیا حداقل یکی / همه جورند؟» |
+
+  ::: tip سه سؤال برای انتخاب متد
+  - فقط می‌خواهی برای هر عضو کاری انجام دهی و نتیجه‌ای لازم نداری؟ `forEach`.
+  - آرایه‌ای **هم‌اندازه** با عضوهای تبدیل‌شده می‌خواهی؟ `map`. آرایه‌ای با **بعضی** از عضوها؟ `filter`.
+  - **یک** مقدار می‌خواهی (عدد، رشته یا شیء)؟ `reduce`. فقط یک عضو را می‌خواهی؟ `find`.
+  :::
+
+  ### جدول بزرگ: کدام متدها آرایه‌ی اصلی را تغییر می‌دهند؟
+  | تغییر **می‌دهند** (mutating) | چه برمی‌گردانند؟ |
+  |---|---|
+  | `push`، `unshift` | طول جدید |
+  | `pop`، `shift` | عضو حذف‌شده |
+  | `splice` | آرایه‌ای از عضوهای حذف‌شده |
+  | `sort`، `reverse` | **همان** آرایه (مرتب‌شده / برعکس‌شده) |
+
+  | تغییر **نمی‌دهند** (non-mutating) | چه برمی‌گردانند؟ |
+  |---|---|
+  | `map`، `filter`، `slice`، `concat` | آرایه‌ی **جدید** |
+  | `find` / `findIndex` | عضو / اندیس (یا `undefined` / `-1`) |
+  | `reduce` | یک مقدار |
+  | `join` | رشته |
+  | `includes`، `some`، `every` | `true` یا `false` |
+  | `forEach` | `undefined` |
+
+  متدهای non-mutating **خودشان** آرایه را عوض نمی‌کنند، ولی **callbackِ تو** می‌تواند: اگر عضوها شیء باشند و داخل `map` یا `forEach` بنویسی `item.qty = 10`، همان شیءهای داخل آرایه‌ی اصلی تغییر می‌کنند (چون شیءها با reference دست‌به‌دست می‌شوند). برای همین در اسلاید ۴۸ با `{ ...s }` شیء **جدید** ساخته شد.
+
+  ### `sort`: هم آرایه را تغییر می‌دهد، هم به‌طور پیش‌فرض رشته‌ای مقایسه می‌کند (اسلاید ۲۱)
+  میم اسلاید ۲۱ را یادت هست؟ کسی که تازه JavaScript یاد می‌گیرد می‌گوید: «با `array.sort()` این لیست عددها را مرتب می‌کنم!» و JavaScript با خنده جواب می‌دهد: `[1, 100000, 21, 30, 4]`.
+
+  دلیلش را در درس تبدیل نوع ضمنی دیدیم: `sort()` بدون **تابع مقایسه** (compare function) عضوها را به **رشته** تبدیل می‌کند و حرف‌به‌حرف، مثل کلمه‌های لغت‌نامه، مقایسه می‌کند؛ `"100000"` قبل از `"21"` می‌آید چون `"1"` از `"2"` کوچک‌تر است. دو نکته‌ی مهم دیگر: `sort` آرایه‌ی **اصلی** را تغییر می‌دهد و **همان آرایه** را برمی‌گرداند.
+
+  ```js
+  const nums = [4, 30, 1, 100000, 21];
+  const sorted = nums.sort();
+  console.log(sorted);          // [ 1, 100000, 21, 30, 4 ] (compared as strings!)
+  console.log(sorted === nums); // true (sort changed nums itself and returned it)
+
+  nums.sort((a, b) => a - b);   // numeric, ascending
+  console.log(nums);            // [ 1, 4, 21, 30, 100000 ]
+
+  const desc = [...nums].sort((a, b) => b - a); // sort a copy, so nums stays as it is
+  console.log(desc);            // [ 100000, 30, 21, 4, 1 ]
+  console.log(nums);            // [ 1, 4, 21, 30, 100000 ]
+  ```
+
+  تابع مقایسه دو عضو `a` و `b` را می‌گیرد: اگر حاصلش **منفی** باشد `a` جلوتر می‌آید، اگر **مثبت** باشد `b` جلوتر می‌آید و اگر **صفر** باشد ترتیبشان عوض نمی‌شود. پس `(a, b) => a - b` صعودی و `(a, b) => b - a` نزولی مرتب می‌کند. برای شیءها با یک فیلد مقایسه می‌کنیم: `students.sort((a, b) => b.score - a.score)` دانشجوها را از نمره‌ی بیشتر به کمتر مرتب می‌کند.
+
+  ::: info بیشتر بدانیم: نسخه‌های بدون تغییر
+  نسخه‌های جدیدتر JavaScript (ES2023) متدهای `toSorted()` و `toReversed()` را دارند که مثل `sort` و `reverse` کار می‌کنند، ولی آرایه‌ی **جدید** برمی‌گردانند و به آرایه‌ی اصلی دست نمی‌زنند. در کدهای قدیمی‌تر همین کار را با کپی کردن انجام می‌دهند: `[...arr].sort(...)` یا `arr.slice().sort(...)`.
+  :::
+
+  ### `some` و `every` (به‌طور خلاصه)
+  ```js
+  const ages = [16, 21, 30];
+  console.log(ages.some(a => a < 18));  // true  -> at least ONE element matches (16)
+  console.log(ages.every(a => a < 18)); // false -> NOT every element matches (21 fails)
+  console.log(ages.every(a => a > 10)); // true  -> every element matches
+  ```
+
+  `some` به اولین جواب `true` که برسد متوقف می‌شود و `every` به اولین جواب `false`. روی آرایه‌ی خالی، `some` همیشه `false` و `every` همیشه `true` است.
+
+  ::: tip نکته
+  - callbackها سه ورودی می‌گیرند: `(element, index, array)`؛ ترتیبشان مهم است، نه نامشان.
+  - `map` همیشه آرایه‌ای **هم‌طول** برمی‌گرداند، `filter` آرایه‌ای کوتاه‌تر یا مساوی، `find` یک عضو و `reduce` یک مقدار.
+  - `find`، `findIndex`، `some` و `every` زود متوقف می‌شوند؛ `forEach`، `map` و `filter` تا آخر می‌روند.
+  - برای مرتب‌سازی عددی همیشه تابع مقایسه بده: `(a, b) => a - b`.
+  :::
+
+  ::: trap دام‌های تستی متدهای آرایه
+  - `forEach` همیشه `undefined` برمی‌گرداند؛ در `const r = arr.forEach(...)` مقدار `r` برابر `undefined` است.
+  - `break` داخل callbackِ `forEach` خطای `SyntaxError` می‌دهد و `return` فقط همان دور را رد می‌کند.
+  - `map` با بدنه‌ی آکولاددار و بدون `return`، آرایه‌ای پر از `undefined` می‌سازد؛ و `map` هیچ‌وقت عضوی را حذف نمی‌کند.
+  - برای برگرداندن شیء از arrow function پرانتز لازم است: `x => ({ ... })`.
+  - `find` اگر پیدا نکند `undefined` می‌دهد و `findIndex` عدد `-1`. `find` خودِ عضو را می‌دهد، `filter` یک آرایه.
+  - `reduce` بدون مقدار اولیه از عضو اول شروع می‌کند و روی آرایه‌ی خالی `TypeError` می‌دهد. مقدار اولیه‌ی `""` جمع را به چسباندن رشته‌ای تبدیل می‌کند.
+  - در `reduce` فراموش کردن `return acc` یعنی `acc` در دور بعد `undefined` است.
+  - `sort()` بدون تابع مقایسه عددها را رشته‌ای مرتب می‌کند (`[1, 100000, 21, 30, 4]`) و آرایه‌ی اصلی را هم تغییر می‌دهد.
+  - `map`، `filter`، `slice` و `reduce` آرایه را تغییر نمی‌دهند؛ `push`، `pop`، `shift`، `unshift`، `splice`، `sort` و `reverse` تغییر می‌دهند.
+  :::
+
+  ::: summary
+  - `forEach`: یک کار برای هر عضو؛ خروجی `undefined`.
+  - `map`: تبدیل؛ آرایه‌ی جدیدِ هم‌طول. `filter`: انتخاب؛ آرایه‌ی جدیدِ کوتاه‌تر یا مساوی.
+  - `find` / `findIndex`: اولین عضو جور / اندیسش (`undefined` / `-1` اگر نباشد).
+  - `reduce`: ترکیب همه در یک مقدار با `acc` و مقدار فعلی؛ همیشه مقدار اولیه بده.
+  - `sort`، `reverse` و `splice` و چهار متد درس قبل آرایه را تغییر می‌دهند؛ بقیه نه.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۷، کدام توصیف مربوط به متد `map` است؟
+    options:
+      - آرایه‌ی اصلی را درجا تغییر می‌دهد و چیزی برنمی‌گرداند.
+      - همه‌ی عضوها را با یک accumulator و مقدار فعلی به یک مقدار تبدیل می‌کند.
+      - هر عضو را به یک عضو جدید تبدیل می‌کند و نتیجه را در یک آرایه‌ی **جدید** برمی‌گرداند؛ آرایه‌ی اصلی تغییر نمی‌کند.
+      - فقط عضوهایی را نگه می‌دارد که با یک شرط جور باشند.
+    answer: 3
+    explain: |
+      اسلاید ۴۷: `map` «Transforms each element into a new array» و «Does not change the original array». گزینه‌ی ۲ توصیف `reduce` و گزینه‌ی ۴ توصیف `filter` (اسلاید ۴۶) است. گزینه‌ی ۱ برعکس است: `map` آرایه را تغییر نمی‌دهد و آرایه‌ی جدید برمی‌گرداند؛ «چیزی برنگرداندن» ویژگی `forEach` است.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۷، متد `reduce` چه می‌کند؟
+    options:
+      - همه‌ی عضوها را با استفاده از یک accumulator (انباشتگر) و مقدار فعلی، در **یک مقدار** ترکیب می‌کند.
+      - همان‌طور که از نامش (کاهش) پیداست، عضوهای تکراری را حذف می‌کند و آرایه را کوچک‌تر می‌کند.
+      - آخرین عضو آرایه را حذف می‌کند و آن را برمی‌گرداند.
+      - برای هر عضو یک تابع اجرا می‌کند و همیشه `undefined` برمی‌گرداند.
+    answer: 1
+    explain: |
+      اسلاید ۴۷: `reduce` «Combines all elements into a single value» و «Uses an accumulator + current value»؛ برای جمع، میانگین و ساختن شیء مفید است. گزینه‌ی ۲ از معنای لغوی reduce گمراه شده؛ `reduce` نه عضو تکراری حذف می‌کند و نه آرایه را تغییر می‌دهد. گزینه‌ی ۳ کار `pop` و گزینه‌ی ۴ توصیف `forEach` است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [1, 2, 3];
+      const result = nums.map(n => n * 10);
+      console.log(result);
+      console.log(nums);
+    options:
+      - out: ["[10, 20, 30]", "[10, 20, 30]"]
+      - out: ["[10, 20, 30]", "[1, 2, 3]"]
+      - out: ["60", "[1, 2, 3]"]
+      - out: ["undefined", "[10, 20, 30]"]
+    answer: 2
+    explain: |
+      `map` برای هر عضو callback را اجرا می‌کند و خروجی‌ها را در یک آرایه‌ی **جدید** می‌گذارد: `[10, 20, 30]`؛ آرایه‌ی اصلی `nums` دست‌نخورده می‌ماند (رد گزینه‌ی ۱). `map` همه را در یک عدد جمع نمی‌کند؛ `60` کار `reduce` است (رد گزینه‌ی ۳). گزینه‌ی ۴ رفتار `forEach` (برگرداندن `undefined`) را به `map` نسبت داده و تازه فرض کرده آرایه‌ی اصلی عوض شده است.
+
+  - level: easy
+    stem: |
+      در جای خالی کدام متد قرار بگیرد تا خروجی `[ 2, 4 ]` باشد؟
+    check: option-output
+    code: |
+      console.log([1, 2, 3, 4].___(n => n % 2 === 0));
+    expect: "[2, 4]"
+    options:
+      - text: '`map`'
+        code: 'console.log([1, 2, 3, 4].map(n => n % 2 === 0));'
+      - text: '`find`'
+        code: 'console.log([1, 2, 3, 4].find(n => n % 2 === 0));'
+      - text: '`forEach`'
+        code: 'console.log([1, 2, 3, 4].forEach(n => n % 2 === 0));'
+      - text: '`filter`'
+        code: 'console.log([1, 2, 3, 4].filter(n => n % 2 === 0));'
+    answer: 4
+    explain: |
+      `filter` عضوهایی را نگه می‌دارد که callback برایشان `true` برگرداند: `[2, 4]`. `map` خودِ جواب‌های callback را در آرایه می‌گذارد: `[false, true, false, true]`. `find` فقط **اولین** عضو جور را برمی‌گرداند (عدد `2`، نه آرایه) و `forEach` همیشه `undefined` برمی‌گرداند.
+
+  - level: easy
+    stem: |
+      حاصل عبارت زیر کدام است؟
+
+      `[5, 12, 8, 130].find(n => n > 10)`
+    check: value
+    expr: '[5, 12, 8, 130].find(n => n > 10)'
+    options:
+      - value: '12'
+      - value: '[12, 130]'
+      - value: '1'
+      - value: 'true'
+    answer: 1
+    explain: |
+      `find` **اولین عضوی** را که شرط را دارد برمی‌گرداند و همان‌جا متوقف می‌شود: `12`. آرایه‌ی همه‌ی عضوهای جور (`[12, 130]`) خروجی `filter` است، `1` (اندیسِ همان عضو) خروجی `findIndex` است و `true` (آیا عضو جوری هست؟) خروجی `some`.
+
+  - level: easy
+    stem: |
+      حاصل `[5, 12, 8].findIndex(n => n > 100)` کدام است؟
+    check: value
+    expr: '[5, 12, 8].findIndex(n => n > 100)'
+    options:
+      - value: 'undefined'
+      - value: 'null'
+      - value: '3'
+      - value: '-1'
+    answer: 4
+    explain: |
+      هیچ عضوی بزرگ‌تر از ۱۰۰ نیست و `findIndex` وقتی چیزی پیدا نکند `-1` برمی‌گرداند (مثل `indexOf`). `undefined` جوابِ «پیدا نشد» در `find` است، نه `findIndex`. `null` را این متدها هیچ‌وقت برنمی‌گردانند و `3` طول آرایه است، نه یک اندیس معتبر.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [1, 2];
+      const r = nums.forEach(n => n * 2);
+      console.log(r);
+    options:
+      - out: "[2, 4]"
+      - out: "undefined"
+      - out: "[1, 2]"
+      - out: "4"
+    answer: 2
+    explain: |
+      `forEach` فقط callback را برای هر عضو اجرا می‌کند و **همیشه** `undefined` برمی‌گرداند؛ مقدار `n * 2` که callback برمی‌گرداند نادیده گرفته می‌شود. `[2, 4]` خروجی `map` است (گزینه‌ی ۱). `forEach` خودِ آرایه را هم برنمی‌گرداند (گزینه‌ی ۳) و آخرین جواب callback را هم نه (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      کدام متد آرایه‌ی **اصلی** را تغییر می‌دهد؟
+    options:
+      - '`map`'
+      - '`filter`'
+      - '`sort`'
+      - '`reduce`'
+    answer: 3
+    explain: |
+      `sort` عضوها را **درجا** مرتب می‌کند و همان آرایه را برمی‌گرداند؛ پس آرایه‌ی اصلی تغییر می‌کند. `map` و `filter` آرایه‌ی **جدید** می‌سازند و `reduce` یک مقدار تازه برمی‌گرداند؛ هیچ‌کدام به آرایه‌ی اصلی دست نمی‌زنند.
+
+  - level: easy
+    stem: |
+      حاصل `[1, 2, 3, 4].reduce((acc, n) => acc + n, 0)` کدام است؟
+    check: value
+    expr: '[1, 2, 3, 4].reduce((acc, n) => acc + n, 0)'
+    options:
+      - value: '"1234"'
+      - value: '24'
+      - value: '10'
+      - value: '[1, 3, 6, 10]'
+    answer: 3
+    explain: |
+      `acc` از مقدار اولیه‌ی `0` شروع می‌شود و هر عضو به آن اضافه می‌شود: `0 + 1 + 2 + 3 + 4 = 10`؛ یک **عدد**. `"1234"` وقتی به دست می‌آمد که مقدار اولیه `""` بود (چسباندن رشته‌ای). `24` حاصل ضرب است (با `*` و مقدار اولیه‌ی `1`). `[1, 3, 6, 10]` مقدارهای میانیِ `acc` است؛ `reduce` فقط **آخرین** مقدار را برمی‌گرداند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const letters = ["a", "b"];
+      letters.forEach((x, i) => console.log(i + ":" + x));
+    options:
+      - out: ["0:a", "1:b"]
+      - out: ["a:0", "b:1"]
+      - out: ["1:a", "2:b"]
+      - out: ["0:a", "0:b"]
+    answer: 1
+    explain: |
+      callback به ترتیب `(element, index, array)` را می‌گیرد؛ پس `x` خودِ عضو و `i` اندیس آن است که از `0` شروع می‌شود. گزینه‌ی ۲ ترتیب پارامترها را برعکس فرض کرده، گزینه‌ی ۳ اندیس را از ۱ شمرده و گزینه‌ی ۴ فکر کرده اندیس در همه‌ی دورها ثابت است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر (فعالیت کلاسی اسلاید ۴۹) چیست؟
+    check: output
+    code: |
+      const nums = [1, 2, 3, 4];
+
+      nums.push(5);
+      nums.pop();
+
+      nums.unshift(0);
+      nums.shift();
+
+      const doubled = nums.map(n => n * 2);
+
+      const evens = nums.filter(n => n % 2 === 0);
+
+      nums.forEach(n => console.log(n));
+
+      console.log(nums.find(n => n > 2));
+      console.log(nums.findIndex(n => n > 2));
+    options:
+      - out: ["0", "1", "2", "3", "4", "3", "2"]
+      - out: ["2", "4", "6", "8", "4", "1"]
+      - out: ["1", "2", "3", "4", "[3, 4]", "2"]
+      - out: ["1", "2", "3", "4", "3", "2"]
+    answer: 4
+    explain: |
+      `push(5)` و `pop()` همدیگر را خنثی می‌کنند و `unshift(0)` و `shift()` هم؛ پس `nums` به `[1, 2, 3, 4]` برمی‌گردد (گزینه‌ی ۱ اثر `shift` را جا انداخته). `map` و `filter` آرایه‌ی **جدید** می‌سازند و `nums` را عوض نمی‌کنند (گزینه‌ی ۲ فرض کرده `map` خودِ `nums` را دوبرابر کرده). `forEach` چهار عدد را چاپ می‌کند، `find` اولین عضو بزرگ‌تر از ۲ یعنی `3` را می‌دهد و `findIndex` اندیس آن یعنی `2` را. گزینه‌ی ۳ `find` را با `filter` اشتباه گرفته است.
+
+  - level: medium
+    stem: |
+      کد فعالیت کلاسی اسلاید ۴۹ را در نظر بگیر. کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    code: |
+      const nums = [1, 2, 3, 4];
+
+      nums.push(5);
+      nums.pop();
+
+      nums.unshift(0);
+      nums.shift();
+
+      const doubled = nums.map(n => n * 2);
+
+      const evens = nums.filter(n => n % 2 === 0);
+
+      nums.forEach(n => console.log(n));
+    setup: |
+      const nums = [1, 2, 3, 4];
+      const pushResult = nums.push(5);
+      const popResult = nums.pop();
+      const unshiftResult = nums.unshift(0);
+      const shiftResult = nums.shift();
+      const doubled = nums.map(n => n * 2);
+      const evens = nums.filter(n => n % 2 === 0);
+      const forEachResult = nums.forEach(n => console.log(n));
+    options:
+      - text: 'مقدار برگشتی `nums.push(5)` عدد `5` (طول جدید آرایه) است.'
+        expr: 'pushResult'
+        equals: '5'
+      - text: 'مقدار برگشتی `nums.shift()` عدد `0` (عضو حذف‌شده) است.'
+        expr: 'shiftResult'
+        equals: '0'
+      - text: 'بعد از خط `map`، خودِ `nums` برابر `[2, 4, 6, 8]` می‌شود.'
+        expr: 'nums'
+        equals: '[2, 4, 6, 8]'
+      - text: 'مقدار برگشتی `nums.forEach(...)` برابر `undefined` است.'
+        expr: 'forEachResult'
+        equals: 'undefined'
+    answer: 3
+    explain: |
+      `map` آرایه‌ی **جدید** `[2, 4, 6, 8]` را می‌سازد و در `doubled` می‌گذارد؛ خودِ `nums` همان `[1, 2, 3, 4]` می‌ماند (اسلاید ۴۷: «Does not change the original array»). بقیه درست‌اند: `push` طول جدید (`5`) را برمی‌گرداند، `shift` عضو حذف‌شده (`0`) را، و `forEach` همیشه `undefined` را.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر (بخش اول مثال اسلاید ۴۸) چیست؟
+    check: output
+    code: |
+      const students = [{ name: "Alice", score: 85 }, { name: "Bob", score: 72 }];
+
+      const scores = students.map(s => s.score);
+      console.log("Scores:", scores);
+
+      const total = scores.reduce((acc, s) => acc + s, 0);
+      const average = total / scores.length;
+
+      console.log("Total:", total);
+      console.log("Average:", average);
+    options:
+      - out: ["Scores: [85, 72]", "Total: 157", "Average: 78.5"]
+      - out: ["Scores: [85, 72]", "Total: 157", "Average: 78"]
+      - out: ["Scores: [{ score: 85 }, { score: 72 }]", "Total: 157", "Average: 78.5"]
+      - out: ["Scores: [85, 72]", "Total: 8572", "Average: 4286"]
+    answer: 1
+    explain: |
+      `s => s.score` از هر شیء فقط **عدد** نمره را برمی‌گرداند، نه یک شیء (رد گزینه‌ی ۳). `reduce` با مقدار اولیه‌ی **عددی** `0` عددها را جمع می‌کند: `157` (گزینه‌ی ۴ فرض کرده عددها به هم چسبانده می‌شوند، که فقط با مقدار اولیه‌ی `""` رخ می‌داد). تقسیم در JavaScript اعشاری است، پس `157 / 2` برابر `78.5` است، نه `78` (رد گزینه‌ی ۲).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [1, 2, 3];
+      const doubled = nums.map(n => { n * 2; });
+      console.log(doubled);
+    options:
+      - out: "[2, 4, 6]"
+      - out: "[undefined, undefined, undefined]"
+      - out: "undefined"
+      - out: "[]"
+    answer: 2
+    explain: |
+      بعد از `=>` آکولاد آمده، پس این یک **بدنه‌ی بلوکی** است و `return` خودکار ندارد؛ `n * 2` حساب می‌شود ولی برگردانده نمی‌شود و callback در هر دور `undefined` برمی‌گرداند. `map` همچنان آرایه‌ای **هم‌طول** می‌سازد: سه `undefined`. گزینه‌ی ۱ با `n => n * 2` یا نوشتن `return` درست می‌شد. خود `map` همیشه آرایه برمی‌گرداند (رد گزینه‌ی ۳) و خانه‌های `undefined` را حذف نمی‌کند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const ids = [1, 2];
+      const a = ids.map(id => ({ id }));
+      const b = ids.map(id => { id });
+      console.log(a);
+      console.log(b);
+    options:
+      - out: ["[{ id: 1 }, { id: 2 }]", "[{ id: 1 }, { id: 2 }]"]
+      - out: ["[1, 2]", "[{ id: 1 }, { id: 2 }]"]
+      - out: ["[{ id: 1 }, { id: 2 }]", "[undefined, undefined]"]
+      - out: ["[{ id: 1 }, { id: 2 }]", "!! SyntaxError"]
+    answer: 3
+    explain: |
+      در `a` پرانتز باعث می‌شود `{ id }` یک **object literal** باشد (شکل کوتاه `{ id: id }`)، پس `[{ id: 1 }, { id: 2 }]` ساخته می‌شود. در `b` آکولادِ بعد از `=>` **بدنه‌ی تابع** است؛ داخلش فقط عبارت `id` حساب می‌شود و چیزی برنمی‌گردد، پس دو `undefined` (رد گزینه‌های ۱ و ۲). این بدنه از نظر نوشتاری معتبر است و `SyntaxError` نمی‌دهد (رد گزینه‌ی ۴)؛ برخلاف `{ ...s, passed: ... }` بدون پرانتز در اسلاید ۴۸ که واقعاً `SyntaxError` می‌داد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const values = [0, 1, "", "hi", null, 5];
+      const kept = values.filter(v => v);
+      console.log(kept);
+      console.log(kept.length, values.length);
+    options:
+      - out: ["[1, 'hi', 5]", "3 6"]
+      - out: ["[1, 'hi', 5]", "3 3"]
+      - out: ["[0, 1, '', 'hi', null, 5]", "6 6"]
+      - out: ["[true, true, true]", "3 6"]
+    answer: 1
+    explain: |
+      `filter` عضوهایی را نگه می‌دارد که callback برایشان مقدار **truthy** برگرداند؛ `0`، `""` و `null` falsy‌اند و حذف می‌شوند (رد گزینه‌ی ۳). عضوهای نگه‌داشته‌شده **همان‌طور که هستند** در آرایه‌ی جدید می‌روند و به `true` تبدیل نمی‌شوند (رد گزینه‌ی ۴). `filter` آرایه‌ی اصلی را تغییر نمی‌دهد، پس طول `values` همان `6` است (رد گزینه‌ی ۲).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const result = [10, 20, 30].reduce((acc, n) => {
+        console.log(acc, n);
+        return acc + n;
+      });
+      console.log(result);
+    options:
+      - out: ["0 10", "10 20", "30 30", "60"]
+      - out: ["10 20", "30 30", "60"]
+      - out: ["undefined 10", "NaN 20", "NaN 30", "NaN"]
+      - out: ["10 20", "20 30", "50"]
+    answer: 2
+    explain: |
+      مقدار اولیه داده نشده، پس `acc` از **عضو اول** (`10`) شروع می‌شود و پیمایش از عضو دوم؛ callback فقط **دو** بار اجرا می‌شود: `(10, 20)` که `30` برمی‌گرداند و `(30, 30)` که `60`. گزینه‌ی ۱ فرض کرده مقدار اولیه‌ی پیش‌فرض `0` است و گزینه‌ی ۳ فکر کرده `acc` از `undefined` شروع می‌شود. گزینه‌ی ۴ فراموش کرده `acc` در دور دوم **خروجی دور قبل** (`30`) است، نه عضو قبلی.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const votes = ["yes", "no", "yes", "yes"];
+      const count = votes.reduce((acc, v) => {
+        acc[v] = (acc[v] || 0) + 1;
+        return acc;
+      }, {});
+      console.log(count);
+    options:
+      - out: "{ yes: 1, no: 1 }"
+      - out: "4"
+      - out: "['yes', 'no']"
+      - out: "{ yes: 3, no: 1 }"
+    answer: 4
+    explain: |
+      `acc` از شیء خالی `{}` شروع می‌شود. بار اولی که یک رأی دیده می‌شود، `acc[v]` برابر `undefined` است و `(undefined || 0) + 1` می‌شود `1`؛ دفعه‌های بعد همان عدد یکی زیاد می‌شود. چون `acc` در هر دور برگردانده می‌شود، شمارش جمع می‌شود و حاصل `{ yes: 3, no: 1 }` است. گزینه‌ی ۱ انباشته شدن را نادیده گرفته، گزینه‌ی ۲ فقط تعداد کل را شمرده و گزینه‌ی ۳ فهرست کلیدهاست، نه خروجی این `reduce`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const scores = [18, 15, 20, 11];
+      const total = scores.reduce((sum, s) => sum + s, 0);
+      const best = scores.reduce((max, s) => (s > max ? s : max));
+      console.log(total / scores.length, best);
+    options:
+      - out: "64 20"
+      - out: "16 18"
+      - out: "16 20"
+      - out: "16 11"
+    answer: 3
+    explain: |
+      `total` برابر `18 + 15 + 20 + 11 = 64` است و میانگین `64 / 4 = 16` (گزینه‌ی ۱ جمع را به جای میانگین چاپ کرده). در `reduce` دوم، `max` از عضو اول (`18`) شروع می‌شود و هر بار عدد بزرگ‌تر نگه داشته می‌شود: `18`، `18`، `20`، `20`؛ پس `best` برابر `20` است. گزینه‌ی ۲ فکر کرده `reduce` بدون مقدار اولیه همان عضو اول را برمی‌گرداند و گزینه‌ی ۴ آخرین عضو را خروجی فرض کرده است.
+
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی `map` و `forEach` **درست** است؟
+    options:
+      - '`forEach` یک آرایه‌ی جدید برمی‌گرداند و `map` چیزی برنمی‌گرداند.'
+      - 'اگر از هر عضو یک عضو تازه بخواهیم و نتیجه را لازم داشته باشیم، `map` مناسب است؛ `forEach` فقط برای هر عضو کاری انجام می‌دهد و `undefined` برمی‌گرداند.'
+      - '`map` آرایه‌ی اصلی را تغییر می‌دهد، ولی `forEach` تغییر نمی‌دهد.'
+      - 'خروجی `map` ممکن است از آرایه‌ی اصلی کوتاه‌تر باشد، چون عضوهایی را که callback برایشان `false` برگرداند حذف می‌کند.'
+    answer: 2
+    explain: |
+      `map` آرایه‌ی **جدیدی** از جواب‌های callback برمی‌گرداند و `forEach` همیشه `undefined`؛ گزینه‌ی ۱ دقیقاً برعکس است. هیچ‌کدام از این دو متد خودشان آرایه‌ی اصلی را تغییر نمی‌دهند (رد گزینه‌ی ۳). طول خروجی `map` **همیشه** برابر طول آرایه‌ی اصلی است؛ حذف عضوها کار `filter` است (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const prices = [100, 250, 40, 300];
+      const total = prices
+        .filter(p => p > 50)
+        .map(p => p / 2)
+        .reduce((sum, p) => sum + p, 0);
+      console.log(total);
+    options:
+      - out: "345"
+      - out: "650"
+      - out: "[50, 125, 150]"
+      - out: "325"
+    answer: 4
+    explain: |
+      هر متد روی خروجی متد قبلی کار می‌کند: `filter` عدد `40` را حذف می‌کند و `[100, 250, 300]` می‌ماند؛ `map` آن‌ها را نصف می‌کند: `[50, 125, 150]`؛ و `reduce` جمعشان را می‌دهد: `325`. گزینه‌ی ۱ اثر `filter` را نادیده گرفته (`20` اضافه شده)، گزینه‌ی ۲ اثر `map` را، و گزینه‌ی ۳ قبل از `reduce` متوقف شده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const users = [
+        { name: "Ali", age: 17 },
+        { name: "Sara", age: 22 },
+        { name: "Reza", age: 30 },
+      ];
+      console.log(users.find(u => u.age > 18).name);
+      console.log(users.filter(u => u.age > 18).length);
+      console.log(users.findIndex(u => u.name === "Reza"));
+    options:
+      - out: ["Sara", "2", "2"]
+      - out: ["Reza", "2", "2"]
+      - out: ["Sara", "1", "3"]
+      - out: ["Sara", "2", "3"]
+    answer: 1
+    explain: |
+      `find` **اولین** عضو جور را برمی‌گرداند و متوقف می‌شود: `Sara` (نه آخرین عضو جور؛ رد گزینه‌ی ۲). `filter` **همه‌ی** عضوهای جور را می‌دهد: Sara و Reza، پس طول `2` (رد گزینه‌ی ۳). اندیس از ۰ شمرده می‌شود، پس `Reza` در اندیس `2` است (گزینه‌های ۳ و ۴ از ۱ شمرده‌اند).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [10, 9, 1, 100];
+      const sorted = nums.sort();
+      console.log(sorted);
+      console.log(nums === sorted);
+    options:
+      - out: ["[1, 9, 10, 100]", "false"]
+      - out: ["[1, 10, 100, 9]", "false"]
+      - out: ["[1, 10, 100, 9]", "true"]
+      - out: ["[1, 9, 10, 100]", "true"]
+    answer: 3
+    explain: |
+      `sort()` بدون تابع مقایسه عضوها را به **رشته** تبدیل می‌کند و حرف‌به‌حرف مقایسه می‌کند: `"1"` < `"10"` < `"100"` < `"9"` (همان میم اسلاید ۲۱)؛ پس ترتیب عددی گزینه‌های ۱ و ۴ غلط است. `sort` آرایه را **درجا** مرتب می‌کند و **همان آرایه** را برمی‌گرداند، نه یک کپی؛ پس `nums === sorted` برابر `true` است (رد گزینه‌ی ۲).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const ages = [16, 21, 30];
+      console.log(ages.some(a => a < 18));
+      console.log(ages.every(a => a < 18));
+      console.log(ages.every(a => a > 10));
+    options:
+      - out: ["true", "false", "true"]
+      - out: ["false", "false", "true"]
+      - out: ["true", "true", "true"]
+      - out: ["true", "false", "false"]
+    answer: 1
+    explain: |
+      `some` می‌پرسد «آیا **حداقل یک** عضو جور است؟»؛ `16` کمتر از ۱۸ است، پس `true` (رد گزینه‌ی ۲). `every` می‌پرسد «آیا **همه** جورند؟»؛ `21` و `30` کمتر از ۱۸ نیستند، پس `false` (رد گزینه‌ی ۳). همه‌ی سن‌ها بیشتر از ۱۰ هستند، پس آخری `true` است (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const out = [1, 2].map(n => {
+        console.log("map", n);
+        return n * 2;
+      });
+      console.log("done", out);
+    options:
+      - out: ["done [2, 4]", "map 1", "map 2"]
+      - out: ["map 1", "map 2", "done [2, 4]"]
+      - out: ["map 1", "done [2]", "map 2", "done [2, 4]"]
+      - out: ["map 1", "map 2", "done undefined"]
+    answer: 2
+    explain: |
+      `map` callback را **همان لحظه** و پشت سر هم برای همه‌ی عضوها اجرا می‌کند و بعد آرایه‌ی جدید را برمی‌گرداند؛ پس اول `map 1` و `map 2` و بعد `done [2, 4]` چاپ می‌شود. گزینه‌ی ۱ فکر کرده callback بعداً (مثل `setTimeout`) اجرا می‌شود، گزینه‌ی ۳ خط آخر را چند بار اجرا کرده و گزینه‌ی ۴ رفتار `forEach` را به `map` نسبت داده است.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام مقدار اولیه قرار بگیرد تا خروجی `10` باشد؟
+    check: option-output
+    code: |
+      const nums = [1, 2, 3, 4];
+      console.log(nums.reduce((acc, n) => acc + n, ___));
+    prelude: |
+      const nums = [1, 2, 3, 4];
+    expect: "10"
+    options:
+      - text: '`0`'
+        code: 'console.log(nums.reduce((acc, n) => acc + n, 0));'
+      - text: '`""`'
+        code: 'console.log(nums.reduce((acc, n) => acc + n, ""));'
+      - text: '`[]`'
+        code: 'console.log(nums.reduce((acc, n) => acc + n, []));'
+      - text: '`1`'
+        code: 'console.log(nums.reduce((acc, n) => acc + n, 1));'
+    answer: 1
+    explain: |
+      با مقدار اولیه‌ی `0`، `acc` عدد است و جمع عددی `10` می‌دهد. با `""`، `acc` رشته است و `"" + 1` می‌شود `"1"`، پس در آخر `1234` چاپ می‌شود. `[]` هم در `+` به رشته‌ی خالی تبدیل می‌شود و همان `1234` را می‌دهد. مقدار اولیه‌ی `1` خودش هم در جمع حساب می‌شود و حاصل `11` است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟ (یادآوری: `parseInt(str, radix)` رشته‌ی `str` را در مبنای `radix` به عدد صحیح تبدیل می‌کند؛ مبنای `0` یعنی «پیش‌فرض» (ده‌دهی) و مبنای `1` نامعتبر است.)
+    check: output
+    code: |
+      const result = ["1", "2", "3"].map(parseInt);
+      console.log(result);
+    options:
+      - out: "[1, 2, 3]"
+      - out: "[1, NaN, NaN]"
+      - out: "[NaN, NaN, NaN]"
+      - out: "['1', '2', '3']"
+    answer: 2
+    explain: |
+      `map` به callback **سه** ورودی می‌دهد: `(element, index, array)`؛ پس `parseInt` به ترتیب با `("1", 0)`، `("2", 1)` و `("3", 2)` صدا زده می‌شود. مبنای `0` یعنی پیش‌فرض، پس `1`؛ مبنای `1` نامعتبر است، پس `NaN`؛ و در مبنای ۲ رقم `3` وجود ندارد، پس باز `NaN`. گزینه‌ی ۱ فرض کرده فقط خودِ عضو به callback داده می‌شود؛ راه درست `.map(s => parseInt(s))` یا `.map(Number)` است.
+
+  - level: hard
+    stem: |
+      اجرای کد زیر در کدام خط با خطا مواجه می‌شود؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      const nums = [1, 2, 3];
+      for (const n of nums) {
+        if (n === 2) break;
+      }
+      nums.forEach(n => {
+        if (n === 2) break;
+      });
+    options:
+      - line: 3
+      - line: 5
+      - line: 6
+      - line: 0
+    answer: 3
+    explain: |
+      `break` داخل حلقه‌ی `for...of` (خط ۳) کاملاً مجاز است. اما در خط ۶، `break` داخل یک **تابع** (callback) است که خودش حلقه‌ای ندارد؛ پس `SyntaxError: Illegal break statement` رخ می‌دهد. این خطا هنگام خواندن کل فایل کشف می‌شود و هیچ خطی اجرا نمی‌شود. `forEach` را نمی‌توان با `break` متوقف کرد؛ برای توقف زودهنگام از `for...of` یا `find`/`some` استفاده کن.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const empty = [];
+      console.log(empty.reduce((a, b) => a + b, 0));
+      console.log(empty.reduce((a, b) => a + b));
+    options:
+      - out: ["0", "0"]
+      - out: ["0", "undefined"]
+      - out: "!! TypeError"
+      - out: ["0", "!! TypeError"]
+    answer: 4
+    explain: |
+      با مقدار اولیه، `reduce` روی آرایه‌ی خالی callback را اصلاً صدا نمی‌زند و همان مقدار اولیه (`0`) را برمی‌گرداند. بدون مقدار اولیه، عضو اولی وجود ندارد که `acc` از آن شروع شود؛ پس `TypeError: Reduce of empty array with no initial value` رخ می‌دهد (رد گزینه‌های ۱ و ۲). خط اول قبل از خطا اجرا شده و `0` چاپ شده است (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const items = [{ qty: 1 }, { qty: 2 }];
+      const updated = items.map(item => {
+        item.qty = item.qty * 10;
+        return item;
+      });
+      console.log(items[0].qty, updated === items, updated[0] === items[0]);
+    options:
+      - out: "1 false false"
+      - out: "10 true true"
+      - out: "10 false true"
+      - out: "1 false true"
+    answer: 3
+    explain: |
+      `map` یک آرایه‌ی **جدید** می‌سازد (`updated !== items`؛ رد گزینه‌ی ۲)، ولی عضوهای آن **همان شیءهای قبلی** هستند، چون callback خودِ `item` (یک reference) را برگردانده است. callback هم همان شیءها را تغییر داده، پس `items[0].qty` برابر `10` است (رد گزینه‌های ۱ و ۴). «`map` آرایه را تغییر نمی‌دهد» درباره‌ی خودِ آرایه است؛ برای دست نزدن به شیءها باید مثل اسلاید ۴۸ شیء جدید ساخت: `({ ...item, qty: item.qty * 10 })`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const students = [{ name: "Alice", score: 85 }, { name: "Bob", score: 62 }];
+      const results = students.map(s => ({ ...s, passed: s.score >= 70 }));
+      console.log(results[1].passed, students[1].passed, results.length);
+    options:
+      - out: "false false 2"
+      - out: "false undefined 2"
+      - out: "true undefined 2"
+      - out: "false undefined 1"
+    answer: 2
+    explain: |
+      نمره‌ی Bob برابر `62` است و `62 >= 70` نادرست است، پس `passed` او `false` است (رد گزینه‌ی ۳). spread برای هر دانشجو یک شیء **جدید** می‌سازد و `passed` فقط به آن شیء جدید اضافه می‌شود؛ شیءهای `students` این کلید را ندارند و `undefined` می‌دهند (رد گزینه‌ی ۱). `map` هیچ عضوی را حذف نمی‌کند و `results` هم دو عضو دارد (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [1, 2, 3];
+      console.log(nums.reduce((acc, n) => acc + n, ""));
+      console.log(nums.reduce((acc, n) => acc + n, 10));
+    options:
+      - out: ["6", "16"]
+      - out: ["123", "10123"]
+      - out: ["6", "106"]
+      - out: ["123", "16"]
+    answer: 4
+    explain: |
+      در خط اول `acc` از رشته‌ی خالی شروع می‌شود و «رشته + عدد» یعنی چسباندن: `"1"`، `"12"` و `"123"` (رد گزینه‌های ۱ و ۳). در خط دوم `acc` از عدد `10` شروع می‌شود و جمع عددی است: `10 + 1 + 2 + 3 = 16`. گزینه‌ی ۲ فرض کرده رفتار خط اول در خط دوم هم تکرار می‌شود؛ نوع `acc` را **مقدار اولیه** تعیین می‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const products = [{ id: 1, stock: 5 }, { id: 2, stock: 0 }];
+      const p = products.find(x => x.id === 2);
+      p.stock = 10;
+      console.log(products[1].stock);
+      console.log(products.find(x => x.id === 3));
+    options:
+      - out: ["0", "undefined"]
+      - out: ["10", "undefined"]
+      - out: ["10", "-1"]
+      - out: ["0", "null"]
+    answer: 2
+    explain: |
+      `find` **خودِ** عضو (reference همان شیء) را برمی‌گرداند، نه یک کپی؛ پس تغییر `p.stock` همان شیءِ داخل آرایه را عوض می‌کند و `10` چاپ می‌شود (رد گزینه‌های ۱ و ۴). وقتی هیچ عضوی جور نباشد، `find` مقدار `undefined` برمی‌گرداند؛ `-1` جواب `findIndex` است (رد گزینه‌ی ۳) و `null` را هیچ‌کدام برنمی‌گردانند.
+
+  - level: hard
+    stem: |
+      در کدام گزینه دستور آخر `3,1,2` را چاپ می‌کند (یعنی آرایه‌ی `arr` دست‌نخورده می‌ماند)؟
+    check: option-output
+    code: |
+      const arr = [3, 1, 2];
+    prelude: |
+      const arr = [3, 1, 2];
+    expect: "3,1,2"
+    options:
+      - code: 'arr.sort(); console.log(arr.join());'
+      - code: 'arr.reverse(); console.log(arr.join());'
+      - code: 'const sorted = arr.slice().sort(); console.log(arr.join());'
+      - code: 'arr.splice(0, 1); console.log(arr.join());'
+    answer: 3
+    explain: |
+      `arr.slice()` یک **کپی** می‌سازد و `sort` فقط همان کپی را مرتب می‌کند؛ پس `arr` همان `3,1,2` می‌ماند. سه گزینه‌ی دیگر متدهای **mutating** را مستقیم روی `arr` صدا می‌زنند: `sort` آن را `1,2,3` می‌کند، `reverse` آن را `2,1,3` و `splice(0, 1)` عضو اول را حذف می‌کند و `1,2` می‌ماند.
+
+  - level: hard
+    stem: |
+      کدام دستور `[ 1, 4, 21, 30, 100000 ]` را چاپ می‌کند؟
+    check: option-output
+    code: |
+      const nums = [1, 100000, 21, 30, 4];
+    prelude: |
+      const nums = [1, 100000, 21, 30, 4];
+    expect: "[1, 4, 21, 30, 100000]"
+    options:
+      - code: 'console.log(nums.sort());'
+      - code: 'console.log(nums.sort((a, b) => b - a));'
+      - code: 'console.log(nums.reverse());'
+      - code: 'console.log(nums.sort((a, b) => a - b));'
+    answer: 4
+    explain: |
+      فقط تابع مقایسه‌ی `(a, b) => a - b` مقایسه‌ی **عددی صعودی** انجام می‌دهد. `sort()` بدون تابع مقایسه رشته‌ای مقایسه می‌کند و همان ترتیب میم اسلاید ۲۱ یعنی `[1, 100000, 21, 30, 4]` را نگه می‌دارد. `b - a` نزولی مرتب می‌کند و `reverse` اصلاً مرتب نمی‌کند، فقط ترتیب فعلی را برعکس می‌کند: `[4, 30, 21, 100000, 1]`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [1, 2, 3, 4];
+      const result = nums.map(n => {
+        if (n % 2 === 0) return n * 10;
+      });
+      console.log(result);
+    options:
+      - out: "[undefined, 20, undefined, 40]"
+      - out: "[20, 40]"
+      - out: "[1, 20, 3, 40]"
+      - out: "[false, 20, false, 40]"
+    answer: 1
+    explain: |
+      `map` همیشه آرایه‌ای **هم‌طول** می‌سازد و برای هر عضو، **هر چه callback برگرداند** را می‌گذارد. برای عددهای فرد شرط برقرار نیست و callback به انتها می‌رسد بدون این‌که چیزی برگرداند، پس `undefined`. گزینه‌ی ۲ کار ترکیب `filter` و `map` است؛ `map` نمی‌تواند عضو حذف کند. گزینه‌ی ۳ فرض کرده عضوهای بی‌جواب دست‌نخورده می‌مانند و گزینه‌ی ۴ فکر کرده جوابِ شرط برگردانده می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const arr = [1, 2, 3];
+      const r = arr.forEach((n, i, a) => {
+        a[i] = n * n;
+      });
+      console.log(arr, r);
+    options:
+      - out: "[1, 2, 3] undefined"
+      - out: "[1, 4, 9] [1, 4, 9]"
+      - out: "[1, 2, 3] [1, 4, 9]"
+      - out: "[1, 4, 9] undefined"
+    answer: 4
+    explain: |
+      پارامتر سوم callback (`a`) **همان آرایه‌ی** `arr` است (reference)، پس `a[i] = n * n` خانه‌های خودِ `arr` را درجا عوض می‌کند و `arr` می‌شود `[1, 4, 9]` (رد گزینه‌های ۱ و ۳). `forEach` خودش آرایه را تغییر نمی‌دهد، ولی callback ما می‌تواند. خروجی `forEach` هم همیشه `undefined` است (رد گزینه‌ی ۲).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const found = [];
+      [5, 8, 12, 3].forEach(n => {
+        if (n > 10) return;
+        found.push(n);
+      });
+      console.log(found);
+    options:
+      - out: "[5, 8, 3]"
+      - out: "[5, 8]"
+      - out: "[12]"
+      - out: "[5, 8, 12, 3]"
+    answer: 1
+    explain: |
+      `return` داخل callback فقط **همان یک فراخوانی** را تمام می‌کند (مثل `continue`)؛ پس `12` رد می‌شود ولی `forEach` به عضو بعدی یعنی `3` می‌رود و آن را هم اضافه می‌کند. گزینه‌ی ۲ فرض کرده `return` کل `forEach` را متوقف می‌کند (مثل `break`)، گزینه‌ی ۳ شرط را برعکس خوانده و گزینه‌ی ۴ اثر `return` را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const words = ["a", "b", "a"];
+      const count = words.reduce((acc, w) => {
+        acc[w] = (acc[w] || 0) + 1;
+      }, {});
+      console.log(count);
+    options:
+      - line: 2
+      - line: 3
+      - line: 5
+      - line: 0
+    answer: 2
+    explain: |
+      دور اول درست اجرا می‌شود (`acc` همان `{}` است)، ولی callback چیزی **برنمی‌گرداند**؛ پس `acc` در دور دوم `undefined` است و خواندن `acc[w]` در خط ۳ خطای `TypeError: Cannot read properties of undefined (reading 'b')` می‌دهد. به خط ۵ نمی‌رسیم و «بدون خطا» هم درست نیست. راه درست: بعد از خط ۳ بنویس `return acc;`.
