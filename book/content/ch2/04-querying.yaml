@@ -705,3 +705,51 @@ questions:
       HTMLCollection شبه‌آرایه است: `length` برابر `2`، `buttons[0]` اولین دکمه (`A`) و `item(1)` دومین دکمه
       (`B`) است (رد گزینه‌ی ۳). خواندن اندیسی که وجود ندارد (`buttons[5]`) مثل آرایه `undefined` می‌دهد (رد
       گزینه‌ی ۱؛ فقط `buttons.item(5)` مقدار `null` برمی‌گرداند). گزینه‌ی ۴ هم تعداد دکمه‌ها را اشتباه شمرده است.
+  - level: hard
+    stem: |
+      صفحه‌ای فقط HTML زیر را دارد:
+
+      ```html
+      <a class="nav-link" href="#home">Home</a>
+      <a class="nav-link" href="#shop">Shop</a>
+      ```
+
+      کد JavaScript زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const links = document.getElementsByClassName("nav-link");
+      console.log(links.length);
+      const active = document.querySelector(".nav-link.active");
+      const firstLink = links[0];
+      console.log(firstLink.textContent);
+      console.log(active.textContent);
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <a class="nav-link" href="#home">Home</a>
+      <a class="nav-link" href="#shop">Shop</a>
+    code: |
+      const links = document.getElementsByClassName("nav-link"); console.log("~1");
+      console.log(links.length); console.log("~2");
+      const active = document.querySelector(".nav-link.active"); console.log("~3");
+      const firstLink = links[0]; console.log("~4");
+      console.log(firstLink.textContent); console.log("~5");
+      console.log(active.textContent); console.log("~6");
+    options:
+      - text: 'خط ۳'
+        out: ["~1", "2", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "2", "~2", "~3", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "2", "~2", "~3", "~4", "!! TypeError"]
+      - text: 'خط ۶'
+        out: ["~1", "2", "~2", "~3", "~4", "Home", "~5", "!! TypeError"]
+    answer: 4
+    explain: |
+      هیچ لینکی هر دو کلاس `nav-link` و `active` را ندارد، پس `querySelector` در خط ۳ مقدار `null` برمی‌گرداند؛
+      پیدا نکردن عنصر خطا **نیست** (رد گزینه‌ی ۱). خواندن `links[0]` از یک HTMLCollection مثل آرایه کار می‌کند و
+      اولین لینک را می‌دهد (رد گزینه‌ی ۲)، و خط ۵ متن `Home` را چاپ می‌کند (رد گزینه‌ی ۳). اما در خط ۶ برنامه
+      می‌خواهد `textContent` را از `null` بخواند و خطای `TypeError: Cannot read properties of null` می‌گیرد. درس
+      این تست: نتیجه‌ی `querySelector` و `getElementById` را قبل از استفاده بررسی کن (`if (active) ...`).
