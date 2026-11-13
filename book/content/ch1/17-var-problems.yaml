@@ -1,0 +1,604 @@
+id: ch1-var-problems
+title: "مشکلات var"
+slides: "Introduction to JS، اسلاید ۲۷"
+lesson: |
+  قبل از ES6 (سال ۲۰۱۵) تنها راه تعریف متغیر در JavaScript کلمه‌ی `var` بود. `let` و `const` دقیقاً به این خاطر به زبان اضافه شدند که `var` چند رفتار دردسرساز دارد. امروز در کد جدید از `var` استفاده نمی‌کنیم، ولی در کدهای قدیمی، آموزش‌های اینترنتی و البته **سؤال‌های امتحان** زیاد می‌بینیمش؛ پس باید مشکلاتش را خوب بشناسیم. اسلاید ۲۷ این مشکلات را در پنج جمله خلاصه کرده است:
+
+  - **Function-scoped است، نه block-scoped**: می‌تواند از بلوک‌های `{}` بیرون بزند (leak کند، یعنی «نشت کند»).
+  - **Variable hoisting**: اعلان‌ها به بالا منتقل می‌شوند و `undefined`های غیرمنتظره می‌سازند.
+  - **اجازه‌ی تعریف دوباره (redeclaration)**: یک متغیر را می‌شود چند بار بدون خطا تعریف کرد.
+  - **آلوده کردن محدوده‌ی سراسری (global scope pollution)**: `var` در محدوده‌ی سراسری به `window` می‌چسبد.
+  - **رفتار ناسازگار (inconsistent behavior)**: دیباگ کردن و فهمیدن منطق کد را سخت‌تر می‌کند.
+
+  ### میم اسلاید ۲۷: حلقه‌ی قدرت
+
+  کنار اسلاید یک میم سه‌قسمتی از فیلم «ارباب حلقه‌ها» هست:
+
+  1. دستی که «حلقه‌ی یگانه» را گرفته و روی حلقه نوشته شده **VAR**.
+  2. اِلروند با برچسب **EVERYONE ELSE** (بقیه‌ی برنامه‌نویس‌ها) می‌گوید: «بیندازش توی آتش! نابودش کن!» (Cast it into the fire! Destroy it!)
+  3. ایسیلدور با برچسب **OLD JS DEVS** (برنامه‌نویس‌های قدیمی JavaScript) جواب می‌دهد: «نه.» (No.)
+
+  در فیلم، ایسیلدور فرصت داشت حلقه‌ی شیطانی را نابود کند، ولی دلش نیامد. شوخی میم: همه می‌دانند `var` باید کنار گذاشته شود، ولی برنامه‌نویس‌های قدیمی که به آن عادت کرده‌اند حاضر نیستند رهایش کنند. بیا ببینیم این «حلقه» چه بلاهایی سر کد می‌آورد.
+
+  ### مشکل ۱: function-scoped است، نه block-scoped
+
+  **scope** (محدوده) یعنی بخشی از کد که یک متغیر در آن شناخته می‌شود.
+
+  - متغیر **block-scoped** (مثل `let` و `const`) فقط داخل همان `{ ... }`ی وجود دارد که در آن تعریف شده است.
+  - متغیر **function-scoped** (یعنی `var`) در **کل تابعی** که در آن تعریف شده وجود دارد و آکولادهای `if`، `for` و `while` جلویش را نمی‌گیرند. اگر بیرون از هر تابعی تعریف شود، سراسری (global) است.
+
+  ::: analogy
+  `let` مثل کلید یک اتاق است که فقط درِ همان اتاق (بلوک) را باز می‌کند. `var` مثل شاه‌کلید خانه است که درِ همه‌ی اتاق‌های خانه (کل تابع) را باز می‌کند؛ ولی درِ خانه‌ی همسایه (یک تابع دیگر) را باز نمی‌کند.
+  :::
+
+  ```js
+  if (true) {
+    var a = 1; // var: belongs to the surrounding function (or the global scope)
+    let b = 2; // let: belongs only to this block
+  }
+  console.log(a); // 1 (var leaked out of the if block)
+  console.log(b); // ReferenceError: b is not defined
+  ```
+
+  شمارنده‌ی حلقه هم بیرون می‌ریزد:
+
+  ```js
+  for (var i = 0; i < 3; i++) {
+    // loop body
+  }
+  console.log(i); // 3 (the counter leaked out of the loop)
+  ```
+
+  چرا `3` و نه `2`؟ بدنه برای `i` برابر `0`، `1` و `2` اجرا می‌شود؛ بعد `i++` آن را `3` می‌کند، شرط `i < 3` نادرست می‌شود و حلقه تمام می‌شود. `i` با همان مقدار `3` بیرون حلقه باقی می‌ماند. اگر به‌جای `var` از `let` استفاده کنی، `i` بعد از حلقه وجود ندارد و `console.log(i)` خطای `ReferenceError` (خطای ارجاع) می‌دهد.
+
+  اما `var` از **تابع** بیرون نمی‌زند؛ متغیر `var` داخل یک تابع، محلیِ همان تابع است:
+
+  ```js
+  function setup() {
+    if (true) {
+      var token = "abc";
+    }
+    console.log(token); // abc (visible everywhere inside setup)
+  }
+  setup();
+  console.log(token);   // ReferenceError: token is not defined
+  ```
+
+  خطرناک‌ترین نتیجه‌ی این رفتار، **بازنویسی ناخواسته** است. ممکن است فکر کنی داخل بلوک یک متغیر تازه ساخته‌ای، در حالی که متغیر بیرونی را عوض کرده‌ای:
+
+  ```js
+  var total = 10;
+  if (true) {
+    var total = 99; // NOT a new variable: the same total is overwritten
+  }
+  console.log(total); // 99
+
+  let count = 10;
+  if (true) {
+    let count = 99; // a new, separate variable that lives only in this block
+  }
+  console.log(count); // 10
+  ```
+
+  ### مشکل ۲: hoisting و `undefined`های غیرمنتظره
+
+  **hoisting** (بالا بردن اعلان‌ها به ابتدای محدوده) یعنی موتور JavaScript قبل از اجرا، **اعلان** (declaration) هر `var` را به بالای محدوده‌اش (تابع یا محدوده‌ی سراسری) منتقل می‌کند و مقدار اولیه‌ی `undefined` به آن می‌دهد؛ ولی **مقداردهی** (assignment) سر جای خودش می‌ماند. پس `var` را می‌شود قبل از خط تعریفش خواند، **بدون خطا**:
+
+  ```js
+  console.log(score); // undefined (no error!)
+  var score = 50;
+  console.log(score); // 50
+  ```
+
+  موتور این کد را عملاً این‌طور اجرا می‌کند:
+
+  ```js
+  var score;          // the declaration is hoisted and starts as undefined
+  console.log(score); // undefined
+  score = 50;         // the assignment stays where it was
+  console.log(score); // 50
+  ```
+
+  با `let` (و `const`) همین کار خطا می‌دهد، که در واقع **بهتر** است:
+
+  ```js
+  console.log(level); // ReferenceError: Cannot access 'level' before initialization
+  let level = 1;
+  ```
+
+  چرا `undefined` از خطا بدتر است؟ خطا همان لحظه و همان خط، محل اشکال را نشانت می‌دهد. اما `undefined` بی‌صدا در برنامه جلو می‌رود و جای دیگری دردسر می‌سازد (مثلاً `NaN` در محاسبه یا کلمه‌ی `undefined` وسط یک متن)؛ پیدا کردن ریشه‌ی چنین باگی سخت است.
+
+  غافلگیری معروف hoisting داخل تابع:
+
+  ```js
+  var msg = "global";
+  function show() {
+    console.log(msg); // undefined (not "global"!)
+    var msg = "local";
+    console.log(msg); // local
+  }
+  show();
+  ```
+
+  داخل `show`، اعلان `var msg` به **بالای تابع** منتقل می‌شود؛ پس از همان خط اول تابع، یک `msg` محلی (با مقدار `undefined`) وجود دارد که `msg` سراسری را پنهان می‌کند. قوانین کامل hoisting (برای `let`، `const`، `class` و توابع) را در درس «Hoisting و TDZ» می‌خوانیم.
+
+  ### مشکل ۳: تعریف دوباره بدون خطا
+
+  ```js
+  var x = 1;
+  var x = 2;      // no error: it is the same variable, now 2
+  console.log(x); // 2
+  ```
+
+  ```js
+  let y = 1;
+  let y = 2; // SyntaxError: Identifier 'y' has already been declared
+  ```
+
+  فرض کن در یک فایل هزارخطی، دو بخش مختلف کد هر کدام یک `var data` تعریف کنند. با `var` هیچ هشداری نمی‌گیری و دومی بی‌صدا مقدار اولی را بازنویسی می‌کند. با `let` موتور **قبل از اجرای حتی یک خط** جلویت را می‌گیرد: `SyntaxError` (خطای نحوی) در مرحله‌ی خواندن (parse) کل فایل کشف می‌شود، پس هیچ خطی از آن فایل اجرا نمی‌شود. ترکیب `var` و `let` با یک نام در یک محدوده (مثل `var z = 1; let z = 2;`) هم `SyntaxError` است.
+
+  یک نکته‌ی ظریف: تعریف دوباره‌ی `var` **بدون مقدار**، مقدار قبلی را پاک نمی‌کند:
+
+  ```js
+  var count = 5;
+  var count;          // a redeclaration without a value is ignored
+  console.log(count); // 5 (not undefined!)
+  ```
+
+  ### مشکل ۴: آلوده کردن محدوده‌ی سراسری (Global scope pollution)
+
+  در مرورگر، **شیء سراسری** (global object) اسمش **`window`** است؛ objectی که همه‌ی چیزهای سراسری مثل `alert`، `document` و `console` روی آن قرار دارند. `var`ی که در سطح بالای یک اسکریپت معمولی تعریف شود، **به یک ویژگی (property) از `window` تبدیل می‌شود**. `let` و `const` هم سراسری‌اند، ولی ویژگی `window` نمی‌شوند:
+
+  ```js
+  // In a browser (a classic <script>)
+  var city = "Tehran";
+  let country = "Iran";
+  console.log(window.city);    // Tehran
+  console.log(window.country); // undefined
+  ```
+
+  (function declarationهای سطح بالا هم به همین شکل ویژگی `window` می‌شوند.)
+
+  چرا «آلودگی»؟ همه‌ی اسکریپت‌های یک صفحه (کد خودت، کتابخانه‌ها، تبلیغات و ...) **یک `window` مشترک** دارند. اگر دو اسکریپت با `var` نام یکسانی بسازند، دومی بی‌صدا اولی را بازنویسی می‌کند:
+
+  ```html
+  <script>
+    // library.js
+    var counter = 100;
+    function getCounter() {
+      return counter;
+    }
+  </script>
+  <script>
+    // app.js
+    var counter = 0;           // overwrites the library's counter!
+    console.log(getCounter()); // 0 (the library is now broken)
+  </script>
+  ```
+
+  ::: note
+  **در Node.js** شیء `window` وجود ندارد (`typeof window` برابر `"undefined"` است) و شیء سراسری `globalThis` (یا `global`) نام دارد. علاوه بر این، Node.js هر فایل `.js` معمولی (CommonJS) را یک ماژول با محدوده‌ی جداگانه اجرا می‌کند؛ پس `var` سطح بالای یک فایل Node.js ویژگی `globalThis` نمی‌شود:
+
+  ```js
+  // In Node.js (a normal .js file)
+  var city = "Tehran";
+  console.log(globalThis.city); // undefined
+  console.log(typeof window);   // undefined
+  ```
+  :::
+
+  ### مشکل ۵: رفتار ناسازگار؛ دیباگ سخت‌تر
+
+  همه‌ی موارد بالا با هم یعنی رفتار `var` به **جای** تعریفش بستگی دارد: داخل تابع محلی است ولی داخل بلوک نه؛ قبل از تعریفش قابل خواندن است ولی مقدار ندارد؛ ممکن است بی‌صدا متغیر دیگری را بازنویسی کند یا خودش بازنویسی شود. نتیجه اینکه با نگاه به چند خط اطراف یک متغیر نمی‌شود با اطمینان گفت مقدارش چیست؛ یعنی دیباگ (پیدا کردن و رفع باگ) سخت‌تر می‌شود.
+
+  معروف‌ترین نمونه (پیش‌نمایش): `var` در حلقه همراه با `setTimeout`. تابع `setTimeout(fn, 0)` تابع `fn` را **کمی بعد**، یعنی بعد از تمام شدن کدهای فعلی، اجرا می‌کند:
+
+  ```js
+  for (var i = 0; i < 3; i++) {
+    setTimeout(() => console.log(i), 0);
+  }
+  // 3
+  // 3
+  // 3
+  ```
+
+  ```js
+  for (let j = 0; j < 3; j++) {
+    setTimeout(() => console.log(j), 0);
+  }
+  // 0
+  // 1
+  // 2
+  ```
+
+  با `var` کل حلقه فقط **یک** `i` دارد؛ وقتی callbackها بالاخره اجرا می‌شوند، حلقه تمام شده و `i` برابر `3` است. با `let` هر دور حلقه `j` **تازه‌ی خودش** را دارد. توضیح کامل این رفتار را در درس‌های «Closure» و «Event loop» می‌بینیم.
+
+  ### جدول مقایسه‌ی `var`، `let` و `const`
+
+  | ویژگی | `var` | `let` | `const` |
+  |---|---|---|---|
+  | محدوده (scope) | تابع (function-scoped) | بلوک (block-scoped) | بلوک (block-scoped) |
+  | استفاده قبل از خط تعریف | hoist می‌شود؛ مقدارش `undefined` است | hoist می‌شود ولی مقداردهی نمی‌شود: `ReferenceError` (TDZ) | مثل `let`: `ReferenceError` |
+  | تعریف دوباره در همان محدوده | مجاز (بی‌صدا) | `SyntaxError` | `SyntaxError` |
+  | انتساب دوباره (`x = ...`) | مجاز | مجاز | `TypeError` |
+  | ویژگی `window` در سطح بالای اسکریپت مرورگر | می‌شود | نمی‌شود | نمی‌شود |
+  | مقداردهی هنگام تعریف | اختیاری | اختیاری | اجباری |
+
+  (TDZ یا Temporal Dead Zone یعنی «منطقه‌ی مرده‌ی زمانی»: بازه‌ی بین شروع محدوده تا خط تعریف `let`/`const` که دسترسی به متغیر در آن خطا می‌دهد.)
+
+  **بهترین روش:** در کد جدید هرگز از `var` استفاده نکن؛ به‌طور پیش‌فرض `const` و هر وقت انتساب دوباره لازم شد `let`. برای «تعمیر» کد قدیمی هم معمولاً کافی است `var`ها را با `let`/`const` عوض کنی.
+
+  ::: tip
+  - `var` تابع‌محور است: در کل تابع دیده می‌شود و بلوک‌های `if`/`for` نگهش نمی‌دارند؛ ولی از خودِ تابع بیرون نمی‌رود.
+  - شمارنده‌ی `for (var i = ...)` بعد از حلقه با مقدار نهایی‌اش (اولین مقداری که شرط را نادرست کرد) باقی می‌ماند.
+  - خواندن `var` قبل از تعریف: `undefined`؛ خواندن `let`/`const` قبل از تعریف: `ReferenceError`.
+  - `var` سطح بالای اسکریپت معمولی مرورگر ویژگی `window` می‌شود؛ `let` و `const` نه. در Node.js اصلاً `window` نداریم.
+  :::
+
+  ::: trap
+  - `var total = 99` داخل یک بلوک `if` متغیر جدید نمی‌سازد؛ همان `total` بیرونی را بازنویسی می‌کند. (با `let` یک متغیر جدید و جدا ساخته می‌شود.)
+  - داخل تابع، یک `var msg` در خط‌های پایین‌ترِ همان تابع باعث می‌شود `msg` در خط‌های بالاتر `undefined` باشد، نه مقدار سراسری.
+  - `var count;` (تعریف دوباره بدون مقدار) مقدار قبلی را پاک نمی‌کند.
+  - تعریف دوباره‌ی `let` در همان محدوده `SyntaxError` است و قبل از اجرای **هر** خطی رخ می‌دهد؛ پس هیچ خروجی‌ای چاپ نمی‌شود.
+  - در یک فایل Node.js، `var` سطح بالا ویژگی `globalThis` نمی‌شود؛ رفتار `window` فقط مخصوص اسکریپت معمولی مرورگر است.
+  - `typeof` روی نامی که تعریف نشده، `"undefined"` می‌دهد و خطا ندارد؛ ولی استفاده‌ی مستقیم از همان نام `ReferenceError` می‌دهد.
+  :::
+
+  ::: summary
+  - پنج مشکل `var` (اسلاید ۲۷): function-scoped بودن و نشت از بلوک‌ها، hoisting و `undefined` غیرمنتظره، تعریف دوباره بدون خطا، چسبیدن به `window` (آلودگی سراسری) و رفتار ناسازگار که دیباگ را سخت می‌کند.
+  - میم: همه می‌خواهند `var` نابود شود، ولی برنامه‌نویس‌های قدیمی JavaScript می‌گویند «نه».
+  - راه‌حل: `const` به‌طور پیش‌فرض، `let` برای انتساب دوباره و هرگز `var`.
+  :::
+questions:
+  - level: easy
+    stem: |
+      کدام مورد جزو «مشکلات `var`» در اسلاید ۲۷ **نیست**؟
+    options:
+      - 'function-scoped است، نه block-scoped و می‌تواند از بلوک `{}` بیرون بزند.'
+      - 'اجازه می‌دهد یک متغیر چند بار بدون خطا تعریف شود.'
+      - '`var` در محدوده‌ی سراسری به `window` می‌چسبد.'
+      - 'نمی‌توان به متغیر `var` مقدار تازه داد.'
+    answer: 4
+    explain: |
+      `var` انتساب دوباره را کاملاً اجازه می‌دهد (`var x = 1; x = 2;` مشکلی ندارد)؛ ممنوعیت انتساب دوباره ویژگی `const` است. پس گزینه‌ی ۴ جزو مشکلات `var` نیست. گزینه‌های ۱، ۲ و ۳ سه مورد از پنج مشکلی هستند که اسلاید ۲۷ نام می‌برد (دو مورد دیگر hoisting و رفتار ناسازگارند).
+
+  - level: easy
+    stem: |
+      در میم «ارباب حلقه‌ها»ی اسلاید ۲۷، «EVERYONE ELSE» می‌گوید «حلقه‌ی VAR را در آتش بینداز!» و «OLD JS DEVS» جواب می‌دهند «نه.». منظور میم چیست؟
+    options:
+      - 'همه می‌خواهند `var` کنار گذاشته شود، ولی برنامه‌نویس‌های قدیمی JavaScript حاضر نیستند دست از آن بکشند.'
+      - 'برنامه‌نویس‌های قدیمی می‌خواهند `var` حذف شود، ولی بقیه مخالف‌اند.'
+      - '`var` جدیدترین ویژگی زبان است و برنامه‌نویس‌های قدیمی هنوز آن را یاد نگرفته‌اند.'
+      - '`var` سریع‌ترین روش تعریف متغیر است و برای همین همه آن را نگه می‌دارند.'
+    answer: 1
+    explain: |
+      «بقیه» (EVERYONE ELSE) می‌خواهند `var` نابود شود و «برنامه‌نویس‌های قدیمی» (OLD JS DEVS) مثل ایسیلدور که حلقه را نگه داشت، می‌گویند «نه». گزینه‌ی ۲ نقش‌ها را برعکس کرده است. `var` قدیمی‌ترین روش تعریف متغیر است، نه جدیدترین (رد گزینه‌ی ۳) و میم هیچ ادعایی درباره‌ی سرعت ندارد (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      منظور از «آلوده کردن محدوده‌ی سراسری» (Global scope pollution) در اسلاید ۲۷ چیست؟
+    options:
+      - 'متغیرهای `var` هرگز از حافظه پاک نمی‌شوند.'
+      - '`var` سطح بالای اسکریپت به ویژگی شیء سراسری `window` تبدیل می‌شود؛ همه‌ی اسکریپت‌های صفحه همین فضای مشترک را دارند و نام‌های تکراری همدیگر را بازنویسی می‌کنند.'
+      - 'متغیرهای سراسری داخل توابع قابل خواندن نیستند.'
+      - 'هر متغیر `var` یک کپی تازه از شیء `window` می‌سازد.'
+    answer: 2
+    explain: |
+      اسلاید ۲۷: «`var` in global context attaches to window». چون همه‌ی اسکریپت‌های صفحه یک `window` مشترک دارند، `var`های هم‌نام از اسکریپت‌های مختلف بی‌صدا همدیگر را بازنویسی می‌کنند. گزینه‌ی ۱ درباره‌ی مدیریت حافظه است و ربطی به این مشکل ندارد. متغیرهای سراسری داخل توابع قابل خواندن‌اند (رد گزینه‌ی ۳) و `var` هیچ کپی‌ای از `window` نمی‌سازد (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      if (true) {
+        var color = "red";
+      }
+      console.log(color);
+    options:
+      - out: "undefined"
+      - out: "!! ReferenceError"
+      - out: "red"
+      - out: "!! SyntaxError"
+    answer: 3
+    explain: |
+      `var` function-scoped است و آکولادهای `if` جلویش را نمی‌گیرند؛ `color` از بلوک بیرون می‌زند و `red` چاپ می‌شود. گزینه‌ی ۲ رفتار `let`/`const` است که block-scoped هستند. گزینه‌ی ۱ فکر کرده مقدار داخل بلوک بیرون نمی‌آید (ولی خط ۲ قبل از چاپ اجرا شده است) و کد هیچ خطای نحوی‌ای ندارد (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(score);
+      var score = 50;
+      console.log(score);
+    options:
+      - out: ["50", "50"]
+      - out: ["undefined", "50"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "undefined"]
+    answer: 2
+    explain: |
+      اعلان `var score` به بالا hoist می‌شود و از ابتدا مقدار `undefined` دارد، ولی مقداردهی `= 50` سر جای خودش (خط ۲) انجام می‌شود. پس خط ۱ `undefined` و خط ۳ `50` چاپ می‌کند. گزینه‌ی ۱ فکر کرده مقدار هم hoist می‌شود، گزینه‌ی ۳ رفتار `let` را فرض کرده و گزینه‌ی ۴ فراموش کرده خط ۲ قبل از خط ۳ اجرا شده است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      var x = 1;
+      var x = 2;
+      console.log(x);
+    options:
+      - out: "1"
+      - out: "!! SyntaxError"
+      - out: "undefined"
+      - out: "2"
+    answer: 4
+    explain: |
+      `var` اجازه‌ی تعریف دوباره را می‌دهد و خطایی نمی‌گیریم (رد گزینه‌ی ۲؛ این خطا مخصوص `let`/`const` است). هر دو خط به **همان یک** متغیر اشاره می‌کنند و خط ۲ مقدار `2` را در آن می‌ریزد. گزینه‌ی ۱ فکر کرده تعریف دوم نادیده گرفته می‌شود و گزینه‌ی ۳ تصور کرده تعریف دوباره متغیر را خالی می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      if (true) {
+        var a = 1;
+        let b = 2;
+      }
+      console.log(a);
+      console.log(b);
+    options:
+      - out: ["1", "!! ReferenceError"]
+      - out: ["1", "2"]
+      - out: ["!! ReferenceError"]
+      - out: ["1", "undefined"]
+    answer: 1
+    explain: |
+      `a` با `var` تعریف شده و از بلوک `if` بیرون می‌زند، پس `1` چاپ می‌شود. `b` با `let` تعریف شده و فقط داخل بلوک وجود دارد؛ خط ۶ خطای `ReferenceError: b is not defined` می‌دهد. گزینه‌ی ۲ هر دو را مثل `var` فرض کرده، گزینه‌ی ۳ هر دو را مثل `let` و گزینه‌ی ۴ تصور کرده متغیر تعریف‌نشده `undefined` چاپ می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      for (var i = 0; i < 3; i++) {}
+      console.log(i);
+    options:
+      - out: "3"
+      - out: "2"
+      - out: "undefined"
+      - out: "!! ReferenceError"
+    answer: 1
+    explain: |
+      شمارنده‌ی `var` بعد از حلقه باقی می‌ماند (نشت از بلوک). حلقه برای `0`، `1` و `2` اجرا می‌شود، بعد `i++` مقدار را `3` می‌کند و شرط `3 < 3` نادرست می‌شود؛ پس `i` با مقدار `3` بیرون می‌ماند. گزینه‌ی ۲ آخرین مقدارِ اجرای بدنه را با مقدار نهایی اشتباه گرفته و گزینه‌ی ۴ رفتار `let` را فرض کرده است.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      var a = 1;
+      var a = 2;
+      let b = 3;
+      let b = 4;
+      console.log(a, b);
+    options:
+      - line: 2
+      - line: 4
+      - line: 5
+      - line: 0
+    answer: 2
+    explain: |
+      تعریف دوباره‌ی `var` مجاز است، پس خط ۲ مشکلی ندارد (رد گزینه‌ی ۱). اما تعریف دوباره‌ی `let` در همان محدوده خطای `SyntaxError: Identifier 'b' has already been declared` در خط ۴ می‌دهد. این خطا هنگام خواندن (parse) فایل کشف می‌شود؛ یعنی هیچ خطی، حتی خط ۱، اجرا نمی‌شود و به خط ۵ هم نمی‌رسیم (رد گزینه‌های ۳ و ۴).
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log(a);
+      var a = 1;
+      console.log(b);
+      let b = 2;
+    options:
+      - line: 1
+      - line: 4
+      - line: 3
+      - line: 0
+    answer: 3
+    explain: |
+      خواندن `var` قبل از تعریفش خطا نمی‌دهد و `undefined` چاپ می‌کند؛ پس خط ۱ سالم است (رد گزینه‌ی ۱). `b` یک `let` است که تا خط ۴ در TDZ قرار دارد؛ خط ۳ خطای `ReferenceError: Cannot access 'b' before initialization` می‌دهد. خط ۴ خودش مشکلی ندارد و اصلاً به آن نمی‌رسیم (رد گزینه‌ی ۲) و گزینه‌ی ۴ فکر کرده `let` هم مثل `var` مقدار `undefined` می‌گیرد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function setup() {
+        if (true) {
+          var token = "abc";
+        }
+        console.log(token);
+      }
+      setup();
+      console.log(token);
+    options:
+      - out: ["abc", "abc"]
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["!! ReferenceError"]
+      - out: ["abc", "!! ReferenceError"]
+    answer: 4
+    explain: |
+      `var` function-scoped است: از بلوک `if` بیرون می‌زند و داخل `setup` همه‌جا دیده می‌شود، پس خط ۵ `abc` را چاپ می‌کند (رد گزینه‌های ۲ و ۳). اما از خودِ **تابع** بیرون نمی‌رود؛ بیرون از `setup` متغیری به نام `token` نیست و خط ۸ خطای `ReferenceError` می‌دهد. گزینه‌ی ۱ تصور کرده `var` از تابع هم نشت می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر **در مرورگر** (یک اسکریپت معمولی `<script>`) چیست؟
+    check: dom-output
+    code: |
+      var city = "Tehran";
+      let country = "Iran";
+      console.log(window.city);
+      console.log(window.country);
+    options:
+      - out: ["Tehran", "Iran"]
+      - out: ["Tehran", "undefined"]
+      - out: ["undefined", "undefined"]
+      - out: ["undefined", "Iran"]
+    answer: 2
+    explain: |
+      `var` سطح بالای اسکریپت معمولی مرورگر به ویژگی شیء سراسری `window` تبدیل می‌شود (همان global scope pollution اسلاید ۲۷)، پس `window.city` برابر `Tehran` است. `let` و `const` با اینکه سراسری‌اند، ویژگی `window` نمی‌شوند؛ پس `window.country` برابر `undefined` است. گزینه‌ی ۱ فکر کرده هر متغیر سراسری روی `window` می‌رود و گزینه‌های ۳ و ۴ رفتار `var` را نادیده گرفته‌اند.
+
+  - level: medium
+    stem: |
+      کدام جمله **درست** است؟
+    options:
+      - '`let` را می‌توان در همان محدوده دوباره تعریف کرد، ولی `var` را نه.'
+      - 'خواندن متغیر `let` قبل از خط تعریفش مقدار `undefined` می‌دهد.'
+      - '`var` محدوده‌ی تابعی (function-scoped) دارد، ولی `let` و `const` محدوده‌ی بلوکی (block-scoped) دارند.'
+      - '`const` سطح بالای یک اسکریپت مرورگر، ویژگی `window` می‌شود.'
+    answer: 3
+    explain: |
+      گزینه‌ی ۳ همان تفاوت اصلی است. گزینه‌ی ۱ برعکس است: `var` تعریف دوباره را اجازه می‌دهد و `let` خطای `SyntaxError` می‌دهد. گزینه‌ی ۲ رفتار `var` است؛ `let` قبل از تعریف در TDZ است و `ReferenceError` می‌دهد. گزینه‌ی ۴ هم غلط است: فقط `var` (و function declaration) سطح بالا ویژگی `window` می‌شوند.
+
+  - level: medium
+    stem: |
+      دستور `var x = 5;` در کدام حالت باعث می‌شود `window.x` برابر `5` شود؟
+    options:
+      - 'وقتی در سطح بالای یک اسکریپت معمولی مرورگر (`<script>`) نوشته شود.'
+      - 'وقتی در سطح بالای یک فایل Node.js نوشته شود.'
+      - 'وقتی داخل بدنه‌ی یک تابع در مرورگر نوشته شود.'
+      - 'وقتی داخل یک IIFE در مرورگر نوشته شود.'
+    answer: 1
+    explain: |
+      فقط `var` سطح بالا در اسکریپت معمولی مرورگر به `window` می‌چسبد. در Node.js اصلاً `window` وجود ندارد و `var` سطح بالای فایل هم محلیِ همان ماژول است (رد گزینه‌ی ۲). داخل یک تابع، از جمله IIFE که خودش یک تابع است، `var` محلیِ همان تابع است و به `window` نمی‌رسد (رد گزینه‌های ۳ و ۴)؛ دقیقاً به همین دلیل قدیمی‌ها کدشان را داخل IIFE می‌گذاشتند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      var msg = "global";
+      function show() {
+        console.log(msg);
+        var msg = "local";
+        console.log(msg);
+      }
+      show();
+    options:
+      - out: ["global", "local"]
+      - out: ["undefined", "local"]
+      - out: ["global", "global"]
+      - out: ["!! ReferenceError"]
+    answer: 2
+    explain: |
+      اعلان `var msg` داخل `show` به **بالای همان تابع** hoist می‌شود؛ پس از خط اول تابع یک `msg` محلی با مقدار `undefined` وجود دارد که `msg` سراسری را پنهان می‌کند. خط ۳ `undefined` و بعد از مقداردهی، خط ۵ `local` چاپ می‌کند. گزینه‌ی ۱ (پرطرفدارترین اشتباه) hoisting را نادیده گرفته، گزینه‌ی ۳ فکر کرده متغیر محلی ساخته نمی‌شود و گزینه‌ی ۴ رفتار `let` را فرض کرده است.
+
+  - level: hard
+    stem: |
+      کد زیر را در یک فایل معمولی Node.js (مثلاً با `node app.js`) اجرا می‌کنیم. خروجی چیست؟
+    check: output
+    code: |
+      var city = "Tehran";
+      console.log(globalThis.city);
+      console.log(typeof window);
+    options:
+      - out: ["Tehran", "object"]
+      - out: ["Tehran", "undefined"]
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["undefined", "undefined"]
+    answer: 4
+    explain: |
+      Node.js هر فایل `.js` معمولی را یک ماژول (CommonJS) با محدوده‌ی جداگانه اجرا می‌کند؛ پس `var` سطح بالا ویژگی شیء سراسری `globalThis` نمی‌شود و `undefined` چاپ می‌شود (رد گزینه‌های ۱ و ۲؛ این رفتار مخصوص اسکریپت معمولی مرورگر است). Node.js شیء `window` ندارد، ولی `typeof` روی نام تعریف‌نشده خطا نمی‌دهد و `"undefined"` برمی‌گرداند (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      یک صفحه‌ی وب دو اسکریپت دارد: اول یک کتابخانه (اسکریپتی که در HTML زیر آمده) و بعد کد ما. خروجی کنسول **در مرورگر** چیست؟
+    check: dom-output
+    html: |
+      <script>
+        // library.js
+        var counter = 100;
+        function getCounter() {
+          return counter;
+        }
+      </script>
+    code: |
+      // app.js
+      var counter = 0;
+      console.log(getCounter());
+    options:
+      - out: "0"
+      - out: "100"
+      - out: "undefined"
+      - out: "!! ReferenceError"
+    answer: 1
+    explain: |
+      هر دو اسکریپت در محدوده‌ی سراسری مشترک صفحه اجرا می‌شوند و `var counter` در هر دو، **همان یک** ویژگی `window.counter` است. اسکریپت دوم بی‌صدا آن را `0` می‌کند و `getCounter` که مقدار فعلی `counter` را می‌خواند، `0` برمی‌گرداند؛ این همان global scope pollution است. گزینه‌ی ۲ فکر کرده هر اسکریپت متغیر جداگانه‌ی خودش را دارد. `getCounter` هم سراسری است و از اسکریپت دوم قابل صدا زدن است (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      var a = 1;
+      let b = 1;
+      if (true) {
+        var a = 2;
+        let b = 2;
+      }
+      console.log(a, b);
+    options:
+      - out: "1 1"
+      - out: "2 2"
+      - out: "2 1"
+      - out: "!! SyntaxError"
+    answer: 3
+    explain: |
+      `var a` داخل بلوک متغیر جدیدی نمی‌سازد؛ چون `var` بلوک را نمی‌شناسد، این همان `a` بیرونی است که دوباره تعریف و `2` می‌شود. اما `let b` داخل بلوک یک متغیر **جدید و جدا** است که فقط در همان بلوک زنده است و `b` بیرونی همان `1` می‌ماند. هیچ تعریف دوباره‌ای در یک محدوده‌ی واحد برای `let` رخ نداده است (رد گزینه‌ی ۴). گزینه‌ی ۱ فکر کرده `var` هم بلوکی است و گزینه‌ی ۲ فکر کرده `let` هم مثل `var` بیرونی را بازنویسی می‌کند.
+
+  - level: hard
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی به ترتیب `0`، `1` و `2` (هر کدام در یک خط) باشد؟
+    check: option-output
+    expect: |
+      0
+      1
+      2
+    code: |
+      for (___ i = 0; i < 3; i++) {
+        setTimeout(() => console.log(i), 0);
+      }
+    options:
+      - text: '`var`'
+        code: 'for (var i = 0; i < 3; i++) { setTimeout(() => console.log(i), 0); }'
+      - text: '`const`'
+        code: 'for (const i = 0; i < 3; i++) { setTimeout(() => console.log(i), 0); }'
+      - text: 'هیچ کلمه‌ای (فقط `i = 0`)'
+        code: 'for (i = 0; i < 3; i++) { setTimeout(() => console.log(i), 0); }'
+      - text: '`let`'
+        code: 'for (let i = 0; i < 3; i++) { setTimeout(() => console.log(i), 0); }'
+    answer: 4
+    explain: |
+      callbackهای `setTimeout` بعد از تمام شدن حلقه اجرا می‌شوند. با `let` هر دور حلقه `i` تازه‌ی خودش را دارد، پس `0`، `1` و `2` چاپ می‌شود. با `var` کل حلقه یک `i` مشترک دارد که در پایان `3` است و سه بار `3` چاپ می‌شود (گزینه‌ی ۱). بدون کلمه‌ی کلیدی هم (در حالت عادی و غیر strict) یک متغیر سراسری مشترک ساخته می‌شود و باز هم سه بار `3` می‌گیریم (گزینه‌ی ۳). با `const` دستور `i++` بعد از دور اول خطای `TypeError` می‌دهد (گزینه‌ی ۲). جزئیات این دام را در درس «Closure» می‌بینیم.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      var count = 5;
+      var count;
+      console.log(count);
+    options:
+      - out: "undefined"
+      - out: "!! SyntaxError"
+      - out: "5"
+      - out: "null"
+    answer: 3
+    explain: |
+      `var count;` در خط ۲ فقط یک تعریف دوباره‌ی بدون مقدار است؛ چنین تعریفی متغیر را از نو نمی‌سازد و مقدار فعلی را پاک نمی‌کند، پس `count` همان `5` می‌ماند. گزینه‌ی ۱ فکر کرده تعریف بدون مقدار، متغیر را به `undefined` برمی‌گرداند. تعریف دوباره‌ی `var` خطا ندارد (رد گزینه‌ی ۲) و `null` هیچ‌وقت خودکار به متغیری داده نمی‌شود (رد گزینه‌ی ۴).
