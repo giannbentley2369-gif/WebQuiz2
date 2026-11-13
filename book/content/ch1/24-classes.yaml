@@ -120,7 +120,19 @@ lesson: |
   }
   ```
 
-  در مقابل، یک **function declaration** (تابعی که با کلمه‌ی `function` اعلان شده) را می‌شود قبل از خط تعریفش صدا زد.
+  در مقابل، یک **function declaration** (تابعی که با کلمه‌ی `function` اعلان شده) را می‌شود قبل از خط تعریفش صدا زد. دقت کن که TDZ به **زمان اجرا** بستگی دارد، نه به جای نوشتن: اگر نام کلاس داخل تابعی بالاتر از کلاس نوشته شده باشد ولی آن تابع **بعد از** اجرای خط `class` صدا زده شود، مشکلی پیش نمی‌آید (جزئیات بیشتر در درس «Hoisting و Temporal Dead Zone (TDZ)»):
+
+  ```js
+  function makeAnimal(name) {
+    return new Animal(name); // Animal is used here, above its class line...
+  }
+  class Animal {
+    constructor(name) {
+      this.name = name;
+    }
+  }
+  console.log(makeAnimal("Rex").name); // Rex (...but it RUNS after the class line)
+  ```
 
   **۳. آرگومانی که داده نشود، `undefined` است.** `new User("Kermit")` نمونه‌ای می‌سازد که `age` آن `undefined` است؛ خطایی رخ نمی‌دهد.
 
@@ -511,33 +523,37 @@ questions:
 
   - level: hard
     stem: |
-      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
-    check: error-line
+      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+    check: option-throws
     errorName: ReferenceError
-    code: |
-      const a = makeUser("Ali");
-      console.log(a.name);
-      const b = new Person("Sara");
-      class Person {
-        constructor(name) {
-          this.name = name;
-        }
-      }
-      function makeUser(name) {
-        return { name };
-      }
     options:
-      - line: 1
-      - line: 3
-      - line: 4
-      - line: 0
+      - code: |
+          const a = make();
+          console.log(a.ok);
+          function make() {
+            return { ok: true };
+          }
+      - code: |
+          const b = new Box();
+          class Box {}
+          console.log(b instanceof Box);
+      - code: |
+          function make() {
+            return new Box();
+          }
+          class Box {}
+          console.log(make() instanceof Box);
+      - code: |
+          class Box {}
+          const b = new Box();
+          console.log(typeof b);
     answer: 2
     explain: |
-      `makeUser` یک function declaration است و کاملاً hoist می‌شود، پس صدا زدنش در خط ۱ قبل از تعریف مشکلی ندارد و خط ۲ `Ali` را چاپ می‌کند (رد گزینه‌ی خط ۱). اعلان کلاس هم hoist می‌شود ولی مقداردهی نمی‌شود و تا خط ۴ در TDZ است؛ پس خط ۳ خطای `ReferenceError: Cannot access 'Person' before initialization` می‌دهد. خود تعریف کلاس در خط ۴ خطایی ندارد و گزینه‌ی «هیچ خطایی» هم فرض کرده کلاس مثل function declaration کامل hoist می‌شود.
+      اعلان کلاس hoist می‌شود ولی تا اجرای خط تعریفش در TDZ می‌ماند؛ در گزینه‌ی ۲، `new Box()` **قبل از** خط `class Box {}` اجرا می‌شود و خطای `ReferenceError: Cannot access 'Box' before initialization` می‌دهد. گزینه‌ی ۱ یک function declaration است که کامل hoist می‌شود و قبل از تعریفش قابل صدا زدن است. در گزینه‌ی ۳ نام `Box` در متن تابع **بالاتر** از کلاس نوشته شده، ولی تابع بعد از اجرای خط تعریف کلاس صدا زده می‌شود؛ TDZ به زمان اجرا بستگی دارد، نه به جای نوشتن، پس خطایی رخ نمی‌دهد. گزینه‌ی ۴ هم حالت عادی است.
 
   - level: medium
     stem: |
-      اجرای کدام قطعه‌کد **خطا** می‌دهد؟
+      کدام قطعه‌کد از نظر نوشتاری (syntax) **نادرست** است و اصلاً اجرا نمی‌شود؟
     check: option-throws
     errorName: SyntaxError
     options:
