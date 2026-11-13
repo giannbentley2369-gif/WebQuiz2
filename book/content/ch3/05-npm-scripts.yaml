@@ -1,0 +1,487 @@
+id: ch3-npm-scripts
+title: "اسکریپت‌های npm و فایل package.json"
+slides: "NodeJS & TS، اسلاید ۱۱"
+lesson: |
+  فرض کن هر بار که می‌خواهی تلویزیون را روی شبکه‌ی خبر ببری، باید عدد فرکانس را دستی وارد کنی. خیلی راحت‌تر است که روی کنترل یک دکمه به اسم «خبر» داشته باشی. **اسکریپت‌های npm** همین دکمه‌ها هستند: به دستورهای طولانی و تکراری پروژه یک **اسم کوتاه** می‌دهیم و با آن اسم اجرایشان می‌کنیم. جای این دکمه‌ها فایل `package.json` است؛ پس اول خود این فایل را کامل بشناسیم.
+
+  ### آناتومی فایل `package.json`
+  یک `package.json` واقعی و نسبتاً کامل:
+
+  ```json title=package.json
+  {
+    "name": "shop-api",
+    "version": "2.1.0",
+    "description": "A small online shop",
+    "main": "server.js",
+    "type": "commonjs",
+    "scripts": {
+      "start": "node server.js",
+      "dev": "node --watch server.js",
+      "test": "jest",
+      "build": "webpack --mode production"
+    },
+    "dependencies": {
+      "express": "^5.3.0"
+    },
+    "devDependencies": {
+      "jest": "^30.5.2",
+      "webpack": "^5.112.2"
+    },
+    "license": "ISC"
+  }
+  ```
+
+  | فیلد | معنی |
+  |---|---|
+  | `name` | اسم پکیج؛ با حروف کوچک و بدون فاصله (مثل `shop-api`) |
+  | `version` | نسخه با قالب SemVer یعنی MAJOR.MINOR.PATCH |
+  | `description` | توضیح کوتاه پروژه |
+  | `main` | **فایل ورودی پکیج**: وقتی کس دیگری این پکیج را با `require("shop-api")` وارد کند، این فایل بارگذاری می‌شود. `npm start` از این فیلد استفاده **نمی‌کند**. |
+  | `type` | `"commonjs"` یا `"module"`: فایل‌های `.js` به‌صورت CommonJS اجرا شوند یا ES Module |
+  | `scripts` | دستورهای میان‌بُر پروژه (موضوع اصلی این درس) |
+  | `dependencies` | وابستگی‌های زمان **اجرا** |
+  | `devDependencies` | وابستگی‌های زمان **توسعه** (تست، build و…) |
+  | `license` | مجوز استفاده از کد (پیش‌فرض `npm init`: `ISC`) |
+
+  (`node --watch server.js` یعنی سرور را اجرا کن و با هر تغییر فایل، خودکار دوباره راهش بینداز.)
+
+  #### قانون‌های JSON
+  `package.json` باید **JSON واقعی** باشد، نه کد JavaScript. یعنی:
+  - همه‌ی کلیدها و رشته‌ها داخل کوتیشن **دوتایی** (`"`) باشند؛ کوتیشن تکی (`'`) و کلید بدون کوتیشن ممنوع است.
+  - **توضیح (comment)** مثل `//` یا `/* */` ممنوع است.
+  - بعد از آخرین عضو یک شیء یا آرایه **ویرگول** نیاید (trailing comma ممنوع).
+  - مقدارها فقط می‌توانند رشته، عدد، `true`/`false`، `null`، آرایه یا شیء باشند (نه تابع، نه `undefined`).
+
+  در فایل خراب زیر، بعد از آخرین عضو یک ویرگول اضافه آمده است:
+
+  ```json title=package.json
+  {
+    "name": "shop-api",
+    "scripts": { "start": "node server.js" },
+  }
+  ```
+
+  همین یک ویرگول کافی است تا هر دستور npm خطا بدهد:
+
+  ```text
+  npm error code EJSONPARSE
+  npm error JSON.parse Invalid package.json: JSONParseError: Expected double-quoted property name in JSON at position 78 (line 5 column 1) ...
+  npm error JSON.parse Note: package.json must be actual JSON, not just JavaScript.
+  ```
+
+  ### اسکریپت‌های npm (اسلاید ۱۱)
+  اسلاید ۱۱ پنج نکته دارد:
+
+  ۱. **Define custom commands in the scripts section of package.json.** دستورهای دلخواه را در بخش `scripts` فایل `package.json` تعریف می‌کنیم: کلید، اسم اسکریپت است و مقدار، دستوری که در ترمینال اجرا می‌شود.
+
+  ۲. **Run scripts with `npm run <script>` from the terminal.** اسکریپت را با `npm run <اسم>` اجرا می‌کنیم.
+
+  ۳. **Can automate tasks like building, testing, or starting servers.** کارهای تکراری مثل **ساختن** (build)، **تست** و **راه‌اندازی سرور** را خودکار می‌کنیم.
+
+  ۴. **Supports chaining commands and using environment variables.** می‌توان چند دستور را پشت هم **زنجیر** کرد (chaining) و از **متغیرهای محیطی** (environment variables: مقدارهایی که سیستم‌عامل در اختیار برنامه‌ها می‌گذارد و در Node.js با `process.env` خوانده می‌شوند) استفاده کرد.
+
+  ۵. **Widely used to standardize project workflows across teams.** همه‌ی اعضای تیم با دستورهای **یکسان** (`npm test`، `npm run build`، …) کار می‌کنند و لازم نیست جزئیات ابزارهای پشت هر دستور را حفظ کنند.
+
+  خود اسلاید مثال کد ندارد؛ مثال‌های زیر را ما ساخته و با npm نسخه‌ی 11 اجرا کرده‌ایم. فرض کن `package.json` این است و `server.js` فقط `console.log("Server is running");` را دارد:
+
+  ```json title=package.json
+  {
+    "name": "shop-api",
+    "version": "2.1.0",
+    "scripts": {
+      "start": "node server.js",
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "dev": "echo dev mode",
+      "build": "echo step 1: clean && echo step 2: compile",
+      "ci": "npm test && npm run build",
+      "info": "node -e \"console.log(process.env.npm_package_name, process.env.npm_package_version, process.env.npm_lifecycle_event)\""
+    }
+  }
+  ```
+
+  (داخل رشته‌ی JSON، کوتیشن دوتایی را باید با `\"` نوشت.)
+
+  #### اجرای یک اسکریپت و شکل خروجی
+  npm قبل از اجرای هر اسکریپت، دو خط **سرآیند** با علامت `>` چاپ می‌کند: اسم و نسخه‌ی پکیج به‌اضافه‌ی اسم اسکریپت، و خود دستور. بعد خروجی دستور می‌آید:
+
+  ```bash
+  npm run build
+  # > shop-api@2.1.0 build
+  # > echo step 1: clean && echo step 2: compile
+  #
+  # step 1: clean
+  # step 2: compile
+  ```
+
+  اگر `--silent` اضافه کنی (`npm run build --silent`)، خط‌های سرآیند چاپ نمی‌شوند و فقط خروجی خود دستور دیده می‌شود.
+
+  #### `start` و `test` بدون `run`؛ بقیه با `run`
+  چند اسم اسکریپت برای npm معنای خاص دارند و **بدون** `run` هم اجرا می‌شوند؛ مهم‌ترین‌هایشان `start` و `test` هستند (`npm t` هم کوتاه‌شده‌ی `npm test` است). بقیه‌ی اسکریپت‌ها حتماً `run` می‌خواهند:
+
+  ```bash
+  npm start        # runs "start": Server is running
+  npm test         # runs "test"
+  npm run dev      # runs "dev": dev mode
+  npm dev
+  # Unknown command: "dev"
+  #
+  # Did you mean this?
+  #   npm run dev # run the "dev" package script
+  ```
+
+  #### فهرست اسکریپت‌ها و اسکریپتِ ناموجود
+  `npm run` **بدون اسم** فهرست اسکریپت‌ها را نشان می‌دهد؛ اول اسکریپت‌های خاص (Lifecycle scripts مثل `start` و `test`) و بعد بقیه («available via `npm run`»). اگر اسم اسکریپتی را بزنی که وجود ندارد:
+
+  ```bash
+  npm run deploy
+  # npm error Missing script: "deploy"
+  # npm error
+  # npm error To see a list of scripts, run:
+  # npm error   npm run
+  ```
+
+  دو پیام را با هم قاطی نکن: `Unknown command: "dev"` یعنی خود **npm** دستوری به اسم `dev` ندارد (چون `run` را جا انداخته‌ای)؛ `Missing script: "deploy"` یعنی **اسکریپتی** به اسم `deploy` در `package.json` نیست.
+
+  #### زنجیر کردن دستورها با `&&`
+  در اسکریپت `build`، عملگر `&&` (و منطقی در ترمینال) دو دستور را پشت هم اجرا کرد. قانونش این است: **دستور دوم فقط وقتی اجرا می‌شود که دستور اول موفق باشد** (یعنی با کد خروج ۰ تمام شود). اسکریپت `ci` را ببین:
+
+  ```bash
+  npm run ci
+  # > shop-api@2.1.0 ci
+  # > npm test && npm run build
+  #
+  # > shop-api@2.1.0 test
+  # > echo "Error: no test specified" && exit 1
+  #
+  # Error: no test specified
+  ```
+
+  اسکریپت `test` پیش‌فرضِ `npm init` با `exit 1` تمام می‌شود، یعنی «شکست». پس `&&` اجازه‌ی اجرای `npm run build` را نمی‌دهد و کل `npm run ci` هم با کد خروج ۱ شکست می‌خورد. (خود اسکریپت `test` پیش‌فرض هم یک نمونه‌ی `&&` است: اول پیام را چاپ می‌کند و بعد با `exit 1` شکست را اعلام می‌کند.)
+
+  | عملگر | دستور دوم کی اجرا می‌شود؟ |
+  |---|---|
+  | `a && b` | فقط اگر `a` **موفق** باشد |
+  | `a \|\| b` | فقط اگر `a` **شکست** بخورد |
+  | `a ; b` | در هر حال (در ترمینال‌های Linux و macOS) |
+
+  #### متغیرهای محیطی
+  npm هنگام اجرای اسکریپت چند متغیر محیطی آماده می‌کند؛ مثلاً `npm_package_name` (اسم پکیج)، `npm_package_version` (نسخه) و `npm_lifecycle_event` (اسم اسکریپتی که الان اجرا می‌شود):
+
+  ```bash
+  npm run info
+  # > shop-api@2.1.0 info
+  # > node -e "console.log(process.env.npm_package_name, process.env.npm_package_version, process.env.npm_lifecycle_event)"
+  #
+  # shop-api 2.1.0 info
+  ```
+
+  متغیر دلخواه خودت را هم می‌توانی جلوی دستور بنویسی (این نحو مال ترمینال‌های Linux و macOS است؛ در Windows معمولاً از پکیج `cross-env` کمک می‌گیرند). با اسکریپت `"greet": "node -e \"console.log('Hello ' + (process.env.NAME || 'guest'))\""`:
+
+  ```bash
+  npm run greet              # Hello guest
+  NAME=Sara npm run greet    # Hello Sara
+  ```
+
+  #### ابزارهای `node_modules/.bin` و فرستادن آرگومان
+  - npm هنگام اجرای اسکریپت، پوشه‌ی `node_modules/.bin` پروژه را **اول PATH** می‌گذارد. پس اسکریپتی مثل `"test": "jest"` کار می‌کند، حتی اگر `jest` فقط داخل پروژه (با `npm install -D jest`) نصب شده باشد و سراسری نصب نباشد.
+  - برای فرستادن آرگومان به خود اسکریپت، آن را بعد از `--` بنویس: `npm start -- --port=4000` در عمل `node server.js --port=4000` را اجرا می‌کند و `process.argv.slice(2)` در `server.js` می‌شود `[ '--port=4000' ]`. بدون `--`، npm خودش آن گزینه را برمی‌دارد و به اسکریپت نمی‌رسد.
+
+  #### اسکریپت‌های pre و post
+  اگر اسکریپتی به اسم `prebuild` یا `postbuild` تعریف کنی، `npm run build` خودکار اول `prebuild`، بعد `build` و در آخر `postbuild` را اجرا می‌کند؛ ترتیب نوشتنشان در فایل مهم نیست:
+
+  ```json
+  "scripts": {
+    "postbuild": "echo C",
+    "build": "echo B",
+    "prebuild": "echo A"
+  }
+  ```
+
+  ```bash
+  npm run build --silent
+  # A
+  # B
+  # C
+  ```
+
+  ::: tip
+  - `npm start` و `npm test` بدون `run` هم کار می‌کنند؛ هر اسکریپت دیگری (`dev`، `build`، `lint`، …) با `npm run <اسم>` اجرا می‌شود.
+  - اگر `start` تعریف نشده باشد ولی فایلی به اسم `server.js` در پروژه باشد، `npm start` به‌طور پیش‌فرض `node server.js` را اجرا می‌کند؛ در غیر این صورت `Missing script: "start"` می‌گیری. فیلد `main` در این تصمیم هیچ نقشی ندارد.
+  :::
+
+  ::: trap
+  - `npm build` یا `npm dev` خطای `Unknown command` می‌دهند؛ `run` را فراموش نکن.
+  - `package.json` توضیح (comment)، ویرگول اضافه‌ی آخر و کوتیشن تکی را **نمی‌پذیرد**؛ هر کدام خطای `EJSONPARSE` می‌دهد.
+  - در `a && b`، اگر `a` شکست بخورد `b` **اجرا نمی‌شود**؛ در `a || b` برعکس است.
+  :::
+
+  ::: summary
+  - `package.json`: `name`، `version`، `main` (فایل ورودی پکیج)، `type`، `scripts`، `dependencies`، `devDependencies`، `license`؛ و باید JSON معتبر باشد.
+  - اسلاید ۱۱: تعریف در `scripts`، اجرا با `npm run <script>`، خودکارسازی build و test و راه‌اندازی سرور، زنجیر کردن دستورها و متغیرهای محیطی، یکسان‌سازی روند کار تیم.
+  - `npm run` به‌تنهایی فهرست می‌دهد؛ اسکریپت ناموجود: `Missing script`؛ دستور ناموجود npm: `Unknown command`.
+  - npm متغیرهایی مثل `npm_package_name` و `npm_lifecycle_event` می‌سازد و `node_modules/.bin` را به PATH اضافه می‌کند.
+  :::
+questions:
+  - level: easy
+    stem: طبق اسلاید ۱۱، اسکریپت‌های npm در کجا تعریف می‌شوند؟
+    options:
+      - 'فایل `package-lock.json`'
+      - 'فایل `.npmrc`'
+      - 'بخش `scripts` فایل `package.json`'
+      - 'پوشه‌ی `node_modules/.bin`'
+    answer: 3
+    explain: |
+      اسلاید ۱۱: «Define custom commands in the scripts section of package.json». `package-lock.json` نسخه‌های دقیق پکیج‌ها را ثبت می‌کند، `.npmrc` تنظیمات خود npm (مثل registry) را نگه می‌دارد و `node_modules/.bin` محل فایل‌های اجرایی پکیج‌های نصب‌شده است، نه جای تعریف اسکریپت‌ها.
+  - level: easy
+    stem: در `package.json` اسکریپتی به اسم `build` تعریف شده است. با کدام دستور اجرایش می‌کنیم؟
+    options:
+      - '`npm run build`'
+      - '`npm build`'
+      - '`node build`'
+      - '`npm install build`'
+    answer: 1
+    explain: |
+      اسکریپت‌های دلخواه با `npm run <script>` اجرا می‌شوند. `npm build` در npm نسخه‌ی 11 خطای `Unknown command: "build"` می‌دهد، چون `build` جزو اسم‌های خاصی نیست که بدون `run` اجرا شوند. `node build` به دنبال فایلی به اسم `build` می‌گردد و `npm install build` پکیجی به اسم `build` را از registry نصب می‌کند.
+  - level: medium
+    stem: در `package.json` چهار اسکریپت `dev`، `lint`، `build` و `test` تعریف شده است. کدام دستور **بدون** `run` اسکریپت مربوطش را اجرا می‌کند؟
+    options:
+      - '`npm dev`'
+      - '`npm lint`'
+      - '`npm build`'
+      - '`npm test`'
+    answer: 4
+    explain: |
+      `test` (مثل `start`) اسم خاصی است که npm آن را بدون `run` هم اجرا می‌کند. `npm dev`، `npm lint` و `npm build` هر سه خطای `Unknown command` می‌دهند (npm حتی پیشنهاد می‌دهد «Did you mean this? npm run dev»)؛ این اسکریپت‌ها حتماً با `npm run` اجرا می‌شوند.
+  - level: medium
+    stem: در `package.json` هیچ اسکریپتی به اسم `deploy` تعریف نشده است. با اجرای `npm run deploy` چه پیامی می‌گیریم؟
+    options:
+      - '`Unknown command: "deploy"`'
+      - '`npm error Missing script: "deploy"`'
+      - 'هیچ پیامی چاپ نمی‌شود و دستور بی‌صدا تمام می‌شود.'
+      - 'npm یک اسکریپت خالی به اسم `deploy` می‌سازد و اجرایش می‌کند.'
+    answer: 2
+    explain: |
+      وقتی `run` را نوشته‌ای ولی اسکریپتی با آن اسم نیست، npm خطای `Missing script: "deploy"` می‌دهد و پیشنهاد می‌کند با `npm run` فهرست اسکریپت‌ها را ببینی. پیام `Unknown command` (گزینه‌ی ۱) مال وقتی است که **بدون** `run` بنویسی، مثلاً `npm deploy`. npm نه بی‌صدا تمام می‌شود و نه اسکریپتی برای ما می‌سازد.
+  - level: easy
+    stem: دستور `npm run` (بدون اسم اسکریپت) چه کاری انجام می‌دهد؟
+    options:
+      - 'همه‌ی اسکریپت‌های `package.json` را به ترتیب اجرا می‌کند.'
+      - 'اسکریپت `start` را اجرا می‌کند.'
+      - 'فهرست اسکریپت‌های تعریف‌شده در `package.json` را نشان می‌دهد.'
+      - 'خطای `Missing script` می‌دهد.'
+    answer: 3
+    explain: |
+      `npm run` به‌تنهایی فقط اسکریپت‌ها را فهرست می‌کند: اول اسکریپت‌های خاص مثل `start` و `test` («Lifecycle scripts included in …») و بعد بقیه («available via `npm run`»). هیچ اسکریپتی را اجرا نمی‌کند و خطایی هم نمی‌دهد.
+  - level: hard
+    stem: |
+      `package.json` یک پروژه به شکل زیر است. با اجرای `npm run build`، خود دستورها (بدون در نظر گرفتن خط‌های سرآیندِ `>` که npm چاپ می‌کند) چه چیزی چاپ می‌کنند؟
+    code: |
+      {
+        "name": "site",
+        "version": "1.0.0",
+        "scripts": {
+          "postbuild": "echo C",
+          "build": "echo B",
+          "prebuild": "echo A"
+        }
+      }
+    lang: json
+    manual: npm scripts cannot run in the automatic checker; verified with npm 11.19.1 in a scratch project (npm run build printed A, B, C).
+    options:
+      - out: ["A", "B", "C"]
+      - out: ["C", "B", "A"]
+      - out: ["B"]
+      - out: ["B", "A", "C"]
+    answer: 1
+    explain: |
+      npm برای هر اسکریپت دنبال `pre<name>` و `post<name>` هم می‌گردد. با `npm run build` اول `prebuild`، بعد `build` و در آخر `postbuild` اجرا می‌شود؛ پس خروجی `A`، `B`، `C` است. ترتیب نوشتن کلیدها در فایل اهمیتی ندارد (رد گزینه‌ی ۲)، و `prebuild` و `postbuild` هم واقعاً خودکار اجرا می‌شوند (رد گزینه‌ی ۳). گزینه‌ی ۴ هم ترتیب pre و build را جابه‌جا کرده است.
+  - level: hard
+    stem: |
+      با `package.json` زیر، دستور `npm run ci` را اجرا می‌کنیم. چه اتفاقی می‌افتد؟
+    code: |
+      {
+        "name": "shop-api",
+        "version": "2.1.0",
+        "scripts": {
+          "test": "echo \"Error: no test specified\" && exit 1",
+          "build": "echo building...",
+          "ci": "npm test && npm run build"
+        }
+      }
+    lang: json
+    manual: npm scripts cannot run in the automatic checker; verified with npm 11.19.1 in a scratch project (npm run ci printed the test error, never ran build and exited with code 1).
+    options:
+      - 'هر دو اسکریپت اجرا می‌شوند و `building...` هم چاپ می‌شود، چون `&&` فقط دستورها را پشت سر هم می‌چیند.'
+      - 'اول `building...` و بعد پیام خطای تست چاپ می‌شود.'
+      - 'npm خطای `Missing script: "ci"` می‌دهد.'
+      - 'پیام `Error: no test specified` چاپ می‌شود، تست با کد خروج ۱ شکست می‌خورد و `npm run build` اجرا نمی‌شود.'
+    answer: 4
+    explain: |
+      `ci` اول `npm test` را اجرا می‌کند. اسکریپت `test` پیام را چاپ می‌کند و با `exit 1` شکست می‌خورد. عملگر `&&` دستور دوم را **فقط** در صورت موفقیت دستور اول اجرا می‌کند، پس `npm run build` هرگز اجرا نمی‌شود و `npm run ci` با کد ۱ تمام می‌شود. گزینه‌ی ۱ `&&` را با `;` اشتباه گرفته است. ترتیب اجرا هم از چپ به راست است (رد گزینه‌ی ۲) و اسکریپت `ci` تعریف شده است (رد گزینه‌ی ۳).
+  - level: medium
+    stem: هنگام اجرای یک اسکریپت npm، کدام متغیر محیطی **اسم اسکریپتی** را که الان اجرا می‌شود (مثلاً `build`) نگه می‌دارد؟
+    options:
+      - '`npm_package_name`'
+      - '`npm_lifecycle_event`'
+      - '`npm_script_name`'
+      - '`NODE_ENV`'
+    answer: 2
+    explain: |
+      npm اسم اسکریپت در حال اجرا را در `npm_lifecycle_event` می‌گذارد. `npm_package_name` اسم **پکیج** (فیلد `name` در `package.json`) است. متغیری به اسم `npm_script_name` ساخته نمی‌شود. `NODE_ENV` هم یک متغیر قراردادی است (مثلاً `production`) که npm خودش برای اسم اسکریپت پر نمی‌کند.
+  - level: hard
+    stem: کدام گزینه می‌تواند محتوای **معتبر** یک فایل `package.json` باشد؟
+    check: claims
+    setup: 'const valid = (s) => { try { JSON.parse(s); return true; } catch { return false; } };'
+    options:
+      - text: '`{ "name": "shop", }`'
+        expr: 'valid(''{ "name": "shop", }'')'
+        equals: 'true'
+      - text: '`{ ''name'': ''shop'' }`'
+        expr: 'valid("{ ''name'': ''shop'' }")'
+        equals: 'true'
+      - text: '`{ "name": "shop", "private": true }`'
+        expr: 'valid(''{ "name": "shop", "private": true }'')'
+        equals: 'true'
+      - text: '`{ name: "shop" }`'
+        expr: 'valid(''{ name: "shop" }'')'
+        equals: 'true'
+    answer: 3
+    explain: |
+      `package.json` باید JSON معتبر باشد. گزینه‌ی ۳ درست است: کلیدها و رشته‌ها با کوتیشن دوتایی‌اند و `true` هم یک مقدار مجاز JSON است. گزینه‌ی ۱ بعد از آخرین عضو ویرگول اضافه (trailing comma) دارد، گزینه‌ی ۲ از کوتیشن تکی استفاده کرده و در گزینه‌ی ۴ کلید `name` کوتیشن ندارد. هر سه در JavaScript مجازند، ولی در JSON نه، و npm برایشان خطای `EJSONPARSE` می‌دهد.
+  - level: hard
+    stem: کدام عبارت درباره‌ی `package.json` **نادرست** است؟
+    options:
+      - 'می‌توان با `//` داخل `package.json` توضیح (comment) نوشت تا اسکریپت‌ها خواناتر شوند.'
+      - 'کلیدها و رشته‌ها در `package.json` باید داخل کوتیشن دوتایی (`"`) باشند.'
+      - 'بعد از آخرین عضو یک شیء یا آرایه در `package.json` نباید ویرگول بیاید.'
+      - 'اگر `package.json` خراب باشد، npm خطای `EJSONPARSE` می‌دهد و یادآوری می‌کند که این فایل باید JSON واقعی باشد، نه JavaScript.'
+    answer: 1
+    explain: |
+      JSON اصلاً comment ندارد و اگر `//` بنویسی، npm خطای `EJSONPARSE` می‌دهد، همراه با پیام «package.json must be actual JSON, not just JavaScript». پس گزینه‌ی ۱ نادرست است. گزینه‌های ۲ و ۳ قانون‌های اصلی JSON‌اند و گزینه‌ی ۴ هم رفتار واقعی npm است.
+  - level: medium
+    stem: فرق `npm run greet --silent` با `npm run greet` چیست؟
+    options:
+      - '`--silent` اسکریپت را اجرا نمی‌کند و فقط نشان می‌دهد چه دستوری اجرا می‌شد.'
+      - '`--silent` خروجی خود اسکریپت را هم پنهان می‌کند و هیچ چیزی چاپ نمی‌شود.'
+      - '`--silent` اسکریپت را در پس‌زمینه اجرا می‌کند.'
+      - '`--silent` خط‌های سرآیند npm (که با `>` شروع می‌شوند) را چاپ نمی‌کند و فقط خروجی خود اسکریپت دیده می‌شود.'
+    answer: 4
+    explain: |
+      npm به‌طور معمول قبل از خروجی اسکریپت دو خط سرآیند مثل `> shop-api@2.1.0 greet` و خود دستور را چاپ می‌کند. با `--silent` این خط‌ها (و پیام‌های خود npm) حذف می‌شوند، ولی اسکریپت کامل اجرا می‌شود و خروجی خودش را چاپ می‌کند. پس گزینه‌های ۱ و ۲ غلط‌اند و `--silent` ربطی به اجرای پس‌زمینه هم ندارد.
+  - level: hard
+    stem: |
+      دو فایل زیر در پروژه هستند. در ترمینال دستور `npm start -- --port=4000` را اجرا می‌کنیم. فایل `server.js` (بعد از خط‌های سرآیند npm) چه چیزی چاپ می‌کند؟
+    files:
+      package.json: |
+        {
+          "name": "shop-api",
+          "version": "2.1.0",
+          "scripts": {
+            "start": "node server.js"
+          }
+        }
+      server.js: |
+        console.log(process.argv.slice(2));
+    manual: npm scripts cannot run in the automatic checker; verified with npm 11.19.1 in a scratch project (npm start -- --port=4000 ran node server.js --port=4000 and printed [ '--port=4000' ]).
+    options:
+      - '`[]`'
+      - '`[ ''--port=4000'' ]`'
+      - '`[ ''--'', ''--port=4000'' ]`'
+      - 'خطای `Unknown command`، چون `start` بدون `run` آمده است.'
+    answer: 2
+    explain: |
+      هر چیزی که بعد از `--` بیاید، به انتهای دستور اسکریپت اضافه می‌شود؛ پس npm در عمل `node server.js --port=4000` را اجرا می‌کند و `process.argv.slice(2)` برابر `[ '--port=4000' ]` است. خود `--` به اسکریپت نمی‌رسد (رد گزینه‌ی ۳). خروجی `[]` (گزینه‌ی ۱) وقتی است که `--` را ننویسی: آن وقت npm گزینه‌ی `--port` را مال خودش حساب می‌کند. `start` هم جزو اسم‌هایی است که بدون `run` اجرا می‌شوند (رد گزینه‌ی ۴).
+  - level: medium
+    stem: '`jest` در یک پروژه فقط با `npm install -D jest` نصب شده (سراسری نصب نیست) و در `package.json` داریم `"test": "jest"`. چرا `npm test` بدون خطا `jest` را پیدا و اجرا می‌کند؟'
+    options:
+      - 'چون npm هنگام نصب، `jest` را خودکار به‌صورت سراسری هم نصب می‌کند.'
+      - 'چون `jest` جزو دستورهای داخلی خود npm است.'
+      - 'چون npm هنگام اجرای اسکریپت‌ها، پوشه‌ی `node_modules/.bin` پروژه را به PATH اضافه می‌کند.'
+      - 'چون Node.js خودش `jest` را همراه دارد.'
+    answer: 3
+    explain: |
+      پکیج‌هایی که دستور خط فرمان دارند، فایل اجرایی‌شان را در `node_modules/.bin` می‌گذارند و npm هنگام اجرای اسکریپت این پوشه را اول PATH قرار می‌دهد؛ پس اسم `jest` پیدا می‌شود. نصب با `-D` فقط محلی است (رد گزینه‌ی ۱)، `jest` یک پکیج جداست، نه دستور داخلی npm (رد گزینه‌ی ۲) و Node.js هم `jest` را همراه ندارد (رد گزینه‌ی ۴).
+  - level: medium
+    stem: 'در `package.json` فقط `"main": "app.js"` آمده و بخش `scripts` هیچ اسکریپت `start`ی ندارد. فایلی به اسم `server.js` هم در پروژه نیست. با اجرای `npm start` چه اتفاقی می‌افتد؟'
+    options:
+      - 'خطای `npm error Missing script: "start"` می‌گیریم.'
+      - 'فایل `app.js` اجرا می‌شود، چون `main` فایل اصلی پروژه است.'
+      - 'فایل `index.js` اجرا می‌شود.'
+      - 'خطای `Unknown command: "start"` می‌گیریم.'
+    answer: 1
+    explain: |
+      `npm start` اسکریپت `start` را اجرا می‌کند؛ اگر تعریف نشده باشد، فقط وقتی فایل `server.js` وجود داشته باشد `node server.js` را اجرا می‌کند. اینجا هیچ‌کدام نیست، پس `Missing script: "start"` می‌گیریم. فیلد `main` فایل ورودی پکیج برای `require` است و `npm start` از آن استفاده نمی‌کند (رد گزینه‌ی ۲). `index.js` هم خودکار اجرا نمی‌شود (رد گزینه‌ی ۳)، و `start` دستور شناخته‌شده‌ی npm است، پس `Unknown command` هم نمی‌گیریم (رد گزینه‌ی ۴).
+  - level: easy
+    stem: |
+      جای خالی را کامل کن:
+
+      «در اسکریپت `"build": "npm run clean ……… npm run compile"`، برای اینکه دستور دوم **فقط در صورت موفقیت** دستور اول اجرا شود، به جای نقطه‌چین عملگر ……… را می‌نویسیم.»
+    options:
+      - '`||`'
+      - '`|`'
+      - '`;`'
+      - '`&&`'
+    answer: 4
+    explain: |
+      `&&` دستور دوم را فقط وقتی اجرا می‌کند که دستور اول با موفقیت (کد خروج ۰) تمام شود؛ اسلاید ۱۱ از همین «chaining commands» حرف می‌زند. `||` برعکس است و دستور دوم را فقط در صورت **شکست** دستور اول اجرا می‌کند. `;` در هر حال دستور دوم را اجرا می‌کند و `|` (pipe) خروجی دستور اول را به ورودی دستور دوم می‌فرستد.
+  - level: medium
+    stem: اسلاید ۱۱ می‌گوید اسکریپت‌های npm «Widely used to standardize project workflows across teams». منظور چیست؟
+    options:
+      - 'هر عضو تیم باید اسکریپت‌های جداگانه‌ی خودش را بنویسد.'
+      - 'همه‌ی اعضای تیم کارهای رایج را با دستورهای یکسانی مثل `npm test` و `npm run build` انجام می‌دهند، بدون اینکه لازم باشد جزئیات ابزارهای پشت آن‌ها را حفظ کنند.'
+      - 'اسکریپت‌ها فقط روی سیستم‌عامل Linux اجرا می‌شوند تا محیط همه یکسان باشد.'
+      - 'npm خودکار کد همه‌ی اعضای تیم را یکسان‌سازی و ادغام (merge) می‌کند.'
+    answer: 2
+    explain: |
+      وقتی دستورهای پروژه در `package.json` نوشته شده باشند، هر کسی (و هر سیستم خودکاری) با همان `npm test` یا `npm run build` کار را انجام می‌دهد؛ مثلاً لازم نیست بداند build با کدام ابزار و کدام گزینه‌ها انجام می‌شود. گزینه‌ی ۱ دقیقاً برعکس یکسان‌سازی است. اسکریپت‌ها روی همه‌ی سیستم‌عامل‌ها اجرا می‌شوند و ادغام کد هم کار git است، نه npm.
+  - level: hard
+    stem: |
+      با `package.json` زیر، دستور `npm run info` را اجرا می‌کنیم. خط آخر خروجی (بعد از سرآیندهای npm) کدام است؟
+    code: |
+      {
+        "name": "shop-api",
+        "version": "2.1.0",
+        "scripts": {
+          "info": "node -e \"console.log(process.env.npm_package_name, process.env.npm_package_version, process.env.npm_lifecycle_event)\""
+        }
+      }
+    lang: json
+    manual: npm scripts cannot run in the automatic checker; verified with npm 11.19.1 in a scratch project (npm run info printed "shop-api 2.1.0 info").
+    options:
+      - out: "undefined undefined undefined"
+      - out: "shop-api 2.1.0 start"
+      - out: "shop-api 2.1.0 info"
+      - out: "info 2.1.0 shop-api"
+    answer: 3
+    explain: |
+      npm هنگام اجرای اسکریپت این متغیرها را می‌سازد: `npm_package_name` (اسم پکیج: `shop-api`)، `npm_package_version` (نسخه: `2.1.0`) و `npm_lifecycle_event` (اسم اسکریپت در حال اجرا: `info`). پس خروجی `shop-api 2.1.0 info` است. اگر همین دستور را مستقیم و بیرون از npm اجرا می‌کردیم، سه `undefined` می‌گرفتیم (گزینه‌ی ۱). اسکریپت در حال اجرا `info` است، نه `start` (گزینه‌ی ۲)، و گزینه‌ی ۴ ترتیب متغیرها را برعکس کرده است.
+  - level: easy
+    stem: در `package.json`، وابستگی‌هایی که فقط هنگام **توسعه** لازم‌اند (مثل ابزار تست) در کدام فیلد نوشته می‌شوند؟
+    options:
+      - '`devDependencies`'
+      - '`dependencies`'
+      - '`scripts`'
+      - '`main`'
+    answer: 1
+    explain: |
+      `devDependencies` برای ابزارهای زمان توسعه (تست، build، کامپایلر و…) است و با `npm install -D` پر می‌شود. `dependencies` وابستگی‌های زمان **اجرا** را نگه می‌دارد، `scripts` دستورهای میان‌بُر است و `main` فایل ورودی پکیج را مشخص می‌کند.
+  - level: medium
+    stem: 'فیلد `"type": "module"` در `package.json` چه اثری دارد؟'
+    options:
+      - 'پروژه را خصوصی می‌کند تا به‌اشتباه در registry منتشر نشود.'
+      - 'اعلام می‌کند که پروژه یک ماژول npm است و دیگران می‌توانند نصبش کنند.'
+      - 'فایل‌های `.mjs` پروژه را به CommonJS تبدیل می‌کند.'
+      - 'فایل‌های `.js` پروژه به‌صورت ES Module اجرا می‌شوند و می‌توان در آن‌ها از `import` و `export` استفاده کرد.'
+    answer: 4
+    explain: |
+      `type` تعیین می‌کند Node.js فایل‌های `.js` را چطور اجرا کند: `"module"` یعنی ES Module و `"commonjs"` یعنی CommonJS. خصوصی کردن پروژه کار فیلد `"private": true` است (رد گزینه‌ی ۱). `type` ربطی به قابل نصب بودن پروژه ندارد (رد گزینه‌ی ۲) و فایل‌های `.mjs` همیشه ES Module هستند (رد گزینه‌ی ۳).
+  - level: medium
+    stem: پروژه‌ای را با `npm init -y` ساخته‌ایم و اسکریپت `test` آن را تغییر نداده‌ایم. با اجرای `npm test` چه اتفاقی می‌افتد؟
+    options:
+      - 'npm همه‌ی فایل‌های تست پروژه را پیدا و اجرا می‌کند.'
+      - 'پیام `Error: no test specified` چاپ می‌شود و دستور با کد خروج ۱ (یعنی شکست) تمام می‌شود.'
+      - 'خطای `Missing script: "test"` می‌گیریم.'
+      - 'خطای `Unknown command: "test"` می‌گیریم، چون باید `npm run test` بنویسیم.'
+    answer: 2
+    explain: |
+      `npm init -y` اسکریپت `"test": "echo \"Error: no test specified\" && exit 1"` را می‌سازد: پیام را چاپ می‌کند و با `exit 1` شکست را اعلام می‌کند. این اسکریپت هیچ تستی پیدا یا اجرا نمی‌کند (رد گزینه‌ی ۱). اسکریپت `test` وجود دارد (رد گزینه‌ی ۳) و `test` از اسم‌هایی است که بدون `run` هم اجرا می‌شوند (رد گزینه‌ی ۴).
