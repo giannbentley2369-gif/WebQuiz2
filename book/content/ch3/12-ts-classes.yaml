@@ -1,0 +1,954 @@
+id: ch3-ts-classes
+title: "کلاس‌ها در TypeScript"
+slides: "NodeJS & TS، اسلاید ۲۱"
+lesson: |
+  ### کلاس یعنی چه؟ (یک یادآوری سریع)
+
+  فرض کن در یک کارخانه‌ی خودروسازی کار می‌کنی. قبل از ساختن خودروها یک **نقشه** می‌کشی: «هر خودرو رنگ دارد، مدل دارد و می‌تواند حرکت کند». بعد از روی همین یک نقشه، صدها خودروی واقعی می‌سازی. در برنامه‌نویسی به این نقشه **class** (کلاس) و به هر چیزی که از روی آن ساخته می‌شود **object** یا **instance** (شیء یا نمونه) می‌گویند.
+
+  ::: analogy
+  class مثل نقشه‌ی یک ساختمان است و هر object یک ساختمانِ واقعی که از روی آن نقشه ساخته شده. خودِ نقشه جای زندگی نیست؛ تا وقتی با `new` چیزی از روی آن نسازی، هیچ اتفاقی نمی‌افتد.
+  :::
+
+  کلاس‌ها از نسخه‌ی ES6 بخشی از خودِ JavaScript هستند (در فصل اول با آن‌ها و با `this` آشنا شدی). TypeScript همان کلاس‌های JavaScript را برمی‌دارد و چند امکان مهم به آن‌ها اضافه می‌کند: نوع (type) برای propertyها و پارامترها، **access modifier**ها، `implements`، `readonly` و چند امکان دیگر. برای همین زیر کد اسلاید ۲۱ نوشته شده: **«Just like JS, but better!»** (درست مثل JS، ولی بهتر!).
+
+  اسلاید ۲۱ چهار نکته‌ی اصلی دارد:
+
+  1. کلاس‌ها از **OOP** (Object-Oriented Programming، برنامه‌نویسی شیءگرا) با **constructor** (سازنده)، **property** (ویژگی) و **method** (متد) پشتیبانی می‌کنند.
+  2. کلاس می‌تواند یک **interface را implement کند** (پیاده‌سازی کند) تا ساختارش تضمین شود.
+  3. **inheritance** (وراثت) با `extends` و **method overriding** (بازنویسی متد) پشتیبانی می‌شود.
+  4. **access modifier**ها (تعیین‌کننده‌های سطح دسترسی: `public`، `private`، `protected`) مشخص می‌کنند هر property و method از کجا قابل دسترسی است.
+
+  ### کد اسلاید ۲۱: سه جزء اصلی یک کلاس
+
+  ```ts title=weee.ts
+  class Person {
+    name: string;
+    constructor(name: string) {
+      this.name = name;
+    }
+    greet() {
+      console.log(`Hello, ${this.name}`);
+    }
+  }
+  ```
+
+  بیا خط به خط جلو برویم:
+
+  - `class Person { ... }`: کلاسی به اسم `Person` تعریف می‌کند. رسم است اسم کلاس با حرف بزرگ شروع شود.
+  - `name: string;`: **اعلان property**. در TypeScript هر property را باید (همراه با نوعش) در بدنه‌ی کلاس معرفی کنی. این خط یعنی «هر `Person` یک `name` از نوع `string` دارد».
+  - `constructor(name: string)`: **constructor** تابع ویژه‌ای است که **هر بار که با `new` یک شیء جدید ساخته می‌شود** اجرا می‌شود و شیء را مقداردهی اولیه می‌کند. پارامترش هم نوع دارد.
+  - `this.name = name;`: `this` یعنی «همین شیئی که الان در حال ساخته شدن است». مقدار پارامتر را در property آن شیء می‌گذاریم.
+  - `greet() { ... }`: یک **method** (تابعی که مال شیء است). داخلش با **template literal** (رشته‌ای بین دو بک‌تیک که `${...}` را با مقدار واقعی جایگزین می‌کند) سلام می‌کند.
+
+  ::: warning کد اسلاید به‌تنهایی هیچ خروجی‌ای ندارد
+  این کد فقط **نقشه** را تعریف می‌کند: نه شیئی ساخته شده و نه `greet` صدا زده شده است. پس اجرای آن هیچ چیزی چاپ نمی‌کند. برای دیدن خروجی باید شیء بسازیم و متد را صدا بزنیم.
+  :::
+
+  ```ts
+  class Person {
+    name: string;
+    constructor(name: string) {
+      this.name = name;
+    }
+    greet() {
+      console.log(`Hello, ${this.name}`);
+    }
+  }
+  const p = new Person("Alice");    // the constructor runs here
+  p.greet();                        // Hello, Alice
+  console.log(p.name);              // Alice
+  console.log(p instanceof Person); // true
+  ```
+
+  اسم کلاس خودش یک **نوع** هم هست؛ یعنی می‌توانی بنویسی `const p: Person = new Person("Ali");` یا تابعی بنویسی که پارامترش از نوع `Person` باشد.
+
+  وقتی `tsc` (کامپایلر TypeScript) این کد را به JavaScript تبدیل می‌کند، نوع‌ها پاک می‌شوند و یک کلاس معمولی JavaScript باقی می‌ماند (خروجی با target ES2022):
+
+  ```js
+  class Person {
+      name;
+      constructor(name) {
+          this.name = name;
+      }
+      greet() {
+          console.log(`Hello, ${this.name}`);
+      }
+  }
+  ```
+
+  ### «Just like JS, but better!» یعنی چه؟
+
+  در JavaScript معمولی اشتباه‌های زیر تا لحظه‌ی اجرا دیده نمی‌شوند (یا اصلاً خطا نمی‌دهند و فقط نتیجه‌ی غلط می‌دهند). TypeScript همان موقعِ نوشتن، یعنی در **compile time** (زمان کامپایل)، جلویشان را می‌گیرد:
+
+  ```ts
+  class Person {
+    name: string;
+    constructor(name: string) {
+      this.name = name;
+    }
+    greet() {
+      console.log(`Hello, ${this.name}`);
+    }
+  }
+  const p = new Person("Ali");
+  p.gret();               // Error TS2551: Property 'gret' does not exist. Did you mean 'greet'?
+  const q = new Person(); // Error TS2554: Expected 1 arguments, but got 0.
+  p.name = 42;            // Error TS2322: Type 'number' is not assignable to type 'string'.
+  ```
+
+  ### اعلان و مقداردهی propertyها (خطای TS2564)
+
+  در حالت **strict** (سخت‌گیرانه؛ این کتاب همیشه آن را فرض می‌کند) TypeScript مطمئن می‌شود هیچ propertyای بی‌مقدار نمی‌ماند: هر property اعلان‌شده باید یا **کنار اعلانش** مقدار اولیه بگیرد، یا **داخل constructor** مقداردهی شود. در غیر این صورت خطای **TS2564** می‌گیری.
+
+  ```ts
+  class Product {
+    title: string;       // OK: assigned in the constructor
+    price: number = 0;   // OK: has an initializer
+    stock?: number;      // OK: optional (number | undefined)
+    code: string;        // Error TS2564: no initializer and not assigned in the constructor
+    constructor(title: string) {
+      this.title = title;
+    }
+  }
+  ```
+
+  | روش | مثال | توضیح |
+  |---|---|---|
+  | مقدار اولیه کنار اعلان | `price: number = 0;` | ساده‌ترین راه |
+  | مقداردهی در constructor | `this.title = title;` | باید در **همه‌ی** مسیرهای constructor انجام شود |
+  | property اختیاری | `stock?: number;` | نوعش `number \| undefined` می‌شود |
+  | علامت `!` | `code!: string;` | به TypeScript قول می‌دهی بعداً مقدار می‌گیرد؛ فقط وقتی واقعاً مطمئنی |
+
+  ::: trap دام تستی: مقداردهی «گاهی‌اوقات» کافی نیست
+  اگر property را فقط داخل یک `if` در constructor مقدار بدهی (`if (n) this.name = n;`) یا آن را در یک متد معمولی (مثلاً `init()`) مقدار بدهی، باز هم خطای TS2564 می‌گیری؛ چون ممکن است شیء ساخته شود و آن property بی‌مقدار بماند.
+  :::
+
+  ### پیاده‌سازی interface با `implements`
+
+  یادت هست interface (اسلاید ۱۹) **شکل** یک شیء را تعریف می‌کرد. کلاس می‌تواند با کلیدواژه‌ی `implements` اعلام کند: «من این قرارداد را رعایت می‌کنم». آن‌وقت TypeScript بررسی می‌کند همه‌ی اعضای interface، با نوع درست، در کلاس وجود داشته باشند.
+
+  ```ts
+  interface Shape {
+    name: string;
+    area(): number;
+  }
+  class Square implements Shape {   // OK: has name and area()
+    name = "square";
+    side: number;
+    constructor(side: number) {
+      this.side = side;
+    }
+    area(): number {
+      return this.side * this.side;
+    }
+  }
+  class Circle implements Shape {   // Error TS2420: Property 'area' is missing in type 'Circle'
+    name = "circle";
+  }
+  class Blob implements Shape {
+    name = "blob";
+    area(): string {                // Error TS2416: '() => string' is not assignable to '() => number'
+      return "big";
+    }
+  }
+  ```
+
+  - یک کلاس می‌تواند چند interface را با هم پیاده کند: `class Duck implements Walker, Swimmer { ... }`.
+  - `implements` فقط یک **بررسی** است؛ هیچ کدی به کلاس اضافه نمی‌کند و متدها را باید خودت بنویسی. کلاس می‌تواند اعضای اضافه هم داشته باشد (مثل `side` در `Square`).
+
+  ### وراثت با `extends` و بازنویسی متد
+
+  با `class Student extends Person`، کلاس `Student` (به آن **subclass** یا کلاس فرزند می‌گویند) همه‌ی propertyها و متدهای `Person` (**superclass** یا کلاس والد) را **به ارث می‌برد** و می‌تواند چیزهای تازه هم اضافه کند. رابطه‌ی وراثت یعنی «**is-a**»: هر دانشجو **یک** انسان است.
+
+  ```ts
+  interface Greeter {
+    greet(): void;
+  }
+  class Person implements Greeter {
+    public name: string;
+    private secret: string;
+    protected age: number;
+    constructor(name: string, secret: string, age: number) {
+      this.name = name;
+      this.secret = secret;
+      this.age = age;
+    }
+    greet() {
+      console.log(`Hello, ${this.name}`);
+    }
+  }
+  class Student extends Person {
+    school: string;
+    constructor(name: string, age: number, school: string) {
+      super(name, "hidden", age);   // call the parent constructor first
+      this.school = school;
+    }
+    greet() {                       // overrides Person.greet
+      console.log(`Hi, I am ${this.name} (${this.age}) from ${this.school}`);
+    }
+  }
+  const people: Person[] = [new Person("Ali", "s3cr3t", 30), new Student("Sara", 20, "Sharif")];
+  for (const x of people) x.greet();
+  // Hello, Ali
+  // Hi, I am Sara (20) from Sharif
+  console.log(people[1] instanceof Person); // true
+  ```
+
+  **قانون‌های constructor در کلاس فرزند:**
+
+  1. اگر کلاس فرزند constructor خودش را دارد، **باید** `super(...)` را صدا بزند (`super` یعنی constructor کلاس والد). در غیر این صورت: خطای **TS2377**.
+  2. `super(...)` باید **قبل از هر استفاده از `this`** صدا زده شود؛ وگرنه خطای **TS17009**. (در JavaScript خالی همین اشتباه در زمان اجرا `ReferenceError` می‌دهد.)
+  3. اگر کلاس فرزند اصلاً constructor ننویسد، constructor والد خودکار استفاده می‌شود: با `class Cat extends Animal {}` می‌توانی بنویسی `new Cat("Tom")`.
+
+  ```ts
+  class Animal {
+    name: string;
+    constructor(name: string) {
+      this.name = name;
+    }
+  }
+  class Dog extends Animal {
+    breed: string;
+    constructor(name: string, breed: string) {
+      this.breed = breed;   // Error TS17009: 'super' must be called before accessing 'this'
+      super(name);
+    }
+  }
+  class Fish extends Animal {
+    constructor(name: string) {   // Error TS2377: Constructors for derived classes must contain a 'super' call.
+      console.log("creating a fish");
+    }
+  }
+  class Cat extends Animal {}     // OK: uses Animal's constructor
+  const tom = new Cat("Tom");
+  ```
+
+  **Method overriding** (بازنویسی متد) یعنی کلاس فرزند متدی با **همان اسم** متد والد تعریف کند؛ آن‌وقت برای اشیای فرزند، نسخه‌ی فرزند اجرا می‌شود. در مثال بالا با این‌که نوع آرایه `Person[]` است، برای `Sara` متد `greet` `Student` اجرا شد؛ چون مهم این است که **شیء واقعاً از چه کلاسی ساخته شده** (به این رفتار **polymorphism** یا چندریختی می‌گویند). اگر بخواهی داخل نسخه‌ی جدید، نسخه‌ی والد را هم اجرا کنی، از `super.method()` استفاده کن:
+
+  ```ts
+  class Animal {
+    name: string;
+    constructor(name: string) {
+      this.name = name;
+    }
+    speak(): string {
+      return `${this.name} makes a sound`;
+    }
+  }
+  class Dog extends Animal {
+    override speak(): string {
+      return `${super.speak()} - Woof`;
+    }
+  }
+  console.log(new Dog("Rex").speak()); // Rex makes a sound - Woof
+  ```
+
+  کلیدواژه‌ی **`override`** اختیاری است و به TypeScript می‌گوید «عمداً دارم متد والد را بازنویسی می‌کنم». فایده‌اش این است که اگر والد چنین متدی نداشته باشد (مثلاً اسم را غلط نوشته باشی)، خطای **TS4113** می‌گیری. (گزینه‌ی `noImplicitOverride` نوشتن `override` را اجباری می‌کند؛ این گزینه جزو `strict` نیست.) همچنین متد بازنویسی‌شده باید با نسخه‌ی والد **سازگار** باشد؛ مثلاً اگر والد `string` برمی‌گرداند و فرزند `number`، خطای **TS2416** می‌گیری.
+
+  ### Access modifierها: `public`، `private`، `protected`
+
+  | modifier | داخل خودِ کلاس | داخل کلاس فرزند | بیرون کلاس (روی شیء) |
+  |---|---|---|---|
+  | `public` (پیش‌فرض) | مجاز | مجاز | مجاز |
+  | `protected` | مجاز | مجاز | ممنوع (TS2445) |
+  | `private` | مجاز | ممنوع (TS2341) | ممنوع (TS2341) |
+
+  - اگر هیچ modifierی ننویسی، عضو **`public`** است؛ پس `name: string` همان `public name: string` است.
+  - `private` یعنی «فقط خودِ همین کلاس». حتی کلاس فرزند هم نمی‌تواند به آن دست بزند.
+  - `protected` یعنی «خودِ کلاس و فرزندانش»، ولی نه بیرون.
+  - متدها هم می‌توانند `private` یا `protected` باشند (مثلاً یک متد کمکی که نباید از بیرون صدا زده شود).
+
+  با همان کلاس‌های `Person` و `Student` بالا:
+
+  ```ts
+  class Person {
+    public name: string;
+    private secret: string;
+    protected age: number;
+    constructor(name: string, secret: string, age: number) {
+      this.name = name;
+      this.secret = secret;
+      this.age = age;
+    }
+  }
+  class Student extends Person {
+    showAge() {
+      return this.age;      // OK: protected is visible in subclasses
+    }
+    leak() {
+      return this.secret;   // Error TS2341: 'secret' is private and only accessible within class 'Person'
+    }
+  }
+  const p = new Person("Ali", "s3cr3t", 30);
+  console.log(p.name);      // OK: public
+  console.log(p.secret);    // Error TS2341: 'secret' is private
+  console.log(p.age);       // Error TS2445: 'age' is protected
+  ```
+
+  #### `private` فقط در زمان کامپایل است!
+
+  TypeScript بعد از بررسی، همه‌ی modifierها را پاک می‌کند. یعنی در JavaScript خروجی، `secret` یک property کاملاً معمولی است و در **runtime** (زمان اجرا) هر کسی می‌تواند آن را ببیند:
+
+  ```ts
+  class Account {
+    public owner: string;
+    private pin: string;
+    #balance = 100;          // a real JavaScript private field
+    constructor(owner: string, pin: string) {
+      this.owner = owner;
+      this.pin = pin;
+    }
+  }
+  const acc = new Account("Sara", "1234");
+  console.log(Object.keys(acc));    // [ 'owner', 'pin' ]
+  console.log(JSON.stringify(acc)); // {"owner":"Sara","pin":"1234"}
+  console.log(acc["pin"]);          // 1234 (bracket access is allowed by TypeScript)
+  ```
+
+  اگر **حریم خصوصی واقعی در زمان اجرا** بخواهی، از فیلدهای `#` خودِ JavaScript استفاده کن: `#balance` نه در `Object.keys` دیده می‌شود، نه در `JSON.stringify`، و نوشتن `acc.#balance` بیرون از کلاس هم در TypeScript خطای **TS18013** دارد و هم در JavaScript خالی `SyntaxError` است.
+
+  | | `private` (TypeScript) | `#field` (JavaScript) |
+  |---|---|---|
+  | چه کسی بررسی می‌کند؟ | فقط کامپایلر TypeScript | خودِ موتور JavaScript |
+  | در JS خروجی | property معمولی | فیلد خصوصی واقعی |
+  | `Object.keys` / `JSON.stringify` | دیده می‌شود | دیده نمی‌شود |
+
+  ### `readonly`: فقط‌خواندنی
+
+  propertyای که `readonly` باشد **فقط دو جا** می‌تواند مقدار بگیرد: کنار اعلانش یا داخل constructor. هر جای دیگری (حتی داخل یک متد از همان کلاس) خطای **TS2540** می‌دهد.
+
+  ```ts
+  class Config {
+    readonly apiUrl: string;
+    readonly retries = 3;
+    constructor(url: string) {
+      this.apiUrl = url;      // OK: inside the constructor
+    }
+    setUrl(url: string) {
+      this.apiUrl = url;      // Error TS2540: Cannot assign to 'apiUrl' because it is a read-only property.
+    }
+  }
+  const cfg = new Config("https://api.example.com");
+  cfg.retries = 5;            // Error TS2540: Cannot assign to 'retries' because it is a read-only property.
+  ```
+
+  ### Parameter properties: خلاصه‌نویسی در constructor
+
+  الگوی «اعلان property + گرفتن پارامتر + `this.x = x`» آن‌قدر رایج است که TypeScript یک میان‌بر دارد: اگر **جلوی پارامتر constructor یک modifier** (`public`، `private`، `protected` یا `readonly`) بنویسی، آن پارامتر خودکار به property تبدیل و مقداردهی می‌شود. این دو کلاس دقیقاً یک کار می‌کنند:
+
+  ```ts
+  class UserLong {
+    private name: string;
+    public age: number;
+    constructor(name: string, age: number) {
+      this.name = name;
+      this.age = age;
+    }
+  }
+  class UserShort {
+    constructor(private name: string, public age: number) {}
+  }
+  ```
+
+  ::: trap دام تستی: پارامتر بدون modifier، property نیست
+  در `constructor(public name: string, age: number) {}` فقط `name` property می‌شود. `age` یک پارامتر معمولی است که بعد از تمام شدن constructor از بین می‌رود؛ پس `this.age` در یک متد خطای **TS2339** (`Property 'age' does not exist`) می‌دهد.
+  :::
+
+  ### `static`: عضوِ خودِ کلاس، نه شیء
+
+  عضو `static` به **خودِ کلاس** تعلق دارد، نه به تک‌تک اشیاء؛ همه‌ی اشیاء یک نسخه‌ی مشترک از آن دارند. آن را با **اسم کلاس** صدا می‌زنیم:
+
+  ```ts
+  class Counter {
+    static count = 0;
+    id: number;
+    constructor() {
+      Counter.count++;          // shared by all instances
+      this.id = Counter.count;
+    }
+  }
+  const a = new Counter();
+  const b = new Counter();
+  console.log(a.id, b.id, Counter.count); // 1 2 2
+  console.log(a.count);  // Error TS2576: Did you mean to access the static member 'Counter.count' instead?
+  ```
+
+  ::: tip نکته: کلاس TypeScript بعد از کامپایل همان کلاس JavaScript است
+  نوع‌ها، `implements`، `public`/`private`/`protected` و `readonly` فقط برای بررسی در زمان کامپایل هستند و در JavaScript خروجی اثری از آن‌ها نمی‌ماند. ولی `extends`، `super`، `static`، متدها و فیلدهای `#` امکانات خودِ JavaScript هستند و در زمان اجرا هم کار می‌کنند.
+  :::
+
+  ::: trap دام تستی: گم شدن `this` وقتی متد را جدا می‌کنی
+  اگر متد را از شیء جدا کنی و تنها صدا بزنی (`const f = p.greet; f();`)، دیگر شیئی قبل از نقطه نیست و `this` برابر `undefined` می‌شود (بدنه‌ی کلاس همیشه در strict mode اجرا می‌شود). نتیجه: `TypeError: Cannot read properties of undefined`. TypeScript این اشتباه را **نمی‌گیرد** و کد بدون خطا کامپایل می‌شود.
+  :::
+
+  ::: summary
+  - کلاس = نقشه؛ object = نمونه‌ای که با `new` ساخته می‌شود. constructor هنگام `new` اجرا می‌شود.
+  - در strict هر property باید کنار اعلان یا در constructor مقدار بگیرد (وگرنه TS2564).
+  - `implements` = تعهد به یک interface (TS2420 اگر عضوی کم باشد، TS2416 اگر نوعی ناسازگار باشد).
+  - `extends` = وراثت؛ constructor فرزند باید قبل از `this`، `super(...)` را صدا بزند (TS17009/TS2377). بازنویسی متد + `super.method()` + `override` (TS4113).
+  - `public` (پیش‌فرض) همه‌جا؛ `protected` خود و فرزندان (بیرون: TS2445)؛ `private` فقط خودِ کلاس (TS2341) و آن هم فقط در زمان کامپایل؛ حریم واقعی = `#`.
+  - `readonly` فقط کنار اعلان یا در constructor (TS2540). parameter property = modifier جلوی پارامتر constructor. `static` با اسم کلاس صدا زده می‌شود.
+  :::
+questions:
+  - level: easy
+    stem: |
+      کد زیر همان کد اسلاید ۲۱ است. اگر این فایل را کامپایل و اجرا کنیم، چه چیزی چاپ می‌شود؟
+    check: ts-output
+    code: |
+      class Person {
+        name: string;
+        constructor(name: string) {
+          this.name = name;
+        }
+        greet() {
+          console.log(`Hello, ${this.name}`);
+        }
+      }
+    options:
+      - out: "Hello, undefined"
+      - out: "Hello, name"
+      - out: ""
+      - out: ["!! ReferenceError"]
+    answer: 3
+    explain: |
+      این کد فقط کلاس (نقشه) را تعریف می‌کند؛ هیچ شیئی با `new` ساخته نشده و `greet()` هم صدا زده نشده است، پس **هیچ خروجی‌ای** ندارد. constructor فقط هنگام `new` اجرا می‌شود و `console.log` فقط وقتی `greet` صدا زده شود. گزینه‌های ۱ و ۲ فرض کرده‌اند تعریف کلاس خودبه‌خود متد را اجرا می‌کند و گزینه‌ی ۴ هم دلیلی ندارد، چون هیچ متغیر تعریف‌نشده‌ای استفاده نشده است.
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Person {
+        name: string;
+        constructor(name: string) {
+          this.name = name;
+        }
+        greet() {
+          console.log(`Hello, ${this.name}`);
+        }
+      }
+      const p = new Person("Alice");
+      p.greet();
+    options:
+      - out: "Hello, Alice"
+      - out: "Hello, ${this.name}"
+      - out: "Hello, undefined"
+      - out: "Hello, name"
+    answer: 1
+    explain: |
+      `new Person("Alice")` constructor را اجرا می‌کند و `this.name` برابر `"Alice"` می‌شود. بعد `p.greet()` با template literal مقدار `${this.name}` را جایگزین می‌کند و `Hello, Alice` چاپ می‌شود. گزینه‌ی ۲ فراموش کرده که داخل بک‌تیک `${...}` با مقدار جایگزین می‌شود، گزینه‌ی ۳ فکر کرده constructor مقدار را ذخیره نکرده و گزینه‌ی ۴ اسم property را با مقدارش اشتباه گرفته است.
+  - level: easy
+    stem: |
+      اگر برای یک property یا method در کلاس TypeScript هیچ access modifierی ننویسیم، آن عضو چه وضعیتی دارد؟
+    options:
+      - '`private` است و فقط داخل همان کلاس قابل استفاده است.'
+      - '`protected` است و فقط در همان کلاس و کلاس‌های فرزند قابل استفاده است.'
+      - '`readonly` است و بعد از ساخته شدن شیء قابل تغییر نیست.'
+      - '`public` است و از همه‌جا (حتی بیرون کلاس) قابل دسترسی است.'
+    answer: 4
+    explain: |
+      در TypeScript سطح دسترسی پیش‌فرض **`public`** است؛ یعنی `name: string` دقیقاً همان `public name: string` است. `private` و `protected` را باید صریحاً بنویسی (گزینه‌های ۱ و ۲). `readonly` هم ربطی به سطح دسترسی ندارد و فقط وقتی اعمال می‌شود که خودت آن را بنویسی (گزینه‌ی ۳).
+  - level: easy
+    stem: |
+      کدام گزینه درباره‌ی access modifierهای TypeScript **درست** است؟
+    options:
+      - 'عضو `private` در کلاس فرزند (کلاسی که با `extends` از آن ارث برده) قابل استفاده است.'
+      - 'عضو `protected` داخل کلاس‌های فرزند قابل استفاده است، ولی از بیرون کلاس (روی شیء) نه.'
+      - 'عضو `protected` را از بیرون کلاس می‌توان خواند، ولی نمی‌توان تغییر داد.'
+      - 'نوشتن `public` اجباری است و اگر آن را ننویسیم خطای کامپایل می‌گیریم.'
+    answer: 2
+    explain: |
+      `protected` یعنی «خودِ کلاس و فرزندانش»؛ استفاده از بیرون (مثل `s.age`) خطای TS2445 می‌دهد. گزینه‌ی ۱ غلط است چون `private` حتی در کلاس فرزند هم ممنوع است (TS2341). گزینه‌ی ۳ رفتار `protected` را با `readonly` قاطی کرده؛ `protected` از بیرون نه خواندنی است نه نوشتنی. گزینه‌ی ۴ هم غلط است چون `public` پیش‌فرض است و نوشتنش اختیاری است.
+  - level: easy
+    stem: |
+      زیر کد اسلاید ۲۱ نوشته شده «Just like JS, but better!». کدام قابلیت زیر در کلاس‌های JavaScript معمولی **وجود ندارد** و TypeScript آن را اضافه کرده است؟
+    options:
+      - 'تابع ویژه‌ی `constructor` برای مقداردهی اولیه‌ی شیء'
+      - 'وراثت با کلیدواژه‌ی `extends`'
+      - 'کلیدواژه‌های `public`، `private` و `protected` برای تعیین سطح دسترسی'
+      - 'تعریف متد (مثل `greet()`) داخل بدنه‌ی کلاس'
+    answer: 3
+    explain: |
+      access modifierها (`public`، `private`، `protected`) کلیدواژه‌های TypeScript هستند و در JavaScript وجود ندارند (JavaScript فقط فیلدهای `#` را دارد که سازوکار دیگری است). در مقابل، `constructor`، `extends` و متدها از ES6 بخشی از خودِ JavaScript هستند، پس گزینه‌های ۱، ۲ و ۴ امکان تازه‌ای نیستند.
+  - level: easy
+    stem: |
+      می‌خواهیم کلاس `Student` از `Person` **ارث ببرد** تا property `name` را از آن بگیرد و کد بدون خطا کامپایل شود. در جای خالی کدام کلیدواژه قرار می‌گیرد؟
+    check: option-tsc
+    want: ok
+    code: |
+      class Person {
+        constructor(public name: string) {}
+      }
+      class Student ____ Person {}
+      const s = new Student("Sara");
+      console.log(s.name);
+    prelude: |
+      class Person {
+        constructor(public name: string) {}
+      }
+    options:
+      - text: '`extends`'
+        code: |
+          class Student extends Person {}
+          const s = new Student("Sara");
+          console.log(s.name);
+      - text: '`implements`'
+        code: |
+          class Student implements Person {}
+          const s = new Student("Sara");
+          console.log(s.name);
+      - text: '`inherits`'
+        code: |
+          class Student inherits Person {}
+          const s = new Student("Sara");
+          console.log(s.name);
+      - text: '`super`'
+        code: |
+          class Student super Person {}
+          const s = new Student("Sara");
+          console.log(s.name);
+    answer: 1
+    explain: |
+      وراثت در TypeScript (و JavaScript) با **`extends`** است؛ `Student` بدون constructor خودش، constructor `Person` را به کار می‌برد و `name` را هم به ارث می‌برد. `implements` فقط «قول رعایت شکل» است و چیزی به ارث نمی‌برد؛ این‌جا `Student` property `name` را ندارد، پس خطای TS2720 می‌دهد. `inherits` اصلاً کلیدواژه‌ی زبان نیست (خطای نحوی) و `super` برای صدا زدن constructor یا متد والد است، نه تعریف وراثت.
+  - level: easy
+    stem: |
+      نوشتن `class Person implements Greeter` (که `Greeter` یک interface است) چه کاری انجام می‌دهد؟
+    options:
+      - 'TypeScript هنگام کامپایل بررسی می‌کند که کلاس همه‌ی اعضای `Greeter` را با نوع درست داشته باشد.'
+      - 'کد متدهای `Greeter` به‌طور خودکار به کلاس `Person` اضافه می‌شود.'
+      - 'در زمان اجرا (runtime) بررسی می‌شود که هر شیء ساخته‌شده شکل `Greeter` را داشته باشد.'
+      - 'دقیقاً مثل `extends` است و `Person` از `Greeter` ارث می‌برد.'
+    answer: 1
+    explain: |
+      `implements` یک **قرارداد زمان کامپایل** است: اگر عضوی کم باشد خطای TS2420 و اگر نوعش ناسازگار باشد TS2416 می‌گیری. interface هیچ کدی ندارد که به کلاس اضافه شود (گزینه‌ی ۲)، و چون interface و `implements` در JavaScript خروجی پاک می‌شوند، هیچ بررسی‌ای در زمان اجرا انجام نمی‌شود (گزینه‌ی ۳). `extends` ارث‌بری واقعی از یک کلاس است، نه بررسی شکل (گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      در حالت strict، کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Product {
+        title: string;
+        price: number = 0;
+        stock?: number;
+        constructor(title: string) {
+          this.title = title;
+        }
+      }
+      class Order {
+        id: number;
+        items: string[] = [];
+      }
+    options:
+      - line: 2
+      - line: 4
+      - line: 10
+      - line: 11
+    answer: 3
+    explain: |
+      `id` در کلاس `Order` نه مقدار اولیه دارد و نه constructorی که آن را مقدار بدهد، پس خطای **TS2564** (`Property 'id' has no initializer and is not definitely assigned in the constructor`) می‌گیرد. خط ۲ مشکلی ندارد چون `title` در constructor مقدار می‌گیرد؛ خط ۴ اختیاری (`?`) است و می‌تواند `undefined` بماند؛ خط ۱۱ هم مقدار اولیه‌ی `[]` دارد.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Person {
+        public name: string;
+        private secret: string;
+        protected age: number;
+        constructor(name: string, secret: string, age: number) {
+          this.name = name;
+          this.secret = secret;
+          this.age = age;
+        }
+      }
+      class Student extends Person {
+        info() {
+          return `${this.name} (${this.age})`;
+        }
+      }
+      const s = new Student("Sara", "x", 20);
+      console.log(s.name);
+      console.log(s.info());
+      console.log(s.age);
+    options:
+      - line: 13
+      - line: 17
+      - line: 18
+      - line: 19
+    answer: 4
+    explain: |
+      `age` `protected` فقط داخل `Person` و فرزندانش قابل استفاده است؛ پس `this.age` در خط ۱۳ (داخل متد `Student`) مجاز است، ولی `s.age` در خط ۱۹ از بیرون کلاس است و خطای **TS2445** می‌دهد. خط ۱۷ مشکلی ندارد چون `name` `public` است و خط ۱۸ هم یک متد `public` را صدا می‌زند.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Account {
+        private balance = 0;
+        protected owner = "Ali";
+        deposit(amount: number) {
+          this.balance += amount;
+        }
+      }
+      class Savings extends Account {
+        addInterest() {
+          this.balance *= 1.1;
+        }
+        whoOwns() {
+          return this.owner;
+        }
+      }
+      const acc = new Savings();
+      acc.deposit(100);
+    options:
+      - line: 10
+      - line: 13
+      - line: 17
+      - line: 0
+    answer: 1
+    explain: |
+      `balance` `private` فقط داخل خودِ `Account` قابل استفاده است؛ حتی کلاس فرزند (`Savings`) هم به آن دسترسی ندارد، پس خط ۱۰ خطای **TS2341** می‌دهد. خط ۱۳ مجاز است چون `owner` `protected` در فرزند قابل استفاده است، و خط ۱۷ متد `public` `deposit` را صدا می‌زند که خودش داخل `Account` به `balance` دست می‌زند. کسی که «بدون خطا» را انتخاب کند، فکر کرده `private` هم مثل `protected` به فرزند می‌رسد.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Config {
+        readonly apiUrl: string;
+        readonly retries = 3;
+        constructor(url: string) {
+          this.apiUrl = url;
+        }
+        setUrl(url: string) {
+          this.apiUrl = url;
+        }
+      }
+      const cfg = new Config("https://api.example.com");
+      console.log(cfg.apiUrl, cfg.retries);
+    options:
+      - line: 5
+      - line: 8
+      - line: 11
+      - line: 0
+    answer: 2
+    explain: |
+      propertyِ `readonly` فقط کنار اعلانش یا **داخل constructor** مقدار می‌گیرد؛ پس خط ۵ مجاز است ولی خط ۸ (داخل متد معمولی `setUrl`) خطای **TS2540** (`Cannot assign to 'apiUrl' because it is a read-only property`) می‌دهد. خط ۱۱ فقط شیء می‌سازد و خواندن propertyهای `readonly` در خط ۱۲ هم آزاد است. «متد همان کلاس است پس مجاز است» دام اصلی این تست است.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      interface Shape {
+        name: string;
+        area(): number;
+      }
+      class Square implements Shape {
+        name = "square";
+        constructor(public side: number) {}
+        area(): number {
+          return this.side * this.side;
+        }
+      }
+      class Circle implements Shape {
+        name = "circle";
+        constructor(public r: number) {}
+      }
+    options:
+      - line: 5
+      - line: 7
+      - line: 8
+      - line: 12
+    answer: 4
+    explain: |
+      `Circle` قول داده `Shape` را پیاده کند ولی متد `area()` را ندارد؛ پس روی خط ۱۲ خطای **TS2420** (`Class 'Circle' incorrectly implements interface 'Shape'`) گزارش می‌شود. `Square` هم `name` دارد و هم `area()` با خروجی `number`، پس خطوط ۵ تا ۸ درست‌اند. داشتن property اضافه (`side` یا `r`) هم برای `implements` مشکلی ندارد.
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Counter {
+        static count = 0;
+        id: number;
+        constructor() {
+          Counter.count++;
+          this.id = Counter.count;
+        }
+      }
+      const a = new Counter();
+      const b = new Counter();
+      const c = new Counter();
+      console.log(a.id, c.id, Counter.count);
+    options:
+      - out: "1 1 1"
+      - out: "1 3 3"
+      - out: "3 3 3"
+      - out: "0 2 3"
+    answer: 2
+    explain: |
+      `count` چون `static` است فقط **یک نسخه‌ی مشترک** دارد که مال خودِ کلاس است. با هر `new` یکی زیاد می‌شود و همان لحظه در `id` آن شیء کپی می‌شود: `a.id = 1`، `b.id = 2`، `c.id = 3` و در پایان `Counter.count = 3`. گزینه‌ی ۱ فکر کرده هر شیء شمارنده‌ی جدای خودش را دارد، گزینه‌ی ۳ فکر کرده `id` به شمارنده وصل می‌ماند و بعداً عوض می‌شود، و گزینه‌ی ۴ ترتیب افزایش و کپی را برعکس فرض کرده است.
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Point {
+        constructor(public x: number, private y: number, readonly z: number = 0) {}
+        sum() {
+          return this.x + this.y + this.z;
+        }
+      }
+      const pt = new Point(1, 2);
+      console.log(pt.x, pt.z, pt.sum());
+      console.log(JSON.stringify(pt));
+    options:
+      - out: ["1 0 3", '{"x":1,"z":0}']
+      - out: ["1 undefined NaN", "{}"]
+      - out: ["1 0 3", "{}"]
+      - out: ["1 0 3", '{"x":1,"y":2,"z":0}']
+    answer: 4
+    explain: |
+      هر سه پارامتر modifier دارند، پس هر سه **parameter property** هستند و خودکار به property تبدیل می‌شوند؛ `z` هم مقدار پیش‌فرض `0` را می‌گیرد. پس `pt.sum()` برابر `1 + 2 + 0 = 3` است. در JavaScript خروجی `y` یک property معمولی است (`private` فقط در زمان کامپایل معنا دارد)، پس `JSON.stringify` هر سه را نشان می‌دهد. گزینه‌ی ۱ فکر کرده `private` در زمان اجرا پنهان می‌ماند و گزینه‌های ۲ و ۳ فکر کرده‌اند پارامترهای constructor به property تبدیل نمی‌شوند.
+  - level: medium
+    stem: |
+      در حالت strict، کدام کلاس **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    options:
+      - code: |
+          class A {
+            name: string;
+          }
+      - code: |
+          class B {
+            name: string;
+            constructor(n?: string) {
+              if (n) this.name = n;
+            }
+          }
+      - code: |
+          class C {
+            name: string = "";
+          }
+      - code: |
+          class D {
+            name: string;
+            init() {
+              this.name = "x";
+            }
+          }
+    answer: 3
+    explain: |
+      فقط در `C` مطمئنیم `name` همیشه مقدار دارد (مقدار اولیه‌ی `""`). `A` اصلاً مقداردهی نمی‌کند، `B` فقط گاهی (داخل `if`) مقدار می‌دهد و `D` مقداردهی را به متدی سپرده که شاید هرگز صدا زده نشود؛ هر سه خطای **TS2564** می‌گیرند. strict mode می‌خواهد property کنار اعلان یا در **همه‌ی** مسیرهای constructor مقدار بگیرد.
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی `readonly` در کلاس‌های TypeScript **نادرست** است؟
+    options:
+      - 'propertyای که `readonly` است را می‌توان همان‌جا که اعلان می‌شود مقدار داد.'
+      - 'propertyای که `readonly` است را می‌توان داخل constructor مقدار داد.'
+      - 'اگر یک property `readonly` آرایه باشد، باز هم می‌توان با `push` عضو جدیدی به همان آرایه اضافه کرد.'
+      - 'propertyای که `readonly` است را می‌توان داخل یک متد معمولی از همان کلاس دوباره مقداردهی کرد.'
+    answer: 4
+    explain: |
+      مقداردهی دوباره‌ی property `readonly` فقط کنار اعلان (گزینه‌ی ۱) یا در constructor (گزینه‌ی ۲) مجاز است؛ در یک متد معمولی، حتی از همان کلاس، خطای **TS2540** می‌دهد، پس گزینه‌ی ۴ نادرست است. گزینه‌ی ۳ درست است چون `readonly` «سطحی» است: فقط جلوی **عوض کردن خودِ property** (مثلاً `this.items = []`) را می‌گیرد، نه تغییر محتوای آرایه‌ای که به آن اشاره می‌کند.
+  - level: medium
+    stem: |
+      کدام دستور را می‌توان در جای خالی نوشت تا کد **بدون خطا** کامپایل شود و شمارنده‌ی `static` یکی زیاد شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      class Counter {
+        static count = 0;
+      }
+      const c = new Counter();
+      // ____
+    prelude: |
+      class Counter {
+        static count = 0;
+      }
+      const c = new Counter();
+    options:
+      - code: 'Counter.count++;'
+      - code: 'c.count++;'
+      - code: 'this.count++;'
+      - code: 'count++;'
+    answer: 1
+    explain: |
+      عضو `static` مال **خودِ کلاس** است و با اسم کلاس صدا زده می‌شود: `Counter.count++`. دسترسی از طریق شیء (`c.count`) خطای **TS2576** می‌دهد و TypeScript خودش پیشنهاد می‌کند `Counter.count` بنویسی. در سطح بالای یک ماژول `this` برابر `undefined` است (خطای TS2532)، و `count` به‌تنهایی هم متغیری تعریف‌نشده است (TS2304).
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Animal {
+        constructor(public name: string) {}
+      }
+      class Dog extends Animal {
+        breed: string;
+        constructor(name: string, breed: string) {
+          this.breed = breed;
+          super(name);
+        }
+      }
+      const d = new Dog("Rex", "Husky");
+    options:
+      - line: 5
+      - line: 7
+      - line: 8
+      - line: 0
+    answer: 2
+    explain: |
+      در constructor کلاس فرزند، **قبل از** صدا زدن `super(...)` شیء هنوز ساخته نشده و نمی‌توان از `this` استفاده کرد؛ پس خط ۷ خطای **TS17009** (`'super' must be called before accessing 'this'`) می‌دهد. خودِ `super(name)` در خط ۸ مشکلی ندارد، فقط باید جابه‌جا شود. خط ۵ هم خطا ندارد چون `breed` در constructor مقدار گرفته است. در JavaScript خالی همین ترتیب در زمان اجرا `ReferenceError` می‌دهد.
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class User {
+        constructor(public name: string, age: number) {}
+        describe() {
+          return `${this.name} is ${this.age} years old`;
+        }
+      }
+      const u = new User("Ali", 20);
+      console.log(u.name);
+    options:
+      - line: 2
+      - line: 4
+      - line: 7
+      - line: 8
+    answer: 2
+    explain: |
+      فقط پارامتری که **modifier** دارد (`public name`) به property تبدیل می‌شود. `age` یک پارامتر معمولی است که فقط داخل constructor زنده است، پس `this.age` در خط ۴ خطای **TS2339** (`Property 'age' does not exist on type 'User'`) می‌دهد. خط ۲ خودش درست است (نوشتن پارامتر بدون modifier مجاز است)، و خطوط ۷ و ۸ هم با دو آرگومان و property `public` `name` کاملاً درست‌اند.
+  - level: hard
+    stem: |
+      با کلاس `Animal` زیر، کدام تعریف **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      class Animal {
+        speak(): string {
+          return "...";
+        }
+      }
+    prelude: |
+      class Animal {
+        speak(): string {
+          return "...";
+        }
+      }
+    options:
+      - code: 'class Dog extends Animal { speak(): string { return "Woof"; } }'
+      - code: 'class Cat extends Animal { override speak(): string { return "Meow"; } }'
+      - code: 'class Bird extends Animal { fly(): string { return "flying"; } }'
+      - code: 'class Fish extends Animal { override swim(): string { return "swimming"; } }'
+    answer: 4
+    explain: |
+      `override` یعنی «این متد، متدی از والد را بازنویسی می‌کند»؛ چون `Animal` متدی به اسم `swim` ندارد، گزینه‌ی ۴ خطای **TS4113** (`This member cannot have an 'override' modifier because it is not declared in the base class 'Animal'`) می‌دهد. گزینه‌ی ۱ بدون `override` هم درست است (در strict نوشتن `override` اجباری نیست)، گزینه‌ی ۲ با `override` درست بازنویسی کرده و گزینه‌ی ۳ هم یک متد تازه اضافه کرده که اصلاً بازنویسی نیست.
+  - level: hard
+    stem: |
+      با کلاس `Animal` زیر، کدام تعریف **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      class Animal {
+        speak(): string {
+          return "...";
+        }
+      }
+    prelude: |
+      class Animal {
+        speak(): string {
+          return "...";
+        }
+      }
+    options:
+      - code: 'class Fish extends Animal { speak(): number { return 0; } }'
+      - code: 'class Dog extends Animal { speak(): string { return "Woof"; } }'
+      - code: 'class Cow extends Animal { speak() { return "Moo"; } }'
+      - code: 'class Cat extends Animal { override speak(): string { return super.speak() + "!"; } }'
+    answer: 1
+    explain: |
+      متد بازنویسی‌شده باید با نسخه‌ی والد **سازگار** باشد. `Fish` نوع خروجی `speak` را از `string` به `number` عوض کرده و خطای **TS2416** (`Property 'speak' in type 'Fish' is not assignable to the same property in base type 'Animal'`) می‌گیرد. در گزینه‌ی ۳ نوع خروجی نوشته نشده ولی از `return "Moo"` نوع `string` استنتاج می‌شود و سازگار است؛ گزینه‌ی ۴ هم با `super.speak()` نسخه‌ی والد را صدا زده که کاملاً مجاز است.
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Animal {
+        constructor(public name: string) {}
+        speak(): string {
+          return `${this.name} makes a sound`;
+        }
+      }
+      class Dog extends Animal {
+        speak(): string {
+          return `${super.speak()} - Woof`;
+        }
+      }
+      const pets: Animal[] = [new Animal("Generic"), new Dog("Rex")];
+      for (const p of pets) console.log(p.speak());
+    options:
+      - out: ["Generic makes a sound", "Rex makes a sound"]
+      - out: ["Generic makes a sound", "Rex makes a sound - Woof"]
+      - out: ["Generic makes a sound", "Woof"]
+      - out: ["Generic makes a sound", "!! TypeError"]
+    answer: 2
+    explain: |
+      این‌که نوع آرایه `Animal[]` است فقط برای بررسی در زمان کامپایل است؛ در زمان اجرا برای هر شیء، متدِ **کلاس واقعی‌اش** اجرا می‌شود (polymorphism). برای `Rex` که یک `Dog` است، `speak` `Dog` اجرا می‌شود که اول با `super.speak()` متن والد (`Rex makes a sound`) را می‌گیرد و `- Woof` را به آن اضافه می‌کند. گزینه‌ی ۱ فکر کرده نوع آرایه تعیین می‌کند کدام متد اجرا شود، گزینه‌ی ۳ نقش `super.speak()` را نادیده گرفته و `Dog` بدون constructor هم از constructor `Animal` استفاده می‌کند، پس خطایی (گزینه‌ی ۴) رخ نمی‌دهد.
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Account {
+        public owner: string;
+        private pin: string;
+        #balance = 100;
+        constructor(owner: string, pin: string) {
+          this.owner = owner;
+          this.pin = pin;
+        }
+      }
+      const acc = new Account("Sara", "1234");
+      console.log(Object.keys(acc));
+      console.log(JSON.stringify(acc));
+    options:
+      - out: ["['owner']", '{"owner":"Sara"}']
+      - out: ["['owner', 'pin', '#balance']", '{"owner":"Sara","pin":"1234","#balance":100}']
+      - out: ["['owner', 'pin']", '{"owner":"Sara","pin":"1234"}']
+      - out: ["['owner', 'pin', 'balance']", '{"owner":"Sara","pin":"1234","balance":100}']
+    answer: 3
+    explain: |
+      `private` فقط در زمان کامپایل بررسی می‌شود و در JavaScript خروجی `pin` یک property معمولی است؛ پس هم در `Object.keys` و هم در `JSON.stringify` دیده می‌شود (گزینه‌ی ۱ غلط است). در مقابل، `#balance` یک فیلد خصوصی **واقعی** JavaScript است و نه جزو کلیدهای شیء حساب می‌شود و نه در JSON می‌آید (گزینه‌های ۲ و ۴ غلط‌اند).
+  - level: hard
+    stem: |
+      کد زیر بدون خطا کامپایل می‌شود. خروجی آن در زمان اجرا چیست؟
+    check: ts-output
+    code: |
+      class Person {
+        constructor(public name: string) {}
+        greet() {
+          console.log(`Hello, ${this.name}`);
+        }
+      }
+      const p = new Person("Alice");
+      p.greet();
+      const f = p.greet;
+      f();
+    options:
+      - out: ["Hello, Alice", "Hello, Alice"]
+      - out: ["Hello, Alice", "Hello, undefined"]
+      - out: ["!! TypeError"]
+      - out: ["Hello, Alice", "!! TypeError"]
+    answer: 4
+    explain: |
+      `p.greet()` چون شیء قبل از نقطه است، `this` را `p` می‌گیرد و `Hello, Alice` چاپ می‌شود. اما `f()` بدون شیء صدا زده شده و چون بدنه‌ی کلاس همیشه **strict** است، `this` برابر `undefined` می‌شود؛ خواندن `this.name` خطای `TypeError` می‌دهد. گزینه‌ی ۱ فکر کرده متد همیشه به شیء اولش چسبیده است، گزینه‌ی ۲ رفتار حالت غیر strict را فرض کرده و گزینه‌ی ۳ فراموش کرده خط اولِ اجرا (`p.greet()`) قبل از خطا خروجی داده است. TypeScript این اشتباه را نمی‌گیرد.
+  - level: hard
+    stem: |
+      کدام گزینه درباره‌ی `private` در TypeScript و فیلدهای `#` در JavaScript **درست** است؟
+    options:
+      - '`private` باعث می‌شود آن property در کد JavaScript خروجی حذف شود.'
+      - 'فیلد `#balance` در خروجی `Object.keys` دیده می‌شود، ولی property `private` دیده نمی‌شود.'
+      - '`private` فقط هنگام کامپایل بررسی می‌شود؛ برای پنهان ماندن واقعی در زمان اجرا باید از فیلدهای `#` خودِ JavaScript استفاده کرد.'
+      - 'اگر در زمان اجرا از بیرون کلاس به یک property `private` دسترسی پیدا کنیم (مثلاً با `obj["pin"]`)، خطای `TypeError` رخ می‌دهد.'
+    answer: 3
+    explain: |
+      access modifierهای TypeScript بعد از کامپایل پاک می‌شوند؛ property `private` در JavaScript خروجی **باقی می‌ماند** (گزینه‌ی ۱ غلط) و یک property معمولی است، پس `obj["pin"]` در زمان اجرا مقدارش را برمی‌گرداند و هیچ خطایی نمی‌دهد (گزینه‌ی ۴ غلط؛ TypeScript هم دسترسی با براکت را مجاز می‌داند). گزینه‌ی ۲ برعکس است: property `private` در `Object.keys` دیده می‌شود ولی فیلد `#` نه. پس فقط گزینه‌ی ۳ درست است.
