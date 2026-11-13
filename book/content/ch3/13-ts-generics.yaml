@@ -1,0 +1,692 @@
+id: ch3-ts-generics
+title: "Generics در TypeScript"
+slides: "NodeJS & TS، اسلاید ۲۲"
+lesson: |
+  ### یک تشبیه: جعبه‌ی برچسب‌دار
+
+  ::: analogy
+  فرض کن یک کارخانه‌ی جعبه‌سازی داری. نمی‌خواهی برای کتاب، کفش و لیوان سه خط تولید جدا بسازی؛ یک **جعبه‌ی عمومی** می‌سازی و روی هر جعبه یک **برچسب** می‌زنی: «جعبه‌ی کتاب» یا «جعبه‌ی کفش». وقتی برچسب «کتاب» خورد، فقط کتاب داخلش می‌رود و وقتی بازش کنی مطمئنی کتاب بیرون می‌آید. **Generics** همین است: یک کد عمومی که با یک «برچسب نوع» برای هر نوع داده‌ای کار می‌کند، بدون این‌که TypeScript نوع را گم کند.
+  :::
+
+  پارامتر معمولی تابع، جای خالی برای یک **مقدار** است. **generic** (عام) یعنی تابع، کلاس یا interface یک جای خالی هم برای **نوع** داشته باشد که هنگام استفاده پر می‌شود.
+
+  ### مشکل: یا تکرار کد، یا گم شدن نوع
+
+  فرض کن تابعی می‌خواهیم که هر چه بگیرد، همان را برگرداند. بدون generics دو راه بد داریم:
+
+  ```ts
+  // Way 1: one copy per type (code duplication)
+  function identityNumber(value: number): number {
+    return value;
+  }
+  function identityString(value: string): string {
+    return value;
+  }
+
+  // Way 2: any (type information is lost)
+  function identityAny(value: any): any {
+    return value;
+  }
+  const y = identityAny("hi");  // y: any
+  console.log(y.length);        // 2
+  console.log(y.toFixed(2));    // compiles, but crashes at runtime: TypeError: y.toFixed is not a function
+  ```
+
+  راه اول برای هر نوع یک نسخه‌ی تکراری می‌خواهد. راه دوم از **`any`** (نوعی که یعنی «هر چیزی» و بررسی نوع را خاموش می‌کند) استفاده می‌کند: TypeScript دیگر نمی‌داند `y` رشته است، پس خطای `y.toFixed` را نمی‌گیرد و برنامه در زمان اجرا می‌ترکد.
+
+  ### راه‌حل: تابع generic (کد اسلاید ۲۲)
+
+  ```ts title=weee.ts
+  function identity<T>(value: T): T
+  {
+    return value;
+  }
+
+  let num = identity<number>(42);
+  let str = identity<string>("Hello");
+  ```
+
+  - `<T>` یک **type parameter** (پارامتر نوع) است: جای خالی برای یک نوع. اسمش دلخواه است؛ رسم است از `T` (اول کلمه‌ی Type) استفاده شود.
+  - `(value: T): T` یعنی «ورودی از نوع `T` است و خروجی **همان** نوع `T`». نوع خروجی به نوع ورودی **وصل** است.
+  - در `identity<number>(42)`، عبارت `<number>` یک **type argument** (آرگومان نوع) است: این‌جا `T` برابر `number` می‌شود، پس `num` از نوع `number` است. به همین ترتیب `str` از نوع `string` است.
+  - کد اسلاید هیچ `console.log`ی ندارد، پس **خروجی ندارد**. اگر `console.log(num, str, typeof num, typeof str);` را اضافه کنیم، `42 Hello number string` چاپ می‌شود.
+
+  | فراخوانی | `T` چه می‌شود؟ | نوع نتیجه |
+  |---|---|---|
+  | `identity<number>(42)` | `number` | `number` |
+  | `identity<string>("Hello")` | `string` | `string` |
+  | `identity<boolean>(true)` | `boolean` | `boolean` |
+
+  generics فقط برای بررسی در زمان کامپایل هستند؛ در JavaScript خروجی اثری از آن‌ها نمی‌ماند:
+
+  ```js
+  function identity(value) {
+      return value;
+  }
+  let num = identity(42);
+  let str = identity("Hello");
+  ```
+
+  چهار نکته‌ی اسلاید ۲۲ حالا معنا پیدا می‌کنند:
+
+  1. generics امکان ساختن کامپوننت‌ها و تابع‌های **قابل استفاده‌ی دوباره (reusable)** و **type-safe** (ایمن از نظر نوع) را می‌دهند: یک `identity` برای همه‌ی نوع‌ها.
+  2. روی **تابع‌ها، کلاس‌ها و interfaceها** به کار می‌روند (پایین‌تر هر سه را می‌بینیم).
+  3. **انعطاف** می‌دهند و در عین حال **ایمنی نوع** را حفظ می‌کنند.
+  4. با کار کردن روی هر نوع داده، **جلوی تکرار کد** را می‌گیرند **بدون این‌که بررسی نوع از دست برود** (برخلاف `any`).
+
+  بررسی نوع کاملاً برقرار است:
+
+  ```ts
+  function identity<T>(value: T): T {
+    return value;
+  }
+  let num = identity<number>(42);
+  let str = identity<string>("Hello");
+  let wrong = identity<number>("Hello"); // Error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+  num = str;                             // Error TS2322: Type 'string' is not assignable to type 'number'.
+  ```
+
+  ### استنتاج نوع (type inference): لازم نیست همیشه `<number>` بنویسی
+
+  اگر آرگومان نوع را ننویسی، TypeScript آن را از روی آرگومان‌های تابع **استنتاج** (حدس دقیق) می‌کند. یک ظرافت مهم: نتیجه به `let` و `const` بستگی دارد.
+
+  ```ts
+  function identity<T>(value: T): T {
+    return value;
+  }
+  let a = identity(42);         // a: number
+  const b = identity(42);       // b: 42 (a literal type)
+  let c = identity("Hello");    // c: string
+  const d = identity("Hello");  // d: "Hello"
+  a = 100;                      // OK: a is a number
+  let e: 42 = b;                // OK: b is exactly 42
+  let f: 42 = a;                // Error TS2322: Type 'number' is not assignable to type '42'.
+  ```
+
+  چرا؟ متغیر `let` بعداً می‌تواند عوض شود، پس TypeScript نوع را **گسترده** (`number`) در نظر می‌گیرد. اما `const` هرگز عوض نمی‌شود، پس TypeScript همان **نوع دقیق (literal type)** `42` را نگه می‌دارد (مثل `const PI = 3.14` که نوعش `3.14` است).
+
+  آرگومان نوع را وقتی صریح بنویس که نوعی **گسترده‌تر** از حدس TypeScript بخواهی:
+
+  ```ts
+  function identity<T>(value: T): T {
+    return value;
+  }
+  let g = identity<number | string>(5); // g: string | number
+  g = "five";                           // OK
+  ```
+
+  ### چرا generic بهتر از `any` است؟
+
+  | | `any` | generic `<T>` |
+  |---|---|---|
+  | نوع خروجی | `any` (اطلاعات نوع گم می‌شود) | همان نوع ورودی |
+  | اشتباهی مثل `toFixed` روی رشته | در **زمان اجرا** (`TypeError`) | در **زمان کامپایل** |
+  | پیشنهاد خودکار (autocomplete) ویرایشگر | ندارد | دارد |
+
+  ```ts
+  function identity<T>(value: T): T {
+    return value;
+  }
+  const x = identity("hi");
+  x.toUpperCase();  // OK: x is a string
+  x.toFixed(2);     // Error TS2551: Property 'toFixed' does not exist on type '"hi"'.
+  ```
+
+  ### آرایه‌ها: `Array<T>`
+
+  همین حالا هم بدون این‌که بدانی از generics استفاده می‌کردی: `number[]` همان `Array<number>` است.
+
+  ```ts
+  let nums: Array<number> = [1, 2, 3];   // same as number[]
+  nums.push(4);                          // OK
+  nums.push("5");                        // Error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+
+  function firstItem<T>(items: T[]): T | undefined {
+    return items[0];
+  }
+  const h = firstItem([10, 20]);    // h: number | undefined
+  const i = firstItem(["x", "y"]);  // i: string | undefined
+  ```
+
+  (`Promise` فصل اول هم generic است: `Promise<string>` یعنی Promiseی که در پایان یک `string` می‌دهد.)
+
+  ### interface generic: `Box<T>`
+
+  ```ts
+  interface Box<T> {
+    value: T;
+  }
+  const b1: Box<string> = { value: "hi" };
+  const b2: Box<number[]> = { value: [1, 2] };
+  const b3: Box<number> = { value: "hi" };  // Error TS2322: Type 'string' is not assignable to type 'number'.
+  const b4: Box = { value: 1 };             // Error TS2314: Generic type 'Box<T>' requires 1 type argument(s).
+  ```
+
+  ### چند پارامتر نوع: `<K, V>`
+
+  می‌توان بیش از یک پارامتر نوع داشت؛ رسم است برای کلید (Key) از `K` و برای مقدار (Value) از `V` استفاده شود:
+
+  ```ts
+  interface Pair<K, V> {
+    key: K;
+    value: V;
+  }
+  const p1: Pair<string, number> = { key: "age", value: 30 };    // OK
+  const p2: Pair<string, number> = { key: "age", value: "30" };  // Error TS2322: Type 'string' is not assignable to type 'number'.
+
+  function makePair<K, V>(key: K, value: V): Pair<K, V> {
+    return { key, value };
+  }
+  const p3 = makePair("id", 7);                    // Pair<string, number>
+  const p4 = makePair<string, number>("id", "7");  // Error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+  ```
+
+  ### کلاس generic: `Stack<T>`
+
+  **Stack** (پشته) مثل یک دسته بشقاب است: آخرین بشقابی که می‌گذاری، اولین بشقابی است که برمی‌داری (LIFO: Last In, First Out). یک بار کلاس را می‌نویسیم و برای هر نوعی استفاده می‌کنیم:
+
+  ```ts
+  class Stack<T> {
+    private items: T[] = [];
+    push(item: T): void {
+      this.items.push(item);
+    }
+    pop(): T | undefined {
+      return this.items.pop();
+    }
+    size(): number {
+      return this.items.length;
+    }
+  }
+  const s = new Stack<string>();
+  s.push("a");
+  s.push("b");
+  s.push("c");
+  console.log(s.pop(), s.size());  // c 2
+  const n = new Stack<number>();
+  console.log(n.pop(), n.size());  // undefined 0
+  n.push(1);                        // OK
+  n.push("2");                      // Error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+  ```
+
+  `pop` نوع `T | undefined` برمی‌گرداند، چون پشته ممکن است خالی باشد (`pop` آرایه‌ی خالی `undefined` می‌دهد).
+
+  ### قید (constraint) با `extends`
+
+  داخل یک تابع generic، TypeScript هیچ چیزی درباره‌ی `T` نمی‌داند (ممکن است عدد باشد، ممکن است رشته). پس اجازه نمی‌دهد به property خاصی دست بزنی:
+
+  ```ts
+  function size<T>(x: T): number {
+    return x.length;  // Error TS2339: Property 'length' does not exist on type 'T'.
+  }
+  ```
+
+  راه‌حل، **قید** گذاشتن روی `T` است: `T extends { length: number }` یعنی «`T` هر نوعی می‌تواند باشد، **به شرط این‌که** یک `length` عددی داشته باشد».
+
+  ```ts
+  function logLength<T extends { length: number }>(x: T): T {
+    console.log(x.length);
+    return x;
+  }
+  logLength("hello");        // 5
+  logLength([1, 2, 3]);      // 3
+  logLength({ length: 7 });  // 7
+  logLength(42);             // Error TS2345: Argument of type 'number' is not assignable to parameter of type '{ length: number; }'.
+  ```
+
+  چون خروجی `T` است، `logLength("hello")` همچنان یک `string` برمی‌گرداند و می‌توانی روی نتیجه `toUpperCase()` را صدا بزنی.
+
+  ### «You remember generic from Java, right?»
+
+  زیر کد اسلاید ۲۲ نوشته «generic را از Java یادت هست، نه؟». ایده دقیقاً همان است:
+
+  | | Java | TypeScript |
+  |---|---|---|
+  | نوشتن | `List<Integer>`، `class Box<T>` | `Array<number>`، `class Box<T>` |
+  | استنتاج آرگومان نوع | محدودتر (مثلاً `<>` در `new ArrayList<>()`) | قوی؛ معمولاً لازم نیست بنویسی |
+  | نوع‌های پایه | `List<int>` مجاز نیست (باید `Integer` نوشت) | `Array<number>` مجاز است |
+  | در زمان اجرا | type erasure (اطلاعات generic پاک می‌شود) | کاملاً پاک می‌شود؛ در JS خروجی هیچ اثری نیست |
+
+  ::: tip نکته: اسم پارامتر نوع و شکل‌های دیگر
+  - اسم پارامتر نوع دلخواه است: `T` (Type)، `K` (Key)، `V` (Value)، `E` (Element) یا حتی اسم توصیفی مثل `TItem`.
+  - arrow function هم می‌تواند generic باشد: `const identity2 = <T>(value: T): T => value;` (در فایل `.ts` معمولی).
+  - generic روی تابع، کلاس و interface یک شکل دارد: `<...>` بعد از اسم.
+  :::
+
+  ::: trap دام تستی: generic مقدار را تبدیل نمی‌کند
+  `identity<number>("5")` رشته‌ی `"5"` را به عدد `5` تبدیل **نمی‌کند**؛ فقط یک خطای کامپایل (TS2345) است. generics فقط بررسی نوع در زمان کامپایل‌اند و در زمان اجرا وجود ندارند؛ پس `typeof T` یا هر بررسی دیگری روی `T` در زمان اجرا ممکن نیست.
+  :::
+
+  ::: trap دام تستی: `let` یا `const`؟ و معنای `extends`
+  - `let a = identity(42)` نوع `number` می‌گیرد، ولی `const b = identity(42)` نوع دقیق `42`.
+  - `extends` در `<T extends { length: number }>` به معنی **قید** است («باید این شکل را داشته باشد»)، نه وراثت کلاس.
+  :::
+
+  ::: summary
+  - generic = جای خالی برای **نوع**: `function identity<T>(value: T): T`.
+  - `<number>` در `identity<number>(42)` آرگومان نوع است؛ اگر ننویسی، استنتاج می‌شود (`let` → `number`، `const` → `42`).
+  - آرگومان ناسازگار با آرگومان نوع صریح → TS2345. generic اطلاعات نوع را حفظ می‌کند، `any` نه.
+  - روی تابع (`identity<T>`)، interface (`Box<T>`، `Pair<K, V>`) و کلاس (`Stack<T>`) به کار می‌رود؛ `Array<T>` همان `T[]` است.
+  - قید: `<T extends { length: number }>`؛ بدون قید، `x.length` خطای TS2339 دارد.
+  - در JavaScript خروجی هیچ اثری از generics نمی‌ماند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۲، مهم‌ترین فایده‌ی generics چیست؟
+    options:
+      - 'نوشتن کدی که برای انواع مختلف داده دوباره قابل استفاده است، **بدون** از دست رفتن بررسی نوع'
+      - 'سریع‌تر شدن اجرای برنامه در زمان اجرا'
+      - 'خاموش کردن بررسی نوع برای انعطاف بیشتر، درست مثل `any`'
+      - 'تبدیل خودکار مقدارها به نوع `T` در زمان اجرا'
+    answer: 1
+    explain: |
+      اسلاید ۲۲ می‌گوید generics کامپوننت‌ها و تابع‌های **reusable** و **type-safe** می‌سازند و جلوی تکرار کد را می‌گیرند «بدون از دست رفتن بررسی نوع». generics فقط در زمان کامپایل وجود دارند و هیچ اثری روی سرعت اجرا یا تبدیل مقدارها ندارند (گزینه‌های ۲ و ۴). گزینه‌ی ۳ دقیقاً برعکس است: `any` بررسی نوع را خاموش می‌کند ولی generic آن را حفظ می‌کند.
+  - level: easy
+    stem: |
+      در تعریف `function identity<T>(value: T): T`، `T` چیست؟
+    options:
+      - 'اسم کلاسی که باید از قبل جایی تعریف شده باشد.'
+      - 'اسم دیگری برای همان پارامتر `value`.'
+      - 'یک **پارامتر نوع** (type parameter)؛ جای خالی برای نوعی که هنگام فراخوانی مشخص می‌شود.'
+      - 'کلیدواژه‌ای هم‌معنی `any` که بررسی نوع را خاموش می‌کند.'
+    answer: 3
+    explain: |
+      `T` یک type parameter است: همان‌طور که `value` جای خالی برای مقدار است، `T` جای خالی برای **نوع** است و با `identity<number>(42)` (یا با استنتاج) پر می‌شود. `T` لازم نیست جایی تعریف شده باشد (گزینه‌ی ۱)، با `value` فرق دارد چون یکی نوع است و دیگری مقدار (گزینه‌ی ۲)، و برخلاف `any` نوع را حفظ می‌کند (گزینه‌ی ۴).
+  - level: easy
+    stem: |
+      خروجی کد زیر (کد اسلاید ۲۲ به همراه یک `console.log`) چیست؟
+    check: ts-output
+    code: |
+      function identity<T>(value: T): T
+      {
+        return value;
+      }
+
+      let num = identity<number>(42);
+      let str = identity<string>("Hello");
+      console.log(num, str, typeof num, typeof str);
+    options:
+      - out: "42 Hello T T"
+      - out: "42 Hello number string"
+      - out: "42 Hello object object"
+      - out: "42 Hello any any"
+    answer: 2
+    explain: |
+      `identity` همان مقدار را برمی‌گرداند، پس `num` عدد `42` و `str` رشته‌ی `"Hello"` است و `typeof` نوع واقعی زمان اجرا را می‌دهد: `number` و `string`. `T` و `any` فقط در زمان کامپایل وجود دارند و در JavaScript خروجی پاک شده‌اند، پس `typeof` هرگز `T` یا `any` برنمی‌گرداند (گزینه‌های ۱ و ۴). `object` هم فقط برای اشیاء (و `null`) است، نه عدد و رشته (گزینه‌ی ۳).
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۲، generics را روی چه چیزهایی می‌توان به کار برد؟
+    options:
+      - 'فقط روی تابع‌ها'
+      - 'فقط روی کلاس‌ها (مثل Java)'
+      - 'فقط روی interfaceها'
+      - 'روی تابع‌ها، کلاس‌ها و interfaceها'
+    answer: 4
+    explain: |
+      اسلاید ۲۲ صریحاً می‌گوید generics «can be applied to functions, classes, and interfaces»: مثل `function identity<T>`، `class Stack<T>` و `interface Box<T>`. هر سه گزینه‌ی دیگر با کلمه‌ی «فقط» یکی از این سه را کنار گذاشته‌اند؛ حتی در Java هم generic مخصوص کلاس‌ها نیست.
+  - level: easy
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      function identity<T>(value: T): T {
+        return value;
+      }
+      let num = identity<number>(42);
+      let str = identity<string>("Hello");
+      let wrong = identity<number>("Hello");
+      let auto = identity(true);
+    options:
+      - line: 4
+      - line: 5
+      - line: 6
+      - line: 7
+    answer: 3
+    explain: |
+      در خط ۶ آرگومان نوع صریحاً `number` است، پس پارامتر `value` باید `number` باشد؛ دادن `"Hello"` خطای **TS2345** (`Argument of type 'string' is not assignable to parameter of type 'number'`) می‌دهد. خطوط ۴ و ۵ مقدار درست را با آرگومان نوع درست داده‌اند و در خط ۷ آرگومان نوع نوشته نشده و از روی `true` استنتاج می‌شود، پس هیچ‌کدام خطا ندارند.
+  - level: easy
+    stem: |
+      می‌خواهیم `names` آرایه‌ای از رشته‌ها باشد (معادل `string[]`) و کد بدون خطا کامپایل شود. در جای خالی کدام گزینه قرار می‌گیرد؟
+    check: option-tsc
+    want: ok
+    code: |
+      let names: ____ = ["Ali", "Sara"];
+    options:
+      - text: '`Array[string]`'
+        code: 'let names: Array[string] = ["Ali", "Sara"];'
+      - text: '`Array<string>`'
+        code: 'let names: Array<string> = ["Ali", "Sara"];'
+      - text: '`Array(string)`'
+        code: 'let names: Array(string) = ["Ali", "Sara"];'
+      - text: '`string<Array>`'
+        code: 'let names: string<Array> = ["Ali", "Sara"];'
+    answer: 2
+    explain: |
+      `Array` یک نوع generic آماده است و آرگومان نوعش داخل `< >` می‌آید: `Array<string>` دقیقاً همان `string[]` است. `Array[string]` شبیه دسترسی به عضو آرایه است و خطای TS2314 (`Generic type 'Array<T>' requires 1 type argument(s)`) می‌دهد، `Array(string)` شبیه فراخوانی تابع است و خطای نحوی دارد، و در `string<Array>` جای نوع و آرگومان عوض شده است (`string` اصلاً generic نیست).
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      function identity<T>(value: T): T {
+        return value;
+      }
+      let a = identity(42);
+      const b = identity(42);
+      a = 100;
+      let c: 42 = b;
+      let d: 42 = a;
+    options:
+      - line: 5
+      - line: 6
+      - line: 7
+      - line: 8
+    answer: 4
+    explain: |
+      با `let`، نوع `a` گسترده‌ی `number` استنتاج می‌شود (پس خط ۶ مجاز است)، ولی با `const`، نوع `b` دقیقاً `42` است (پس خط ۷ هم مجاز است). در خط ۸ می‌خواهیم یک `number` کلی را در متغیری از نوع `42` بگذاریم و خطای **TS2322** (`Type 'number' is not assignable to type '42'`) می‌گیریم؛ TypeScript نمی‌تواند مطمئن باشد `a` (که قبلاً `100` شده) همیشه `42` است.
+  - level: medium
+    stem: |
+      TypeScript برای متغیر `s` در کد زیر چه نوعی استنتاج می‌کند؟
+    check: option-tsc
+    want: ok
+    code: |
+      function identity<T>(value: T): T {
+        return value;
+      }
+      let s = identity("Hello");
+    prelude: |
+      type Equals<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G extends B ? 1 : 2) ? true : false;
+      function identity<T>(value: T): T {
+        return value;
+      }
+      let s = identity("Hello");
+    options:
+      - text: '`string`'
+        code: 'const check: Equals<typeof s, string> = true;'
+      - text: '`"Hello"`'
+        code: 'const check: Equals<typeof s, "Hello"> = true;'
+      - text: '`any`'
+        code: 'const check: Equals<typeof s, any> = true;'
+      - text: '`T`'
+        code: 'const check: Equals<typeof s, T> = true;'
+    answer: 1
+    explain: |
+      آرگومان نوع نوشته نشده، پس TypeScript آن را از روی `"Hello"` استنتاج می‌کند؛ چون `s` با `let` تعریف شده و بعداً می‌تواند عوض شود، نوع **گسترده‌ی** `string` را می‌گیرد. اگر `const s` بود، نوع دقیق `"Hello"` می‌شد (گزینه‌ی ۲). generic اطلاعات نوع را حفظ می‌کند، پس نتیجه `any` نیست (گزینه‌ی ۳)، و `T` فقط داخل تعریف تابع معنا دارد و بعد از فراخوانی با یک نوع واقعی جایگزین می‌شود (گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Stack<T> {
+        private items: T[] = [];
+        push(item: T): void {
+          this.items.push(item);
+        }
+        pop(): T | undefined {
+          return this.items.pop();
+        }
+        size(): number {
+          return this.items.length;
+        }
+      }
+      const s = new Stack<string>();
+      s.push("a");
+      s.push("b");
+      s.push("c");
+      console.log(s.pop(), s.size());
+      const e = new Stack<number>();
+      console.log(e.pop(), e.size());
+    options:
+      - out: ["a 2", "undefined 0"]
+      - out: ["c 3", "undefined 0"]
+      - out: ["c 2", "undefined 0"]
+      - out: ["c 2", "!! TypeError"]
+    answer: 3
+    explain: |
+      پشته LIFO است: آخرین عضوی که وارد شده (`"c"`) اول بیرون می‌آید و بعد از آن دو عضو باقی می‌ماند، پس `c 2`. `pop` روی آرایه‌ی خالی خطا نمی‌دهد و فقط `undefined` برمی‌گرداند؛ برای همین نوع خروجی `T | undefined` است و خط دوم `undefined 0` چاپ می‌کند. گزینه‌ی ۱ رفتار صف (FIFO) را فرض کرده، گزینه‌ی ۲ فراموش کرده `pop` عضو را حذف می‌کند و گزینه‌ی ۴ فکر کرده پشته‌ی خالی خطا می‌دهد.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Stack<T> {
+        private items: T[] = [];
+        push(item: T): void {
+          this.items.push(item);
+        }
+        pop(): T | undefined {
+          return this.items.pop();
+        }
+      }
+      const s = new Stack<number>();
+      s.push(1);
+      s.push(2 * 3);
+      s.push("4");
+      const top = s.pop();
+    options:
+      - line: 10
+      - line: 12
+      - line: 13
+      - line: 14
+    answer: 3
+    explain: |
+      با `new Stack<number>()`، `T` برابر `number` است و `push` فقط `number` می‌پذیرد؛ پس `s.push("4")` در خط ۱۳ خطای **TS2345** می‌دهد. `2 * 3` یک عدد است (خط ۱۲ درست)، و خط ۱۴ فقط نتیجه را در `top` (با نوع `number | undefined`) می‌گذارد که مشکلی ندارد. خودِ کلاس هم با یک بار نوشتن برای هر نوعی کار می‌کند.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      function logLength<T extends { length: number }>(x: T): T {
+        console.log(x.length);
+        return x;
+      }
+      logLength("hello");
+      logLength([1, 2, 3]);
+      logLength({ length: 7 });
+      logLength(42);
+    options:
+      - line: 2
+      - line: 6
+      - line: 7
+      - line: 8
+    answer: 4
+    explain: |
+      قید `T extends { length: number }` یعنی هر آرگومانی باید یک `length` عددی داشته باشد. رشته، آرایه و حتی شیء `{ length: 7 }` این شرط را دارند، ولی عدد `42` ندارد؛ پس خط ۸ خطای **TS2345** (`Argument of type 'number' is not assignable to parameter of type '{ length: number; }'`) می‌دهد. خط ۲ هم دقیقاً به لطف همین قید مجاز است.
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      function logLength<T extends { length: number }>(x: T): T {
+        console.log(x.length);
+        return x;
+      }
+      const r = logLength("hello");
+      logLength([1, 2, 3]);
+      console.log(r.toUpperCase());
+    options:
+      - out: ["5", "3", "HELLO"]
+      - out: ["5", "3", "!! TypeError"]
+      - out: ["hello", "1,2,3", "HELLO"]
+      - out: ["5", "undefined", "HELLO"]
+    answer: 1
+    explain: |
+      `length` رشته‌ی `"hello"` برابر ۵ و `length` آرایه‌ی سه‌عضوی ۳ است. چون خروجی تابع از نوع `T` است، `r` همان رشته‌ی `"hello"` است (و TypeScript هم می‌داند `string` است)، پس `toUpperCase()` بدون مشکل `HELLO` می‌دهد. گزینه‌ی ۲ فکر کرده نتیجه رشته نیست، گزینه‌ی ۳ خودِ مقدار را به‌جای `length` چاپ کرده و گزینه‌ی ۴ فکر کرده آرایه `length` ندارد.
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی مقایسه‌ی `function f(x: any): any` با `function f<T>(x: T): T` **درست** است؟
+    options:
+      - 'از نظر بررسی نوع هیچ فرقی با هم ندارند؛ هر دو هر ورودی‌ای را می‌پذیرند.'
+      - 'نسخه‌ی generic فقط وقتی کار می‌کند که آرگومان نوع را صریحاً بنویسیم (مثل `f<number>(5)`).'
+      - 'نسخه‌ی generic در زمان اجرا نوع مقدار را بررسی می‌کند و اگر نادرست باشد خطا می‌دهد.'
+      - 'در نسخه‌ی generic نوع خروجی به نوع ورودی وصل می‌ماند؛ ولی با `any` اطلاعات نوع گم می‌شود و بعضی خطاها تا زمان اجرا دیده نمی‌شوند.'
+    answer: 4
+    explain: |
+      هر دو هر ورودی‌ای می‌پذیرند، ولی فرق اصلی در **خروجی** است: `f<T>` می‌گوید خروجی همان نوع ورودی است (مثلاً `string`)، ولی `any` هر اطلاعاتی را دور می‌ریزد؛ پس گزینه‌ی ۱ غلط است. آرگومان نوع معمولاً خودکار استنتاج می‌شود (گزینه‌ی ۲ غلط) و generics در زمان اجرا وجود ندارند که بررسی‌ای انجام دهند (گزینه‌ی ۳ غلط).
+  - level: medium
+    stem: |
+      با interface زیر، کدام تعریف **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      interface Pair<K, V> {
+        key: K;
+        value: V;
+      }
+    prelude: |
+      interface Pair<K, V> {
+        key: K;
+        value: V;
+      }
+    options:
+      - code: 'const p: Pair<string, number> = { key: "age", value: 30 };'
+      - code: 'const p: Pair<string, number> = { key: "age", value: "30" };'
+      - code: 'const p: Pair<number, string> = { key: 1, value: "one" };'
+      - code: 'const p: Pair<boolean, boolean> = { key: true, value: false };'
+    answer: 2
+    explain: |
+      در `Pair<string, number>`، `K = string` و `V = number` است؛ پس `value` باید عدد باشد و رشته‌ی `"30"` خطای **TS2322** (`Type 'string' is not assignable to type 'number'`) می‌دهد. در بقیه‌ی گزینه‌ها هر مقدار با پارامتر نوع متناظرش جور است؛ ترتیب آرگومان‌های نوع مهم است (`<number, string>` در گزینه‌ی ۳ یعنی کلید عدد و مقدار رشته) و دو پارامتر نوع می‌توانند یکسان هم باشند (گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      interface Box<T> {
+        value: T;
+      }
+      const b1: Box<string> = { value: "hi" };
+      const b2: Box<number[]> = { value: [1, 2] };
+      const b3: Box<boolean> = { value: "true" };
+      const b4: Box<number> = { value: 0 };
+    options:
+      - line: 4
+      - line: 5
+      - line: 6
+      - line: 7
+    answer: 3
+    explain: |
+      در `Box<boolean>`، نوع `value` برابر `boolean` است؛ `"true"` (بین کوتیشن) یک **رشته** است نه مقدار بولی، پس خط ۶ خطای **TS2322** می‌دهد. آرگومان نوع می‌تواند هر نوعی باشد، حتی آرایه (`number[]` در خط ۵)، و `0` هم یک `number` معتبر است (خط ۷).
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      function first<T>(items: T[]): T | undefined {
+        return items[0];
+      }
+      function size<T>(x: T): number {
+        return x.length;
+      }
+      const n = first([10, 20]);
+      const s = first(["a", "b"]);
+    options:
+      - line: 2
+      - line: 5
+      - line: 7
+      - line: 8
+    answer: 2
+    explain: |
+      در تابع `size` هیچ قیدی روی `T` نیست، پس TypeScript نمی‌داند `x` چیست (ممکن است عدد باشد) و `x.length` خطای **TS2339** (`Property 'length' does not exist on type 'T'`) می‌دهد؛ راه‌حلش `<T extends { length: number }>` است. در `first` پارامتر از نوع `T[]` (آرایه) است و دسترسی `items[0]` همیشه مجاز است؛ خطوط ۷ و ۸ هم به‌ترتیب `number | undefined` و `string | undefined` می‌گیرند.
+  - level: hard
+    stem: |
+      کد زیر **بدون خطا** کامپایل می‌شود. خروجی آن در زمان اجرا چیست؟
+    check: ts-output
+    code: |
+      function identityAny(value: any): any {
+        return value;
+      }
+      const y = identityAny("hi");
+      console.log(y.length);
+      console.log(y.toFixed(2));
+      console.log("done");
+    options:
+      - out: ["2", "!! TypeError"]
+      - out: ["2", "hi", "done"]
+      - out: ["2", "NaN", "done"]
+      - out: ["2", "undefined", "done"]
+    answer: 1
+    explain: |
+      چون خروجی `any` است، TypeScript هیچ بررسی‌ای روی `y` نمی‌کند و `y.toFixed(2)` را قبول می‌کند. ولی `y` در زمان اجرا یک رشته است و رشته‌ها متد `toFixed` ندارند: `y.toFixed` برابر `undefined` است و صدا زدن آن `TypeError: y.toFixed is not a function` می‌دهد و برنامه همان‌جا متوقف می‌شود (پس `done` چاپ نمی‌شود). این دقیقاً همان خطری است که generics جلویش را در زمان کامپایل می‌گیرند.
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      function identity<T>(value: T): T {
+        return value;
+      }
+      function identityAny(value: any): any {
+        return value;
+      }
+      const x = identity("hi");
+      const y = identityAny("hi");
+      console.log(x.toUpperCase());
+      console.log(y.toFixed(2));
+      console.log(x.toFixed(2));
+    options:
+      - line: 9
+      - line: 10
+      - line: 11
+      - line: 0
+    answer: 3
+    explain: |
+      نوع `x` (خروجی generic) رشته است (دقیقاً `"hi"`)، پس `toUpperCase` مجاز است ولی `x.toFixed(2)` در خط ۱۱ خطای **TS2551** (`Property 'toFixed' does not exist on type '"hi"'`) می‌دهد. خط ۱۰ با این‌که در زمان اجرا می‌ترکد، **در کامپایل خطایی ندارد**، چون `y` از نوع `any` است و بررسی نوع برایش خاموش است. این تفاوت generic و `any` است.
+  - level: hard
+    stem: |
+      با تابع زیر، کدام فراخوانی **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      function longest<T extends { length: number }>(a: T, b: T): T {
+        return a.length >= b.length ? a : b;
+      }
+    prelude: |
+      function longest<T extends { length: number }>(a: T, b: T): T {
+        return a.length >= b.length ? a : b;
+      }
+    options:
+      - code: 'const r = longest("abc", "de");'
+      - code: 'const r = longest([1, 2], [3]);'
+      - code: 'const r = longest<string | number[]>("abc", [1, 2]);'
+      - code: 'const r = longest("abc", [1, 2]);'
+    answer: 4
+    explain: |
+      هر دو پارامتر از **یک** نوع `T` هستند. در گزینه‌ی ۴، TypeScript نوع `T` را از آرگومان اول حدس می‌زند و بعد آرایه‌ی `[1, 2]` با آن جور نیست؛ خطای **TS2345** (`Argument of type 'number[]' is not assignable to parameter of type '"abc"'`) می‌دهد. در گزینه‌های ۱ و ۲ هر دو آرگومان هم‌نوع‌اند، و در گزینه‌ی ۳ آرگومان نوع صریحاً `string | number[]` است که هر دو آرگومان را می‌پذیرد و `length` هم دارد، پس خطایی نیست.
+  - level: hard
+    stem: |
+      زیر کد اسلاید ۲۲ نوشته شده «You remember generic from Java, right?». کدام گزینه درباره‌ی generics در TypeScript **نادرست** است؟
+    options:
+      - 'مثل Java، پارامتر یا آرگومان نوع داخل `< >` نوشته می‌شود؛ مثل `List<Integer>` در Java و `Array<number>` در TypeScript.'
+      - 'می‌توان در زمان اجرا با `typeof T` فهمید `T` چه نوعی است، چون اطلاعات generic در JavaScript خروجی باقی می‌ماند.'
+      - 'اگر آرگومان نوع را ننویسیم، کامپایلر معمولاً آن را از روی آرگومان‌های تابع استنتاج می‌کند.'
+      - 'مثل Java می‌توان کلاس generic (مانند `class Box<T>`) تعریف کرد.'
+    answer: 2
+    explain: |
+      generics در TypeScript فقط در زمان کامپایل وجود دارند و در JavaScript خروجی **کاملاً پاک** می‌شوند (کد `identity` بعد از کامپایل هیچ `<T>`ی ندارد)؛ پس در زمان اجرا هیچ راهی برای فهمیدن `T` نیست و گزینه‌ی ۲ نادرست است. گزینه‌ی ۱ شباهت نحوی دو زبان، گزینه‌ی ۳ استنتاج آرگومان نوع (`identity(42)`) و گزینه‌ی ۴ کلاس‌های generic مثل `Stack<T>` را درست بیان می‌کنند.
+  - level: hard
+    stem: |
+      TypeScript برای متغیر `g` در کد زیر چه نوعی در نظر می‌گیرد؟
+    check: option-tsc
+    want: ok
+    code: |
+      function identity<T>(value: T): T {
+        return value;
+      }
+      let g = identity<number | string>(5);
+    prelude: |
+      type Equals<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G extends B ? 1 : 2) ? true : false;
+      function identity<T>(value: T): T {
+        return value;
+      }
+      let g = identity<number | string>(5);
+    options:
+      - text: '`string | number`'
+        code: 'const check: Equals<typeof g, string | number> = true;'
+      - text: '`number`'
+        code: 'const check: Equals<typeof g, number> = true;'
+      - text: '`5`'
+        code: 'const check: Equals<typeof g, 5> = true;'
+      - text: '`any`'
+        code: 'const check: Equals<typeof g, any> = true;'
+    answer: 1
+    explain: |
+      وقتی آرگومان نوع **صریحاً** نوشته شود، استنتاج انجام نمی‌شود و `T` همان چیزی است که نوشته‌ایم: `number | string` (ترتیب اعضای union مهم نیست و TypeScript آن را `string | number` نمایش می‌دهد). پس `g` بعداً می‌تواند رشته هم بگیرد (`g = "five"`). اگر `<...>` را نمی‌نوشتیم، با `let` نوع `number` (گزینه‌ی ۲) و با `const` نوع `5` (گزینه‌ی ۳) استنتاج می‌شد؛ `any` هم هیچ‌وقت نتیجه‌ی generic نیست.
