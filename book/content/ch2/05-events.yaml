@@ -678,3 +678,49 @@ questions:
       آن `"function"` است، در حالی که `getAttribute` همان متن خام را برمی‌گرداند (رد گزینه‌ی ۱). داخل handler
       attribute، `this` همان دکمه است و `save` چاپ می‌شود (رد گزینه‌ی ۲). این handler از هنگام parse شدن HTML
       ثبت شده، یعنی قبل از `addEventListener`، پس قبل از `listener` اجرا می‌شود (رد گزینه‌ی ۳).
+  - level: medium
+    stem: |
+      صفحه فقط یک دکمه دارد:
+
+      ```html
+      <button id="save">Save</button>
+      ```
+
+      کد زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const save = document.getElementById("save");
+      save.addEventListener("click", () => console.log("saved"));
+      const cancel = document.getElementById("cancel");
+      console.log("cancel is", cancel);
+      cancel.addEventListener("click", () => console.log("cancelled"));
+      console.log("ready");
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <button id="save">Save</button>
+    code: |
+      const save = document.getElementById("save"); console.log("~1");
+      save.addEventListener("click", () => console.log("saved")); console.log("~2");
+      const cancel = document.getElementById("cancel"); console.log("~3");
+      console.log("cancel is", cancel); console.log("~4");
+      cancel.addEventListener("click", () => console.log("cancelled")); console.log("~5");
+      console.log("ready"); console.log("~6");
+    options:
+      - text: 'خط ۲'
+        out: ["~1", "!! TypeError"]
+      - text: 'خط ۳'
+        out: ["~1", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "~2", "~3", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "~2", "~3", "cancel is null", "~4", "!! TypeError"]
+    answer: 4
+    explain: |
+      دکمه‌ی `save` وجود دارد، پس خط ۲ بدون مشکل listener ثبت می‌کند (رد گزینه‌ی ۱). عنصری با id برابر `cancel`
+      نیست؛ `getElementById` در این حالت خطا نمی‌دهد و فقط `null` برمی‌گرداند (رد گزینه‌ی ۲)، و چاپ `null` هم
+      مشکلی ندارد و `cancel is null` نمایش داده می‌شود (رد گزینه‌ی ۳). در خط ۵ متد `addEventListener` روی `null`
+      صدا زده می‌شود و خطای `TypeError` رخ می‌دهد؛ پس `ready` هرگز چاپ نمی‌شود. (listener `save` که در خط ۲
+      ثبت شده، همچنان با کلیک کار می‌کند.)
