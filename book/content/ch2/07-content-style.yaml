@@ -614,3 +614,51 @@ questions:
       `backgroundColor`. نوشتن `box.style.background-color` خطای نحوی می‌دهد، چون خط تیره به معنای تفریق است
       (رد گزینه‌ی ۱). نام‌ها به حروف بزرگ و کوچک حساس‌اند و حرف اول کوچک است (رد گزینه‌ی ۳)، و `bgColor`
       property CSS نیست و روی `style` هیچ اثری ندارد (رد گزینه‌ی ۴).
+  - level: hard
+    stem: |
+      با HTML زیر:
+
+      ```html
+      <p class="note">A</p>
+      <p class="note">B</p>
+      ```
+
+      کد زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const notes = document.getElementsByClassName("note");
+      notes[0].textContent = "First note";
+      document.querySelectorAll(".note").textContent = "All notes";
+      notes[1].style.color = "red";
+      notes.style.color = "blue";
+      console.log("done");
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <p class="note">A</p>
+      <p class="note">B</p>
+    code: |
+      const notes = document.getElementsByClassName("note"); console.log("~1");
+      notes[0].textContent = "First note"; console.log("~2");
+      document.querySelectorAll(".note").textContent = "All notes"; console.log("~3");
+      notes[1].style.color = "red"; console.log("~4");
+      notes.style.color = "blue"; console.log("~5");
+      console.log("done"); console.log("~6");
+    options:
+      - text: 'خط ۲'
+        out: ["~1", "!! TypeError"]
+      - text: 'خط ۳'
+        out: ["~1", "~2", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "~2", "~3", "~4", "!! TypeError"]
+      - text: 'هیچ خطایی رخ نمی‌دهد'
+        out: ["~1", "~2", "~3", "~4", "~5", "done", "~6"]
+    answer: 3
+    explain: |
+      `notes[0]` و `notes[1]` عنصرهای واقعی‌اند، پس خط‌های ۲ و ۴ متن و رنگ را بدون مشکل تغییر می‌دهند (رد گزینه‌ی
+      ۱). خط ۳ یک دام بی‌صداست: NodeList خودش `textContent` ندارد و این انتساب فقط یک property بی‌اثر روی شیء
+      NodeList می‌سازد؛ **خطا نمی‌دهد** ولی متن هیچ پاراگرافی هم عوض نمی‌شود (رد گزینه‌ی ۲). در خط ۵، `notes` یک
+      HTMLCollection است که property `style` ندارد؛ `notes.style` برابر `undefined` است و نوشتن `color` روی
+      آن خطای `TypeError` می‌دهد (رد گزینه‌ی ۴). برای تغییر همه‌ی عنصرها باید روی مجموعه حلقه زد.
