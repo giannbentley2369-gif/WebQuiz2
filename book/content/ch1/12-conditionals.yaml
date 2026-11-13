@@ -1,0 +1,975 @@
+id: ch1-conditionals
+title: "کنترل جریان و دستورهای شرطی (if و switch)"
+slides: "Introduction to JS، اسلایدهای ۲۹ و ۳۰"
+lesson: |
+  فرض کن با یک مسیریاب (GPS) رانندگی می‌کنی. بیشترِ راه را مستقیم جلو می‌روی، ولی سر هر تقاطع باید **تصمیم** بگیری: «اگر ترافیک است، از خیابان فرعی برو؛ وگرنه مستقیم برو». گاهی هم باید کاری را **تکرار** کنی: «دور میدان بچرخ تا به خروجی سوم برسی». برنامه‌ها هم دقیقاً همین‌طورند. به ترتیبی که دستورهای یک برنامه اجرا می‌شوند **control flow** (کنترل جریان؛ یعنی «کدام دستور، کِی و به چه ترتیبی اجرا شود») می‌گوییم.
+
+  ### کنترل جریان (Control flow): اسلاید ۲۹
+
+  اسلاید ۲۹ این پنج نکته را می‌گوید:
+
+  - control flow تعیین می‌کند **کدام کد** و **چه زمانی** اجرا شود.
+  - به‌طور پیش‌فرض، JavaScript کد را **از بالا به پایین** و خط‌به‌خط اجرا می‌کند.
+  - **دستورهای شرطی (conditionals)** به ما اجازه می‌دهند مسیر برنامه را **دوشاخه کنیم (branch)**؛ مثل `if` و `else`.
+  - **حلقه‌ها (loops)** به ما اجازه می‌دهند کدی را **تکرار** کنیم؛ مثل `for` و `while`.
+  - این دو با هم به برنامه **منطق و ساختار** می‌دهند.
+
+  کد اسلاید ۲۹ هر دو ابزار را کنار هم نشان می‌دهد:
+
+  ```js title=cf.js
+  let age = 18;
+
+  if (age >= 18) {
+    console.log("You can vote!");
+  } else {
+    console.log("Too young to vote.");
+  }
+
+  for (let i = 1; i <= 3; i++) {
+    console.log("Count:", i);
+  }
+  ```
+
+  خروجی:
+
+  ```text
+  You can vote!
+  Count: 1
+  Count: 2
+  Count: 3
+  ```
+
+  بیا ببینیم چه شد:
+
+  - شرط `age >= 18` یعنی «آیا `age` بزرگ‌تر **یا مساوی** ۱۸ است؟». چون `18 >= 18` درست (`true`) است، فقط بلوک `if` اجرا شد و بلوک `else` کاملاً **رد شد**. اگر خط اول `let age = 16;` بود، فقط `Too young to vote.` چاپ می‌شد.
+  - حلقه‌ی `for` بدنه‌اش را برای `i` برابر ۱، ۲ و ۳ اجرا کرد. وقتی `i` به ۴ رسید، شرط `i <= 3` نادرست شد و حلقه تمام شد. (`console.log` وقتی چند ورودی بگیرد، آن‌ها را با یک فاصله کنار هم چاپ می‌کند؛ برای همین `Count: 1` چاپ شد.) جزئیات حلقه‌ها را در درس بعد، «حلقه‌ها (Loops)»، کامل می‌خوانیم.
+
+  در این درس روی **دستورهای شرطی** تمرکز می‌کنیم.
+
+  ### دستورهای شرطی (Conditionals): اسلاید ۳۰
+
+  طبق اسلاید ۳۰، دستورهای شرطی:
+
+  - به کد اجازه می‌دهند **تصمیم بگیرد** (make decisions)؛
+  - بلوک‌هایی از کد را **فقط وقتی یک شرط درست است** اجرا می‌کنند؛
+
+  و چهار شکل اصلی دارند:
+
+  | شکل | کاربرد (طبق اسلاید ۳۰) |
+  |---|---|
+  | `if` | اگر شرط درست است، کدی را اجرا کن |
+  | `if / else` | بین **دو مسیر** یکی را انتخاب کن |
+  | `else if` | چند شرط را **پشت سر هم زنجیر کن** |
+  | `switch` | **چند حالت مشخص** (چند مقدار معین) را مدیریت کن |
+
+  ### `if`: «اگر ... آن‌گاه ...»
+
+  ```js
+  const temperature = 35;
+
+  if (temperature > 30) {
+    console.log("It's hot! Drink water.");
+  }
+  console.log("Have a nice day.");
+  // It's hot! Drink water.
+  // Have a nice day.
+  ```
+
+  - شرط همیشه داخل **پرانتز** `( )` می‌آید.
+  - کدی که باید در صورت درست بودن شرط اجرا شود داخل **آکولاد** `{ }` می‌آید؛ به این بخش **بلوک (block)** می‌گوییم.
+  - خط آخر بیرون از `if` است، پس **همیشه** اجرا می‌شود. اگر `temperature` برابر ۲۰ بود، فقط `Have a nice day.` چاپ می‌شد.
+
+  ### شرط چطور سنجیده می‌شود؟ truthy و falsy
+
+  داخل پرانتز `if` لازم نیست حتماً `true` یا `false` بنویسی؛ هر مقداری مجاز است. JavaScript آن مقدار را پشت پرده با همان قانون `Boolean(x)` (درس «تبدیل نوع صریح (Casting)») به boolean تبدیل می‌کند. یادآوری:
+
+  - فقط ۸ مقدار **falsy** (شبه‌نادرست؛ یعنی در شرط مثل `false` رفتار می‌کنند) داریم: `false`، `0`، `-0`، `0n`، `""` (رشته‌ی خالی)، `null`، `undefined` و `NaN`.
+  - **هر** مقدار دیگری **truthy** (شبه‌درست) است؛ حتی `"0"`، `"false"`، `" "`، `[]`، `{}` و `-1`.
+
+  ```js
+  if ("0") console.log("A");       // runs: "0" is a non-empty string
+  if ([]) console.log("B");        // runs: every array (even an empty one) is truthy
+  if ({}) console.log("C");        // runs: every object is truthy
+  if (0) console.log("D");         // skipped: 0 is falsy
+  if ("") console.log("E");        // skipped: the empty string is falsy
+  if (null) console.log("F");      // skipped
+  if (undefined) console.log("G"); // skipped
+  if (NaN) console.log("H");       // skipped
+  // Output: A, B, C (each on its own line)
+  ```
+
+  (این‌جا بدنه‌ی هر `if` فقط یک دستور است و آکولاد نگذاشته‌ایم. چند بخش پایین‌تر می‌بینیم این کار چه دامی دارد.)
+
+  کاربرد رایج: بررسی «خالی نبودن» یک مقدار.
+
+  ```js
+  const username = "";
+  if (username) {
+    console.log("Hello, " + username);
+  } else {
+    console.log("Please enter your name.");
+  }
+  // Please enter your name.
+  ```
+
+  ### `if / else`: انتخاب بین دو مسیر
+
+  `else` یعنی «وگرنه». در ساختار `if / else` **دقیقاً یکی** از دو بلوک اجرا می‌شود: اگر شرط truthy باشد بلوک `if`، وگرنه بلوک `else`. هیچ‌وقت هر دو با هم اجرا نمی‌شوند و هیچ‌وقت هر دو جا نمی‌مانند.
+
+  ```js
+  const num = 7;
+  if (num % 2 === 0) {
+    console.log("even");
+  } else {
+    console.log("odd");
+  }
+  // odd
+  ```
+
+  ### `else if`: زنجیره‌ی چند شرط
+
+  وقتی بیش از دو حالت داریم، شرط‌ها را با `else if` پشت سر هم می‌چینیم:
+
+  ```js
+  const score = 85;
+  if (score >= 90) {
+    console.log("A");
+  } else if (score >= 75) {
+    console.log("B");
+  } else if (score >= 50) {
+    console.log("C");
+  } else {
+    console.log("F");
+  }
+  // B
+  ```
+
+  قانون طلایی زنجیره: شرط‌ها **به ترتیب از بالا** بررسی می‌شوند و **فقط اولین شاخه‌ای که شرطش درست باشد** اجرا می‌شود. بعد از آن، بقیه‌ی زنجیره (حتی اگر شرطشان درست باشد) **اصلاً بررسی نمی‌شود**. این‌جا `85 >= 50` هم درست است، ولی چون `85 >= 75` زودتر درست شد، فقط `B` چاپ شد.
+
+  `else` آخر اختیاری است و نقش «در هر حالت دیگر» را دارد. اگر نباشد و هیچ شرطی درست نباشد، **هیچ** شاخه‌ای اجرا نمی‌شود.
+
+  ::: warning ترتیب شرط‌ها مهم است
+  اگر شرط کلی‌تر را اول بگذاری، شرط‌های خاص‌تر هیچ‌وقت به نوبت نمی‌رسند:
+
+  ```js
+  const score = 95;
+  if (score >= 50) {
+    console.log("C");   // 95 >= 50 is true, so this runs
+  } else if (score >= 90) {
+    console.log("A");   // never reached for any score >= 50
+  }
+  // C
+  ```
+
+  قاعده: در زنجیره، شرط‌های **سخت‌گیرانه‌تر** را بالاتر بگذار.
+  :::
+
+  دقت کن **چند `if` جدا** با **یک زنجیره‌ی `else if`** فرق دارد. `if`های جدا مستقل‌اند و هر کدام که شرطش درست باشد اجرا می‌شود:
+
+  ```js
+  const n = 15;
+  if (n > 10) console.log("greater than 10");
+  if (n > 5) console.log("greater than 5");   // a separate if: checked as well
+  // greater than 10
+  // greater than 5
+  ```
+
+  ### `if` تودرتو (Nested if)
+
+  داخل بلوک یک `if` می‌توان `if` دیگری نوشت. شرط درونی فقط وقتی بررسی می‌شود که شرط بیرونی درست باشد:
+
+  ```js
+  const age = 20;
+  const hasTicket = false;
+
+  if (age >= 18) {
+    if (hasTicket) {
+      console.log("Enjoy the movie!");
+    } else {
+      console.log("Please buy a ticket.");
+    }
+  } else {
+    console.log("Too young for this movie.");
+  }
+  // Please buy a ticket.
+  ```
+
+  ### `switch`: مدیریت چند حالت مشخص
+
+  وقتی یک مقدار را با **چند مقدار معین** مقایسه می‌کنی (مثل شماره‌ی روز هفته یا نام یک دستور)، `switch` از یک زنجیره‌ی بلند `else if` خواناتر است:
+
+  ```js
+  const day = 3;
+
+  switch (day) {
+    case 1:
+      console.log("Saturday");
+      break;
+    case 2:
+      console.log("Sunday");
+      break;
+    case 3:
+      console.log("Monday");
+      break;
+    default:
+      console.log("Another day");
+  }
+  // Monday
+  ```
+
+  طرز کار `switch`:
+
+  1. عبارتِ داخل پرانتز (این‌جا `day`) **یک بار** حساب می‌شود.
+  2. مقدارش به ترتیب با مقدار هر `case` مقایسه می‌شود. این مقایسه **سخت‌گیرانه** است؛ یعنی دقیقاً مثل `===` (هم مقدار و هم نوع باید یکی باشند).
+  3. اجرا از **اولین `case`ِ مطابق** شروع می‌شود.
+  4. `break` یعنی «همین الان از `switch` بیرون برو».
+  5. اگر هیچ `case`ی مطابق نباشد، اجرا از بخش `default` (حالت پیش‌فرض) شروع می‌شود. `default` اختیاری است؛ اگر نباشد و هیچ `case`ی مطابق نباشد، هیچ اتفاقی نمی‌افتد.
+
+  #### مقایسه با `===`: رشته‌ی `"1"` با عدد `1` جور نمی‌شود
+
+  ```js
+  const choice = "1";   // e.g. a value typed by the user is always a string
+
+  switch (choice) {
+    case 1:
+      console.log("You chose one");
+      break;
+    default:
+      console.log("Unknown choice");
+  }
+  // Unknown choice   ("1" === 1 is false)
+  ```
+
+  برخلاف `==`، این‌جا هیچ تبدیل نوعی (coercion) رخ نمی‌دهد. راه درست: یا بنویس `case "1":` یا ورودی را اول با `Number(choice)` به عدد تبدیل کن.
+
+  #### فراموش کردن `break`: سقوط به caseهای بعدی (Fall-through)
+
+  `case`ها فقط **نقطه‌ی شروع** اجرا هستند، نه دیوار. وقتی اجرا از یک `case` شروع شد، تا رسیدن به `break` (یا پایان `switch`) ادامه پیدا می‌کند و **کد caseهای بعدی را هم بدون بررسی مقدارشان اجرا می‌کند**. به این پدیده **fall-through** (سقوط به caseهای پایینی) می‌گویند:
+
+  ```js
+  const fruit = "apple";
+
+  switch (fruit) {
+    case "apple":
+      console.log("red");      // execution starts here
+    case "banana":
+      console.log("yellow");   // no break above, so it falls through
+      break;                   // and stops here
+    case "grape":
+      console.log("purple");
+  }
+  // red
+  // yellow
+  ```
+
+  #### چند case با یک کد مشترک (گروه‌بندی)
+
+  از همین رفتار می‌شود آگاهانه استفاده کرد تا چند مقدار یک کد مشترک داشته باشند:
+
+  ```js
+  const today = "Friday";
+
+  switch (today) {
+    case "Thursday":
+    case "Friday":
+      console.log("Weekend!");
+      break;
+    default:
+      console.log("Work day");
+  }
+  // Weekend!
+  ```
+
+  #### `default` لازم نیست آخر باشد
+
+  `default` می‌تواند هر جای `switch` بیاید و در هر حال فقط وقتی **نقطه‌ی شروع** اجرا می‌شود که هیچ `case`ی مطابق نباشد. ولی اگر وسط باشد و `break` نداشته باشد، اجرا از آن‌جا به caseهای پایینی سقوط می‌کند:
+
+  ```js
+  const level = 9;
+
+  switch (level) {
+    default:
+      console.log("unknown level");   // chosen: no case matches 9
+    case 1:
+      console.log("beginner");        // falls through (no break above)
+      break;
+    case 2:
+      console.log("expert");
+  }
+  // unknown level
+  // beginner
+  ```
+
+  ### عملگر سه‌تایی (Ternary operator): `condition ? a : b`
+
+  گاهی فقط می‌خواهی بر اساس یک شرط، **یکی از دو مقدار** را انتخاب کنی. عملگر سه‌تایی (**ternary**؛ تنها عملگر JavaScript که سه بخش دارد) یک `if / else` کوتاه است که **مقدار برمی‌گرداند**:
+
+  ```js
+  const age = 15;
+  const status = age >= 18 ? "adult" : "minor";
+  console.log(status); // minor
+
+  // the same logic with if / else:
+  let status2;
+  if (age >= 18) {
+    status2 = "adult";
+  } else {
+    status2 = "minor";
+  }
+  console.log(status2); // minor
+  ```
+
+  این‌طور بخوانش: «شرط `?` مقدارِ حالت درست `:` مقدارِ حالت نادرست». چون ternary یک **عبارت** (expression؛ تکه‌کدی که یک مقدار تولید می‌کند) است، می‌شود آن را مستقیم داخل `console.log` یا یک template literal گذاشت. `if` یک **دستور** (statement) است و چنین کاری از آن برنمی‌آید:
+
+  ```js
+  const items = 1;
+  console.log(`You have ${items} item${items === 1 ? "" : "s"}`); // You have 1 item
+  ```
+
+  ternaryها را می‌شود زنجیر هم کرد و مثل یک زنجیره‌ی `else if` خواند («اگر ... وگرنه اگر ... وگرنه ...»)، ولی زیاده‌روی در آن خوانایی را از بین می‌برد:
+
+  ```js
+  const n = 0;
+  const sign = n > 0 ? "positive" : n < 0 ? "negative" : "zero";
+  console.log(sign); // zero
+  ```
+
+  ::: tip
+  - شرط `if` هر مقداری می‌تواند باشد و با قانون truthy/falsy سنجیده می‌شود: `if ("0")`، `if ("false")`، `if ([])` و `if ({})` اجرا **می‌شوند**؛ `if (0)`، `if ("")`، `if (null)`، `if (undefined)` و `if (NaN)` اجرا **نمی‌شوند**.
+  - در زنجیره‌ی `if / else if / ...` حداکثر **یک** شاخه اجرا می‌شود: اولین شاخه‌ای که شرطش درست است. اگر `else` پایانی داشته باشد، **دقیقاً** یک شاخه اجرا می‌شود.
+  - `switch` با `===` مقایسه می‌کند؛ `break` از `switch` بیرون می‌برد؛ بدون `break` اجرا به caseهای بعدی سقوط می‌کند؛ `default` (هر جای `switch` که باشد) وقتی نقطه‌ی شروع است که هیچ caseی مطابق نباشد.
+  - برای انتخاب یک **مقدار** از بین دو مقدار، ternary (`cond ? a : b`) کوتاه‌ترین راه است.
+  :::
+
+  ::: trap
+  **۱. بدون آکولاد، فقط دستورِ بعدی مال `if` است.** تورفتگی (indentation) در JavaScript برخلاف Python هیچ معنایی ندارد:
+
+  ```js
+  const isLoggedIn = false;
+  if (isLoggedIn)
+    console.log("Welcome back!");
+    console.log("Loading your profile..."); // NOT part of the if: always runs
+  // Loading your profile...
+  ```
+
+  اگر بعد از چنین `if`ِ بی‌آکولادی دو دستور بیاید و بعد `else`، آن `else` دیگر به `if` نمی‌چسبد و کل فایل `SyntaxError: Unexpected token 'else'` می‌دهد. **همیشه آکولاد بگذار.**
+
+  **۲. `=` به جای `===` داخل شرط.** `=` انتساب است، نه مقایسه! `if (x = 5)` اول عدد ۵ را **در `x` می‌ریزد** و بعد مقدار همان انتساب (یعنی `5` که truthy است) شرط می‌شود؛ پس شرط همیشه درست است و `x` هم عوض شده است. `if (x = 0)` برعکس هیچ‌وقت اجرا نمی‌شود. اگر `x` با `const` تعریف شده باشد، همین خط `TypeError` می‌دهد.
+
+  ```js
+  let x = 10;
+  if (x = 5) {              // assignment, not comparison!
+    console.log("x is 5");  // runs
+  }
+  console.log(x);           // 5 (x has been changed)
+  ```
+
+  **۳. سمی‌کالن بعد از پرانتز `if`.** در `if (score > 100); { ... }` آن `;` یک «دستور خالی» است که بدنه‌ی `if` حساب می‌شود، و بلوک `{ ... }` بعدی یک بلوک مستقل است که **همیشه** اجرا می‌شود.
+
+  **۴. `||` مقایسه را تکرار نمی‌کند.** `if (color === "red" || "blue")` یعنی «`color === "red"` یا مقدار `"blue"`»؛ و چون رشته‌ی غیرخالی `"blue"` truthy است، این شرط **همیشه** درست است. شکل درست: `if (color === "red" || color === "blue")`.
+
+  **۵. ورودی کاربر رشته است.** `switch ("1")` با `case 1:` جور نمی‌شود، چون مقایسه با `===` است.
+  :::
+
+  ::: summary
+  - control flow تعیین می‌کند کدام کد و کِی اجرا شود؛ پیش‌فرض: از بالا به پایین. شرط‌ها مسیر را دوشاخه می‌کنند (`if`، `else`) و حلقه‌ها تکرار می‌کنند (`for`، `while`).
+  - چهار شکل شرط (اسلاید ۳۰): `if`، `if / else` (دو مسیر)، `else if` (زنجیره‌ی شرط‌ها) و `switch` (چند حالت مشخص).
+  - شرط با truthy/falsy سنجیده می‌شود؛ در زنجیره فقط اولین شاخه‌ی درست اجرا می‌شود و ترتیب شرط‌ها مهم است.
+  - `switch`: مقایسه با `===`، `break` برای خروج، fall-through بدون `break`، گروه‌بندی caseها و `default` در هر جای `switch`.
+  - ternary (`cond ? a : b`) یک عبارت است و یکی از دو مقدار را برمی‌گرداند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۹، کدام جمله درباره‌ی **control flow** (کنترل جریان) درست است؟
+    options:
+      - 'JavaScript همه‌ی خط‌های برنامه را هم‌زمان اجرا می‌کند و ترتیب نوشتن خط‌ها اهمیتی ندارد.'
+      - 'کد به‌طور پیش‌فرض از بالا به پایین اجرا می‌شود و control flow (با شرط‌ها و حلقه‌ها) تعیین می‌کند کدام کد و چه زمانی اجرا شود.'
+      - 'دستورهای شرطی کد را تکرار می‌کنند و حلقه‌ها بین دو مسیر یکی را انتخاب می‌کنند.'
+      - 'کد به‌طور پیش‌فرض از پایین به بالا اجرا می‌شود، مگر این‌که از `if` استفاده کنیم.'
+    answer: 2
+    explain: |
+      اسلاید ۲۹ می‌گوید: «Control flow decides which code runs and when» و «By default, JS runs top to bottom». شرط‌ها (`if`، `else`) مسیر را دوشاخه می‌کنند و حلقه‌ها (`for`، `while`) کد را تکرار می‌کنند؛ گزینه‌ی ۳ نقش این دو را جابه‌جا گفته است. گزینه‌های ۱ و ۴ هم با «اجرای خط‌به‌خط از بالا به پایین» در تضادند؛ ترتیب نوشتن خط‌ها همان ترتیب اجرای آن‌هاست.
+
+  - level: easy
+    stem: |
+      خروجی کد اسلاید ۲۹ (فایل `cf.js`) چیست؟
+    check: output
+    code: |
+      let age = 18;
+
+      if (age >= 18) {
+        console.log("You can vote!");
+      } else {
+        console.log("Too young to vote.");
+      }
+
+      for (let i = 1; i <= 3; i++) {
+        console.log("Count:", i);
+      }
+    options:
+      - out: ["You can vote!", "Count: 1", "Count: 2", "Count: 3"]
+      - out: ["Too young to vote.", "Count: 1", "Count: 2", "Count: 3"]
+      - out: ["You can vote!", "Count: 0", "Count: 1", "Count: 2"]
+      - out: ["You can vote!", "Too young to vote.", "Count: 1", "Count: 2", "Count: 3"]
+    answer: 1
+    explain: |
+      `18 >= 18` درست است (بزرگ‌تر **یا مساوی**)، پس فقط بلوک `if` اجرا می‌شود. گزینه‌ی ۲ عملگر `>=` را با `>` اشتباه گرفته و گزینه‌ی ۴ فکر کرده هر دو بلوک اجرا می‌شوند، در حالی که در `if / else` دقیقاً یکی اجرا می‌شود. حلقه از `i = 1` شروع می‌شود و تا وقتی `i <= 3` است ادامه دارد، پس ۱، ۲ و ۳ چاپ می‌شوند؛ گزینه‌ی ۳ شمارش را از صفر گرفته است.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۰، کدام شکل از دستورهای شرطی برای «انتخاب بین **دو** مسیر» (choose between two paths) به کار می‌رود؟
+    options:
+      - '`if`'
+      - '`else if`'
+      - '`if / else`'
+      - '`switch`'
+    answer: 3
+    explain: |
+      طبق اسلاید ۳۰: `if` یعنی «اگر شرط درست است کدی را اجرا کن» (فقط یک مسیر که یا اجرا می‌شود یا نه)، `if / else` یعنی «انتخاب بین دو مسیر»، `else if` یعنی «زنجیر کردن چند شرط» و `switch` یعنی «مدیریت چند حالت مشخص». در `if / else` همیشه دقیقاً یکی از دو بلوک اجرا می‌شود.
+
+  - level: easy
+    stem: |
+      در جای خالی کدام مقدار قرار بگیرد تا خروجی کد زیر `no` باشد؟
+    check: option-output
+    expect: "no"
+    code: |
+      if (___) {
+        console.log("yes");
+      } else {
+        console.log("no");
+      }
+    options:
+      - text: '`"0"`'
+        code: 'if ("0") { console.log("yes"); } else { console.log("no"); }'
+      - text: '`"false"`'
+        code: 'if ("false") { console.log("yes"); } else { console.log("no"); }'
+      - text: '`[]`'
+        code: 'if ([]) { console.log("yes"); } else { console.log("no"); }'
+      - text: '`NaN`'
+        code: 'if (NaN) { console.log("yes"); } else { console.log("no"); }'
+    answer: 4
+    explain: |
+      شرط `if` با قانون truthy/falsy سنجیده می‌شود و `NaN` یکی از ۸ مقدار falsy است، پس شاخه‌ی `else` اجرا می‌شود. `"0"` و `"false"` رشته‌های **غیرخالی** هستند و truthyاند (مهم نیست داخلشان چه نوشته شده) و آرایه‌ی خالی `[]` هم مثل هر شیء دیگری truthy است؛ پس گزینه‌های ۱ تا ۳ هر سه `yes` چاپ می‌کنند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const input = "0";
+      if (input === 0) {
+        console.log("number zero");
+      } else if (input) {
+        console.log("non-empty text");
+      } else {
+        console.log("empty");
+      }
+    options:
+      - out: "number zero"
+      - out: "non-empty text"
+      - out: "empty"
+      - out: ["number zero", "non-empty text"]
+    answer: 2
+    explain: |
+      `===` تبدیل نوع انجام نمی‌دهد و رشته‌ی `"0"` با عدد `0` برابر نیست، پس شاخه‌ی اول رد می‌شود (گزینه‌ی ۱ رفتار `==` را در نظر گرفته است). در شاخه‌ی دوم، `"0"` یک رشته‌ی غیرخالی و در نتیجه truthy است، پس `non-empty text` چاپ می‌شود؛ گزینه‌ی ۳ فکر کرده `"0"` مثل عدد صفر falsy است. گزینه‌ی ۴ هم غلط است، چون در زنجیره‌ی `else if` حداکثر یک شاخه اجرا می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const temp = 28;
+      if (temp > 30) {
+        console.log("Hot");
+      } else if (temp > 20) {
+        console.log("Warm");
+      } else if (temp > 10) {
+        console.log("Cool");
+      } else {
+        console.log("Cold");
+      }
+    options:
+      - out: "Warm"
+      - out: ["Warm", "Cool"]
+      - out: ["Warm", "Cool", "Cold"]
+      - out: "Hot"
+    answer: 1
+    explain: |
+      شرط‌ها به ترتیب بررسی می‌شوند: `28 > 30` نادرست و `28 > 20` درست است؛ پس `Warm` چاپ می‌شود و بقیه‌ی زنجیره **اصلاً بررسی نمی‌شود**، با این‌که `28 > 10` هم درست است. گزینه‌های ۲ و ۳ زنجیره‌ی `else if` را با چند `if` جدا اشتباه گرفته‌اند و گزینه‌ی ۴ مقایسه‌ی اول را اشتباه حساب کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const total = 1200;
+      let discount;
+      if (total > 100) {
+        discount = 5;
+      } else if (total > 500) {
+        discount = 10;
+      } else if (total > 1000) {
+        discount = 20;
+      } else {
+        discount = 0;
+      }
+      console.log(discount);
+    options:
+      - out: "20"
+      - out: "10"
+      - out: "5"
+      - out: "0"
+    answer: 3
+    explain: |
+      اولین شرطِ درست برنده است: `1200 > 100` درست است، پس `discount = 5` اجرا می‌شود و بقیه‌ی زنجیره رد می‌شود. با این ترتیب، شاخه‌های `total > 500` و `total > 1000` **هیچ‌وقت** به نوبت نمی‌رسند، چون هر عددی که از ۵۰۰ یا ۱۰۰۰ بزرگ‌تر باشد از ۱۰۰ هم بزرگ‌تر است. گزینه‌ی ۱ فرض کرده «دقیق‌ترین» شرط انتخاب می‌شود (یا همه‌ی شاخه‌ها اجرا شده‌اند و آخری مانده است). راه درست این است که شرط‌ها را از سخت‌گیرانه‌ترین به کلی‌ترین بچینیم: اول `> 1000`، بعد `> 500` و بعد `> 100`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const n = 15;
+      if (n > 10) console.log("A");
+      if (n > 5) console.log("B");
+      else if (n > 0) console.log("C");
+      else console.log("D");
+    options:
+      - out: "A"
+      - out: "B"
+      - out: ["A", "B", "C"]
+      - out: ["A", "B"]
+    answer: 4
+    explain: |
+      این کد **دو** ساختار مستقل دارد. `if` خط ۲ تنهاست و چون `15 > 10` است، `A` چاپ می‌شود. خط ۳ شروع یک زنجیره‌ی جداست: `15 > 5` درست است، پس `B` چاپ می‌شود و `else if` و `else` بعدی رد می‌شوند. گزینه‌ی ۱ هر چهار خط را یک زنجیره فرض کرده، گزینه‌ی ۳ فکر کرده `else if` هم با درست بودن شرطش اجرا می‌شود و گزینه‌ی ۲ `if` اول را نادیده گرفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const loggedIn = true;
+      const itemCount = 0;
+      if (loggedIn) {
+        if (itemCount) {
+          console.log("Checkout");
+        } else {
+          console.log("Cart is empty");
+        }
+      } else {
+        console.log("Please log in");
+      }
+    options:
+      - out: "Checkout"
+      - out: "Cart is empty"
+      - out: "Please log in"
+      - out: ["Cart is empty", "Please log in"]
+    answer: 2
+    explain: |
+      شرط بیرونی (`loggedIn`) درست است، پس وارد بلوک اول می‌شویم و `else` بیرونی (گزینه‌ی ۳) کنار می‌رود. شرط درونی `itemCount` برابر `0` است که falsy است، پس `else` درونی اجرا می‌شود و `Cart is empty` چاپ می‌شود؛ گزینه‌ی ۱ صفر را truthy فرض کرده است. گزینه‌ی ۴ هم غلط است، چون از هر `if / else` دقیقاً یک شاخه اجرا می‌شود.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const light = "yellow";
+      switch (light) {
+        case "green":
+          console.log("Go");
+          break;
+        case "yellow":
+          console.log("Slow down");
+          break;
+        case "red":
+          console.log("Stop");
+          break;
+        default:
+          console.log("Broken light");
+      }
+    options:
+      - out: "Broken light"
+      - out: ["Slow down", "Stop"]
+      - out: "Slow down"
+      - out: ["Slow down", "Stop", "Broken light"]
+    answer: 3
+    explain: |
+      مقدار `light` با caseها مقایسه می‌شود و با `"yellow"` جور است؛ `Slow down` چاپ می‌شود و `break` اجرا را از `switch` بیرون می‌برد. گزینه‌های ۲ و ۴ فقط وقتی درست بودند که `break` نوشته نشده بود (fall-through). `default` (گزینه‌ی ۱) فقط وقتی انتخاب می‌شود که هیچ caseی مطابق نباشد.
+
+  - level: easy
+    stem: |
+      در یک `switch` که **همه‌ی** caseهایش با `break` تمام می‌شوند، بخش `default` چه زمانی اجرا می‌شود؟
+    options:
+      - 'فقط وقتی مقدار مورد بررسی با هیچ‌کدام از caseها برابر نباشد.'
+      - 'همیشه؛ بعد از اجرای case مطابق، `default` هم اجرا می‌شود.'
+      - 'فقط وقتی مقدار مورد بررسی با اولین case برابر باشد.'
+      - 'هیچ‌وقت؛ `default` فقط توضیحی برای خوانایی کد است.'
+    answer: 1
+    explain: |
+      `default` بخش «در هر حالت دیگر» در `switch` است: اگر هیچ caseی با مقدار برابر نباشد، اجرا از `default` شروع می‌شود. چون همه‌ی caseها `break` دارند، بعد از اجرای case مطابق از `switch` خارج می‌شویم و به `default` نمی‌رسیم (رد گزینه‌ی ۲). گزینه‌ی ۳ پایه‌ای ندارد و گزینه‌ی ۴ هم غلط است، چون `default` کد واقعی است و اجرا می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const input = "2";
+      switch (input) {
+        case 1:
+          console.log("one");
+          break;
+        case 2:
+          console.log("two");
+          break;
+        default:
+          console.log("not found");
+      }
+    options:
+      - out: "two"
+      - out: ["two", "not found"]
+      - out: "!! TypeError"
+      - out: "not found"
+    answer: 4
+    explain: |
+      `switch` مقدار را با caseها **سخت‌گیرانه** (مثل `===`) مقایسه می‌کند و هیچ تبدیل نوعی انجام نمی‌دهد. `"2" === 2` نادرست است (یکی رشته و دیگری عدد)، پس هیچ caseی جور نمی‌شود و `default` اجرا می‌شود. گزینه‌ی ۱ فرض کرده مقایسه مثل `==` است و گزینه‌ی ۲ نقش `break` را ندیده است. گزینه‌ی ۳ هم غلط است، چون مقایسه‌ی دو مقدار ناهم‌نوع خطا نمی‌دهد، فقط نتیجه‌اش `false` است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const fruit = "banana";
+      switch (fruit) {
+        case "apple":
+          console.log("red");
+        case "banana":
+          console.log("yellow");
+        case "grape":
+          console.log("purple");
+          break;
+        default:
+          console.log("unknown");
+      }
+    options:
+      - out: "yellow"
+      - out: ["yellow", "purple"]
+      - out: ["yellow", "purple", "unknown"]
+      - out: ["red", "yellow", "purple"]
+    answer: 2
+    explain: |
+      اجرا از caseِ مطابق یعنی `"banana"` **شروع** می‌شود؛ caseهای **بالاتر** اجرا نمی‌شوند، پس `red` چاپ نمی‌شود (رد گزینه‌ی ۴). caseِ `"banana"` با `break` تمام نشده، پس اجرا بدون بررسی مقدار به case بعدی سقوط می‌کند (fall-through) و `purple` هم چاپ می‌شود. آن‌جا `break` هست و از `switch` خارج می‌شویم، پس `default` اجرا نمی‌شود (رد گزینه‌ی ۳). گزینه‌ی ۱ فرض کرده هر case خودبه‌خود تمام می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const month = 2;
+      switch (month) {
+        case 12:
+        case 1:
+        case 2:
+          console.log("Winter");
+          break;
+        case 3:
+        case 4:
+        case 5:
+          console.log("Spring");
+          break;
+        default:
+          console.log("Other season");
+      }
+    options:
+      - out: "Winter"
+      - out: ["Winter", "Spring"]
+      - out: "Other season"
+      - out: "!! SyntaxError"
+    answer: 1
+    explain: |
+      caseهای `12`، `1` و `2` پشت سر هم و بدون کد آمده‌اند؛ این روش رایجِ **گروه‌بندی** چند مقدار با یک کد مشترک است. مقدار `2` با `case 2` جور می‌شود، `Winter` چاپ می‌شود و `break` اجرا را از `switch` بیرون می‌برد (رد گزینه‌ی ۲). caseِ بدون کد کاملاً مجاز است (رد گزینه‌ی ۴) و `default` فقط وقتی اجرا می‌شود که هیچ caseی جور نباشد (رد گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      در **هر دو** جای خالی کد زیر کدام دستور قرار بگیرد تا خروجی **فقط** `Tue` باشد؟
+    check: option-output
+    expect: "Tue"
+    code: |
+      const day = 2;
+      switch (day) {
+        case 1:
+          console.log("Mon");
+          ___
+        case 2:
+          console.log("Tue");
+          ___
+        case 3:
+          console.log("Wed");
+      }
+    options:
+      - text: '`continue;`'
+        code: |
+          const day = 2;
+          switch (day) {
+            case 1:
+              console.log("Mon");
+              continue;
+            case 2:
+              console.log("Tue");
+              continue;
+            case 3:
+              console.log("Wed");
+          }
+      - text: '`default;`'
+        code: |
+          const day = 2;
+          switch (day) {
+            case 1:
+              console.log("Mon");
+              default;
+            case 2:
+              console.log("Tue");
+              default;
+            case 3:
+              console.log("Wed");
+          }
+      - text: '`break;`'
+        code: |
+          const day = 2;
+          switch (day) {
+            case 1:
+              console.log("Mon");
+              break;
+            case 2:
+              console.log("Tue");
+              break;
+            case 3:
+              console.log("Wed");
+          }
+      - text: '`stop;`'
+        code: |
+          const day = 2;
+          switch (day) {
+            case 1:
+              console.log("Mon");
+              stop;
+            case 2:
+              console.log("Tue");
+              stop;
+            case 3:
+              console.log("Wed");
+          }
+    answer: 3
+    explain: |
+      `break` اجرا را از `switch` بیرون می‌برد. اجرا از `case 2` شروع می‌شود، `Tue` چاپ می‌شود و `break` جلوی سقوط به `case 3` را می‌گیرد. `continue` فقط داخل حلقه معنا دارد و این‌جا `SyntaxError` می‌دهد. `default` یک برچسب است و باید به شکل `default:` بیاید؛ `default;` خطای نحوی است. `stop` هم کلمه‌ی کلیدی نیست؛ JavaScript آن را نام یک متغیر تعریف‌نشده می‌بیند و بعد از چاپ `Tue` خطای `ReferenceError` می‌دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const code = 7;
+      switch (code) {
+        default:
+          console.log("unknown");
+        case 1:
+          console.log("start");
+          break;
+        case 2:
+          console.log("stop");
+      }
+    options:
+      - out: "unknown"
+      - out: "!! SyntaxError"
+      - out: ["unknown", "start", "stop"]
+      - out: ["unknown", "start"]
+    answer: 4
+    explain: |
+      `default` لازم نیست آخرین بخش باشد (رد گزینه‌ی ۲). مقدار `7` با هیچ caseی جور نیست، پس اجرا از `default` شروع می‌شود و `unknown` چاپ می‌شود. چون این `default` با `break` تمام نشده، اجرا به `case 1` سقوط می‌کند و `start` هم چاپ می‌شود؛ `break` آن‌جا اجرا را از `switch` بیرون می‌برد، پس `stop` چاپ نمی‌شود (رد گزینه‌ی ۳). گزینه‌ی ۱ فراموش کرده که fall-through برای `default` هم اتفاق می‌افتد.
+
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی `switch` **نادرست** است؟
+    options:
+      - 'مقایسه‌ی مقدار با هر case سخت‌گیرانه (مانند `===`) است.'
+      - 'اگر یک case با `break` تمام نشود، اجرا وارد کد case بعدی می‌شود.'
+      - '`default` باید حتماً آخرین بخش `switch` باشد؛ وگرنه `SyntaxError` رخ می‌دهد.'
+      - 'چند case می‌توانند پشت سر هم بیایند و یک کد مشترک داشته باشند.'
+    answer: 3
+    explain: |
+      `default` می‌تواند هر جای `switch` بیاید و این خطا نیست؛ فقط اگر وسط باشد و `break` نداشته باشد، اجرا از آن به caseهای پایینی سقوط می‌کند. سه گزینه‌ی دیگر درست‌اند: مقایسه مثل `===` است (پس `"1"` با `1` جور نمی‌شود)، نبودن `break` باعث fall-through می‌شود و گروه‌بندی caseها (مثل `case "Thursday": case "Friday":`) کاملاً رایج است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const balance = 0;
+      const message = balance > 0 ? "You have money" : "Your wallet is empty";
+      console.log(message);
+    options:
+      - out: "You have money"
+      - out: "Your wallet is empty"
+      - out: "false"
+      - out: "!! SyntaxError"
+    answer: 2
+    explain: |
+      عملگر سه‌تایی (ternary) این‌طور خوانده می‌شود: «شرط `?` مقدارِ حالت درست `:` مقدارِ حالت نادرست». `0 > 0` نادرست است، پس مقدار بعد از `:` یعنی `"Your wallet is empty"` در `message` ریخته می‌شود. گزینه‌ی ۱ فقط وقتی درست بود که `balance` از صفر بزرگ‌تر بود، گزینه‌ی ۳ فکر کرده خودِ نتیجه‌ی شرط برگردانده می‌شود و گزینه‌ی ۴ این نحو (syntax) کاملاً مجاز را خطا دانسته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const n = -3;
+      const sign = n > 0 ? "positive" : n < 0 ? "negative" : "zero";
+      console.log(sign);
+    options:
+      - out: "negative"
+      - out: "positive"
+      - out: "zero"
+      - out: "!! SyntaxError"
+    answer: 1
+    explain: |
+      زنجیره‌ی ternary مثل یک زنجیره‌ی `else if` خوانده می‌شود: «اگر `n > 0` پس `positive`، وگرنه اگر `n < 0` پس `negative`، وگرنه `zero`». `-3 > 0` نادرست است، پس سراغ ternary دوم می‌رویم و چون `-3 < 0` درست است، `negative` انتخاب می‌شود. زنجیر کردن ternaryها مجاز است (رد گزینه‌ی ۴)، هرچند زیاده‌روی در آن خوانایی را کم می‌کند. گزینه‌ی ۳ فقط برای `n = 0` درست بود.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی کد زیر `odd` باشد؟
+    check: option-output
+    expect: "odd"
+    code: |
+      const n = 7;
+      const label = ___;
+      console.log(label);
+    options:
+      - text: '`n % 2 === 0 : "even" ? "odd"`'
+        code: 'const n = 7; const label = n % 2 === 0 : "even" ? "odd"; console.log(label);'
+      - text: '`n % 2 ? "even" : "odd"`'
+        code: 'const n = 7; const label = n % 2 ? "even" : "odd"; console.log(label);'
+      - text: '`if (n % 2 === 0) "even" else "odd"`'
+        code: 'const n = 7; const label = if (n % 2 === 0) "even" else "odd"; console.log(label);'
+      - text: '`n % 2 === 0 ? "even" : "odd"`'
+        code: 'const n = 7; const label = n % 2 === 0 ? "even" : "odd"; console.log(label);'
+    answer: 4
+    explain: |
+      نحو درست ternary «شرط `?` مقدار درست `:` مقدار نادرست» است. `7 % 2 === 0` نادرست است، پس `"odd"` انتخاب می‌شود. در گزینه‌ی ۱ جای `?` و `:` عوض شده و `SyntaxError` می‌گیریم. گزینه‌ی ۳ هم `SyntaxError` می‌دهد، چون `if` یک **دستور** است و نمی‌تواند سمت راست `=` بنشیند؛ فقط **عبارت‌ها** (مثل ternary) مقدار تولید می‌کنند. گزینه‌ی ۲ بدون خطا اجرا می‌شود ولی `even` چاپ می‌کند: `7 % 2` برابر `1` و truthy است، پس مقدار قبل از `:` انتخاب می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const isAdmin = false;
+      if (isAdmin)
+        console.log("Delete button visible");
+        console.log("Edit button visible");
+      console.log("Page loaded");
+    options:
+      - out: "Page loaded"
+      - out: ["Delete button visible", "Edit button visible", "Page loaded"]
+      - out: ["Edit button visible", "Page loaded"]
+      - out: "!! SyntaxError"
+    answer: 3
+    explain: |
+      بدون آکولاد، فقط **یک** دستورِ بعد از `if` (خط ۳) به آن تعلق دارد. تورفتگی خط ۴ در JavaScript هیچ معنایی ندارد (برخلاف Python)، پس خط ۴ بیرون از `if` است و همیشه اجرا می‌شود. چون `isAdmin` نادرست است، فقط خط ۳ رد می‌شود. گزینه‌ی ۱ تورفتگی را مثل Python معنادار فرض کرده، گزینه‌ی ۲ شرط را نادیده گرفته و گزینه‌ی ۴ غلط است، چون `if` بدون آکولاد مجاز است.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      const x = 5;
+      if (x > 0)
+        console.log("positive");
+        console.log("checked");
+      else
+        console.log("not positive");
+    options:
+      - line: 2
+      - line: 5
+      - line: 4
+      - line: 0
+    answer: 2
+    explain: |
+      `if` بدون آکولاد فقط دستور خط ۳ را در بر می‌گیرد؛ خط ۴ (با وجود تورفتگی) یک دستور مستقل است و ساختار `if` قبل از آن تمام شده است. پس `else` در خط ۵ به هیچ `if`ی نمی‌چسبد و `SyntaxError: Unexpected token 'else'` رخ می‌دهد. چون این خطای نحوی است، قبل از اجرای هر خطی کشف می‌شود و هیچ چیزی (حتی `positive`) چاپ نمی‌شود. خط‌های ۲ و ۴ (گزینه‌های ۱ و ۳) به‌تنهایی کاملاً مجازند و گزینه‌ی ۴ («هیچ خطایی رخ نمی‌دهد») هم غلط است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let count = 3;
+      if (count = 0) {
+        console.log("empty");
+      } else {
+        console.log("not empty");
+      }
+      console.log(count);
+    options:
+      - out: ["not empty", "0"]
+      - out: ["not empty", "3"]
+      - out: ["empty", "0"]
+      - out: "!! SyntaxError"
+    answer: 1
+    explain: |
+      داخل شرط `=` آمده، نه `===`. پس `count = 0` اول صفر را **در `count` می‌ریزد** و مقدار کل عبارتِ انتساب هم `0` است که falsy است؛ بنابراین شاخه‌ی `else` اجرا می‌شود و بعد از آن `count` واقعاً `0` شده است. گزینه‌ی ۲ فکر کرده این یک مقایسه بوده و مقدار متغیر عوض نشده، گزینه‌ی ۳ فکر کرده «انتسابِ انجام‌شده» یعنی شرط درست، و گزینه‌ی ۴ غلط است، چون انتساب داخل شرط از نظر نحوی مجاز است (و همین آن را به یک باگ پنهان تبدیل می‌کند).
+
+  - level: medium
+    stem: |
+      کد زیر در Node.js اجرا می‌شود. کدام خط خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const limit = 5;
+      let used = 3;
+      if (used < limit) console.log("ok");
+      if (limit = 10) console.log("limit changed");
+      console.log(limit);
+    options:
+      - line: 1
+      - line: 3
+      - line: 5
+      - line: 4
+    answer: 4
+    explain: |
+      در خط ۴ به جای مقایسه (`===`)، انتساب (`=`) نوشته شده و چون `limit` با `const` تعریف شده، انتساب دوباره به آن `TypeError: Assignment to constant variable.` می‌دهد. خط ۳ یک مقایسه‌ی معمولی است و `ok` را چاپ می‌کند. خط ۱ یک تعریف عادی است و خط ۵ هرگز اجرا نمی‌شود، چون برنامه روی خط ۴ متوقف شده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const score = 40;
+      if (score > 100); {
+        console.log("Score too high!");
+      }
+      console.log("Checked");
+    options:
+      - out: "Checked"
+      - out: "!! SyntaxError"
+      - out: ["Score too high!", "Checked"]
+      - out: "Score too high!"
+    answer: 3
+    explain: |
+      سمی‌کالنِ بلافاصله بعد از `if (score > 100)` یک **دستور خالی** است و همان، بدنه‌ی `if` حساب می‌شود؛ یعنی `if` همان‌جا تمام شده است. بلوک `{ ... }` بعدی یک بلوک مستقل و معمولی است که همیشه اجرا می‌شود؛ پس با وجود این‌که `40 > 100` نادرست است، `Score too high!` و بعد `Checked` چاپ می‌شوند. گزینه‌ی ۱ این سمی‌کالن را ندیده، گزینه‌ی ۲ غلط است چون این کد از نظر نحوی مجاز است و گزینه‌ی ۴ خط آخر را جا انداخته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const color = "green";
+      if (color === "red" || "blue") {
+        console.log("red or blue");
+      } else {
+        console.log("another color");
+      }
+    options:
+      - out: "another color"
+      - out: "!! SyntaxError"
+      - out: ["red or blue", "another color"]
+      - out: "red or blue"
+    answer: 4
+    explain: |
+      عملگر `||` مقایسه را تکرار نمی‌کند؛ شرط یعنی `(color === "red") || "blue"`. بخش اول `false` است، پس `||` مقدار دوم یعنی رشته‌ی `"blue"` را برمی‌گرداند که truthy است؛ در نتیجه شرط **همیشه** درست است. گزینه‌ی ۱ همان نتیجه‌ای است که برنامه‌نویس می‌خواست و با شکل درست `color === "red" || color === "blue"` به دست می‌آید. گزینه‌ی ۲ غلط است چون این کد مجاز است و گزینه‌ی ۳ هم غلط است، چون از `if / else` فقط یک شاخه اجرا می‌شود.
