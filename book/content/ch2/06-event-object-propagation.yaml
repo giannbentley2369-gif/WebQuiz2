@@ -1,0 +1,732 @@
+id: ch2-event-flow
+title: "شیء event، انتشار رویداد (Bubbling) و Delegation"
+slides: "JS in HTML، پیش‌زمینه‌ی لازم برای اسلایدهای ۱۸ تا ۲۱ و ۳۵"
+lesson: |
+  در درس قبل listener ثبت کردیم. حالا دو سؤال مهم: مرورگر چه اطلاعاتی به listener می‌دهد؟ و وقتی روی یک
+  عنصرِ تو در تو کلیک می‌شود، listenerهای والدها هم اجرا می‌شوند یا نه، و به چه ترتیبی؟ این درس پیش‌زمینه‌ای
+  است که برای فهم واقعی رویدادهای اسلاید ۱۸ و جمله‌ی «Prevent page reload on submit with
+  `event.preventDefault()`» در اسلاید ۳۵ لازم داری.
+
+  ### شیء رویداد (event object)
+
+  هر بار رویدادی رخ می‌دهد، مرورگر یک **شیء رویداد (event object)** می‌سازد و آن را به‌عنوان **اولین
+  آرگومان** به همه‌ی listenerها می‌دهد. معمولاً اسمش را `event` یا `e` می‌گذاریم.
+
+  | property یا متد | معنی |
+  |---|---|
+  | `event.type` | نام رویداد: `"click"`، `"input"`، `"submit"` و ... |
+  | `event.target` | عنصری که رویداد **در اصل** روی آن رخ داده (درونی‌ترین عنصری که کلیک شده) |
+  | `event.currentTarget` | عنصری که listener **در حال اجرا** روی آن ثبت شده است |
+  | `event.key` | در رویدادهای صفحه‌کلید: کلید فشرده‌شده (`"Enter"`، `"a"` و ...) |
+  | `event.preventDefault()` | لغو **رفتار پیش‌فرض** مرورگر (پایین‌تر) |
+  | `event.defaultPrevented` | اگر `preventDefault()` صدا زده شده باشد `true` است |
+  | `event.stopPropagation()` | جلوگیری از رسیدن رویداد به عنصرهای بعدی (پایین‌تر) |
+
+  ```html
+  <div id="outer"><span id="inner">Hi</span></div>
+  <script>
+    document.getElementById("outer").addEventListener("click", function (e) {
+      console.log(e.type, e.target.id, e.currentTarget.id, this.id); // click inner outer outer
+    });
+  </script>
+  ```
+
+  کاربر روی `span` کلیک کرده، پس `target` همان `inner` است؛ ولی listener روی `outer` ثبت شده، پس
+  `currentTarget` و `this` (در `function` معمولی) برابر `outer` هستند. در arrow function، `this` همان
+  `this` بیرونی است (در سطح بالای اسکریپت: `window`)؛ برای همین `event.currentTarget` مطمئن‌ترین راه رسیدن به
+  عنصرِ صاحب listener است.
+
+  ### انتشار رویداد: bubbling و capturing
+
+  ::: analogy حباب در آب
+  حبابی که ته لیوان آب ساخته می‌شود، به سمت بالا حرکت می‌کند تا به سطح برسد. رویدادها هم همین‌طورند: کلیک
+  روی درونی‌ترین عنصر رخ می‌دهد و بعد مثل حباب **بالا می‌رود (bubble)**: به والد، والدِ والد و ... تا
+  `document` و `window`. هر کدام از این اجداد که برای آن رویداد listener داشته باشد، listenerش اجرا می‌شود.
+  :::
+
+  مسیر کامل یک رویداد سه **مرحله (phase)** دارد:
+
+  1. **capturing** (گرفتن): از `window` به سمت پایین، از اجداد عبور می‌کند تا به والدِ هدف برسد.
+  2. **target**: روی خودِ عنصر هدف.
+  3. **bubbling** (حباب‌وار): از والدِ هدف دوباره به سمت بالا تا `window`.
+
+  ```text
+      (1) capturing                (3) bubbling
+      window                       window
+        |                            ^
+      document                     document
+        |                            ^
+      <div id="outer">             <div id="outer">
+        |                            ^
+        +---->  <button id="btn">  --+
+                (2) target: the click happens here
+  ```
+
+  `addEventListener` به‌طور پیش‌فرض listener را برای مرحله‌ی **bubbling** ثبت می‌کند. اگر آرگومان سوم
+  `true` یا `{ capture: true }` باشد، listener در مرحله‌ی **capturing** اجرا می‌شود.
+
+  ```html
+  <div id="outer">
+    <p id="mid"><button id="btn">Go</button></p>
+  </div>
+  <script>
+    for (const id of ["outer", "mid", "btn"]) {
+      document.getElementById(id).addEventListener("click", (e) => {
+        console.log(id, "| target:", e.target.id, "| currentTarget:", e.currentTarget.id);
+      });
+    }
+    document.addEventListener("click", () => console.log("document"));
+    window.addEventListener("click", () => console.log("window"));
+  </script>
+  ```
+
+  با کلیک روی دکمه:
+
+  ```text
+  btn | target: btn | currentTarget: btn
+  mid | target: btn | currentTarget: mid
+  outer | target: btn | currentTarget: outer
+  document
+  window
+  ```
+
+  `target` در همه‌ی سطرها `btn` است (کلیک واقعاً روی دکمه رخ داده)، ولی `currentTarget` در هر مرحله عنصری است
+  که listener آن لحظه رویش ثبت شده. با capture:
+
+  ```html
+  <div id="outer"><button id="btn">Go</button></div>
+  <script>
+    const outer = document.getElementById("outer");
+    const btn = document.getElementById("btn");
+    outer.addEventListener("click", () => console.log("outer bubble"));
+    outer.addEventListener("click", () => console.log("outer capture"), true);
+    btn.addEventListener("click", () => console.log("btn capture"), { capture: true });
+    btn.addEventListener("click", () => console.log("btn bubble"));
+  </script>
+  <!-- click on btn -> outer capture, btn capture, btn bubble, outer bubble -->
+  ```
+
+  ::: info بیشتر بدانیم
+  بیشتر رویدادهای پرکاربرد (`click`، `input`، `change`، `submit`، `keydown`) bubble می‌کنند، ولی چند رویداد
+  مثل `focus` و `blur` (فعال و غیرفعال شدن یک کادر) bubble نمی‌کنند.
+  :::
+
+  ### `stopPropagation()`: «بقیه نشنوند!»
+
+  ```html
+  <div id="outer"><button id="btn">Delete</button></div>
+  <script>
+    const btn = document.getElementById("btn");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();          // the ancestors will not hear this click
+      console.log("btn 1");
+    });
+    btn.addEventListener("click", () => console.log("btn 2")); // still runs: same element
+    document.getElementById("outer").addEventListener("click", () => console.log("outer"));
+  </script>
+  <!-- click on btn -> btn 1, btn 2   ("outer" is never printed) -->
+  ```
+
+  `stopPropagation()` جلوی رفتن رویداد به عنصرهای **بعدی** را می‌گیرد، ولی listenerهای دیگرِ **همان عنصر**
+  هنوز اجرا می‌شوند. (متد `stopImmediatePropagation()` آن‌ها را هم متوقف می‌کند.) کاربرد معمول: دکمه‌ی «حذف»
+  داخل یک کارت که خودِ کارت هم با کلیک باز می‌شود. زیاده‌روی نکن؛ کدهای دیگری ممکن است به رسیدن رویداد به
+  اجداد نیاز داشته باشند.
+
+  ### `preventDefault()`: لغو رفتار پیش‌فرض مرورگر
+
+  بعضی رویدادها یک **رفتار پیش‌فرض (default action)** دارند که مرورگر بعد از اجرای listenerها انجام می‌دهد:
+
+  | رویداد روی عنصر | رفتار پیش‌فرض |
+  |---|---|
+  | `click` روی لینک `<a href="...">` | رفتن به آدرس لینک |
+  | `submit` روی `<form>` | فرستادن فرم و بارگذاری دوباره‌ی صفحه (یا رفتن به آدرس دیگر) |
+  | `click` روی چک‌باکس | تیک خوردن یا برداشتن تیک |
+  | `keydown` در کادر متنی | تایپ شدن حرف |
+
+  `event.preventDefault()` این رفتار را لغو می‌کند و بعد از آن `event.defaultPrevented` برابر `true` است.
+  مهم‌ترین کاربرد همان است که اسلاید ۳۵ می‌گوید: **جلوگیری از reload صفحه هنگام submit فرم**، تا بتوانیم
+  داده‌ها را با JavaScript بررسی کنیم و نتیجه را در همان صفحه نشان دهیم:
+
+  ```html
+  <form id="signup">
+    <input id="username" value="ali">
+    <button>Sign up</button>
+  </form>
+  <p id="msg"></p>
+  <script>
+    document.getElementById("signup").addEventListener("submit", (e) => {
+      e.preventDefault(); // stay on this page: no reload
+      const name = document.getElementById("username").value;
+      document.getElementById("msg").textContent = "Welcome, " + name;
+    });
+  </script>
+  ```
+
+  بدون `preventDefault()`، صفحه بلافاصله دوباره بارگذاری می‌شود و پیام `Welcome, ali` همان لحظه پاک می‌شود.
+  (جزئیات کار با فرم‌ها، مثل خواندن `.value` و `.checked`، در درس «کار با فرم‌ها (Forms)» آمده است.) به همین ترتیب:
+
+  - با `preventDefault()` در listener کلیکِ یک لینک، مرورگر به آدرس لینک نمی‌رود.
+  - در listener کلیکِ یک چک‌باکس، مرورگر **اول** تیک را عوض می‌کند (پس داخل listener، `checked` مقدار
+    جدید را نشان می‌دهد) و اگر `preventDefault()` صدا زده شود، **بعد از** listener آن را به حالت قبل برمی‌گرداند.
+
+  | | `preventDefault()` | `stopPropagation()` |
+  |---|---|---|
+  | کارش | لغو رفتار پیش‌فرض مرورگر (رفتن به لینک، ارسال فرم، تیک خوردن) | توقف حرکت رویداد به عنصرهای بعدی |
+  | آیا والدها رویداد را می‌شنوند؟ | **بله** | خیر |
+  | آیا رفتار پیش‌فرض انجام می‌شود؟ | خیر | **بله** |
+
+  ::: note نماد خروجی در تست‌های این درس
+  در بعضی تست‌ها، بعد از هر رویداد سطری مثل `[default prevented]` یا `[default runs]` در گزینه‌ها آمده است.
+  این سطر را کد چاپ نمی‌کند؛ نشان می‌دهد که آیا رفتار پیش‌فرض مرورگر برای آن رویداد لغو شد (`prevented`) یا
+  انجام می‌شود (`runs`).
+  :::
+
+  ### Event delegation (واگذاری رویداد)
+
+  فرض کن یک لیست ۱۰۰ آیتمی داری، یا آیتم‌ها بعداً با JavaScript اضافه می‌شوند. به‌جای اینکه به هر آیتم یک
+  listener بدهی، **یک listener روی والد مشترک** می‌گذاری و چون کلیک‌ها bubble می‌کنند، همه به والد می‌رسند؛
+  بعد با `event.target` می‌فهمی روی کدام فرزند کلیک شده است. به این الگو **event delegation** می‌گویند.
+
+  ```html
+  <ul id="todo">
+    <li>Buy milk</li>
+    <li>Read chapter 2</li>
+  </ul>
+  <button id="add">Add</button>
+  <script>
+    const todo = document.getElementById("todo");
+    todo.addEventListener("click", (e) => {
+      if (e.target.matches("li")) {            // was an <li> clicked?
+        console.log("done:", e.target.textContent);
+      }
+    });
+    document.getElementById("add").addEventListener("click", () => {
+      const li = document.createElement("li");
+      li.textContent = "New task";
+      todo.append(li);                         // no new listener needed!
+    });
+  </script>
+  ```
+
+  کلیک روی `Buy milk` چاپ می‌کند `done: Buy milk`، و بعد از زدن Add، کلیک روی آیتم تازه هم چاپ می‌کند
+  `done: New task`، بدون اینکه برای آن listener جدیدی ثبت کرده باشیم.
+
+  - `element.matches(selector)`: آیا این عنصر با selector جور است؟ (`true` یا `false`)
+  - `element.closest(selector)`: نزدیک‌ترین عنصر جور با selector، از **خودِ عنصر** شروع می‌کند و به سمت
+    اجداد بالا می‌رود؛ اگر چیزی پیدا نشود `null` می‌دهد.
+
+  اگر داخل `<li>` عنصرهای دیگری باشد، `target` ممکن است همان عنصر داخلی باشد؛ آن وقت `matches("li")` برابر
+  `false` می‌شود و باید از `closest` استفاده کنی:
+
+  ```html
+  <ul id="cart">
+    <li><b>Milk</b> (2) <button class="remove">x</button></li>
+    <li><b>Bread</b> (1) <button class="remove">x</button></li>
+  </ul>
+  <script>
+    document.getElementById("cart").addEventListener("click", (e) => {
+      const removeBtn = e.target.closest(".remove");
+      if (!removeBtn) return;               // the click was not on a remove button
+      const item = removeBtn.closest("li");
+      console.log("removing", item.querySelector("b").textContent);
+      item.remove();                        // see the lesson on removing elements
+    });
+  </script>
+  ```
+
+  در delegation، `event.target` فرزندی است که کلیک شده و `event.currentTarget` همان والدی است که listener روی
+  آن ثبت شده. مزایا: listenerهای کمتر (حافظه‌ی کمتر)، کار کردن برای عنصرهایی که بعداً اضافه می‌شوند، و کد
+  ساده‌تر.
+
+  ::: tip
+  - برای رسیدن به عنصرِ صاحب listener از `event.currentTarget` استفاده کن و برای عنصری که واقعاً کلیک شده از
+    `event.target`.
+  - در delegation، `closest(...)` معمولاً از `matches(...)` امن‌تر است، چون کلیک روی عنصرهای داخلی را هم
+    درست تشخیص می‌دهد.
+  :::
+
+  ::: trap
+  - `preventDefault()` جلوی bubbling را نمی‌گیرد و `stopPropagation()` رفتار پیش‌فرض را لغو نمی‌کند؛ دو کار
+    کاملاً جدا هستند.
+  - `stopPropagation()` listenerهای دیگرِ **همان عنصر** را متوقف نمی‌کند.
+  - listener بدون آرگومان سوم در مرحله‌ی bubbling اجرا می‌شود، پس listener فرزند **قبل** از listener والد
+    اجرا می‌شود؛ ولی listenerهای capture روی اجداد از همه زودترند.
+  - `return false` در listener `addEventListener` هیچ اثری ندارد؛ فقط در handlerهای `onclick` (attribute یا
+    property) رفتار پیش‌فرض را لغو می‌کند. همیشه از `preventDefault()` استفاده کن.
+  - کلیک روی دکمه‌ی داخل فرم، علاوه بر `click` روی دکمه، رویداد `submit` را هم روی فرم ایجاد می‌کند.
+  :::
+
+  ::: summary
+  - شیء event: `type`، `target` (عنصر اصلی)، `currentTarget` (صاحب listener)، `key`، `defaultPrevented`.
+  - مسیر رویداد: capturing (پایین رفتن) ← target ← bubbling (بالا رفتن تا `window`)؛ پیش‌فرض `addEventListener`
+    مرحله‌ی bubbling است و با `true` یا `{ capture: true }` مرحله‌ی capturing.
+  - `stopPropagation()` حرکت رویداد را متوقف می‌کند؛ `preventDefault()` رفتار پیش‌فرض (لینک، submit و reload، تیک) را لغو می‌کند.
+  - delegation: یک listener روی والد + `e.target.matches(...)` یا `closest(...)`؛ برای عنصرهای بعدی هم کار می‌کند.
+  :::
+questions:
+  - level: easy
+    stem: مرورگر هنگام اجرای یک event listener، چه چیزی را به‌عنوان اولین آرگومان به آن می‌دهد؟
+    options:
+      - 'خودِ عنصری که listener روی آن ثبت شده است'
+      - 'شیء رویداد (event object) که اطلاعاتی مثل `type` و `target` دارد'
+      - 'رشته‌ای با نام رویداد، مثلاً `"click"`'
+      - 'هیچ چیز؛ پارامتر اول همیشه `undefined` است'
+    answer: 2
+    explain: |
+      مرورگر برای هر رویداد یک شیء event می‌سازد و آن را به‌عنوان اولین آرگومان به listener می‌دهد؛ از طریق آن
+      به `type` (نام رویداد، که فقط یکی از propertyهای شیء است؛ رد گزینه‌ی ۳)، `target`، `currentTarget` و
+      متدهایی مثل `preventDefault()` دسترسی داریم. خودِ عنصر از طریق `event.currentTarget` (یا `this` در
+      `function` معمولی) در دسترس است، ولی آرگومان اول نیست (رد گزینه‌ی ۱).
+  - level: easy
+    stem: در مرحله‌ی bubbling، رویداد به کدام سمت حرکت می‌کند؟
+    options:
+      - 'از `window` به سمت پایین، تا عنصر هدف'
+      - 'فقط روی خودِ عنصر هدف می‌ماند و به هیچ عنصر دیگری نمی‌رسد'
+      - 'از عنصر هدف به سمت والدها و اجداد، تا `document` و `window`'
+      - 'از عنصر هدف به سمت فرزندانش'
+    answer: 3
+    explain: |
+      bubbling یعنی بالا رفتن مثل حباب: رویداد اول روی هدف رخ می‌دهد و بعد به والد، والدِ والد و ... تا
+      `document` و `window` می‌رسد. حرکت از `window` به سمت پایین، مرحله‌ی **capturing** است که قبل از رسیدن به
+      هدف انجام می‌شود (رد گزینه‌ی ۱). رویدادهای رایجی مثل `click` روی خودِ هدف نمی‌مانند (رد گزینه‌ی ۲)، و
+      هیچ مرحله‌ای به سمت فرزندانِ هدف نمی‌رود (رد گزینه‌ی ۴).
+  - level: hard
+    stem: کاربر روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="outer"><p id="mid"><button id="btn">Go</button></p></div>
+    code: |
+      for (const id of ["outer", "mid", "btn"]) {
+        document.getElementById(id).addEventListener("click", (e) => {
+          console.log(id, e.target.id, e.currentTarget.id);
+        });
+      }
+      document.addEventListener("click", () => console.log("document"));
+      window.addEventListener("click", () => console.log("window"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["window", "document", "outer btn outer", "mid btn mid", "btn btn btn"]
+      - out: ["btn btn btn", "mid btn mid", "outer btn outer", "document", "window"]
+      - out: ["btn btn btn", "mid mid mid", "outer outer outer", "document", "window"]
+      - out: "btn btn btn"
+    answer: 2
+    explain: |
+      listenerها بدون آرگومان سوم در مرحله‌ی bubbling اجرا می‌شوند: اول خودِ دکمه، بعد `mid`، `outer`،
+      `document` و در آخر `window` (رد گزینه‌ی ۱ که ترتیب capturing را فرض کرده، و گزینه‌ی ۴ که bubbling را
+      نادیده گرفته). `e.target` در همه‌ی مراحل همان دکمه (`btn`) است، چون کلیک روی آن رخ داده؛ فقط
+      `currentTarget` در هر مرحله برابر عنصرِ صاحب listener است (رد گزینه‌ی ۳).
+  - level: hard
+    stem: کاربر روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="outer"><button id="btn">Go</button></div>
+    code: |
+      const outer = document.getElementById("outer");
+      const btn = document.getElementById("btn");
+      outer.addEventListener("click", () => console.log("outer bubble"));
+      outer.addEventListener("click", () => console.log("outer capture"), true);
+      btn.addEventListener("click", () => console.log("btn capture"), { capture: true });
+      btn.addEventListener("click", () => console.log("btn bubble"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["btn capture", "btn bubble", "outer bubble", "outer capture"]
+      - out: ["outer bubble", "outer capture", "btn capture", "btn bubble"]
+      - out: ["btn bubble", "outer bubble", "outer capture", "btn capture"]
+      - out: ["outer capture", "btn capture", "btn bubble", "outer bubble"]
+    answer: 4
+    explain: |
+      اول مرحله‌ی capturing از بالا به پایین اجرا می‌شود، پس listener capture روی `outer` از همه زودتر است
+      (رد گزینه‌های ۱ و ۳). بعد نوبت خودِ هدف است: listenerهای دکمه (اینجا اول capture و بعد bubble). در آخر
+      bubbling به سمت بالا، listener معمولی `outer` را اجرا می‌کند. ترتیب ثبت در کد (`outer bubble` اول نوشته
+      شده) ترتیب مراحل را عوض نمی‌کند (رد گزینه‌ی ۲).
+  - level: medium
+    stem: کاربر روی متن `Hi` (عنصر `span`) کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="outer"><span id="inner">Hi</span></div>
+    code: |
+      document.getElementById("outer").addEventListener("click", function (e) {
+        console.log(e.target.id, e.currentTarget.id, this.id);
+      });
+    events:
+      - { type: click, target: "#inner" }
+    options:
+      - out: "outer outer outer"
+      - out: "inner inner outer"
+      - out: "inner outer outer"
+      - out: "inner outer undefined"
+    answer: 3
+    explain: |
+      `e.target` عنصری است که کلیک **واقعاً** روی آن رخ داده: `inner` (رد گزینه‌ی ۱). `e.currentTarget`
+      عنصری است که listener روی آن ثبت شده و رویداد با bubbling به آن رسیده: `outer` (رد گزینه‌ی ۲). در
+      listener با `function` معمولی، `this` همیشه برابر `currentTarget` است، پس `outer` (رد گزینه‌ی ۴).
+  - level: medium
+    stem: کاربر روی متن `Hi` کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="outer"><span id="inner">Hi</span></div>
+    code: |
+      document.getElementById("outer").addEventListener("click", (e) => {
+        console.log(this === window, e.currentTarget.id, e.target.id);
+      });
+    events:
+      - { type: click, target: "#inner" }
+    options:
+      - out: "false outer inner"
+      - out: "true outer inner"
+      - out: "true inner inner"
+      - out: "false inner outer"
+    answer: 2
+    explain: |
+      listener یک arrow function است و `this` خودش را ندارد؛ `this` بیرونی در سطح بالای اسکریپت مرورگر
+      `window` است، پس `true` (رد گزینه‌های ۱ و ۴). شیء event اما مستقل از نوع تابع کار می‌کند:
+      `currentTarget` عنصر صاحب listener (`outer`) و `target` عنصر کلیک‌شده (`inner`) است (رد گزینه‌ی ۳).
+  - level: medium
+    stem: کاربر روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="outer"><button id="btn">Go</button></div>
+    code: |
+      document.getElementById("outer").addEventListener("click", () => console.log("outer"));
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        console.log("btn 1");
+      });
+      btn.addEventListener("click", () => console.log("btn 2"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["btn 1", "btn 2"]
+      - out: "btn 1"
+      - out: ["btn 1", "btn 2", "outer"]
+      - out: ["btn 1", "outer"]
+    answer: 1
+    explain: |
+      `stopPropagation()` جلوی رفتن رویداد به عنصرهای **بعدی** (اینجا `outer`) را می‌گیرد، پس `outer` چاپ
+      نمی‌شود (رد گزینه‌های ۳ و ۴). اما listenerهای دیگرِ **همان عنصر** همچنان اجرا می‌شوند، پس `btn 2` هم
+      چاپ می‌شود (رد گزینه‌ی ۲؛ برای متوقف کردن آن‌ها `stopImmediatePropagation()` لازم بود).
+  - level: medium
+    stem: |
+      رویداد `submit` روی فرم زیر رخ می‌دهد. در گزینه‌ها، سطر `[default prevented]` یعنی رفتار پیش‌فرض مرورگر
+      (ارسال فرم و reload صفحه) لغو شد و `[default runs]` یعنی انجام می‌شود. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <form id="f"><input id="u" value="ali"><button>Send</button></form>
+    code: |
+      document.getElementById("f").addEventListener("submit", (e) => {
+        e.preventDefault();
+        console.log("submitted", e.defaultPrevented);
+      });
+    events:
+      - { type: submit, target: "#f", reportDefault: true }
+    options:
+      - out: ["submitted false", "[default runs]"]
+      - out: ["submitted true", "[default prevented]"]
+      - out: ["submitted true", "[default runs]"]
+      - out: ["submitted false", "[default prevented]"]
+    answer: 2
+    explain: |
+      بعد از `e.preventDefault()`، مقدار `e.defaultPrevented` برابر `true` است (رد گزینه‌های ۱ و ۴) و مرورگر
+      رفتار پیش‌فرض submit، یعنی فرستادن فرم و بارگذاری دوباره‌ی صفحه، را انجام نمی‌دهد (رد گزینه‌ی ۳). این
+      همان چیزی است که اسلاید ۳۵ می‌گوید: «Prevent page reload on submit with `event.preventDefault()`».
+  - level: medium
+    stem: |
+      کاربر اول روی لینک Help و بعد روی لینک Contact کلیک می‌کند (هر دو لینک به بخشی از همین صفحه اشاره
+      می‌کنند). سپس در Console دستور `console.log("hash:", location.hash)` را اجرا می‌کنیم. خروجی کامل کدام
+      است؟
+    check: dom-output
+    html: |
+      <a id="help" href="#help">Help</a>
+      <a id="contact" href="#contact">Contact</a>
+    code: |
+      document.getElementById("help").addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log("help clicked");
+      });
+      document.getElementById("contact").addEventListener("click", () => {
+        console.log("contact clicked");
+      });
+    events:
+      - { type: click, target: "#help" }
+      - { type: click, target: "#contact" }
+    after: |
+      console.log("hash:", location.hash);
+    options:
+      - out: ["help clicked", "contact clicked", "hash: #help"]
+      - out: ["contact clicked", "hash: #contact"]
+      - out: ["help clicked", "contact clicked", "hash:"]
+      - out: ["help clicked", "contact clicked", "hash: #contact"]
+    answer: 4
+    explain: |
+      `preventDefault()` فقط **رفتار پیش‌فرض** را لغو می‌کند، نه خودِ listener را؛ پس `help clicked` چاپ
+      می‌شود (رد گزینه‌ی ۲)، ولی مرورگر به `#help` نمی‌رود (رد گزینه‌ی ۱). لینک Contact چنین listenerی ندارد،
+      پس پیام چاپ می‌شود و رفتار پیش‌فرض آن، یعنی رفتن به `#contact`، انجام می‌شود (رد گزینه‌ی ۳).
+  - level: hard
+    stem: |
+      کاربر روی چک‌باکس (که در ابتدا تیک ندارد) کلیک می‌کند و بعد در Console مقدار `agree.checked` را چاپ
+      می‌کنیم. سطر `[default prevented]` یعنی رفتار پیش‌فرض مرورگر برای این کلیک لغو شد. خروجی کامل کدام است؟
+    check: dom-output
+    html: |
+      <input type="checkbox" id="agree">
+    code: |
+      const agree = document.getElementById("agree");
+      agree.addEventListener("click", (e) => {
+        console.log("inside:", agree.checked);
+        e.preventDefault();
+      });
+    events:
+      - { type: click, target: "#agree", reportDefault: true }
+    after: |
+      console.log("after:", agree.checked);
+    options:
+      - out: ["inside: false", "[default prevented]", "after: false"]
+      - out: ["inside: true", "[default prevented]", "after: true"]
+      - out: ["inside: true", "[default prevented]", "after: false"]
+      - out: ["inside: false", "[default prevented]", "after: true"]
+    answer: 3
+    explain: |
+      در کلیک روی چک‌باکس، مرورگر تیک را **قبل از** اجرای listenerها عوض می‌کند تا listener مقدار جدید را ببیند؛
+      پس داخل listener `checked` برابر `true` است (رد گزینه‌های ۱ و ۴). چون `preventDefault()` صدا زده شده،
+      مرورگر بعد از listenerها تغییر را برمی‌گرداند و چک‌باکس دوباره بدون تیک می‌شود: `after: false` (رد
+      گزینه‌ی ۲).
+  - level: medium
+    stem: |
+      کاربر روی لینک کلیک می‌کند. سطر `[default prevented]` یعنی رفتار پیش‌فرض (رفتن به آدرس لینک) لغو شد و
+      `[default runs]` یعنی انجام می‌شود. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <div id="box"><a id="lnk" href="#x">Go</a></div>
+    code: |
+      document.getElementById("box").addEventListener("click", (e) => {
+        console.log("box sees", e.defaultPrevented);
+      });
+      document.getElementById("lnk").addEventListener("click", (e) => e.preventDefault());
+    events:
+      - { type: click, target: "#lnk", reportDefault: true }
+    options:
+      - out: ["box sees true", "[default prevented]"]
+      - out: "[default prevented]"
+      - out: ["box sees false", "[default prevented]"]
+      - out: ["box sees true", "[default runs]"]
+    answer: 1
+    explain: |
+      `preventDefault()` جلوی bubbling را نمی‌گیرد؛ پس رویداد به `div` هم می‌رسد و listener آن اجرا می‌شود (رد
+      گزینه‌ی ۲). listener لینک قبل از listener `box` اجرا شده (bubbling از هدف به بالا)، پس `box` مقدار
+      `defaultPrevented` را `true` می‌بیند (رد گزینه‌ی ۳) و در پایان رفتار پیش‌فرض لغو شده است (رد گزینه‌ی ۴).
+  - level: easy
+    stem: کدام جمله درباره‌ی `preventDefault()` و `stopPropagation()` درست است؟
+    options:
+      - '`preventDefault()` رفتار پیش‌فرض مرورگر را لغو می‌کند ولی جلوی bubbling را نمی‌گیرد؛ `stopPropagation()` جلوی bubbling را می‌گیرد ولی رفتار پیش‌فرض را لغو نمی‌کند.'
+      - '`preventDefault()` جلوی bubbling را می‌گیرد و `stopPropagation()` رفتار پیش‌فرض را لغو می‌کند.'
+      - 'هر دو دقیقاً یک کار را انجام می‌دهند و فقط نامشان فرق دارد.'
+      - '`preventDefault()` listener را حذف می‌کند تا دوباره اجرا نشود.'
+    answer: 1
+    explain: |
+      این دو متد کارهای کاملاً جدایی دارند: `preventDefault()` فقط کاری را که مرورگر به‌طور پیش‌فرض انجام می‌داد
+      (رفتن به لینک، ارسال فرم، تیک خوردن) لغو می‌کند و رویداد همچنان bubble می‌کند؛ `stopPropagation()` فقط
+      حرکت رویداد به عنصرهای بعدی را متوقف می‌کند و رفتار پیش‌فرض همچنان انجام می‌شود. گزینه‌ی ۲ جای این دو را
+      عوض کرده، گزینه‌ی ۳ تفاوتشان را نادیده گرفته، و حذف listener کار `removeEventListener` است (رد گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      کاربر ابتدا روی دکمه‌ی Add کلیک می‌کند، سپس روی آیتم تازه‌ی `C`، و در آخر روی فضای خالی خودِ لیست (روی
+      `<ul>` و نه روی هیچ `<li>`ی). خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li><li>B</li></ul>
+      <button id="add">Add</button>
+    code: |
+      const list = document.getElementById("list");
+      list.addEventListener("click", (e) => {
+        if (e.target.matches("li")) console.log("clicked", e.target.textContent, e.currentTarget.id);
+      });
+      document.getElementById("add").addEventListener("click", () => {
+        const li = document.createElement("li");
+        li.textContent = "C";
+        list.append(li);
+      });
+    events:
+      - { type: click, target: "#add" }
+      - { type: click, target: "#list li:last-child" }
+      - { type: click, target: "#list" }
+    options:
+      - out: ""
+      - out: "clicked C list"
+      - out: ["clicked C list", "clicked undefined list"]
+      - out: "clicked C C"
+    answer: 2
+    explain: |
+      این event delegation است: listener روی `<ul>` ثبت شده و کلیک روی هر `<li>`، حتی `<li>`ی که بعداً اضافه شده،
+      با bubbling به آن می‌رسد؛ پس کلیک روی `C` چاپ می‌شود (رد گزینه‌ی ۱). در کلیک روی خودِ `<ul>`، مقدار
+      `e.target` همان `ul` است و `matches("li")` برابر `false`، پس چیزی چاپ نمی‌شود (رد گزینه‌ی ۳).
+      `currentTarget` عنصر صاحب listener یعنی `list` است، نه `li` (رد گزینه‌ی ۴).
+  - level: hard
+    stem: کاربر روی کلمه‌ی `Milk` (که داخل تگ `<b>` است) کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li><b>Milk</b> (2)</li><li>Bread</li></ul>
+    code: |
+      document.getElementById("list").addEventListener("click", (e) => {
+        console.log(e.target.tagName, e.target.matches("li"), e.target.closest("li").textContent);
+      });
+    events:
+      - { type: click, target: "#list b" }
+    options:
+      - out: "LI true Milk (2)"
+      - out: "B true Milk (2)"
+      - out: "UL false Milk (2)"
+      - out: "B false Milk (2)"
+    answer: 4
+    explain: |
+      `e.target` درونی‌ترین عنصری است که کلیک رویش رخ داده، یعنی `<b>`، نه `<li>` (رد گزینه‌ی ۱) و نه `<ul>`
+      که فقط صاحب listener است (رد گزینه‌ی ۳). `<b>` با selector `li` جور نیست، پس `matches` برابر `false` است
+      (رد گزینه‌ی ۲). `closest("li")` از خودِ `<b>` شروع می‌کند و به اولین جدِ `<li>` می‌رسد که متنش
+      `Milk (2)` است. برای همین در delegation معمولاً `closest` امن‌تر از `matches` است.
+  - level: medium
+    stem: کدام گزینه از مزایای event delegation نیست؟
+    options:
+      - 'به‌جای ده‌ها listener فقط یک listener لازم است.'
+      - 'برای عنصرهایی هم که بعداً به والد اضافه می‌شوند، بدون ثبت listener جدید کار می‌کند.'
+      - 'باعث می‌شود رویداد دیگر bubble نکند و به `document` نرسد.'
+      - 'کد ساده‌تر می‌شود و حافظه‌ی کمتری مصرف می‌شود.'
+    answer: 3
+    explain: |
+      delegation دقیقاً **به** bubbling وابسته است: کلیک روی فرزند باید بالا برود تا به listener والد برسد، و
+      بعد هم مثل همیشه به `document` و `window` ادامه می‌دهد. delegation هیچ‌وقت جلوی bubbling را نمی‌گیرد؛ این
+      کار `stopPropagation()` است. سه گزینه‌ی دیگر مزایای واقعی آن هستند: یک listener به‌جای چند listener،
+      پشتیبانی خودکار از عنصرهای جدید، و کد ساده‌تر با مصرف حافظه‌ی کمتر.
+  - level: easy
+    stem: |
+      کاربر حرف `a` را در کادر تایپ می‌کند و بعد از کادر بیرون می‌رود (یک `input` و سپس یک `change`). خروجی
+      Console کدام است؟
+    check: dom-output
+    html: |
+      <input id="box">
+    code: |
+      const box = document.getElementById("box");
+      function log(e) {
+        console.log(e.type, e.target.id);
+      }
+      box.addEventListener("input", log);
+      box.addEventListener("change", log);
+    events:
+      - { type: input, target: "#box", value: "a" }
+      - { type: change, target: "#box" }
+    options:
+      - out: ["input box", "change box"]
+      - out: ["change box", "input box"]
+      - out: ["log box", "log box"]
+      - out: ["input undefined", "change undefined"]
+    answer: 1
+    explain: |
+      یک تابع می‌تواند listener چند رویداد باشد و با `e.type` بفهمد کدام رویداد رخ داده: اول `input` و بعد
+      `change` (رد گزینه‌ی ۲). `e.type` نام رویداد است، نه نام تابع (رد گزینه‌ی ۳). `e.target` همان کادری است
+      که رویداد رویش رخ داده و id آن `box` است (رد گزینه‌ی ۴).
+  - level: hard
+    stem: کاربر روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="mid"><button id="btn">Go</button></div>
+    code: |
+      document.addEventListener("click", () => console.log("doc capture"), true);
+      document.addEventListener("click", () => console.log("doc bubble"));
+      document.getElementById("mid").addEventListener("click", (e) => {
+        e.stopPropagation();
+        console.log("mid");
+      });
+      document.getElementById("btn").addEventListener("click", () => console.log("btn"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["btn", "mid", "doc bubble"]
+      - out: ["doc capture", "btn", "mid", "doc bubble"]
+      - out: ["btn", "mid"]
+      - out: ["doc capture", "btn", "mid"]
+    answer: 4
+    explain: |
+      مرحله‌ی capturing قبل از همه اجرا می‌شود، پس `doc capture` اول چاپ می‌شود (رد گزینه‌های ۱ و ۳). بعد
+      listener خودِ دکمه و سپس با bubbling listener `mid` اجرا می‌شود. `mid` با `stopPropagation()` جلوی
+      ادامه‌ی bubbling را می‌گیرد، پس listener معمولیِ `document` هرگز اجرا نمی‌شود (رد گزینه‌ی ۲).
+  - level: medium
+    stem: کدام مورد یک «رفتار پیش‌فرض» (default action) مرورگر نیست که بتوان آن را با `preventDefault()` لغو کرد؟
+    options:
+      - 'اجرای listenerهای همان رویداد روی عنصرهای والد'
+      - 'رفتن به آدرس یک لینک بعد از کلیک روی آن'
+      - 'ارسال فرم و بارگذاری دوباره‌ی صفحه بعد از submit'
+      - 'تیک خوردن چک‌باکس بعد از کلیک روی آن'
+    answer: 1
+    explain: |
+      رسیدن رویداد به listenerهای والدها نتیجه‌ی **انتشار (propagation)** است، نه رفتار پیش‌فرض؛ آن را فقط
+      `stopPropagation()` متوقف می‌کند. رفتن به آدرس لینک، ارسال فرم همراه با reload صفحه، و تیک خوردن چک‌باکس
+      کارهایی هستند که مرورگر خودش بعد از listenerها انجام می‌دهد و `preventDefault()` دقیقاً همین‌ها را لغو
+      می‌کند.
+  - level: hard
+    stem: |
+      کاربر اول روی لینک One و بعد روی لینک Two کلیک می‌کند و سپس `console.log(JSON.stringify(location.hash))`
+      را اجرا می‌کنیم. سطرهای `[default ...]` نشان می‌دهند رفتار پیش‌فرض هر کلیک (رفتن به آدرس لینک) لغو شد
+      (`prevented`) یا انجام شد (`runs`). خروجی کامل کدام است؟
+    check: dom-output
+    html: |
+      <a id="a1" href="#one">One</a>
+      <a id="a2" href="#two">Two</a>
+    code: |
+      document.getElementById("a1").addEventListener("click", () => false);
+      document.getElementById("a2").onclick = () => false;
+    events:
+      - { type: click, target: "#a1", reportDefault: true }
+      - { type: click, target: "#a2", reportDefault: true }
+    after: |
+      console.log(JSON.stringify(location.hash));
+    options:
+      - out: ["[default prevented]", "[default prevented]", '""']
+      - out: ["[default runs]", "[default runs]", '"#two"']
+      - out: ["[default runs]", "[default prevented]", '"#one"']
+      - out: ["[default prevented]", "[default runs]", '"#two"']
+    answer: 3
+    explain: |
+      مقدار برگشتی listenerهای `addEventListener` نادیده گرفته می‌شود؛ پس `return false` در لینک One هیچ اثری
+      ندارد و مرورگر به `#one` می‌رود (رد گزینه‌های ۱ و ۴). اما در handler `onclick` (property یا attribute)،
+      برگرداندن `false` رفتار پیش‌فرض را لغو می‌کند؛ پس کلیک روی Two آدرس را عوض نمی‌کند و hash همان `#one`
+      می‌ماند (رد گزینه‌ی ۲). نتیجه: برای لغو رفتار پیش‌فرض همیشه از `preventDefault()` استفاده کن.
+  - level: medium
+    stem: کاربر روی دکمه‌ی Send (داخل فرم) کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <form id="f"><input id="u" value="ali"><button id="send">Send</button></form>
+    code: |
+      document.getElementById("f").addEventListener("submit", (e) => {
+        e.preventDefault();
+        console.log("submit on", e.target.id);
+      });
+      document.getElementById("send").addEventListener("click", (e) => {
+        console.log("click on", e.target.id);
+      });
+    events:
+      - { type: click, target: "#send" }
+    options:
+      - out: "click on send"
+      - out: ["submit on f", "click on send"]
+      - out: ["click on send", "submit on send"]
+      - out: ["click on send", "submit on f"]
+    answer: 4
+    explain: |
+      `<button>` داخل فرم به‌طور پیش‌فرض دکمه‌ی ارسال است؛ رفتار پیش‌فرضِ کلیک روی آن، ایجاد رویداد `submit`
+      روی **فرم** است. پس اول listener `click` دکمه اجرا می‌شود و بعد از آن رویداد `submit` رخ می‌دهد (رد
+      گزینه‌های ۱ و ۲). هدف (target) رویداد `submit` خودِ فرم با id برابر `f` است، نه دکمه (رد گزینه‌ی ۳). به
+      همین دلیل listener ارسال را روی `submit` فرم می‌گذاریم، نه روی `click` دکمه.
+  - level: easy
+    stem: |
+      در event delegation، listener روی یک `<ul>` ثبت شده و کاربر روی یکی از `<li>`های آن کلیک می‌کند.
+      `event.target` و `event.currentTarget` به ترتیب کدام‌اند؟
+    options:
+      - '`<li>` کلیک‌شده — `<ul>`'
+      - '`<ul>` — `<li>` کلیک‌شده'
+      - 'هر دو `<ul>`'
+      - 'هر دو `<li>` کلیک‌شده'
+    answer: 1
+    explain: |
+      `target` عنصری است که کلیک واقعاً روی آن رخ داده (همان `<li>`) و `currentTarget` عنصری است که listener
+      در حال اجرا روی آن ثبت شده (همان `<ul>`). گزینه‌ی ۲ این دو را برعکس گرفته است. این دو فقط وقتی یکی‌اند
+      که کاربر مستقیماً روی خودِ عنصرِ صاحب listener کلیک کند، که اینجا چنین نیست (رد گزینه‌های ۳ و ۴).
