@@ -1,0 +1,659 @@
+id: ch1-json
+title: "JSON (JavaScript Object Notation)"
+slides: "Introduction to JS، اسلایدهای ۴۰، ۴۱ و ۵۲"
+lesson: |
+  ### JSON چیست و چرا لازمش داریم؟
+  فرض کن برنامه‌ی فروشگاهی‌ات یک سفارش را به شکل یک شیء JavaScript در حافظه دارد و می‌خواهد آن را برای سرور بفرستد؛ سروری که شاید با Python یا Java نوشته شده باشد. شیء JavaScript فقط داخل حافظه‌ی همان برنامه معنا دارد؛ چیزی که می‌شود روی شبکه فرستاد یا در فایل نوشت، **متن** است. پس به یک «زبان مشترک متنی» برای داده نیاز داریم که همه‌ی برنامه‌ها بلد باشند. این زبان مشترک **JSON** است.
+
+  طبق اسلاید ۵۲، **JSON** (مخفف JavaScript Object Notation، یعنی «نشانه‌گذاری شیء JavaScript») یک **قالب متنی (text format)** برای **ذخیره کردن (storing)** و **مبادله کردن (exchanging)** داده است. اسلاید ۴۰ هم گفته بود JSON **روشی رایج برای ذخیره و به اشتراک گذاشتن داده‌ی شیءهاست** و اسلاید ۴۱ گفته بود object literal (نوشتن شیء با `{ key: value }`) **پایه‌ی ساختار JSON** است. یعنی JSON تقریباً شکل همان شیءهایی را دارد که با آکولاد می‌نوشتیم، اما به صورت متن.
+
+  ::: analogy
+  JSON مثل فرم استاندارد بسته‌ی پستی است. وقتی بسته‌ای را به کشور دیگری می‌فرستی، نمی‌توانی هر طور دلت خواست روی آن بنویسی؛ فرم استانداردی را پر می‌کنی که اداره‌ی پست همه‌ی کشورها خواندنش را بلد است. `JSON.stringify` یعنی پر کردن فرم (تبدیل شیء به متن) و `JSON.parse` یعنی خواندن فرم در مقصد و ساختن دوباره‌ی شیء.
+  :::
+
+  JSON کجاها به کار می‌رود؟
+
+  - مبادله‌ی داده بین مرورگر و سرور: داده را با `JSON.stringify` به متن تبدیل می‌کنیم و می‌فرستیم و جواب JSONِ سرور را با `JSON.parse` دوباره به شیء تبدیل می‌کنیم؛
+  - ذخیره‌ی شیءها در `localStorage` مرورگر (فصل ۲)؛
+  - فایل‌های تنظیمات، مثل `package.json` در پروژه‌های Node.js (فصل ۳).
+
+  ### قواعد JSON: شبیه شیء JavaScript، اما سخت‌گیرتر
+  اسلاید ۵۲: JSON «**شبیه شیءهای JavaScript است، اما سخت‌گیرتر** (کلیدها و رشته‌ها داخل کوتیشن)». این دو را مقایسه کن:
+
+  ```js
+  // A JavaScript object literal (this is code, not JSON)
+  const student = {
+    name: 'Sara',            // key without quotes, single-quoted string: fine in JS
+    age: 21,
+    greet() { return "hi"; } // methods are fine in JS
+  };
+  ```
+
+  ```json
+  {
+    "name": "Sara",
+    "age": 21,
+    "skills": ["html", "css"],
+    "address": { "city": "Tehran" },
+    "graduated": false,
+    "phone": null
+  }
+  ```
+
+  | مجاز در JSON | غیرمجاز در JSON |
+  |---|---|
+  | رشته با دابل‌کوتیشن: `"Sara"` | رشته با single quote یا backtick: `'Sara'` |
+  | کلیدِ داخل دابل‌کوتیشن: `"name"` | کلید بدون کوتیشن: `name` |
+  | عدد: `21`، `12.5`، `-3` | `NaN` و `Infinity` |
+  | `true` و `false` | `undefined` |
+  | `null` | تابع و متد |
+  | آرایه: `[1, 2]` | کامنت (`//` یا `/* */`) |
+  | شیء تودرتو: `{ "city": "Tehran" }` | ویرگولِ اضافه‌ی آخر (trailing comma): `[1, 2,]` |
+
+  پس در JSON فقط **شش نوع مقدار** داریم: string، number، boolean، `null`، array و object.
+
+  ### دو متد کلیدی: JSON.stringify و JSON.parse
+  طبق اسلاید ۵۲، JavaScript دو متد کلیدی دارد (هر دو جزو خود زبان‌اند و نصب لازم ندارند):
+
+  - `JSON.stringify(obj)`: شیء را به **رشته‌ی JSON** تبدیل می‌کند (stringify یعنی «رشته کن»).
+  - `JSON.parse(jsonStr)`: رشته‌ی JSON را به **شیء** تبدیل می‌کند (parse یعنی «تجزیه کن و بخوان»).
+
+  ```js
+  const user = { name: 'Ali', age: 20 };
+
+  const text = JSON.stringify(user);
+  console.log(text);        // {"name":"Ali","age":20}
+  console.log(typeof text); // string
+
+  const back = JSON.parse(text);
+  console.log(back.name);     // Ali
+  console.log(typeof back);   // object
+  console.log(back === user); // false (a brand-new object)
+  console.log(user);          // { name: 'Ali', age: 20 } (how Node.js prints an object)
+  ```
+
+  به سه نکته دقت کن:
+
+  1. خروجی `JSON.stringify` یک **رشته** است، بدون هیچ فاصله‌ی اضافه، و همه‌ی کلیدها و رشته‌ها داخل **دابل‌کوتیشن**‌اند؛ حتی اگر در کد `'Ali'` را با single quote نوشته باشیم.
+  2. چاپ خودِ شیء (`{ name: 'Ali', age: 20 }`) با چاپ رشته‌ی JSON آن (`{"name":"Ali","age":20}`) فرق دارد.
+  3. `JSON.parse` یک شیء **کاملاً جدید** می‌سازد؛ برای همین `back === user` برابر `false` است.
+
+  ### کد اسلاید ۵۲ قدم‌به‌قدم
+  ```js title=json.js
+  const order = {
+    id: 101,
+    customer: {
+      name: "Alex",
+      email: "alex@example.com"
+    },
+    items: [
+      { product: "Laptop", qty: 1, price: 1200 },
+      { product: "Mouse", qty: 2, price: 25 }
+    ],
+    paid: true
+  };
+
+  const json = JSON.stringify(order, null, 2);
+  console.log(json);
+
+  const obj = JSON.parse(json);
+  console.log(obj.customer.email);
+  ```
+
+  خروجی:
+
+  ```text
+  {
+    "id": 101,
+    "customer": {
+      "name": "Alex",
+      "email": "alex@example.com"
+    },
+    "items": [
+      {
+        "product": "Laptop",
+        "qty": 1,
+        "price": 1200
+      },
+      {
+        "product": "Mouse",
+        "qty": 2,
+        "price": 25
+      }
+    ],
+    "paid": true
+  }
+  alex@example.com
+  ```
+
+  - `JSON.stringify(order, null, 2)`: آرگومان دوم، **replacer** است (تابع یا فهرستی که تعیین می‌کند کدام ویژگی‌ها وارد خروجی شوند)؛ `null` یعنی «فیلتری نداریم، همه را بنویس». آرگومان سوم، **تورفتگی** است؛ `2` یعنی هر سطحِ تودرتو با ۲ فاصله جلو برود و هر ویژگی در یک سطر جدا بیاید (**pretty-print**، یعنی «چاپ زیبا و خوانا برای انسان»). بدون این دو آرگومان، کل متن در یک سطر می‌آمد: `{"id":101,"customer":{...},...}`.
+  - در خروجی، همه‌ی کلیدها داخل دابل‌کوتیشن‌اند و شیء `customer` و آرایه‌ی `items` با همه‌ی عضوهایشان کامل نوشته شده‌اند.
+  - `JSON.parse(json)` از روی متن، دوباره یک شیء واقعی می‌سازد؛ پس `obj.customer.email` رشته‌ی `alex@example.com` را می‌دهد.
+  - اما خودِ `json` یک رشته است: `json.customer` برابر `undefined` است، چون رشته چنین ویژگی‌ای ندارد. برای دسترسی به داده، اول باید parse کنی.
+
+  ### stringify با مقدارهای غیرمجاز چه می‌کند؟
+  `JSON.stringify` برای مقدارهایی که JSON ندارد **خطا نمی‌دهد**، بلکه بی‌صدا آن‌ها را حذف یا تبدیل می‌کند:
+
+  | مقدار | به‌عنوان ویژگی شیء | داخل آرایه |
+  |---|---|---|
+  | `undefined` | ویژگی حذف می‌شود | `null` |
+  | تابع (function) و متد | ویژگی حذف می‌شود | `null` |
+  | `NaN` و `Infinity` | `null` | `null` |
+  | `Date` | رشته‌ی تاریخ (قالب ISO) | رشته‌ی تاریخ (قالب ISO) |
+
+  ```js
+  const user = {
+    name: "Sara",
+    age: undefined,                  // dropped
+    greet() { return "hi"; },        // dropped
+    tags: ["a", undefined, () => 1], // both become null inside an array
+    score: NaN                       // becomes null
+  };
+  console.log(JSON.stringify(user));
+  // {"name":"Sara","tags":["a",null,null],"score":null}
+
+  console.log(JSON.stringify({ when: new Date(0) }));
+  // {"when":"1970-01-01T00:00:00.000Z"}
+  ```
+
+  چرا داخل آرایه حذف نمی‌شوند و `null` می‌شوند؟ چون اگر حذف می‌شدند، جایگاه (index) بقیه‌ی عضوها به هم می‌خورد.
+
+  ### JSON فقط شیء نیست: مقدارهای ساده (primitive)
+  یک متن JSON می‌تواند هر کدام از آن شش نوع باشد؛ مثلاً فقط یک عدد یا فقط یک رشته:
+
+  ```js
+  console.log(JSON.parse("5"));                // 5 (number)
+  console.log(JSON.parse('"hi"'));             // hi (a string: the JSON text has double quotes)
+  console.log(JSON.parse("true"));             // true (boolean)
+  console.log(JSON.parse("null"));             // null
+  console.log(JSON.parse("[1, 2, 3]").length); // 3
+
+  console.log(JSON.stringify("hi")); // "hi" (the quotes are part of the JSON text)
+  console.log(JSON.stringify(42));   // 42 (this is the string "42")
+
+  console.log(JSON.parse("5") + 1);   // 6
+  console.log(JSON.parse('"5"') + 1); // 51 (string + number -> concatenation)
+  ```
+
+  ### JSON نامعتبر یعنی SyntaxError
+  اگر متنی که به `JSON.parse` می‌دهیم JSON معتبر نباشد، خطای `SyntaxError` پرتاب می‌شود؛ دقیقاً مثل کد اسلاید ۵۰ در درس «مدیریت خطا: try، catch، finally و throw». هر خط زیر جداگانه خطا می‌دهد:
+
+  ```js
+  JSON.parse("{'a': 1}");         // SyntaxError: single quotes
+  JSON.parse("{a: 1}");           // SyntaxError: key without quotes
+  JSON.parse('{"a": 1,}');        // SyntaxError: trailing comma
+  JSON.parse('{"a": undefined}'); // SyntaxError: undefined is not JSON
+  JSON.parse("");                 // SyntaxError: Unexpected end of JSON input
+  ```
+
+  داده‌ای که از کاربر یا سرور می‌آید ممکن است خراب باشد؛ پس `JSON.parse` را داخل `try...catch` بگذار:
+
+  ```js
+  function safeParse(text) {
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      console.log("Invalid JSON:", err.name);
+      return null;
+    }
+  }
+  console.log(safeParse('{"ok": true}').ok); // true
+  console.log(safeParse("{ok: true}"));
+  // Invalid JSON: SyntaxError
+  // null
+  ```
+
+  ### کپی عمیق (deep copy) با JSON
+  یادت هست که شیءها با ارجاع (reference) نگه داشته می‌شوند و `const b = a` شیء را کپی نمی‌کند؟ یک ترفند رایج برای ساختن یک **کپی کاملاً مستقل**، حتی برای شیءهای تودرتو (deep copy، یعنی کپی عمیق)، این است: `JSON.parse(JSON.stringify(obj))`. اما هر چیزی که JSON ندارد در این مسیر از دست می‌رود:
+
+  ```js
+  const original = {
+    name: "Ali",
+    born: new Date("2000-01-02T00:00:00Z"),
+    sayHi() { return "hi"; },
+    nested: { level: 1 }
+  };
+  const copy = JSON.parse(JSON.stringify(original));
+  copy.nested.level = 2;
+
+  console.log(original.nested.level); // 1 (the copy is independent)
+  console.log(typeof copy.born);      // string (the Date became a string)
+  console.log(typeof copy.sayHi);     // undefined (the method is lost)
+  ```
+
+  ::: info
+  در مرورگرهای امروزی و Node.js تابع `structuredClone(obj)` هم کپی عمیق می‌سازد و `Date` را سالم نگه می‌دارد، اما آن هم تابع و متد را کپی نمی‌کند (برای شیءِ متددار خطا می‌دهد). همچنین `JSON.stringify(undefined)` یا `JSON.stringify` روی یک تابع، به جای رشته خودِ مقدار `undefined` را برمی‌گرداند؛ برای شیءها، آرایه‌ها، عددها، رشته‌ها، boolean و `null` همیشه یک رشته می‌گیری.
+  :::
+
+  ### پیش‌نمایش فصل ۲: JSON و localStorage
+  `localStorage` حافظه‌ی ماندگار مرورگر است و **فقط رشته** ذخیره می‌کند. اگر خودِ شیء را بدهی، به رشته‌ی بی‌مصرف `"[object Object]"` تبدیل می‌شود؛ پس الگوی درست، stringify هنگام ذخیره و parse هنگام خواندن است:
+
+  ```js
+  // Browser only: localStorage stores strings
+  const user = { name: "Ali", age: 20 };
+  localStorage.setItem("user", user);                 // saved as "[object Object]"
+  localStorage.setItem("user", JSON.stringify(user)); // saved as '{"name":"Ali","age":20}'
+  const saved = JSON.parse(localStorage.getItem("user"));
+  console.log(saved.name, typeof saved.age);          // Ali number
+  ```
+
+  ::: tip
+  - `JSON.stringify`: شیء به رشته؛ `JSON.parse`: رشته به شیء. `typeof JSON.stringify({ a: 1 })` برابر `"string"` است.
+  - برای خروجی خوانا: `JSON.stringify(obj, null, 2)`.
+  - در JSON کلیدها و رشته‌ها **همیشه** داخل دابل‌کوتیشن‌اند.
+  - داده‌ی بیرونی را همیشه داخل `try...catch` parse کن.
+  :::
+
+  ::: trap دام‌های تستی
+  - حاصل `JSON.stringify` یک رشته است؛ `json.customer` روی آن `undefined` می‌دهد. اول parse کن.
+  - `console.log(obj)` چیزی مثل `{ name: 'Ali' }` چاپ می‌کند، اما `console.log(JSON.stringify(obj))` چاپ می‌کند `{"name":"Ali"}`.
+  - single quote، کلید بدون کوتیشن، ویرگول اضافه‌ی آخر، کامنت و `undefined` در متن JSON یعنی `SyntaxError` در `JSON.parse`.
+  - `stringify` ویژگی‌های `undefined` و تابع را بی‌صدا حذف می‌کند؛ داخل آرایه به `null` تبدیلشان می‌کند؛ `NaN` و `Infinity` هم `null` می‌شوند.
+  - `JSON.parse('"5"')` رشته‌ی `"5"` است (پس `+ 1` می‌شود `"51"`)، اما `JSON.parse("5")` عدد `5` است.
+  - `typeof JSON.parse("[1, 2]")` برابر `"object"` است؛ نوع `"array"` نداریم.
+  :::
+
+  ::: summary
+  - JSON یک قالب **متنی** برای ذخیره و مبادله‌ی داده است؛ شبیه object literal، اما سخت‌گیرتر.
+  - فقط شش نوع مقدار: string، number، boolean، `null`، array و object.
+  - `JSON.stringify(obj, null, 2)` برای متن خوانا؛ `JSON.parse(text)` برای برگرداندن به شیء.
+  - متن نامعتبر در `JSON.parse` یعنی `SyntaxError`.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۲، JSON چیست؟
+    options:
+      - یک زبان برنامه‌نویسی جدید که جای JavaScript را گرفته است
+      - یک کتابخانه‌ی JavaScript که باید جداگانه با npm نصب شود
+      - یک قالب متنی (text format) برای ذخیره و مبادله‌ی داده
+      - نوعی پایگاه داده که داخل مرورگر ساخته شده است
+    answer: 3
+    explain: |
+      اسلاید ۵۲: «JSON is a text format for storing and exchanging data». JSON فقط یک شیوه‌ی نوشتن داده به شکل متن است، نه زبان برنامه‌نویسی (گزینه‌ی ۱) و نه پایگاه داده (گزینه‌ی ۴). شیء `JSON` و متدهایش هم جزو خود JavaScript هستند و نصب لازم ندارند (گزینه‌ی ۲).
+
+  - level: easy
+    stem: |
+      طبق اسلایدهای ۴۰ و ۴۱، رابطه‌ی JSON با شیءهای JavaScript کدام است؟
+    options:
+      - 'JSON روشی رایج برای ذخیره و به اشتراک گذاشتن داده‌ی شیءهاست و ساختارش بر پایه‌ی object literal (`{ key: value }`) است.'
+      - JSON نوع هشتمِ داده‌های primitive در JavaScript است.
+      - JSON فقط برای ذخیره‌ی آرایه‌هاست و به شیءها ربطی ندارد.
+      - هر شیء JavaScript، همراه با متدهایش، بدون هیچ تغییری یک JSON معتبر است.
+    answer: 1
+    explain: |
+      اسلاید ۴۰ می‌گوید JSON «a common way to store & share object data» است و اسلاید ۴۱ object literalها را «Basis for JSON structure» می‌نامد. JSON یک قالب متنی است، نه یک نوع داده‌ی primitive (گزینه‌ی ۲). JSON هم شیء دارد و هم آرایه (گزینه‌ی ۳). گزینه‌ی ۴ هم غلط است، چون JSON سخت‌گیرتر است و تابع و متد را نمی‌پذیرد.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۲، JSON «شبیه شیءهای JavaScript، اما سخت‌گیرتر» است. منظور از «سخت‌گیرتر» چیست؟
+    options:
+      - کلیدها در JSON نباید داخل کوتیشن نوشته شوند.
+      - 'رشته‌ها در JSON فقط با single quote (`''...''`) نوشته می‌شوند.'
+      - JSON و شیء JavaScript هیچ فرقی با هم ندارند و فقط اسمشان فرق می‌کند.
+      - 'کلیدها و رشته‌ها در JSON باید داخل دابل‌کوتیشن (`"..."`) باشند.'
+    answer: 4
+    explain: |
+      در شیء JavaScript می‌توان کلید را بدون کوتیشن و رشته را با `'` نوشت، اما در JSON کلیدها و رشته‌ها **حتماً** داخل دابل‌کوتیشن‌اند (`{"name": "Ali"}`). گزینه‌های ۱ و ۲ دقیقاً برعکس این قاعده‌اند و گزینه‌ی ۳ همان «سخت‌گیرتر» بودن را نادیده گرفته است.
+
+  - level: easy
+    stem: |
+      کدام گزینه کار دو متد کلیدی JSON را درست بیان می‌کند؟
+    options:
+      - '`JSON.stringify` رشته‌ی JSON را به شیء تبدیل می‌کند و `JSON.parse` شیء را به رشته‌ی JSON.'
+      - '`JSON.stringify` شیء را به رشته‌ی JSON تبدیل می‌کند و `JSON.parse` رشته‌ی JSON را به شیء.'
+      - 'هر دو شیء را به رشته تبدیل می‌کنند؛ فقط خروجی `JSON.parse` مرتب‌تر و خواناتر است.'
+      - '`JSON.stringify` شیء را در حافظه‌ی مرورگر ذخیره می‌کند و `JSON.parse` آن را از حافظه می‌خواند.'
+    answer: 2
+    explain: |
+      طبق اسلاید ۵۲، `JSON.stringify(obj)` «converts object to JSON string» و `JSON.parse(jsonStr)` «converts JSON string to object». گزینه‌ی ۱ جهت‌ها را برعکس گفته است. خوانا کردن خروجی کار آرگومان سوم `JSON.stringify` است (گزینه‌ی ۳). ذخیره در حافظه‌ی مرورگر هم کار `localStorage` است، نه این دو متد (گزینه‌ی ۴)؛ هرچند برای ذخیره‌ی شیء در `localStorage` از آن‌ها کمک می‌گیریم.
+
+  - level: easy
+    stem: |
+      حاصل `typeof JSON.stringify({ id: 101 })` کدام است؟
+    check: value
+    expr: 'typeof JSON.stringify({ id: 101 })'
+    options:
+      - '`"object"`'
+      - '`"json"`'
+      - '`"string"`'
+      - '`"undefined"`'
+    answer: 3
+    explain: |
+      `JSON.stringify` برای یک شیء معمولی یک **رشته** برمی‌گرداند (`'{"id":101}'`)، پس `typeof` آن `"string"` است. `"object"` نوع خودِ شیء است، نه نتیجه‌ی تبدیل؛ نوعی به اسم `"json"` در JavaScript وجود ندارد؛ و `"undefined"` هم نیست، چون حاصل تبدیل یک مقدار واقعی است.
+
+  - level: easy
+    stem: |
+      کدام متن یک JSON **معتبر** است؛ یعنی `JSON.parse` روی آن خطا نمی‌دهد؟
+    check: option-throws
+    want: ok
+    options:
+      - text: '`{name: "Ali"}`'
+        code: |
+          JSON.parse('{name: "Ali"}');
+      - text: '`{''name'': ''Ali''}`'
+        code: |
+          JSON.parse("{'name': 'Ali'}");
+      - text: '`{"name": "Ali",}`'
+        code: |
+          JSON.parse('{"name": "Ali",}');
+      - text: '`{"name": "Ali"}`'
+        code: |
+          JSON.parse('{"name": "Ali"}');
+    answer: 4
+    explain: |
+      فقط گزینه‌ی ۴ همه‌ی قواعد را رعایت کرده است: کلید و رشته داخل دابل‌کوتیشن و بدون ویرگول اضافه. گزینه‌ی ۱ کلید بدون کوتیشن دارد، گزینه‌ی ۲ از single quote استفاده کرده و گزینه‌ی ۳ ویرگول اضافه‌ی آخر (trailing comma) دارد؛ هر سه در شیء JavaScript مجازند، اما در JSON نه، و `JSON.parse` برایشان `SyntaxError` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const user = { name: 'Ali', age: 20 };
+      console.log(JSON.stringify(user));
+    options:
+      - out: "{ name: 'Ali', age: 20 }"
+      - out: '{"name":"Ali","age":20}'
+      - out: "{'name':'Ali','age':20}"
+      - out: '{"name": "Ali", "age": 20}'
+    answer: 2
+    explain: |
+      `JSON.stringify` همه‌ی کلیدها و رشته‌ها را داخل **دابل‌کوتیشن** می‌گذارد (حتی اگر در کد با `'` نوشته باشیم) و وقتی آرگومان سوم را ندهیم، هیچ فاصله‌ی اضافه‌ای نمی‌گذارد. گزینه‌ی ۱ شکلی است که `console.log(user)` خودِ شیء را چاپ می‌کند، نه رشته‌ی JSON را؛ گزینه‌ی ۳ single quote دارد که در JSON مجاز نیست؛ و گزینه‌ی ۴ فاصله‌هایی دارد که `JSON.stringify` بدون آرگومان سوم نمی‌گذارد (با آرگومان سوم هم هر ویژگی در سطر جداگانه می‌آید).
+
+  - level: medium
+    stem: |
+      در کد اسلاید ۵۲ نوشته شده `JSON.stringify(order, null, 2)`. نقش آرگومان‌های `null` و `2` چیست؟
+    options:
+      - '`null` یعنی فیلتری (replacer) برای انتخاب ویژگی‌ها نداریم و `2` یعنی خروجی با تورفتگی ۲ فاصله‌ای و خوانا (pretty-print) ساخته شود.'
+      - '`null` یعنی ویژگی‌هایی که مقدارشان `null` است حذف شوند و `2` یعنی فقط ۲ سطح اول شیء تبدیل شود.'
+      - '`null` یعنی خروجی هیچ کوتیشنی نداشته باشد و `2` یعنی عددها با ۲ رقم اعشار نوشته شوند.'
+      - '`null` یعنی شیء اصلی بعد از تبدیل پاک شود و `2` یعنی دو نسخه از رشته ساخته شود.'
+    answer: 1
+    explain: |
+      آرگومان دوم `JSON.stringify` همان replacer است (تابع یا فهرستی که تعیین می‌کند کدام ویژگی‌ها وارد خروجی شوند)؛ `null` یعنی همه‌ی ویژگی‌ها، بدون فیلتر. آرگومان سوم مقدار تورفتگی است؛ `2` یعنی هر سطح با ۲ فاصله جلو برود و خروجی چندخطی و خوانا شود، همان‌طور که در خروجی اسلاید می‌بینیم. معناهای گزینه‌های ۲ تا ۴ وجود ندارند: در خروجی اسلاید همه‌ی سطح‌ها (حتی شیءهای داخل آرایه‌ی `items`) کامل آمده‌اند، کلیدها کوتیشن دارند، عددی مثل `1200` بدون اعشار نوشته شده و `order` هم دست نخورده باقی می‌ماند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const post = { title: "Hi", tags: ["js", "json"] };
+      console.log(JSON.stringify(post, null, 2));
+    options:
+      - text: |
+          ```text
+          {"title":"Hi","tags":["js","json"]}
+          ```
+        out: '{"title":"Hi","tags":["js","json"]}'
+      - text: |
+          ```text
+          {
+            "title": "Hi",
+            "tags": ["js", "json"]
+          }
+          ```
+        out: ['{', '  "title": "Hi",', '  "tags": ["js", "json"]', '}']
+      - text: |
+          ```text
+          {
+            "title": "Hi",
+            "tags": [
+              "js",
+              "json"
+            ]
+          }
+          ```
+        out: ['{', '  "title": "Hi",', '  "tags": [', '    "js",', '    "json"', '  ]', '}']
+      - text: |
+          ```text
+          {
+            title: 'Hi',
+            tags: [ 'js', 'json' ]
+          }
+          ```
+        out: ['{', "  title: 'Hi',", "  tags: [ 'js', 'json' ]", '}']
+    answer: 3
+    explain: |
+      با آرگومان سوم `2`، هر سطح تودرتویی ۲ فاصله تورفتگی می‌گیرد و **هر عضو** شیء یا آرایه در یک سطر جدا می‌آید؛ حتی عضوهای آرایه‌ی `tags`. کلیدها و رشته‌ها هم مثل همیشه داخل دابل‌کوتیشن‌اند. گزینه‌ی ۱ خروجی بدون آرگومان سوم است، گزینه‌ی ۲ فکر کرده آرایه‌ها در یک سطر می‌مانند و گزینه‌ی ۴ شکل چاپ خودِ شیء با `console.log` است، نه رشته‌ی JSON.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const order = {
+        id: 101,
+        customer: { name: "Alex", email: "alex@example.com" }
+      };
+      const json = JSON.stringify(order);
+      const obj = JSON.parse(json);
+      console.log(obj.customer.email);
+      console.log(json.customer);
+    options:
+      - out: ['"alex@example.com"', "undefined"]
+      - out: ["alex@example.com", "{ name: 'Alex', email: 'alex@example.com' }"]
+      - out: ["undefined", "undefined"]
+      - out: ["alex@example.com", "undefined"]
+    answer: 4
+    explain: |
+      `obj` حاصل `JSON.parse` است، یعنی دوباره یک شیء واقعی؛ پس `obj.customer.email` رشته‌ی `alex@example.com` را می‌دهد و `console.log` رشته را بدون کوتیشن چاپ می‌کند (رد گزینه‌ی ۱). اما `json` یک **رشته** است و رشته ویژگی `customer` ندارد؛ پس `json.customer` برابر `undefined` است (رد گزینه‌ی ۲). گزینه‌ی ۳ هم فکر کرده `JSON.parse` شیء نمی‌سازد.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی کد `Tehran` شود؟
+    check: option-output
+    expect: "Tehran"
+    code: |
+      const text = '{"city": "Tehran", "population": 9000000}';
+      const data = ___(text);
+      console.log(data.city);
+    options:
+      - text: '`JSON.stringify`'
+        code: |
+          const text = '{"city": "Tehran", "population": 9000000}';
+          const data = JSON.stringify(text);
+          console.log(data.city);
+      - text: '`JSON.parse`'
+        code: |
+          const text = '{"city": "Tehran", "population": 9000000}';
+          const data = JSON.parse(text);
+          console.log(data.city);
+      - text: '`JSON.toObject`'
+        code: |
+          const text = '{"city": "Tehran", "population": 9000000}';
+          const data = JSON.toObject(text);
+          console.log(data.city);
+      - text: '`String`'
+        code: |
+          const text = '{"city": "Tehran", "population": 9000000}';
+          const data = String(text);
+          console.log(data.city);
+    answer: 2
+    explain: |
+      `text` یک رشته‌ی JSON است و برای دسترسی به `city` باید اول آن را با `JSON.parse` به شیء تبدیل کنیم. `JSON.stringify` روی یک رشته، دوباره یک رشته (این بار با کوتیشن‌های اضافه) می‌سازد و `data.city` برابر `undefined` می‌شود؛ `String(text)` هم همان رشته را برمی‌گرداند و نتیجه باز `undefined` است. متدی به اسم `JSON.toObject` هم وجود ندارد و `TypeError` می‌دهد.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      const a = JSON.parse('{"x": 1}');
+      const b = JSON.parse("[1, 2, 3]");
+      const c = JSON.parse('"hello"');
+      const d = JSON.parse("{'y': 2}");
+      console.log(a.x, b.length, c, d.y);
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 3
+    explain: |
+      متن JSON لازم نیست شیء باشد: `"[1, 2, 3]"` یک آرایه‌ی معتبر JSON است (خط ۲) و `'"hello"'` یک رشته‌ی معتبر JSON (خط ۳)، چون داخلش دابل‌کوتیشن دارد. اما در خط ۴ کلید با single quote نوشته شده که در JSON مجاز نیست؛ پس `JSON.parse` خطای `SyntaxError` می‌دهد و خط ۵ هرگز اجرا نمی‌شود.
+
+  - level: medium
+    stem: |
+      `JSON.parse` روی کدام متن خطا می‌دهد؟
+    check: option-throws
+    want: error
+    errorName: SyntaxError
+    options:
+      - text: '`{"value": undefined}`'
+        code: |
+          JSON.parse('{"value": undefined}');
+      - text: '`null`'
+        code: |
+          JSON.parse("null");
+      - text: '`[1, "two", false]`'
+        code: |
+          JSON.parse('[1, "two", false]');
+      - text: '`{"price": 12.5}`'
+        code: |
+          JSON.parse('{"price": 12.5}');
+    answer: 1
+    explain: |
+      `undefined` جزو مقدارهای مجاز JSON نیست (فقط string، number، boolean، `null`، آرایه و شیء مجازند)؛ پس متن گزینه‌ی ۱ نامعتبر است و `SyntaxError` می‌دهد. `null` به‌تنهایی یک JSON معتبر است و مقدار `null` را برمی‌گرداند، آرایه‌ای با عدد و رشته و boolean هم معتبر است و عدد اعشاری `12.5` هم مجاز است.
+
+  - level: medium
+    stem: |
+      کدام جمله درباره‌ی JSON **نادرست** است؟
+    options:
+      - 'از JSON برای فرستادن داده به سرور و ذخیره‌ی شیءها در `localStorage` استفاده می‌شود.'
+      - JSON می‌تواند شیء و آرایه‌ی تودرتو داشته باشد.
+      - 'حاصل `JSON.stringify` روی یک شیء معمولی، از نوع `string` است.'
+      - 'در JSON می‌توان کامنت (`//`) نوشت تا داده خواناتر شود.'
+    answer: 4
+    explain: |
+      JSON کامنت را نمی‌پذیرد؛ متنی که `//` یا `/* */` داشته باشد با `JSON.parse` خطای `SyntaxError` می‌دهد (برای همین در فایل `package.json` هم نمی‌توان کامنت نوشت). سه جمله‌ی دیگر درست‌اند: JSON قالب رایج مبادله‌ی داده با سرور و ذخیره‌ی شیء در `localStorage` است، شیء و آرایه‌ی تودرتو دارد (مثل `customer` و `items` در کد اسلاید ۵۲) و `JSON.stringify` یک رشته می‌سازد.
+
+  - level: hard
+    stem: |
+      کدام جمله **درست** است؟
+    check: claims
+    options:
+      - text: '`JSON.parse(''"5"'') + 1` برابر `6` است.'
+        expr: 'JSON.parse(''"5"'') + 1'
+        equals: '6'
+      - text: '`JSON.parse("5") + 1` برابر `6` است.'
+        expr: 'JSON.parse("5") + 1'
+        equals: '6'
+      - text: '`JSON.parse("true")` رشته‌ی `"true"` است.'
+        expr: 'JSON.parse("true")'
+        equals: '"true"'
+      - text: '`typeof JSON.parse("[1, 2]")` برابر `"array"` است.'
+        expr: 'typeof JSON.parse("[1, 2]")'
+        equals: '"array"'
+    answer: 2
+    explain: |
+      متن `5` در JSON یعنی **عدد** ۵؛ پس `JSON.parse("5") + 1` جمع عددی و برابر `6` است. اما متن `"5"` (با دابل‌کوتیشن) در JSON یعنی **رشته‌ی** `"5"` و رشته به‌علاوه‌ی عدد یعنی چسباندن: `"51"` (رد گزینه‌ی ۱). `JSON.parse("true")` مقدار boolean یعنی `true` را می‌دهد، نه رشته (رد گزینه‌ی ۳)، و آرایه در JavaScript از نوع `"object"` است؛ `typeof` هیچ‌وقت `"array"` نمی‌دهد (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const user = {
+        name: "Sara",
+        age: undefined,
+        greet() { return "hi"; },
+        tags: ["a", undefined],
+        score: NaN
+      };
+      console.log(JSON.stringify(user));
+    options:
+      - out: '{"name":"Sara","age":undefined,"tags":["a",undefined],"score":NaN}'
+      - out: '{"name":"Sara","tags":["a"],"score":null}'
+      - out: '{"name":"Sara","tags":["a",null],"score":null}'
+      - out: '{"name":"Sara","age":null,"greet":null,"tags":["a",null],"score":null}'
+    answer: 3
+    explain: |
+      `JSON.stringify` برای مقدارهایی که JSON ندارد خطا نمی‌دهد، بلکه بی‌صدا آن‌ها را تغییر می‌دهد: ویژگی‌هایی که مقدارشان `undefined` یا تابع است **حذف** می‌شوند (`age` و `greet`)، `undefined` داخل آرایه به `null` تبدیل می‌شود تا جای بقیه‌ی عضوها به هم نخورد و `NaN` هم `null` می‌شود. گزینه‌ی ۱ فکر کرده این مقدارها عیناً نوشته می‌شوند (که یک JSON نامعتبر می‌ساخت)، گزینه‌ی ۲ عضو آرایه را حذف کرده و گزینه‌ی ۴ ویژگی‌ها را به جای حذف، `null` کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const original = {
+        name: "Ali",
+        born: new Date("2000-01-02T00:00:00Z"),
+        sayHi() { return "hi"; },
+        nested: { level: 1 }
+      };
+      const copy = JSON.parse(JSON.stringify(original));
+      copy.nested.level = 2;
+      console.log(original.nested.level);
+      console.log(typeof copy.born);
+      console.log(typeof copy.sayHi);
+    options:
+      - out: ["2", "object", "function"]
+      - out: ["1", "string", "undefined"]
+      - out: ["1", "object", "function"]
+      - out: ["2", "string", "undefined"]
+    answer: 2
+    explain: |
+      `JSON.parse(JSON.stringify(original))` یک شیء کاملاً جدید می‌سازد، حتی برای `nested`؛ پس تغییر `copy.nested.level` روی `original` اثری ندارد و `1` چاپ می‌شود (رد گزینه‌های ۱ و ۴). اما این روش هر چیزی را که JSON ندارد از دست می‌دهد: `Date` هنگام stringify به یک رشته‌ی تاریخ تبدیل می‌شود و بعد از parse هم رشته می‌ماند (`string`)، و متد `sayHi` اصلاً در JSON نوشته نمی‌شود (`undefined`)؛ پس گزینه‌ی ۳ هم غلط است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function safeParse(text) {
+        try {
+          return JSON.parse(text);
+        } catch (err) {
+          console.log(err.name);
+          return null;
+        }
+      }
+      console.log(safeParse('{"ok": true}').ok);
+      console.log(safeParse("{ok: true}"));
+      console.log(safeParse(""));
+    options:
+      - out: ["true", "{ ok: true }", "undefined"]
+      - out: ["true", "SyntaxError", "null", "undefined"]
+      - out: ["true", "!! SyntaxError"]
+      - out: ["true", "SyntaxError", "null", "SyntaxError", "null"]
+    answer: 4
+    explain: |
+      متن اول JSON معتبر است و `.ok` مقدار `true` را می‌دهد. `{ok: true}` کلید بدون کوتیشن دارد، پس `JSON.parse` خطا می‌دهد؛ `catch` نام خطا (`SyntaxError`) را چاپ می‌کند و `null` برمی‌گرداند که چاپ می‌شود. رشته‌ی خالی هم JSON معتبر نیست (`Unexpected end of JSON input`)، پس دوباره `SyntaxError` و `null`. گزینه‌ی ۱ کلید بدون کوتیشن را مجاز دانسته، گزینه‌ی ۲ فکر کرده `JSON.parse("")` بدون خطا `undefined` می‌دهد و گزینه‌ی ۳ فراموش کرده خطا داخل `try` رخ داده و گرفته می‌شود.
+
+  - level: hard
+    stem: |
+      کد زیر در مرورگر اجرا می‌شود. `localStorage` حافظه‌ی ماندگار مرورگر است (در فصل ۲ کاملش را می‌بینیم) و **فقط رشته** ذخیره می‌کند. خروجی کدام است؟
+    check: dom-output
+    code: |
+      const user = { name: "Ali", age: 20 };
+      localStorage.setItem("user", user);
+      console.log(localStorage.getItem("user"));
+      localStorage.setItem("user", JSON.stringify(user));
+      console.log(localStorage.getItem("user"));
+      const saved = JSON.parse(localStorage.getItem("user"));
+      console.log(saved.name, typeof saved.age);
+    options:
+      - out: ["[object Object]", '{"name":"Ali","age":20}', "Ali number"]
+      - out: ['{"name":"Ali","age":20}', '{"name":"Ali","age":20}', "Ali number"]
+      - out: ["[object Object]", '{"name":"Ali","age":20}', "Ali string"]
+      - out: ["{ name: 'Ali', age: 20 }", '{"name":"Ali","age":20}', "Ali number"]
+    answer: 1
+    explain: |
+      `localStorage` فقط رشته نگه می‌دارد و هر چیز دیگری را با تبدیل معمولی به رشته ذخیره می‌کند؛ تبدیل یک شیء معمولی به رشته `[object Object]` است و داده‌ی اصلی از دست می‌رود. `setItem` خودش JSON نمی‌سازد (رد گزینه‌های ۲ و ۴). راه درست، `JSON.stringify` قبل از ذخیره و `JSON.parse` بعد از خواندن است؛ و چون در JSON عدد بدون کوتیشن نوشته می‌شود، `age` بعد از parse دوباره **عدد** است (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(JSON.stringify("hi"));
+      console.log(JSON.stringify([1, "two", null]));
+      console.log(JSON.stringify({ day: new Date(0) }));
+    options:
+      - out: ['"hi"', '[1,"two",null]', '{"day":"1970-01-01T00:00:00.000Z"}']
+      - out: ["hi", '[1,"two",null]', '{"day":{}}']
+      - out: ['"hi"', "[1,'two',null]", '{"day":"1970-01-01T00:00:00.000Z"}']
+      - out: ["hi", '[1,"two"]', '{"day":0}']
+    answer: 1
+    explain: |
+      JSON یک رشته را همراه دابل‌کوتیشن‌هایش می‌نویسد؛ پس `JSON.stringify("hi")` رشته‌ی چهارحرفی `"hi"` است و کوتیشن‌ها هم چاپ می‌شوند (رد گزینه‌های ۲ و ۴). داخل آرایه، `null` یک مقدار مجاز JSON است و حذف نمی‌شود و رشته‌ها با دابل‌کوتیشن نوشته می‌شوند (رد گزینه‌های ۳ و ۴). شیء `Date` هم به رشته‌ی استاندارد تاریخ (ISO) تبدیل می‌شود؛ `new Date(0)` یعنی لحظه‌ی صفر: `1970-01-01T00:00:00.000Z`.
