@@ -1,0 +1,212 @@
+id: fixture-checks
+title: Fixture
+lesson: |
+  test
+questions:
+  - level: easy
+    stem: output ok
+    check: output
+    code: |
+      console.log("5" + 1);
+      console.log("5" - 1);
+      console.log([1, 2, 3].map(n => n * 2));
+    options:
+      - out: ["51", "4", "[2, 4, 6]"]
+      - out: ["6", "4", "[2, 4, 6]"]
+      - out: ["51", "51", "[2, 4, 6]"]
+      - out: ["51", "4", "[1, 2, 3]"]
+    answer: 1
+    explain: x
+  - level: easy
+    stem: output with error (correct key 2)
+    check: output
+    code: |
+      console.log(typeof x);
+      console.log(y);
+      let y = 1;
+    options:
+      - out: ["undefined", "undefined"]
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "1"]
+    answer: 2
+    explain: x
+  - level: easy
+    stem: WRONG KEY on purpose (should fail)
+    check: output
+    code: console.log(null + 1, undefined + 1)
+    options:
+      - out: "1 NaN"
+      - out: "NaN NaN"
+      - out: "1 1"
+      - out: "null1 undefined1"
+    answer: 2
+    explain: x
+  - level: medium
+    stem: value
+    check: value
+    expr: '"5" + 1'
+    options: ['`"51"`', '`51`', '`6`', '`"6"`']
+    answer: 1
+    explain: x
+  - level: medium
+    stem: value object block trap
+    check: value
+    expr: '{} + []'
+    options: ['`"[object Object]"`', '`0`', '`"[]"`', '`NaN`']
+    answer: 1
+    explain: x
+  - level: medium
+    stem: claims want false
+    check: claims
+    want: false
+    options:
+      - { text: a, expr: '[] == false', equals: 'true' }
+      - { text: b, expr: '[] == 0', equals: 'true' }
+      - { text: c, expr: 'null == undefined', equals: 'true' }
+      - { text: d, expr: 'null == 0', equals: 'true' }
+    answer: 4
+    explain: x
+  - level: hard
+    stem: error line
+    check: error-line
+    lines: true
+    code: |
+      const a = 1;
+      let b = 2;
+      b = 3;
+      a = 4;
+      console.log(a, b);
+    options:
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 4 }
+      - { line: 0 }
+    answer: 3
+    errorName: TypeError
+    explain: x
+  - level: hard
+    stem: syntax error line
+    check: error-line
+    code: |
+      let x = 1;
+      console.log(x);
+      let x = 2;
+    options:
+      - { line: 1 }
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 0 }
+    answer: 3
+    explain: x
+  - level: medium
+    stem: option-output
+    check: option-output
+    prelude: const nums = [1, 2, 3];
+    expect: "[2, 4, 6]"
+    options:
+      - code: console.log(nums.map(n => n * 2))
+      - code: console.log(nums.forEach(n => n * 2))
+      - code: console.log(nums.filter(n => n * 2))
+      - code: console.log(nums.reduce((a, n) => a + n * 2, 0))
+    answer: 1
+    explain: x
+  - level: medium
+    stem: option-throws
+    check: option-throws
+    options:
+      - code: 'const o = {}; o.x = 1;'
+      - code: 'const a = [1]; a.push(2);'
+      - code: 'const s = "hi"; s = "yo";'
+      - code: 'let t = 1; t = 2;'
+    answer: 3
+    errorName: TypeError
+    explain: x
+  - level: medium
+    stem: dom output
+    check: dom-output
+    html: |
+      <ul id="list"><li class="item">a</li><li class="item">b</li></ul>
+      <button id="btn">Add</button>
+    code: |
+      var counter = 0;
+      const live = document.getElementsByClassName('item');
+      const stat = document.querySelectorAll('.item');
+      document.getElementById('btn').addEventListener('click', () => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        document.getElementById('list').append(li);
+        console.log(live.length, stat.length, window.counter === counter);
+      });
+      console.log(document.querySelector('#nope'));
+    events:
+      - { type: click, target: '#btn' }
+    options:
+      - out: ["null", "3 2 true"]
+      - out: ["null", "3 3 true"]
+      - out: ["undefined", "3 2 true"]
+      - out: ["null", "2 2 true"]
+    answer: 1
+    explain: x
+  - level: hard
+    stem: tsc line
+    check: tsc-line
+    code: |
+      interface User { readonly id: number; name: string; email?: string }
+      const u: User = { id: 1, name: "Ali" };
+      u.name = "Reza";
+      u.id = 2;
+    options:
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 4 }
+      - { line: 0 }
+    answer: 3
+    explain: x
+  - level: medium
+    stem: option tsc
+    check: option-tsc
+    prelude: 'let id: number | string;'
+    options:
+      - code: 'id = 5;'
+      - code: 'id = "x";'
+      - code: 'id = true;'
+      - code: 'id = 5; id = "y";'
+    answer: 3
+    explain: x
+  - level: medium
+    stem: ts output
+    check: ts-output
+    code: |
+      function identity<T>(v: T): T { return v; }
+      const r = identity<string>("hi");
+      console.log(typeof r, r.length);
+    options:
+      - out: "string 2"
+      - out: "object 2"
+      - out: "string undefined"
+      - out: "T 2"
+    answer: 1
+    explain: x
+  - level: hard
+    stem: event loop
+    check: output
+    code: |
+      console.log('A');
+      setTimeout(() => console.log('B'), 0);
+      Promise.resolve().then(() => console.log('C'));
+      (async () => { console.log('D'); await null; console.log('E'); })();
+      console.log('F');
+    options:
+      - out: [A, D, F, C, E, B]
+      - out: [A, F, D, C, E, B]
+      - out: [A, D, F, B, C, E]
+      - out: [A, B, C, D, E, F]
+    answer: 1
+    explain: x
+  - level: easy
+    stem: missing manual reason (should be a validation problem)
+    code: alert("hi")
+    options: [a, b, c, d]
+    answer: 1
+    explain: x
