@@ -33,7 +33,16 @@ if (book.problems.length) {
 }
 
 const subs = new Map();
-for (const ch of book.chapters) for (const s of [...ch.subtopics, ...(ch.review ? [ch.review] : [])]) subs.set(s.id, s);
+const chapterUnits = new Map();
+for (const ch of book.chapters) {
+  for (const s of [...ch.subtopics, ...(ch.review ? [ch.review] : [])]) subs.set(s.id, s);
+  // A chapter-scoped concept may be taught in any lesson of the chapter.
+  chapterUnits.set(ch.id, {
+    file: ch.dir,
+    lesson: ch.subtopics.map((s) => s.lesson).join('\n'),
+    questions: [...ch.subtopics, ...(ch.review ? [ch.review] : [])].flatMap((s) => s.questions),
+  });
+}
 
 const conceptsFile = path.join(BOOK_DIR, 'sources', 'concepts.yaml');
 const concepts = load(fs.readFileSync(conceptsFile, 'utf8'));
@@ -44,9 +53,9 @@ for (const c of concepts) {
   const deck = c.deck || '?';
   perDeck[deck] ??= { total: 0, taught: 0 };
   perDeck[deck].total += 1;
-  const s = subs.get(c.subtopic);
+  const s = c.subtopic ? subs.get(c.subtopic) : chapterUnits.get(c.chapter);
   if (!s) {
-    untaught.push(`${c.slide}: ${c.concept}  →  subtopic "${c.subtopic}" does not exist`);
+    untaught.push(`${c.slide}: ${c.concept}  →  "${c.subtopic || c.chapter}" does not exist`);
     continue;
   }
   const lesson = norm(s.lesson || '');
@@ -54,7 +63,7 @@ for (const c of concepts) {
   const kws = c.keywords || [];
   const missing = kws.filter((k) => !String(k).split('|').some((alt) => lesson.includes(norm(alt))));
   if (missing.length) {
-    untaught.push(`${c.slide}: ${c.concept}  →  ${relPath(path.join(BOOK_DIR, '..', s.file))} lesson lacks ${missing.map((m) => `"${m}"`).join(', ')}`);
+    untaught.push(`${deck} ${c.slide}: ${c.concept}  →  ${s.file} lessons lack ${missing.map((m) => `"${m}"`).join(', ')}`);
     continue;
   }
   perDeck[deck].taught += 1;
