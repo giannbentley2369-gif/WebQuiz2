@@ -1,0 +1,963 @@
+id: ch2-review
+review: true
+title: "آزمون جامع فصل دوم"
+intro: |
+  این آزمون ۲۴ تست **ترکیبی** دارد؛ هر تست دو یا چند درس از این فصل را با هم درگیر می‌کند (مثلاً event
+  delegation همراه با ساختن عنصر، یا ارسال فرم همراه با localStorage و JSON). پیشنهاد می‌کنیم مثل جلسه‌ی
+  آزمون واقعی و بدون نگاه کردن به درسنامه‌ها، هر ۲۴ تست را در حدود **۴۰ دقیقه** حل کنی و بعد پاسخ‌هایت را
+  با کلید و پاسخ تشریحی مقایسه کنی. برای هر تستی که اشتباه زدی، درس‌هایی را که در آن تست ترکیب شده‌اند
+  دوباره مرور کن.
+
+  یادآوری: در گزینه‌ها سطر «Uncaught …» یعنی یک خطای مهارنشده در Console چاپ شده است.
+questions:
+  - level: hard
+    stem: |
+      صفحه‌ی زیر در مرورگر باز می‌شود و بعد از کامل شدن بارگذاری، کاربر یک بار روی دکمه‌ی Save کلیک
+      می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <script>
+          console.log("head:", document.getElementById("save"));
+          document.addEventListener("DOMContentLoaded", () => {
+            console.log("ready:", document.getElementById("save").textContent);
+          });
+          document.getElementById("save").addEventListener("click", () => {
+            console.log("saved");
+          });
+          console.log("head end");
+        </script>
+      </head>
+      <body>
+        <button id="save">Save</button>
+        <script>
+          console.log("body script");
+        </script>
+      </body>
+      </html>
+    events:
+      - { type: click, target: "#save" }
+    options:
+      - out: ["head: null", "!! TypeError"]
+      - out: ["head: null", "!! TypeError", "ready: Save", "body script"]
+      - out: ["head: null", "!! TypeError", "body script", "ready: Save", "saved"]
+      - out: ["head: null", "!! TypeError", "body script", "ready: Save"]
+    answer: 4
+    explain: |
+      اسکریپت معمولیِ داخل `<head>` قبل از parse شدن `<body>` اجرا می‌شود، پس `getElementById("save")`
+      مقدار `null` می‌دهد و `head: null` چاپ می‌شود. ثبت listener برای `DOMContentLoaded` روی `document`
+      مشکلی ندارد، ولی خط بعد `addEventListener` را روی `null` صدا می‌زند و `TypeError` رخ می‌دهد؛ بقیه‌ی
+      **همین** اسکریپت (`head end`) اجرا نمی‌شود، اما مرورگر parse صفحه را ادامه می‌دهد و اسکریپت انتهای
+      body مستقل اجرا می‌شود (`body script`). بعد از پایان parse رویداد `DOMContentLoaded` رخ می‌دهد و حالا
+      دکمه وجود دارد (`ready: Save`). کلیک کاربر چیزی چاپ نمی‌کند، چون listener کلیک هرگز ثبت نشد.
+
+      گزینه‌ی ۱ فکر کرده خطای یک اسکریپت کل صفحه را متوقف می‌کند، گزینه‌ی ۲ ترتیب را برعکس گرفته
+      (`DOMContentLoaded` بعد از اجرای همه‌ی اسکریپت‌های معمولی رخ می‌دهد) و گزینه‌ی ۳ فرض کرده listener
+      کلیک با وجود خطا ثبت شده است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (به فاصله‌ها و خط‌های جدیدِ داخل HTML دقت کن.)
+    check: dom-output
+    html: |
+      <ul id="list">
+        <li>A</li>
+      </ul>
+    code: |
+      const list = document.getElementById("list");
+      const li = document.createElement("li");
+      li.textContent = "B";
+      list.insertBefore(li, list.lastChild);
+      console.log(list.lastChild.nodeName, list.lastElementChild.textContent);
+      console.log(list.children.length, list.childNodes.length);
+    options:
+      - out: ["#text B", "2 4"]
+      - out: ["LI A", "2 2"]
+      - out: ["LI B", "2 4"]
+      - out: ["#text A", "2 4"]
+    answer: 1
+    explain: |
+      فاصله و خط جدیدِ بین تگ‌ها هم گره‌ی متنی (text node) می‌سازد؛ پس `<ul>` در ابتدا سه گره‌ی فرزند دارد:
+      متن فاصله، `<li>A</li>` و یک متن فاصله‌ی دیگر. `list.lastChild` همان گره‌ی متنی آخر است و
+      `insertBefore(li, list.lastChild)` عنصر `B` را **قبل از آن متن**، یعنی بعد از `A`، می‌گذارد. در نتیجه
+      `lastChild` هنوز `#text` است، آخرین **عنصر** `B` است، `children` فقط عنصرها را می‌شمارد (۲) و
+      `childNodes` همه‌ی گره‌ها را (۴).
+
+      گزینه‌ی ۲ گره‌های متنی را نادیده گرفته (در آن صورت `B` قبل از `A` می‌رفت)، گزینه‌ی ۳ تصور کرده
+      `insertBefore` مثل `appendChild` به انتهای لیست اضافه می‌کند و گزینه‌ی ۴ فکر کرده `B` قبل از `A`
+      قرار گرفته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="x">1</p>
+      <p class="x">2</p>
+      <p class="x">3</p>
+      <p class="x">4</p>
+    code: |
+      const live = document.getElementsByClassName("x");
+      const fixed = document.querySelectorAll(".x");
+      for (let i = 0; i < live.length; i++) {
+        live[i].classList.remove("x");
+      }
+      console.log(live.length, fixed.length, live[0].textContent);
+    options:
+      - out: "4 4 1"
+      - out: "2 2 2"
+      - out: "2 4 2"
+      - out: ["!! TypeError"]
+    answer: 3
+    explain: |
+      `getElementsByClassName` یک HTMLCollection **زنده** می‌دهد و `querySelectorAll` یک NodeList **ایستا**
+      (عکسِ لحظه‌ای). وقتی کلاس `x` از یک پاراگراف حذف می‌شود، آن پاراگراف فوراً از `live` بیرون می‌رود و
+      بقیه یک خانه جلو می‌آیند: در دور اول (`i = 0`) پاراگراف `1` حذف می‌شود و `live` می‌شود `[2, 3, 4]`؛ در
+      دور دوم (`i = 1`) پاراگراف `3` حذف می‌شود و `live` می‌شود `[2, 4]`؛ حالا `i = 2` است و شرط `2 < 2`
+      نادرست است. پس `live.length` برابر ۲، `fixed.length` همان ۴ و `live[0]` پاراگراف `2` است.
+
+      گزینه‌ی ۱ هر دو لیست را ایستا فرض کرده، گزینه‌ی ۲ `querySelectorAll` را هم زنده دانسته و گزینه‌ی ۴ فکر
+      کرده حلقه کلاس همه را حذف می‌کند (در آن صورت `live[0]` برابر `undefined` می‌شد و خواندن `textContent`
+      خطا می‌داد).
+
+  - level: hard
+    stem: کد زیر اجرا می‌شود و سپس کاربر روی آیتم `A` در صفحه کلیک می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li><li>B</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const items = list.getElementsByTagName("li");
+      const first = items[0];
+      first.addEventListener("click", () => console.log("A clicked"));
+      list.innerHTML += "<li>C</li>";
+      console.log(items.length, items[0] === first, first.isConnected);
+    events:
+      - { type: click, target: "#list li" }
+    options:
+      - out: ["3 true true", "A clicked"]
+      - out: ["3 false false"]
+      - out: ["2 false false"]
+      - out: ["3 false false", "A clicked"]
+    answer: 2
+    explain: |
+      `list.innerHTML += "<li>C</li>"` یعنی `list.innerHTML = list.innerHTML + "<li>C</li>"`: محتوای لیست به
+      رشته تبدیل، پاک و **از نو** ساخته می‌شود. پس سه `<li>` کاملاً تازه داریم و `first` (عنصر قدیمی `A`)
+      دیگر در صفحه نیست (`isConnected` برابر `false`). `items` زنده است، پس طولش ۳ می‌شود و `items[0]` عنصر
+      **جدید** `A` است، نه `first`. listener فقط روی عنصر قدیمی ثبت شده بود، پس کلیک روی `A` جدید چیزی چاپ
+      نمی‌کند.
+
+      گزینه‌ی ۱ تصور کرده `+=` فقط یک آیتم اضافه می‌کند و بقیه دست‌نخورده می‌مانند، گزینه‌ی ۳ مجموعه‌ی
+      `getElementsByTagName` را ایستا فرض کرده و گزینه‌ی ۴ فکر کرده listenerها هم همراه HTML کپی می‌شوند.
+      برای اضافه کردن آیتم بدون از دست دادن listenerها از `createElement` و `append` استفاده کن.
+
+  - level: hard
+    stem: |
+      HTML صفحه این است:
+
+      ```html
+      <ul id="menu"><li class="item">Home</li><li class="item">Blog</li></ul>
+      ```
+
+      کد زیر در انتهای صفحه اجرا می‌شود. **اولین** خطا در کدام خط رخ می‌دهد؟
+
+      ```js lines
+      const items = document.querySelectorAll(".item");
+      items.forEach((li) => li.classList.add("ready"));
+      const ready = document.getElementsByClassName("ready");
+      console.log(ready.length);
+      ready.forEach((li) => li.remove());
+      items.classList.remove("item");
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <ul id="menu"><li class="item">Home</li><li class="item">Blog</li></ul>
+    code: |
+      const items = document.querySelectorAll(".item"); console.log("~1");
+      items.forEach((li) => li.classList.add("ready")); console.log("~2");
+      const ready = document.getElementsByClassName("ready"); console.log("~3");
+      console.log(ready.length); console.log("~4");
+      ready.forEach((li) => li.remove()); console.log("~5");
+      items.classList.remove("item"); console.log("~6");
+    options:
+      - text: 'خط ۲'
+        out: ["~1", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "~2", "~3", "2", "~4", "!! TypeError"]
+      - text: 'خط ۶'
+        out: ["~1", "~2", "~3", "2", "~4", "~5", "!! TypeError"]
+      - text: 'هیچ خطایی رخ نمی‌دهد.'
+        out: ["~1", "~2", "~3", "2", "~4", "~5", "~6"]
+    answer: 2
+    explain: |
+      خط ۱ یک NodeList ایستا می‌دهد که متد `forEach` دارد، پس خط ۲ بدون مشکل به هر دو آیتم کلاس `ready`
+      می‌دهد (رد گزینه‌ی ۱). خط ۳ یک HTMLCollection زنده برمی‌گرداند و خط ۴ عدد ۲ را چاپ می‌کند. اما
+      HTMLCollection متد `forEach` **ندارد**؛ `ready.forEach` برابر `undefined` است و صدا زدن آن در خط ۵ خطای
+      `TypeError: ready.forEach is not a function` می‌دهد و اجرا همان‌جا متوقف می‌شود. خط ۶ هم خطا دارد
+      (NodeList property به نام `classList` ندارد)، ولی اجرا هرگز به آن نمی‌رسد (رد گزینه‌ی ۳). گزینه‌ی ۴ هم
+      HTMLCollection را مثل آرایه فرض کرده است. راه درست: `Array.from(ready).forEach(...)` یا استفاده از
+      `querySelectorAll`.
+
+  - level: hard
+    stem: کد زیر **در مرورگر** (اسکریپت معمولی، بدون `"use strict"`) اجرا می‌شود و کاربر یک بار روی دکمه کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="btn">Go</button>
+    code: |
+      var label = "global";
+      const btn = document.getElementById("btn");
+      btn.label = "button";
+      btn.addEventListener("click", function () {
+        console.log(this.label);
+      });
+      btn.addEventListener("click", () => {
+        console.log(this.label);
+      });
+      btn.onclick = function () {
+        console.log(this === btn);
+      };
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["button", "button", "true"]
+      - out: ["button", "undefined", "true"]
+      - out: ["true", "button", "global"]
+      - out: ["button", "global", "true"]
+    answer: 4
+    explain: |
+      handlerها به ترتیب ثبت اجرا می‌شوند. در تابع معمولی (`function`)، `this` همان عنصری است که listener روی
+      آن ثبت شده (`btn`)، پس `this.label` برابر `"button"` است. تابع arrow، `this` مخصوص خودش را ندارد و آن را
+      از محیط بیرونی، یعنی سطح بالای اسکریپت، می‌گیرد که در مرورگر `window` است؛ و چون `label` با `var` در
+      سطح بالا تعریف شده، `window.label` برابر `"global"` است. handler سوم (`onclick`) بعد از آن دو ثبت شده و
+      `this` آن هم `btn` است، پس `true` چاپ می‌کند.
+
+      گزینه‌ی ۱ فکر کرده arrow هم `this` را از عنصر می‌گیرد، گزینه‌ی ۲ فراموش کرده `var` سراسری property شیء
+      `window` می‌شود و گزینه‌ی ۳ تصور کرده `onclick` همیشه قبل از listenerهای `addEventListener` اجرا می‌شود.
+
+  - level: hard
+    stem: کاربر روی دکمه‌ی Go کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="outer">
+        <div id="inner">
+          <button id="btn">Go</button>
+        </div>
+      </div>
+    code: |
+      const outer = document.getElementById("outer");
+      const inner = document.getElementById("inner");
+      const btn = document.getElementById("btn");
+      document.addEventListener("click", () => console.log("document"));
+      outer.addEventListener("click", () => console.log("outer capture"), true);
+      outer.addEventListener("click", () => console.log("outer bubble"));
+      inner.addEventListener("click", (e) => {
+        console.log("inner");
+        e.stopPropagation();
+      });
+      btn.addEventListener("click", () => console.log("btn"));
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["outer capture", "btn", "inner"]
+      - out: ["btn", "inner"]
+      - out: ["document", "outer capture", "btn", "inner"]
+      - out: ["outer capture", "btn", "inner", "document"]
+    answer: 1
+    explain: |
+      رویداد سه مرحله دارد: capturing (از `document` به سمت پایین)، رسیدن به target و bubbling (به سمت بالا).
+      listenerی که روی `outer` با آرگومان سوم `true` ثبت شده در مرحله‌ی capturing اجرا می‌شود، پس اول
+      `outer capture` چاپ می‌شود؛ بعد خود دکمه (`btn`) و در مسیر بالا رفتن `inner`. چون `inner` متد
+      `stopPropagation()` را صدا می‌زند، رویداد دیگر به listener مرحله‌ی bubbling روی `outer` و به `document`
+      نمی‌رسد.
+
+      گزینه‌ی ۲ مرحله‌ی capturing را نادیده گرفته، گزینه‌ی ۳ فکر کرده listener روی `document` چون بالاترین
+      است اول اجرا می‌شود (در حالی که بدون `true` و در مرحله‌ی bubbling ثبت شده) و گزینه‌ی ۴ تصور کرده
+      `stopPropagation` جلوی رسیدن رویداد به `document` را نمی‌گیرد.
+
+  - level: hard
+    stem: کاربر ابتدا روی دکمه‌ی Add و سپس روی آیتمی که تازه به لیست اضافه شده کلیک می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li></ul>
+      <button id="add">Add</button>
+    code: |
+      const list = document.getElementById("list");
+      list.addEventListener("click", function (e) {
+        console.log(e.target.textContent, this.tagName);
+      });
+      document.getElementById("add").addEventListener("click", () => {
+        const li = document.createElement("li");
+        li.textContent = "B" + list.children.length;
+        list.appendChild(li);
+      });
+    events:
+      - { type: click, target: "#add" }
+      - { type: click, target: "#list li:last-child" }
+    options:
+      - out: ["B2 UL"]
+      - out: ["B1 LI"]
+      - out: ["B1 UL"]
+      - out: ""
+    answer: 3
+    explain: |
+      با کلیک روی Add یک `<li>` تازه ساخته می‌شود. در لحظه‌ی ساختن متن، لیست هنوز فقط یک فرزند دارد، پس متن
+      `B1` است و **بعد از آن** `appendChild` انجام می‌شود. کلیک روی آیتم جدید bubble می‌کند و به listener روی
+      `<ul>` می‌رسد (event delegation؛ آیتم‌هایی که بعداً ساخته می‌شوند به listener جداگانه نیاز ندارند). در
+      این listener که تابع معمولی است، `e.target` همان `<li>` کلیک‌شده است ولی `this` برابر
+      `e.currentTarget`، یعنی `<ul>`، است. دکمه‌ی Add هم داخل `<ul>` نیست، پس کلیک اول listener لیست را اجرا
+      نمی‌کند.
+
+      گزینه‌ی ۱ طول لیست را بعد از افزودن حساب کرده، گزینه‌ی ۲ `this` را با `e.target` یکی گرفته و گزینه‌ی ۴
+      فکر کرده عنصرهایی که بعداً ساخته می‌شوند به listener والد نمی‌رسند.
+
+  - level: medium
+    stem: |
+      HTML صفحه این است:
+
+      ```html
+      <ul id="list">
+        <li>Milk <button class="del"><i>x</i></button></li>
+        <li>Bread <button class="del"><i>x</i></button></li>
+      </ul>
+      ```
+
+      می‌خواهیم با کلیک روی دکمه‌ی حذف هر آیتم (چه روی خودِ دکمه و چه روی `<i>` داخل آن) همان آیتم حذف
+      شود و کلیک روی متن آیتم (مثلاً روی کلمه‌ی Milk) هیچ کاری نکند. در جای خالی چه باید نوشت؟
+
+      ```js
+      const list = document.getElementById("list");
+      list.addEventListener("click", (e) => {
+        const btn = ________;
+        if (!btn) return;
+        btn.closest("li").remove();
+      });
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <ul id="list">
+        <li>Milk <button class="del"><i>x</i></button></li>
+        <li>Bread <button class="del"><i>x</i></button></li>
+      </ul>
+    code: |
+      // Hidden verification: try each option on a fresh copy of the list.
+      const template = document.getElementById("list");
+      const handlers = [
+        (e) => { const btn = this.querySelector(".del"); if (!btn) return; btn.closest("li").remove(); },
+        (e) => { const btn = e.target.matches(".del"); if (!btn) return; btn.closest("li").remove(); },
+        (e) => { const btn = e.currentTarget.closest(".del"); if (!btn) return; btn.closest("li").remove(); },
+        (e) => { const btn = e.target.closest(".del"); if (!btn) return; btn.closest("li").remove(); },
+      ];
+      handlers.forEach((handler, i) => {
+        const list = template.cloneNode(true);
+        document.body.append(list);
+        let crashed = false;
+        list.addEventListener("click", (e) => {
+          try { handler(e); } catch (err) { crashed = true; }
+        });
+        list.querySelector("li").click();
+        if (list.children.length !== 2) crashed = true;
+        list.querySelector("li:nth-child(2) i").click();
+        list.querySelector("li .del").click();
+        if (!crashed && list.children.length === 0) console.log(i + 1);
+        list.remove();
+      });
+    options:
+      - text: '`this.querySelector(".del")`'
+        out: "1"
+      - text: '`e.target.matches(".del")`'
+        out: "2"
+      - text: '`e.currentTarget.closest(".del")`'
+        out: "3"
+      - text: '`e.target.closest(".del")`'
+        out: "4"
+    answer: 4
+    explain: |
+      وقتی کاربر روی `<i>` کلیک می‌کند، `e.target` همان `<i>` است. `closest(".del")` از **خودِ عنصر** شروع
+      می‌کند و به سمت اجداد بالا می‌رود؛ پس چه کلیک روی دکمه باشد و چه روی `<i>` داخل آن، دکمه را پیدا می‌کند و
+      برای کلیک روی متن آیتم (`<li>`) مقدار `null` می‌دهد که با `return` نادیده گرفته می‌شود.
+
+      گزینه‌ی ۱ از `this` داخل یک تابع arrow استفاده کرده که برابر `window` است و `window.querySelector` وجود
+      ندارد (`TypeError`)؛ تازه اگر هم کار می‌کرد، همیشه اولین دکمه را می‌داد. گزینه‌ی ۲ یک مقدار بولی
+      برمی‌گرداند: کلیک روی `<i>` نادیده گرفته می‌شود و کلیک روی خود دکمه به `true.closest(...)` و `TypeError`
+      می‌رسد. گزینه‌ی ۳ از `currentTarget` یعنی خود `<ul>` شروع کرده که هیچ دکمه‌ای در اجدادش نیست، پس همیشه
+      `null` می‌دهد و چیزی حذف نمی‌شود.
+
+  - level: hard
+    stem: 'کاربر روی دکمه‌ی `x` کنار Bread کلیک می‌کند و در پنجره‌ی confirm دکمه‌ی OK را می‌زند؛ سپس روی کلمه‌ی Milk کلیک می‌کند. خروجی کامل Console کدام است؟ (سطر `[confirm] …` یعنی پنجره‌ی confirm با آن پیام نمایش داده شده است.)'
+    check: dom-output
+    html: |
+      <ul id="cart">
+        <li><span>Milk</span> <button class="del">x</button></li>
+        <li><span>Bread</span> <button class="del">x</button></li>
+      </ul>
+    code: |
+      const cart = document.getElementById("cart");
+      cart.addEventListener("click", (e) => {
+        const btn = e.target.closest(".del");
+        if (!btn) return;
+        const li = btn.closest("li");
+        if (confirm("Delete " + li.querySelector("span").textContent + "?")) {
+          li.remove();
+        }
+        console.log(cart.children.length, li.textContent);
+      });
+    events:
+      - { type: click, target: "#cart li:nth-child(2) .del" }
+      - { type: click, target: "#cart span" }
+    options:
+      - out: ["[confirm] Delete Bread?", "1 Bread x"]
+      - out: ["[confirm] Delete Bread?", "1 Bread"]
+      - out: ["[confirm] Delete Bread?", "!! TypeError"]
+      - out: ["[confirm] Delete Bread?", "2 Bread x"]
+    answer: 1
+    explain: |
+      کلیک روی دکمه‌ی `x` آیتم Bread به listener روی `<ul>` می‌رسد؛ `closest` اول دکمه و بعد `<li>` آن را پیدا
+      می‌کند و متن `<span>` در پیام confirm قرار می‌گیرد. کاربر OK می‌زند (`confirm` مقدار `true` برمی‌گرداند)،
+      پس `li.remove()` آیتم را از صفحه جدا می‌کند و `cart.children` که **زنده** است به ۱ می‌رسد. خودِ شیء `li`
+      هنوز در متغیر هست و خواندن `textContent` آن خطا ندارد؛ `textContent` متن همه‌ی نوادگان را پشت سر هم
+      می‌دهد: `Bread`، فاصله‌ی بین تگ‌ها و `x` دکمه. کلیک دوم روی `<span>` است، `closest(".del")` مقدار `null`
+      می‌دهد و listener با `return` تمام می‌شود.
+
+      گزینه‌ی ۲ متن دکمه‌ی داخل `<li>` را حساب نکرده، گزینه‌ی ۳ فکر کرده عنصر حذف‌شده دیگر قابل استفاده نیست و
+      گزینه‌ی ۴ تصور کرده `children` با حذف عنصر به‌روز نمی‌شود.
+
+  - level: hard
+    stem: کد زیر اجرا می‌شود و سپس کاربر روی دکمه‌ی B کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <button id="a" onclick="console.log('inline', this.id)">A</button>
+    code: |
+      const a = document.getElementById("a");
+      a.addEventListener("click", () => console.log("listener"));
+      const b = a.cloneNode(true);
+      b.id = "b";
+      b.textContent = "B";
+      document.body.append(b);
+    events:
+      - { type: click, target: "#b" }
+    options:
+      - out: ["inline b", "listener"]
+      - out: ["inline b"]
+      - out: ["listener"]
+      - out: ""
+    answer: 2
+    explain: |
+      `cloneNode(true)` عنصر را با همه‌ی attributeها و فرزندانش کپی می‌کند. `onclick` در HTML یک attribute
+      معمولی است و کپی می‌شود، پس دکمه‌ی جدید handler درون‌خطی خودش را دارد؛ در این handler، `this` همان
+      دکمه‌ای است که کلیک شده و چون `id` آن قبل از کلیک به `"b"` تغییر کرده، `inline b` چاپ می‌شود. اما
+      listenerهایی که با `addEventListener` ثبت شده‌اند جزو HTML نیستند و **هرگز** با `cloneNode` کپی نمی‌شوند.
+
+      گزینه‌ی ۱ فکر کرده clone عمیق listenerها را هم کپی می‌کند، گزینه‌ی ۳ برعکس تصور کرده attribute کپی
+      نمی‌شود ولی listener کپی می‌شود و گزینه‌ی ۴ فرض کرده نسخه‌ی کپی هیچ رفتاری ندارد.
+
+  - level: hard
+    stem: 'کاربر در پنجره‌ی prompt عبارت `<b>Sara</b>` را تایپ می‌کند و OK را می‌زند. خروجی کد زیر کدام است؟ (سطر `[prompt] …` یعنی پنجره‌ی prompt با آن پیام نمایش داده شده است.)'
+    check: dom-output
+    dialogs: { prompt: "<b>Sara</b>" }
+    html: |
+      <p id="a"></p>
+      <p id="b"></p>
+    code: |
+      const userName = prompt("Your name?");
+      const a = document.getElementById("a");
+      const b = document.getElementById("b");
+      a.textContent = "Hi " + userName;
+      b.innerHTML = "Hi " + userName;
+      console.log(a.children.length, b.children.length);
+      console.log(a.textContent.length, b.textContent.length);
+    options:
+      - out: ["[prompt] Your name?", "1 1", "7 7"]
+      - out: ["[prompt] Your name?", "0 0", "14 14"]
+      - out: ["[prompt] Your name?", "0 1", "14 7"]
+      - out: ["[prompt] Your name?", "0 1", "14 14"]
+    answer: 3
+    explain: |
+      `prompt` رشته‌ای را که کاربر تایپ کرده برمی‌گرداند. `textContent` همه‌چیز را **متن خام** در نظر می‌گیرد؛
+      پس `a` هیچ عنصر فرزندی ندارد و متنش دقیقاً `Hi <b>Sara</b>` با ۱۴ نویسه است. `innerHTML` رشته را به‌عنوان
+      HTML تفسیر می‌کند و یک عنصر `<b>` می‌سازد؛ پس `b` یک فرزند دارد و `textContent` آن (که تگ‌ها را حساب
+      نمی‌کند) `Hi Sara` با ۷ نویسه است.
+
+      گزینه‌ی ۱ فکر کرده `textContent` هم HTML را تفسیر می‌کند، گزینه‌ی ۲ تصور کرده `innerHTML` هم متن خام
+      می‌گذارد و گزینه‌ی ۴ با اینکه عنصر `<b>` را درست شمرده، تگ‌ها را جزو `textContent` حساب کرده است. همین
+      تفاوت دلیل این است که ورودی کاربر را نباید با `innerHTML` در صفحه گذاشت.
+
+  - level: hard
+    stem: |
+      HTML صفحه این است:
+
+      ```html
+      <ul id="list">
+        <li id="a">A</li>
+        <li id="b">B</li>
+      </ul>
+      ```
+
+      کد زیر در انتهای صفحه اجرا می‌شود. **اولین** خطا در کدام خط رخ می‌دهد؟
+
+      ```js lines
+      const list = document.getElementById("list");
+      const b = document.getElementById("b");
+      b.remove();
+      b.remove();
+      console.log(document.getElementById("b"), b.textContent);
+      list.appendChild(b);
+      document.body.removeChild(b);
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <ul id="list">
+        <li id="a">A</li>
+        <li id="b">B</li>
+      </ul>
+    code: |
+      const list = document.getElementById("list"); console.log("~1");
+      const b = document.getElementById("b"); console.log("~2");
+      b.remove(); console.log("~3");
+      b.remove(); console.log("~4");
+      console.log(document.getElementById("b"), b.textContent); console.log("~5");
+      list.appendChild(b); console.log("~6");
+      document.body.removeChild(b); console.log("~7");
+    options:
+      - text: 'خط ۴'
+        out: ["~1", "~2", "~3", "!! NotFoundError"]
+      - text: 'خط ۵'
+        out: ["~1", "~2", "~3", "~4", "!! TypeError"]
+      - text: 'خط ۶'
+        out: ["~1", "~2", "~3", "~4", "null B", "~5", "!! TypeError"]
+      - text: 'خط ۷'
+        out: ["~1", "~2", "~3", "~4", "null B", "~5", "~6", "!! NotFoundError"]
+    answer: 4
+    explain: |
+      خط ۳ عنصر `b` را از DOM جدا می‌کند و خط ۴ روی عنصری که دیگر پدر ندارد هیچ کاری نمی‌کند، ولی **خطا هم
+      نمی‌دهد** (رد گزینه‌ی ۱). در خط ۵ جست‌وجو در صفحه `null` برمی‌گرداند، اما متغیر `b` هنوز به شیء عنصر اشاره
+      می‌کند و `textContent` آن `B` است (رد گزینه‌ی ۲). خط ۶ همان عنصر را دوباره به انتهای `list` اضافه می‌کند
+      که کاملاً مجاز است (رد گزینه‌ی ۳). اما `removeChild` فقط یک فرزند **مستقیم** را حذف می‌کند و پدر `b` حالا
+      `list` است، نه `body`؛ پس خط ۷ خطای `NotFoundError` می‌دهد. راه امن‌تر: `b.remove()` یا
+      `b.parentNode.removeChild(b)`.
+
+  - level: hard
+    stem: کاربر روی checkbox کلیک می‌کند و آن را تیک می‌زند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <input type="checkbox" id="agree">
+      <button id="send" class="btn" disabled>Send</button>
+    code: |
+      const agree = document.getElementById("agree");
+      const send = document.getElementById("send");
+      agree.addEventListener("change", () => {
+        send.disabled = !agree.checked;
+        send.classList.toggle("ready");
+        console.log(
+          send.disabled,
+          send.hasAttribute("disabled"),
+          agree.hasAttribute("checked"),
+          send.className
+        );
+      });
+    events:
+      - { type: change, target: "#agree", checked: true }
+    options:
+      - out: "false false false btn ready"
+      - out: "false true false btn ready"
+      - out: "false false true btn ready"
+      - out: "false false false ready"
+    answer: 1
+    explain: |
+      تیک زدن checkbox فقط **property** `checked` را `true` می‌کند و attribute `checked` به HTML اضافه نمی‌شود
+      (این attribute فقط حالت اولیه را مشخص می‌کند)، پس `agree.hasAttribute("checked")` برابر `false` است. اما
+      `disabled` یک property بازتابی (reflected، یعنی متصل به attribute هم‌نام) است: `send.disabled = false`
+      attribute `disabled` را حذف می‌کند، پس `hasAttribute("disabled")` هم `false` است. `toggle("ready")` کلاس
+      را به کلاس‌های قبلی **اضافه** می‌کند، پس `className` برابر `"btn ready"` می‌شود.
+
+      گزینه‌ی ۲ فکر کرده تغییر property `disabled` به attribute نمی‌رسد، گزینه‌ی ۳ تصور کرده تیک زدن attribute
+      `checked` را اضافه می‌کند و گزینه‌ی ۴ فکر کرده `toggle` کل `className` را جایگزین می‌کند.
+
+  - level: medium
+    stem: خروجی کد زیر در مرورگر کدام است؟
+    check: dom-output
+    wait: 150
+    html: |
+      <div id="box" class="card"></div>
+    code: |
+      const box = document.getElementById("box");
+      let n = 0;
+      const id = setInterval(() => {
+        n++;
+        box.classList.toggle("on");
+        if (n === 3) {
+          clearInterval(id);
+          console.log(n, box.className);
+        }
+      }, 10);
+      console.log("start", box.className);
+    options:
+      - out: ["3 card on", "start card"]
+      - out: ["start card", "3 card on"]
+      - out: ["start card", "3 on"]
+      - out: ["start card on", "3 card on"]
+    answer: 2
+    explain: |
+      `setInterval` callback را **بلافاصله** اجرا نمی‌کند؛ اولین اجرا حدود ۱۰ میلی‌ثانیه بعد است و تا آن موقع
+      کد همگام تمام شده، پس اول `start card` چاپ می‌شود. سپس هر تیک کلاس `on` را تغییر وضعیت می‌دهد: تیک ۱
+      اضافه، تیک ۲ حذف و تیک ۳ دوباره اضافه. در تیک سوم `clearInterval` تکرار را متوقف می‌کند و `3 card on`
+      چاپ می‌شود (کلاس `card` دست نمی‌خورد).
+
+      گزینه‌ی ۱ تایمر را قبل از کد همگام اجرا کرده، گزینه‌ی ۳ فکر کرده `toggle` کل `className` را جایگزین
+      می‌کند و گزینه‌ی ۴ تصور کرده اولین اجرای `setInterval` همان لحظه‌ی صدا زدن آن رخ می‌دهد.
+
+  - level: hard
+    stem: |
+      کاربر سه حرف `d`، `o` و `m` را پشت سر هم در کادر تایپ می‌کند (فاصله‌ی زمانی بین حرف‌ها کمتر از ۵۰۰
+      میلی‌ثانیه است) و بعد یک ثانیه صبر می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    wait: 700
+    html: |
+      <input id="q">
+    code: |
+      const q = document.getElementById("q");
+      let timer;
+      q.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          console.log("search:", q.value);
+        }, 500);
+      });
+    events:
+      - { type: input, target: "#q", value: "d" }
+      - { type: input, target: "#q", value: "do" }
+      - { type: input, target: "#q", value: "dom" }
+    options:
+      - out: ["search: d", "search: do", "search: dom"]
+      - out: ["search: dom", "search: dom", "search: dom"]
+      - out: ["search: dom"]
+      - out: ""
+    answer: 3
+    explain: |
+      هر رویداد `input` اول تایمر **قبلی** را با `clearTimeout` لغو می‌کند و بعد یک تایمر ۵۰۰ میلی‌ثانیه‌ای تازه
+      می‌سازد. چون حرف‌ها با فاصله‌ی کمتر از ۵۰۰ میلی‌ثانیه تایپ شده‌اند، دو تایمر اول قبل از اجرا لغو می‌شوند و
+      فقط تایمر آخر اجرا می‌شود و مقدار نهایی کادر، `dom`، را چاپ می‌کند (به این الگو debounce می‌گویند: کار
+      سنگین فقط بعد از توقف تایپ انجام شود).
+
+      گزینه‌ی ۲ همان نتیجه‌ی کد **بدون** `clearTimeout` است: هر سه تایمر بعد از حرف آخر اجرا می‌شوند و همه
+      `q.value` را **هنگام اجرا** می‌خوانند. گزینه‌ی ۱ حتی بدون `clearTimeout` هم غلط است، چون callback مقدار
+      لحظه‌ی ساخته شدن تایمر را نگه نمی‌دارد. گزینه‌ی ۴ فکر کرده `clearTimeout` تایمر تازه را هم لغو می‌کند، در
+      حالی که فقط تایمری لغو می‌شود که شناسه‌اش در آن لحظه در `timer` است.
+
+  - level: hard
+    stem: |
+      localStorage این سایت در ابتدا خالی است. کاربر `pen` را در کادر تایپ می‌کند و فرم را ارسال می‌کند؛ سپس
+      `book` را تایپ می‌کند و دوباره فرم را ارسال می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <form id="f">
+        <input id="item">
+        <button>Add</button>
+      </form>
+    code: |
+      const form = document.getElementById("f");
+      const input = document.getElementById("item");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const items = JSON.parse(localStorage.getItem("items")) || [];
+        items.push(input.value);
+        localStorage.setItem("items", items);
+        console.log(localStorage.getItem("items"));
+      });
+    events:
+      - { type: input, target: "#item", value: "pen" }
+      - { type: submit, target: "#f" }
+      - { type: input, target: "#item", value: "book" }
+      - { type: submit, target: "#f" }
+    options:
+      - out: ['["pen"]', '["pen","book"]']
+      - out: ["pen", "pen,book"]
+      - out: ["pen", "book"]
+      - out: ["pen", "!! SyntaxError"]
+    answer: 4
+    explain: |
+      بار اول کلید `items` وجود ندارد، `getItem` مقدار `null` می‌دهد و `JSON.parse(null)` هم `null` است؛ پس
+      `|| []` یک آرایه‌ی خالی می‌سازد و `pen` به آن اضافه می‌شود. اما `setItem` مقدار را فقط **به رشته تبدیل**
+      می‌کند (نه به JSON) و آرایه‌ی `["pen"]` با `toString` می‌شود `"pen"`؛ پس خروجی اول `pen` است. در ارسال
+      دوم `JSON.parse("pen")` یک JSON نامعتبر را می‌خواند و `SyntaxError` پرتاب می‌کند؛ `|| []` کمکی نمی‌کند،
+      چون خطا قبل از رسیدن به آن رخ می‌دهد. `preventDefault` فقط جلوی reload صفحه را می‌گیرد و ربطی به این خطا
+      ندارد.
+
+      گزینه‌ی ۱ فکر کرده `setItem` خودش JSON می‌سازد، گزینه‌ی ۲ تصور کرده رشته‌ی `"pen"` دوباره به آرایه
+      برمی‌گردد و گزینه‌ی ۳ فکر کرده خطای `JSON.parse` بی‌صدا به `|| []` می‌رسد. راه درست:
+      `localStorage.setItem("items", JSON.stringify(items))`.
+
+  - level: medium
+    stem: |
+      HTML صفحه این است:
+
+      ```html
+      <form id="todo-form">
+        <input id="todo">
+        <button>Add</button>
+      </form>
+      ```
+
+      می‌خواهیم با ارسال فرم صفحه دوباره بارگذاری نشود و آرایه‌ی `todos` طوری ذخیره شود که بعداً
+      `JSON.parse(localStorage.getItem("todos"))` دقیقاً همان آرایه را برگرداند. در جاهای خالی (۱) و (۲) چه باید
+      نوشت؟
+
+      ```js
+      const form = document.getElementById("todo-form");
+      const input = document.getElementById("todo");
+      const todos = [];
+      form.addEventListener("submit", (e) => {
+        e.___(1)___();
+        todos.push(input.value);
+        localStorage.setItem("todos", ___(2)___);
+      });
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <form id="todo-form">
+        <input id="todo">
+        <button>Add</button>
+      </form>
+    code: |
+      // Hidden verification: run each option on its own copy of the form.
+      const template = document.getElementById("todo-form");
+      const bodies = [
+        (e, todos, input) => { e.preventDefault(); todos.push(input.value); localStorage.setItem("todos", JSON.stringify(todos)); },
+        (e, todos, input) => { e.stopPropagation(); todos.push(input.value); localStorage.setItem("todos", JSON.stringify(todos)); },
+        (e, todos, input) => { e.preventDefault(); todos.push(input.value); localStorage.setItem("todos", todos.toString()); },
+        (e, todos, input) => { e.preventDefault(); todos.push(input.value); localStorage.setItem("todos", JSON.parse(todos)); },
+      ];
+      bodies.forEach((body, i) => {
+        localStorage.clear();
+        const form = template.cloneNode(true);
+        document.body.append(form);
+        const input = form.querySelector("input");
+        const todos = [];
+        form.addEventListener("submit", (e) => {
+          try { body(e, todos, input); } catch (err) {}
+        });
+        let ok = true;
+        for (const text of ["Read", "Write, test"]) {
+          input.value = text;
+          const notCanceled = form.dispatchEvent(new Event("submit", { cancelable: true }));
+          if (notCanceled) ok = false;
+        }
+        try {
+          const back = JSON.parse(localStorage.getItem("todos"));
+          if (JSON.stringify(back) !== JSON.stringify(["Read", "Write, test"])) ok = false;
+        } catch (err) {
+          ok = false;
+        }
+        if (ok) console.log(i + 1);
+        form.remove();
+      });
+    options:
+      - text: '(۱) `preventDefault` و (۲) `JSON.stringify(todos)`'
+        out: "1"
+      - text: '(۱) `stopPropagation` و (۲) `JSON.stringify(todos)`'
+        out: "2"
+      - text: '(۱) `preventDefault` و (۲) `todos.toString()`'
+        out: "3"
+      - text: '(۱) `preventDefault` و (۲) `JSON.parse(todos)`'
+        out: "4"
+    answer: 1
+    explain: |
+      `e.preventDefault()` رفتار پیش‌فرض رویداد `submit`، یعنی ارسال فرم و بارگذاری دوباره‌ی صفحه، را لغو
+      می‌کند؛ `stopPropagation` فقط جلوی bubbling را می‌گیرد و صفحه باز هم reload می‌شود (رد گزینه‌ی ۲).
+      `localStorage` فقط رشته نگه می‌دارد، پس آرایه باید با `JSON.stringify` به رشته‌ی JSON (مثلاً `'["Read"]'`)
+      تبدیل شود تا `JSON.parse` بعداً همان آرایه را بسازد. `todos.toString()` رشته‌ای مثل `"Read"` می‌سازد که
+      JSON معتبر نیست و `JSON.parse` روی آن `SyntaxError` می‌دهد (رد گزینه‌ی ۳)؛ `JSON.parse(todos)` هم کار
+      برعکس را انجام می‌دهد و همان موقع ذخیره با `SyntaxError` متوقف می‌شود (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟ (هر دو حافظه در ابتدا خالی‌اند.)
+    check: dom-output
+    html: |
+      <span id="v"></span>
+    code: |
+      localStorage.setItem("visits", 1);
+      sessionStorage.visits = Number(localStorage.getItem("visits")) + 1;
+      const v = document.getElementById("v");
+      v.textContent = sessionStorage.getItem("visits") + 1;
+      console.log(v.textContent, typeof sessionStorage.visits, localStorage.getItem("visits"));
+    options:
+      - out: "3 number 1"
+      - out: "21 string 1"
+      - out: "21 string 2"
+      - out: "3 string 1"
+    answer: 2
+    explain: |
+      هر چیزی که در Web Storage ذخیره شود، چه با `setItem` و چه با نوشتن مستقیم property
+      (`sessionStorage.visits = ...`)، به **رشته** تبدیل می‌شود. `Number("1") + 1` برابر عدد ۲ است که به شکل
+      `"2"` در `sessionStorage` ذخیره می‌شود؛ `getItem` رشته‌ی `"2"` را برمی‌گرداند و `"2" + 1` الحاق رشته‌ای
+      است: `"21"`. `typeof sessionStorage.visits` هم `"string"` است و `localStorage` از `sessionStorage` جداست،
+      پس مقدار آن همان `"1"` می‌ماند.
+
+      گزینه‌ی ۱ فکر کرده عدد به همان شکل عددی ذخیره می‌شود، گزینه‌ی ۳ دو حافظه را یکی گرفته و گزینه‌ی ۴ با اینکه
+      نوع را رشته دانسته، `+ 1` را جمع عددی حساب کرده است.
+
+  - level: hard
+    stem: |
+      localStorage این سایت در ابتدا خالی است. کد زیر در مرورگر اجرا می‌شود. **اولین** خطا در کدام خط رخ
+      می‌دهد؟
+
+      ```js lines
+      localStorage.setItem("user", { name: "Ali" });
+      const raw = localStorage.getItem("user");
+      console.log(raw.name);
+      const cart = JSON.parse(localStorage.getItem("cart"));
+      console.log(cart);
+      const user = JSON.parse(raw);
+      console.log(user.name);
+      ```
+    check: dom-output
+    showCode: false
+    code: |
+      localStorage.setItem("user", { name: "Ali" }); console.log("~1");
+      const raw = localStorage.getItem("user"); console.log("~2");
+      console.log(raw.name); console.log("~3");
+      const cart = JSON.parse(localStorage.getItem("cart")); console.log("~4");
+      console.log(cart); console.log("~5");
+      const user = JSON.parse(raw); console.log("~6");
+      console.log(user.name); console.log("~7");
+    options:
+      - text: 'خط ۱'
+        out: ["!! TypeError"]
+      - text: 'خط ۳'
+        out: ["~1", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "~2", "undefined", "~3", "!! SyntaxError"]
+      - text: 'خط ۶'
+        out: ["~1", "~2", "undefined", "~3", "~4", "null", "~5", "!! SyntaxError"]
+    answer: 4
+    explain: |
+      خط ۱ خطا نمی‌دهد: `setItem` شیء را به رشته‌ی `"[object Object]"` تبدیل و ذخیره می‌کند (رد گزینه‌ی ۱). در
+      خط ۳، `raw` یک رشته است و خواندن property ناموجود روی رشته فقط `undefined` می‌دهد (رد گزینه‌ی ۲). در خط ۴
+      کلید `cart` وجود ندارد، `getItem` مقدار `null` برمی‌گرداند و `JSON.parse(null)` بدون خطا `null` می‌دهد
+      (رد گزینه‌ی ۳). اما در خط ۶، `JSON.parse("[object Object]")` یک JSON نامعتبر را می‌خواند و `SyntaxError`
+      رخ می‌دهد. درس این تست: شیء و آرایه را همیشه با `JSON.stringify` ذخیره کن و با `JSON.parse` بخوان.
+
+  - level: hard
+    stem: |
+      HTML صفحه این است:
+
+      ```html
+      <ul id="tasks">
+        <li class="done">A</li>
+        <li class="done">B</li>
+        <li>C</li>
+        <li class="done">D</li>
+      </ul>
+      ```
+
+      می‌خواهیم همه‌ی `<li>`هایی که کلاس `done` دارند حذف شوند و فقط `C` در لیست بماند. با کدام گزینه در جای
+      خالی، کد زیر درست کار می‌کند؟
+
+      ```js
+      const done = ________;
+      for (let i = 0; i < done.length; i++) {
+        done[i].remove();
+      }
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <ul id="tasks">
+        <li class="done">A</li>
+        <li class="done">B</li>
+        <li>C</li>
+        <li class="done">D</li>
+      </ul>
+    code: |
+      // Hidden verification: run the loop with each option on a fresh list.
+      const list = document.getElementById("tasks");
+      const start = list.innerHTML;
+      const pick = [
+        () => document.querySelectorAll(".done"),
+        () => document.getElementsByClassName("done"),
+        () => document.querySelector(".done"),
+        () => document.getElementsByTagName("li"),
+      ];
+      pick.forEach((get, k) => {
+        list.innerHTML = start;
+        const done = get();
+        for (let i = 0; i < done.length; i++) {
+          done[i].remove();
+        }
+        if (Array.from(list.children, (li) => li.textContent).join() === "C") console.log(k + 1);
+      });
+    options:
+      - text: '`document.querySelectorAll(".done")`'
+        out: "1"
+      - text: '`document.getElementsByClassName("done")`'
+        out: "2"
+      - text: '`document.querySelector(".done")`'
+        out: "3"
+      - text: '`document.getElementsByTagName("li")`'
+        out: "4"
+    answer: 1
+    explain: |
+      `querySelectorAll` یک NodeList **ایستا** می‌دهد که سه عنصر `A`، `B` و `D` را از اول تا آخر حلقه ثابت نگه
+      می‌دارد؛ حذف هر کدام روی خود لیست اثری ندارد و هر سه حذف می‌شوند.
+
+      `getElementsByClassName` زنده است: بعد از حذف `A`، عنصر `B` به اندیس ۰ می‌آید و حلقه با `i = 1` از رویش
+      رد می‌شود و `D` را حذف می‌کند؛ پس `B` می‌ماند (رد گزینه‌ی ۲). `querySelector` فقط یک عنصر برمی‌گرداند که
+      property به نام `length` ندارد (`undefined`)؛ شرط `0 < undefined` نادرست است و هیچ چیزی حذف نمی‌شود (رد
+      گزینه‌ی ۳). `getElementsByTagName("li")` هم زنده است و هم آیتم‌های بدون `done` را شامل می‌شود؛ در نتیجه
+      `C` به‌اشتباه حذف می‌شود و `B` و `D` می‌مانند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: کدام عبارت **درست** است؟
+    options:
+      - 'NodeListی که `document.querySelectorAll` برمی‌گرداند **زنده** است؛ یعنی اگر بعداً عنصر جدیدی با همان selector به صفحه اضافه شود، `length` آن خودبه‌خود بیشتر می‌شود.'
+      - '`localStorage.getItem` برای کلیدی که وجود ندارد، رشته‌ی خالی `""` برمی‌گرداند.'
+      - 'بعد از `el.remove()`، اگر متغیری هنوز به `el` اشاره کند، می‌توان همان عنصر را با `appendChild` دوباره به صفحه برگرداند.'
+      - 'صدا زدن `e.stopPropagation()` در listener رویداد `submit`، ارسال فرم و بارگذاری دوباره‌ی صفحه را هم متوقف می‌کند.'
+    answer: 3
+    explain: |
+      `remove()` فقط عنصر را از درخت DOM جدا می‌کند؛ خودِ شیء از بین نمی‌رود و اگر متغیری به آن اشاره کند،
+      می‌توان آن را با `appendChild` یا `append` دوباره در صفحه گذاشت (گزینه‌ی ۳ درست است). گزینه‌ی ۱ نادرست
+      است: NodeList حاصل از `querySelectorAll` ایستاست و عنصرهای بعدی را نمی‌بیند (HTMLCollection حاصل از
+      `getElementsByClassName` زنده است). گزینه‌ی ۲ نادرست است: برای کلید ناموجود `null` برمی‌گردد. گزینه‌ی ۴
+      نادرست است: `stopPropagation` فقط bubbling را متوقف می‌کند و برای لغو ارسال فرم باید `preventDefault()`
+      صدا زده شود.
+
+  - level: hard
+    stem: کدام عبارت **نادرست** است؟
+    options:
+      - 'یک اسکریپت معمولی (بدون `defer`) داخل `<head>` که `document.getElementById("btn")` را صدا می‌زند، برای دکمه‌ای که در `<body>` تعریف شده `null` می‌گیرد.'
+      - 'در یک اسکریپت معمولی مرورگر، `var x = 1` در سطح بالا باعث می‌شود `window.x` برابر `1` شود؛ ولی `let` و `const` چنین propertyای روی `window` نمی‌سازند.'
+      - '`setTimeout(fn, 0)` تابع `fn` را بلافاصله، قبل از اجرای خط بعدیِ همان اسکریپت، اجرا می‌کند.'
+      - 'داده‌ی `sessionStorage` با بارگذاری دوباره‌ی (reload) همان تب باقی می‌ماند، ولی با بستن تب پاک می‌شود.'
+    answer: 3
+    explain: |
+      `setTimeout(fn, 0)` تابع را فقط **زمان‌بندی** می‌کند؛ `fn` وقتی اجرا می‌شود که کد همگامِ در حال اجرا تمام
+      شده باشد، پس همیشه بعد از خط‌های بعدیِ همان اسکریپت اجرا می‌شود و گزینه‌ی ۳ نادرست است. گزینه‌ی ۱ درست
+      است: اسکریپت معمولی در `<head>` قبل از parse شدن `<body>` اجرا می‌شود و دکمه هنوز وجود ندارد. گزینه‌ی ۲
+      درست است: `var` سراسری property شیء `window` می‌شود ولی `let` و `const` نه. گزینه‌ی ۴ هم درست است:
+      `sessionStorage` تا وقتی تب باز است (حتی بعد از reload) باقی می‌ماند و با بستن تب پاک می‌شود.
+
+  - level: hard
+    stem: کدام عبارت **درست** است؟
+    options:
+      - 'اجرای `el.innerHTML = el.innerHTML` هیچ اثری ندارد و listenerهایی که با `addEventListener` روی فرزندان `el` ثبت شده‌اند حفظ می‌شوند.'
+      - 'در listenerی که با یک تابع معمولی (`function`) ثبت شده، `this` همان `event.currentTarget` است؛ یعنی عنصری که listener روی آن ثبت شده، نه لزوماً عنصری که کلیک شده.'
+      - '`el.classList.toggle("on")` چیزی برنمی‌گرداند (`undefined`) و فقط کلاس را اضافه یا حذف می‌کند.'
+      - '`el.style.color` رنگی را که در فایل CSS (مثلاً با یک selector کلاس) برای عنصر تعیین شده برمی‌گرداند.'
+    answer: 2
+    explain: |
+      در listenerی که با `function` معمولی ثبت شده، مرورگر `this` را برابر عنصری قرار می‌دهد که listener روی آن
+      ثبت شده، یعنی `event.currentTarget`؛ در event delegation این عنصر والد است، در حالی که `event.target`
+      فرزندی است که واقعاً کلیک شده (گزینه‌ی ۲ درست است). گزینه‌ی ۱ نادرست است: مقداردهی به `innerHTML` همه‌ی
+      فرزندان را از نو می‌سازد، حتی اگر رشته همان قبلی باشد، و listenerهای فرزندان قدیمی از بین می‌روند. گزینه‌ی
+      ۳ نادرست است: `toggle` مقدار بولی برمی‌گرداند (`true` اگر کلاس اضافه شد و `false` اگر حذف شد). گزینه‌ی ۴
+      نادرست است: `el.style` فقط استایل درون‌خطی (attribute `style`) را نشان می‌دهد و برای استایل نهاییِ حاصل از
+      CSS باید از `getComputedStyle` استفاده کرد.
