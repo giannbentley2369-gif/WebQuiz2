@@ -1,0 +1,538 @@
+id: ch1-console
+title: "Console API و محل نوشتن کد JavaScript"
+slides: "Introduction to JS، اسلایدهای ۱۲ تا ۱۴"
+lesson: |
+  وقتی برنامه می‌نویسی، باید بتوانی ببینی «داخلش چه خبر است»: این متغیر الان چه مقداری دارد؟ این خط اصلاً اجرا شد؟ ابزار این کار **Console** است. در این درس هم Console را می‌شناسیم و هم یاد می‌گیریم کد JavaScript را **کجا** بنویسیم و اجرا کنیم.
+
+  ### Console API چیست؟ (اسلاید ۱۲)
+
+  - یک ابزار **داخلی** (built-in) است که مرورگرها فراهم می‌کنند (بخشی از **DevTools**، یعنی ابزارهای توسعه‌دهنده‌ی مرورگر).
+  - بیشتر برای **debugging** (اشکال‌زدایی: پیدا کردن و رفع باگ‌ها) و **inspecting** values (بررسی مقدارها: دیدن اینکه داخل یک متغیر چیست) استفاده می‌شود.
+  - از طریق شیء **سراسری** (global؛ یعنی همه‌جا و بدون تعریف یا import در دسترس) به نام `console` به آن دسترسی داریم.
+  - **متد**های (method: تابعی که متعلق به یک شیء است و با نقطه صدا زده می‌شود) زیادی دارد: `log`، `info`، `warn`، `error`، `table` و ...
+  - **رایج‌ترین** و اولین متدی که استفاده می‌کنیم: `console.log()`.
+
+  ::: analogy
+  Console مثل **دفترچه‌ی گزارش** برنامه است. هر جا بنویسی `console.log(x)`، برنامه در آن لحظه مقدار `x` را در دفترچه یادداشت می‌کند تا تو بخوانی. پیام‌ها را می‌شود با «برچسب‌های» مختلف نوشت: یادداشت معمولی، اطلاع‌رسانی، هشدار یا خطا.
+  :::
+
+  Node.js هم شیء `console` را دارد؛ آنجا پیام‌ها در **ترمینال** چاپ می‌شوند.
+
+  ### فعالیت کلاسی اسلاید ۱۲: هر خط چه می‌کند؟
+
+  اسلاید ۱۲ این کد را نشان می‌دهد و می‌پرسد «What does each line do?»:
+
+  ```js title=console.js lines
+  console.log("Hello, world!");
+
+  console.info("THIS IS AN INFO MESSAGE.");
+
+  console.warn("YOU WERE WARNED WHAT DEFEAT WOULD BRING!!!");
+
+  console.error("AH DOODOO, HERE WE GO AGAIN!");
+  ```
+
+  | خط | متد | کارش | ظاهرش در Console مرورگر (تصویر اسلاید ۱۴، Firefox) |
+  |---|---|---|---|
+  | ۱ | `console.log` | یک پیام معمولی چاپ می‌کند | متن ساده، بدون آیکون |
+  | ۳ | `console.info` | یک پیام اطلاع‌رسانی (info) چاپ می‌کند | آیکون کوچک «i» کنار پیام |
+  | ۵ | `console.warn` | یک **هشدار** (warning) چاپ می‌کند | پس‌زمینه‌ی **زرد** و آیکون مثلث هشدار |
+  | ۷ | `console.error` | یک پیام **خطا** (error) چاپ می‌کند | پس‌زمینه‌ی **قرمز**، آیکون علامت تعجب و یک فلش کوچک که با کلیک روی آن **stack trace** باز می‌شود |
+
+  **Stack trace** یعنی فهرست تابع‌هایی که پشت سر هم صدا زده شدند تا برنامه به این خط رسید؛ برای پیدا کردن محل باگ خیلی به کار می‌آید. بالای Console هم دکمه‌های فیلتر **Errors**، **Warnings**، **Info**، **Logs** و **Debug** هست تا فقط نوع خاصی از پیام‌ها را ببینی.
+
+  اگر همین فایل را با Node.js اجرا کنی (`node console.js`)، هر چهار پیام به همان ترتیب در ترمینال چاپ می‌شوند، ولی بدون آیکون و پس‌زمینه‌ی رنگی:
+
+  ```text
+  Hello, world!
+  THIS IS AN INFO MESSAGE.
+  YOU WERE WARNED WHAT DEFEAT WOULD BRING!!!
+  AH DOODOO, HERE WE GO AGAIN!
+  ```
+
+  ::: warning
+  `console.error` فقط پیامی **با ظاهر خطا** نشان می‌دهد؛ خودش خطا ایجاد نمی‌کند و برنامه را **متوقف نمی‌کند**. در کد زیر هر دو پیام چاپ می‌شوند:
+
+  ```js
+  console.error("Something looks wrong!");
+  console.log("...but the program keeps running");
+  ```
+  :::
+
+  ::: info
+  در Node.js، `console.log` و `console.info` در «خروجی استاندارد» (stdout) و `console.warn` و `console.error` در «خروجی خطای استاندارد» (stderr) نوشته می‌شوند. در ترمینال هر دو را کنار هم می‌بینی؛ فرقشان وقتی معلوم می‌شود که خروجی برنامه را به یک فایل هدایت کنی.
+  :::
+
+  ### `console.table`: نمایش جدولی
+
+  `console.table` یک آرایه یا شیء را به شکل **جدول** نشان می‌دهد؛ برای آرایه‌ای از اشیاء خیلی خواناتر از `console.log` است:
+
+  ```js
+  const students = [
+    { name: "Sara", score: 18 },
+    { name: "Ali", score: 15 },
+  ];
+  console.table(students);
+  ```
+
+  خروجی در Node.js (در مرورگر هم یک جدول واقعی با همین ستون‌ها نشان داده می‌شود):
+
+  ```text
+  ┌─────────┬────────┬───────┐
+  │ (index) │ name   │ score │
+  ├─────────┼────────┼───────┤
+  │ 0       │ 'Sara' │ 18    │
+  │ 1       │ 'Ali'  │ 15    │
+  └─────────┴────────┴───────┘
+  ```
+
+  ستون `(index)` شماره‌ی هر عضو آرایه است (از صفر شروع می‌شود) و بقیه‌ی ستون‌ها کلیدهای اشیاء هستند.
+
+  ### چاپ چند مقدار با `console.log`
+
+  ```js
+  console.log("Name:", "Sara", "Age:", 20); // Name: Sara Age: 20
+  console.log("Age:" + 20);                 // Age:20
+  console.log(2 + 3, "2" + "3");            // 5 23
+  console.log("2 + 3");                     // 2 + 3
+  console.log(5, "5");                      // 5 5
+  console.log(["a", 1]);                    // [ 'a', 1 ]
+  console.log();                            // (prints an empty line)
+  ```
+
+  قاعده‌ها:
+  - اگر چند مقدار را با **کاما** بدهی، همه در یک خط و با **یک فاصله** بینشان چاپ می‌شوند.
+  - `+` بین دو رشته آن‌ها را **بدون فاصله** به هم می‌چسباند.
+  - اول عبارتِ داخل پرانتز **محاسبه** می‌شود و بعد **نتیجه‌اش** چاپ می‌شود (`2 + 3` می‌شود `5`)؛ اما هر چیزی داخل کوتیشن فقط **متن** است (`"2 + 3"` همان‌طور چاپ می‌شود).
+  - رشته‌ها بدون کوتیشن چاپ می‌شوند؛ برای همین `5` و `"5"` در خروجی **یکسان** دیده می‌شوند! فقط وقتی رشته داخل آرایه یا شیء باشد، Node.js آن را با کوتیشن تکی نشان می‌دهد: `[ 'a', 1 ]`. (ظاهر آرایه‌ها و اشیاء در Console مرورگر کمی فرق دارد؛ در این کتاب خروجی‌ها مطابق Node.js نوشته شده‌اند.)
+  - `console.log()` بدون ورودی، یک خط خالی چاپ می‌کند.
+
+  ### مقدار برگشتی متدهای console
+
+  هر تابعی بعد از اجرا یک مقدار **برمی‌گرداند** (return value). متدهای console فقط چیزی **چاپ** می‌کنند و **هیچ مقداری برنمی‌گردانند** (console methods return nothing)؛ در JavaScript «هیچ مقدار» یعنی `undefined`:
+
+  ```js
+  console.log(console.log("hi"));
+  // hi
+  // undefined
+  ```
+
+  قدم‌به‌قدم: برای اجرای `console.log` بیرونی، اول باید ورودی‌اش معلوم شود؛ پس `console.log("hi")` درونی اجرا می‌شود، `hi` را چاپ می‌کند و `undefined` برمی‌گرداند. حالا `console.log` بیرونی همان `undefined` را چاپ می‌کند. بقیه‌ی متدها هم همین‌طورند:
+
+  ```js
+  const result = console.info("Saving...");
+  console.log(result); // undefined
+  ```
+
+  ### کد JavaScript را کجا بنویسیم؟ (اسلاید ۱۳)
+
+  اسلاید ۱۳ («But Where Do I Code?») با تصویر آدمکی که پشت کامپیوتر نشسته و با تردید فکر می‌کند «خب، کدم را کجا بنویسم؟»، چهار راه را نام می‌برد.
+
+  #### راه اول: Console مرورگر (Browser Console)
+
+  - **DevTools** را باز کن (در ویندوز و لینوکس معمولاً با کلید F12، یا با راست‌کلیک روی صفحه و انتخاب Inspect).
+  - به تب **Console** برو.
+  - کد JavaScript را **مستقیماً** تایپ کن و Enter بزن.
+
+  #### راه دوم: داخل فایل HTML (Inside HTML)
+
+  کد را بین تگ‌های `<script>` و `</script>` بنویس:
+
+  ```html title=index.html
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>My first JS page</title>
+    </head>
+    <body>
+      <h1>Hello!</h1>
+      <script>
+        console.log("Hello from an inline script!");
+      </script>
+    </body>
+  </html>
+  ```
+
+  با باز کردن صفحه در مرورگر، پیام `Hello from an inline script!` در Console چاپ می‌شود.
+
+  #### راه سوم: فایل JavaScript جداگانه (External JS File)
+
+  - یک فایل با پسوند `.js` بساز (مثلاً `app.js`).
+  - آن را با `<script src="...">` به صفحه وصل کن؛ **درست مثل کاری که برای CSS** با تگ `<link>` انجام می‌دادی:
+
+  ```html title=index.html
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>My first JS page</title>
+      <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+      <h1>Hello!</h1>
+      <script src="app.js"></script>
+    </body>
+  </html>
+  ```
+
+  ```js title=app.js
+  console.log("Hello from app.js!");
+  ```
+
+  مزیت فایل جداگانه: HTML (ساختار) و JavaScript (رفتار) از هم جدا می‌مانند، یک فایل را می‌شود در چند صفحه استفاده کرد و مرورگر می‌تواند آن را cache کند (برای دفعه‌های بعد نگه دارد). اینکه تگ `<script>` را دقیقاً کجای صفحه بگذاریم هم مهم است؛ در فصل ۲ می‌بینیم چرا معمولاً آن را انتهای `<body>` می‌گذارند.
+
+  #### راه چهارم: محیط‌های آنلاین (Online Playgrounds)
+
+  سایت‌هایی مثل **CodePen**، **JSFiddle** و **StackBlitz** به تو اجازه می‌دهند بدون نصب هیچ برنامه‌ای، در خود مرورگر HTML و CSS و JavaScript بنویسی، فوراً نتیجه را ببینی و کدت را با یک لینک به دیگران نشان دهی.
+
+  #### و البته Node.js
+
+  طبق اسلاید ۵، JavaScript روی کامپیوتر خودت هم با **Node.js** اجرا می‌شود (فصل ۳). فایل را در ترمینال اجرا می‌کنی و خروجی `console.log` در همان **ترمینال** چاپ می‌شود:
+
+  ```bash
+  node app.js
+  # Hello from app.js!
+  ```
+
+  | روش | کجا می‌نویسی؟ | مناسب برای |
+  |---|---|---|
+  | Console مرورگر | تب Console در DevTools | امتحان سریع چند خط کد و یادگیری |
+  | داخل HTML | بین `<script>` و `</script>` | کدهای کوتاهِ مخصوص همان صفحه |
+  | فایل جداگانه | فایل `.js` و تگ `<script src="...">` | پروژه‌های واقعی |
+  | محیط آنلاین | CodePen، JSFiddle، StackBlitz | تمرین و اشتراک‌گذاری بدون نصب |
+  | Node.js | فایل `.js` و دستور `node` در ترمینال | اجرای JavaScript بیرون از مرورگر |
+
+  ### امتحان کد در Console (اسلاید ۱۴)
+
+  - برای سادگی، **فعلاً** کدهایمان را در Console ابزار DevTools اجرا می‌کنیم.
+  - Console کد را **خط‌به‌خط** اجرا می‌کند؛ **مثل Python shell**. به این نوع محیط **REPL** هم می‌گویند (Read–Eval–Print Loop: یک خط را بخوان، اجرا کن، نتیجه را نشان بده و دوباره از اول).
+  - این روش برای **یادگیری مبانی** JavaScript عالی است.
+
+  تصویر اسلاید ۱۴، همان کد اسلاید ۱۲ را در Console مرورگر Firefox نشان می‌دهد (`>>` یعنی خطی که ما تایپ کرده‌ایم و `<-` یعنی مقداری که Console برگردانده است):
+
+  ```text title=Firefox-Console
+  >> console.log("Hello, world!");
+     Hello, world!
+  <- undefined
+  >> console.info("THIS IS AN INFO MESSAGE.");
+     THIS IS AN INFO MESSAGE.                     (info icon)
+  <- undefined
+  >> console.warn("YOU WERE WARNED WHAT DEFEAT WOULD BRING!!!");
+     YOU WERE WARNED WHAT DEFEAT WOULD BRING!!!   (yellow warning)
+  <- undefined
+  >> console.error("AH DOODOO, HERE WE GO AGAIN!");
+     AH DOODOO, HERE WE GO AGAIN!                 (red error + stack trace)
+  <- undefined
+  ```
+
+  دو نکته از این تصویر:
+  - انواع پیام‌ها **ظاهر متفاوتی** دارند (اطلاع‌رسانی، هشدار زرد، خطای قرمز).
+  - بعد از هر دستور یک `undefined` دیده می‌شود. این خطا نیست! Console بعد از اجرای هر خط، **مقدار برگشتی** آن را نشان می‌دهد و چون متدهای console چیزی برنمی‌گردانند، این مقدار `undefined` است.
+
+  #### Console مقدار هر عبارت را نشان می‌دهد
+
+  قاعده‌ی کلی: Console بعد از هر خط، **مقدار** آن خط را نشان می‌دهد، حتی اگر `console.log` ننوشته باشی. همین را در تصویر Console اسلاید ۲۳ هم می‌بینیم:
+
+  ```text title=Firefox-Console
+  >> let a = 12
+  <- undefined
+  >> a = "Hello!"
+  <- "Hello!"
+  >> console.log(a)
+     Hello!
+  <- undefined
+  >> 2 + 3
+  <- 5
+  ```
+
+  - `let a = 12` یک **تعریف** متغیر است و مقداری ندارد؛ پس `undefined`.
+  - `a = "Hello!"` یک **انتساب** است و مقدارش همان مقدار جدید است؛ پس Console همان `"Hello!"` را (با کوتیشن، چون یک رشته است) نشان می‌دهد.
+  - `console.log(a)` متن `Hello!` را (بدون کوتیشن) **چاپ** می‌کند و بعد مقدار برگشتی‌اش، یعنی `undefined`، نشان داده می‌شود.
+  - `2 + 3` یک عبارت است و Console نتیجه‌اش (`5`) را نشان می‌دهد.
+
+  REPLِ Node.js (با اجرای دستور `node` بدون نام فایل) هم دقیقاً همین رفتار را دارد؛ فقط رشته‌ها را با کوتیشن تکی نشان می‌دهد (`'Hello!'`).
+
+  ::: tip
+  نمایش خودکار مقدارها فقط مخصوص Console و REPL است. در یک **فایل** `.js`، خطی مثل `2 + 3;` یا `"Hello!";` **هیچ چیزی چاپ نمی‌کند**؛ برای دیدن خروجیِ یک فایل حتماً باید `console.log` بنویسی.
+  :::
+
+  ::: trap
+  - `undefined`ِ بعد از `console.log` در Console مرورگر **خطا نیست** و **چاپِ** خود `console.log` هم نیست؛ مقدار برگشتی آن است. اما `console.log(console.log("hi"))` واقعاً `undefined` را **چاپ** می‌کند: اول `hi` و بعد `undefined`.
+  - `console.error` و `console.warn` برنامه را **متوقف نمی‌کنند**؛ فقط پیام را با ظاهر متفاوت نشان می‌دهند.
+  - `console.log("2 + 3")` متن `2 + 3` را چاپ می‌کند، نه `5`.
+  - JavaScript به **بزرگی و کوچکی حروف حساس** است (case-sensitive): `Console.log("hi")` خطای `ReferenceError: Console is not defined` و `console.Log("hi")` خطای `TypeError: console.Log is not a function` می‌دهد. متدی به اسم `console.print` هم وجود ندارد.
+  - وقتی تگ `<script>` ویژگی `src` دارد، کدی که **بین** `<script src="app.js">` و `</script>` بنویسی **اجرا نمی‌شود** و فقط فایل `app.js` اجرا می‌شود. برای کد درون‌خطی یک تگ `<script>` جداگانه بگذار.
+  - تگ `<script>` را همیشه با `</script>` ببند. شکل `<script src="app.js" />` در HTML کار نمی‌کند: مرورگر آن را یک تگ باز حساب می‌کند و محتوای بعدی صفحه را تا اولین `</script>` جزو همین تگ می‌گیرد.
+  :::
+
+  ::: summary
+  - Console یک ابزار داخلی مرورگر برای debugging و بررسی مقدارهاست و با شیء سراسری `console` در دسترس است.
+  - `log` پیام معمولی، `info` پیام اطلاع‌رسانی، `warn` هشدار زرد، `error` خطای قرمز با stack trace و `table` نمایش جدولی.
+  - متدهای console مقداری برنمی‌گردانند (`undefined`)؛ برای همین Console بعد از هر کدام `undefined` نشان می‌دهد.
+  - محل نوشتن کد: Console مرورگر، تگ `<script>` در HTML، فایل `.js` جداگانه با `<script src="...">`، محیط‌های آنلاین (CodePen، JSFiddle، StackBlitz) و Node.js در ترمینال.
+  - Console مثل Python shell خط‌به‌خط اجرا می‌کند و مقدار هر عبارت را نشان می‌دهد؛ ولی در یک فایل فقط `console.log` چیزی چاپ می‌کند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      `console` در JavaScript چیست؟
+    options:
+      - یک شیء سراسری (global) که متدهایی مثل `log` و `warn` دارد
+      - یک کلمه‌ی کلیدی (keyword) زبان، مثل `let`
+      - نام فایلی که باید با `<script src>` به صفحه اضافه شود
+      - یک تگ HTML، مثل `<script>`
+    answer: 1
+    explain: |
+      اسلاید ۱۲: Console «Accessible through the global console object» است و «Provides many methods (log, warn, error, table, etc.)». `console` یک شیء معمولی است، نه کلمه‌ی کلیدی زبان (`typeof console` برابر `"object"` است). هیچ فایلی هم لازم نیست به صفحه اضافه شود، چون محیط (مرورگر یا Node.js) خودش آن را می‌دهد، و تگ HTML هم نیست.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۱۲، Console مرورگر بیشتر برای چه کاری استفاده می‌شود؟
+    options:
+      - طراحی ظاهر صفحه
+      - اشکال‌زدایی (debugging) و بررسی مقدارها (inspecting values)
+      - ذخیره‌ی دائمی اطلاعات کاربر
+      - ارسال صفحه به سرور
+    answer: 2
+    explain: |
+      اسلاید ۱۲: «Used mainly for debugging and inspecting values». طراحی ظاهر کار CSS است (گزینه‌ی ۱). Console فقط پیام نشان می‌دهد و نه چیزی را برای همیشه ذخیره می‌کند (گزینه‌ی ۳) و نه صفحه را به سرور می‌فرستد (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      کدام متد، داده‌ها (مثلاً آرایه‌ای از اشیاء) را به شکل **جدول** نمایش می‌دهد؟
+    options:
+      - '`console.log`'
+      - '`console.info`'
+      - '`console.grid`'
+      - '`console.table`'
+    answer: 4
+    explain: |
+      `console.table` (که اسلاید ۱۲ در فهرست متدها آورده) آرایه یا شیء را به شکل جدول با ستون `(index)` و ستون‌هایی برای هر کلید نشان می‌دهد. `console.log` و `console.info` داده را به شکل متنی معمولی چاپ می‌کنند و متدی به اسم `console.grid` اصلاً وجود ندارد.
+
+  - level: medium
+    stem: |
+      مطابق تصویر اسلاید ۱۴ (Console مرورگر Firefox)، کدام توصیف **درست** است؟
+    options:
+      - '`console.warn` با پس‌زمینه‌ی قرمز و `console.error` با پس‌زمینه‌ی زرد نمایش داده می‌شود.'
+      - همه‌ی متدهای console دقیقاً یک‌شکل نمایش داده می‌شوند و فرقی با هم ندارند.
+      - '`console.info` برنامه را متوقف می‌کند تا کاربر پیام را بخواند.'
+      - '`console.warn` با پس‌زمینه‌ی زرد و `console.error` با پس‌زمینه‌ی قرمز و امکان باز کردن stack trace نمایش داده می‌شود.'
+    answer: 4
+    explain: |
+      در تصویر اسلاید ۱۴ هشدار (warn) زرد با آیکون مثلث و خطا (error) قرمز با علامت تعجب و فلشی برای باز کردن stack trace است. گزینه‌ی ۱ رنگ‌ها را جابه‌جا کرده. اسلاید صریحاً می‌گوید «there is an obvious difference between different types of messages» (رد گزینه‌ی ۲). هیچ متدی از console برنامه را متوقف نمی‌کند (رد گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log("Name:", "Sara", 20);
+      console.log("Age:" + 20);
+    options:
+      - out: ["Name: Sara 20", "Age: 20"]
+      - out: ["Name:Sara20", "Age:20"]
+      - out: ["Name: Sara 20", "Age:20"]
+      - out: ["Name: Sara, 20", "Age:20"]
+    answer: 3
+    explain: |
+      وقتی چند مقدار را با **کاما** به `console.log` بدهی، با یک فاصله بینشان چاپ می‌شوند: `Name: Sara 20`. اما `+` دو مقدار را **بدون فاصله** به هم می‌چسباند: `Age:20`. گزینه‌ی ۱ برای `+` هم فاصله گذاشته، گزینه‌ی ۲ برای کاماها فاصله نگذاشته و گزینه‌ی ۴ فکر کرده خود کاماها هم چاپ می‌شوند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(2 + 3);
+      console.log("2" + "3");
+      console.log("2 + 3");
+    options:
+      - out: ["5", "5", "5"]
+      - out: ["5", "23", "5"]
+      - out: ["5", '"23"', '"2 + 3"']
+      - out: ["5", "23", "2 + 3"]
+    answer: 4
+    explain: |
+      خط ۱ دو عدد را جمع می‌کند: `5`. خط ۲ دو **رشته** را به هم می‌چسباند: `23`. در خط ۳ کل عبارت داخل کوتیشن است، پس فقط یک متن است و همان‌طور چاپ می‌شود: `2 + 3`. گزینه‌های ۱ و ۲ فکر کرده‌اند متن داخل کوتیشن محاسبه می‌شود و گزینه‌ی ۳ فراموش کرده که `console.log` رشته‌ها را **بدون کوتیشن** چاپ می‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log(console.log("hi"));
+    options:
+      - out: ["hi", "hi"]
+      - out: ["undefined", "hi"]
+      - out: ["hi", "undefined"]
+      - out: ["hi"]
+    answer: 3
+    explain: |
+      ورودی هر تابع قبل از اجرای آن محاسبه می‌شود؛ پس اول `console.log("hi")` درونی اجرا می‌شود و `hi` را چاپ می‌کند. متدهای console هیچ مقداری برنمی‌گردانند، پس مقدار برگشتی آن `undefined` است و `console.log` بیرونی همین `undefined` را چاپ می‌کند. گزینه‌ی ۱ فکر کرده `console.log` متن را برمی‌گرداند، گزینه‌ی ۲ ترتیب را برعکس کرده و گزینه‌ی ۴ چاپِ بیرونی را از قلم انداخته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const x = console.log("x") + 1;
+      console.log(x);
+    options:
+      - out: ["x", "x1"]
+      - out: ["x", "NaN"]
+      - out: ["x", "1"]
+      - out: ["NaN"]
+    answer: 2
+    explain: |
+      `console.log("x")` اول `x` را چاپ می‌کند و `undefined` برمی‌گرداند؛ پس `x` برابر `undefined + 1` است که حاصلش `NaN` (Not a Number، «عدد نامعتبر») است (این دام را در درس تبدیل نوع مفصل می‌بینیم). گزینه‌ی ۱ فکر کرده `console.log` متن `"x"` را برمی‌گرداند. گزینه‌ی ۳ با `null + 1` که برابر `1` است قاطی کرده و گزینه‌ی ۴ چاپ `x` در خط اول را فراموش کرده است.
+
+  - level: medium
+    stem: |
+      کدام دستور **بدون خطا** اجرا می‌شود؟
+    check: option-throws
+    want: ok
+    options:
+      - code: Console.log("hi");
+      - code: console.Log("hi");
+      - code: console.print("hi");
+      - code: console.log("hi");
+    answer: 4
+    explain: |
+      JavaScript به بزرگی و کوچکی حروف حساس است. `Console` (با C بزرگ) اصلاً تعریف نشده و `ReferenceError: Console is not defined` می‌دهد. شیء `console` متدی به اسم `Log` (با L بزرگ) یا `print` ندارد؛ پس صدا زدنشان `TypeError: ... is not a function` می‌دهد. فقط `console.log` درست است.
+
+  - level: hard
+    stem: |
+      کد زیر را با Node.js اجرا می‌کنیم. کدام خط باعث توقف برنامه با خطا می‌شود؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log("start");
+      console.warn("careful!");
+      console.error("something went wrong");
+      console.log(total);
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 3
+    explain: |
+      `console.warn` و `console.error` فقط پیام هشدار یا خطا **نمایش می‌دهند** و برنامه را متوقف نمی‌کنند؛ پس خط‌های ۲ و ۳ با وجود ظاهر ترسناکشان مشکلی ایجاد نمی‌کنند. خط ۴ از اسم `total` استفاده می‌کند که هیچ‌جا تعریف نشده و خطای واقعی `ReferenceError: total is not defined` می‌دهد. پس گزینه‌ی «هیچ خطایی رخ نمی‌دهد» هم غلط است.
+
+  - level: easy
+    stem: |
+      کدام مورد جزو روش‌های نوشتن و اجرای کد JavaScript که در اسلاید ۱۳ آمده **نیست**؟
+    options:
+      - نوشتن کد در یک فایل `.css` و وصل کردن آن با تگ `<link>`
+      - تایپ مستقیم کد در تب Console ابزار DevTools مرورگر
+      - نوشتن کد بین تگ‌های `<script>` و `</script>` در فایل HTML
+      - استفاده از محیط‌های آنلاین مثل CodePen، JSFiddle و StackBlitz
+    answer: 1
+    explain: |
+      اسلاید ۱۳ چهار راه را می‌گوید: Console مرورگر (گزینه‌ی ۲)، داخل HTML با `<script>` (گزینه‌ی ۳)، فایل `.js` جداگانه با `<script src="...">` و محیط‌های آنلاین (گزینه‌ی ۴). فایل `.css` فقط برای استایل است و مرورگر محتوای آن را به‌عنوان JavaScript اجرا نمی‌کند؛ اسلاید فقط برای **شیوه‌ی وصل کردن** فایل `.js` آن را با CSS مقایسه کرده است.
+
+  - level: medium
+    stem: |
+      برای وصل کردن فایل `app.js` به یک صفحه‌ی HTML، کدام تگ درست است؟
+    options:
+      - '`<link rel="script" href="app.js">`'
+      - '`<script href="app.js"></script>`'
+      - '`<script src="app.js"></script>`'
+      - '`<js src="app.js"></js>`'
+    answer: 3
+    explain: |
+      طبق اسلاید ۱۳، فایل `.js` با `<script src="...">` وصل می‌شود (و تگ باید با `</script>` بسته شود). تگ `<link>` با `href` روش وصل کردن **CSS** است و برای اجرای JavaScript کار نمی‌کند (گزینه‌ی ۱). ویژگی درست برای `<script>` اسم `src` است، نه `href` (گزینه‌ی ۲) و تگی به اسم `<js>` در HTML وجود ندارد (گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      با باز کردن `index.html` در مرورگر، چه چیزی در Console چاپ می‌شود؟
+    files:
+      index.html: |
+        <!DOCTYPE html>
+        <html>
+          <body>
+            <script src="app.js">
+              console.log("inline");
+            </script>
+          </body>
+        </html>
+      app.js: |
+        console.log("external");
+    manual: runner فایل‌های خارجی را بارگذاری نمی‌کند؛ این رفتار طبق استاندارد HTML است و جداگانه با jsdom (با بارگذاری واقعی فایل‌ها) بررسی شد که فقط external چاپ می‌شود.
+    options:
+      - out: ["inline", "external"]
+      - out: ["external"]
+      - out: ["inline"]
+      - out: ["external", "inline"]
+    answer: 2
+    explain: |
+      وقتی تگ `<script>` ویژگی `src` دارد، مرورگر فقط فایل خارجی (`app.js`) را اجرا می‌کند و کدِ بین `<script src="app.js">` و `</script>` را **کاملاً نادیده می‌گیرد**؛ پس فقط `external` چاپ می‌شود. گزینه‌های ۱ و ۴ فکر کرده‌اند هر دو اجرا می‌شوند (فقط ترتیبشان فرق دارد) و گزینه‌ی ۳ فکر کرده کد درون‌خطی بر فایل خارجی اولویت دارد. برای داشتن هر دو، باید دو تگ `<script>` جداگانه نوشت.
+
+  - level: easy
+    stem: |
+      CodePen، JSFiddle و StackBlitz چه هستند؟
+    options:
+      - موتورهای JavaScript مرورگرهای مختلف
+      - ابزارهای transpile، مثل Babel
+      - محیط‌های آنلاین (playground) که می‌توان در خود مرورگر کد نوشت و فوراً نتیجه را دید
+      - افزونه‌هایی که JavaScript را در Node.js فعال می‌کنند
+    answer: 3
+    explain: |
+      اسلاید ۱۳ این‌ها را «Online Playgrounds» می‌نامد: سایت‌هایی برای نوشتن و اجرای HTML، CSS و JavaScript بدون نصب هیچ برنامه‌ای. موتورهای JavaScript چیزهایی مثل V8 و SpiderMonkey هستند (گزینه‌ی ۱)، ابزارهای transpile Babel و SWC هستند (گزینه‌ی ۲) و Node.js برای اجرای JavaScript به هیچ افزونه‌ای نیاز ندارد (گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      در Console مرورگر عبارت `console.log("Hello")` را تایپ می‌کنیم و Enter می‌زنیم. چه چیزی نمایش داده می‌شود؟
+    options:
+      - فقط `Hello`
+      - فقط `undefined`
+      - '`Hello` و سپس پیام خطا، چون `console.log` چیزی برنمی‌گرداند'
+      - '`Hello` و سپس یک خط `undefined` که مقدار برگشتی `console.log` است'
+    answer: 4
+    explain: |
+      Console (مثل Python shell) اول دستور را اجرا می‌کند، پس `Hello` چاپ می‌شود؛ بعد **مقدار برگشتی** دستور را نشان می‌دهد که برای متدهای console برابر `undefined` است (اسلاید ۱۴). گزینه‌ی ۱ نمایش مقدار برگشتی را فراموش کرده و گزینه‌ی ۲ چاپ پیام را. برنگرداندن مقدار هم خطا نیست؛ فقط یعنی مقدار برگشتی `undefined` است (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      این سه خط را **یکی‌یکی** در Console مرورگر تایپ می‌کنیم (بعد از هر خط Enter). Console بعد از هر خط چه نشان می‌دهد؟
+    code: |
+      let a = 12
+      a = "Hello!"
+      console.log(a)
+    manual: رفتار نمایش مقدارها در Console مرورگر با runner قابل سنجش نیست؛ مطابق تصویر اسلاید ۲۳ (Firefox) است و با REPL خود Node.js (`node -i`) هم بررسی شد.
+    options:
+      - 'خط ۱: `undefined` ــ خط ۲: `"Hello!"` ــ خط ۳: چاپ `Hello!` و سپس `undefined`'
+      - 'خط ۱: `12` ــ خط ۲: `"Hello!"` ــ خط ۳: فقط چاپ `Hello!`'
+      - 'خط ۱: `undefined` ــ خط ۲: `undefined` ــ خط ۳: چاپ `Hello!` و سپس `undefined`'
+      - 'خط ۱: `12` ــ خط ۲: چاپ `Hello!` ــ خط ۳: `"Hello!"`'
+    answer: 1
+    explain: |
+      تعریف متغیر با `let` مقداری ندارد، پس Console برای خط ۱ `undefined` نشان می‌دهد (رد گزینه‌های ۲ و ۴). انتساب `a = "Hello!"` یک عبارت است که مقدارش همان مقدار جدید است، پس `"Hello!"` نمایش داده می‌شود (رد گزینه‌ی ۳). در خط ۳، `console.log` متن `Hello!` را چاپ می‌کند و بعد مقدار برگشتی‌اش، `undefined`، نشان داده می‌شود؛ دقیقاً مثل تصویر اسلاید ۲۳.
+
+  - level: hard
+    stem: |
+      فایل `app.js` زیر را با دستور `node app.js` اجرا می‌کنیم. خروجی چیست؟
+    check: output
+    code: |
+      2 + 3;
+      let a = 12;
+      a = "Hello!";
+      console.log(a);
+    options:
+      - out: ["Hello!"]
+      - out: ["5", "undefined", "Hello!", "Hello!"]
+      - out: ["5", "Hello!"]
+      - out: ['"Hello!"']
+    answer: 1
+    explain: |
+      نمایش خودکار مقدار هر خط فقط مخصوص Console و REPL است؛ وقتی یک **فایل** اجرا می‌شود، فقط `console.log` چیزی چاپ می‌کند. پس `2 + 3;` و انتساب‌ها چیزی چاپ نمی‌کنند و تنها خروجی `Hello!` است. گزینه‌ی ۲ رفتار Console را به فایل نسبت داده و گزینه‌ی ۳ هم فکر کرده `2 + 3;` به‌تنهایی چاپ می‌شود. `console.log` رشته را بدون کوتیشن چاپ می‌کند (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      وقتی فایلی را با دستور `node app.js` اجرا می‌کنیم، خروجی `console.log` کجا نمایش داده می‌شود؟
+    options:
+      - در Console مرورگر
+      - در ترمینال؛ همان پنجره‌ای که دستور را در آن اجرا کردیم
+      - در فایلی به نام `app.log`
+      - هیچ‌جا؛ چون `console` فقط در مرورگر وجود دارد
+    answer: 2
+    explain: |
+      Node.js هم شیء `console` را دارد و `console.log` در آن، متن را در **ترمینال** چاپ می‌کند. Node.js ربطی به مرورگر ندارد، پس پیام در Console مرورگر دیده نمی‌شود (گزینه‌ی ۱). خودبه‌خود هم در هیچ فایلی ذخیره نمی‌شود (گزینه‌ی ۳). `console` در هر دو محیط، یعنی مرورگر و Node.js، وجود دارد (رد گزینه‌ی ۴).

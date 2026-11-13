@@ -1,0 +1,688 @@
+id: ch1-comparison
+title: "عملگرهای مقایسه و منطقی"
+slides: "Introduction to JS، اسلاید ۳۱"
+lesson: |
+  برنامه‌ها مدام سؤال‌های «بله یا نه» می‌پرسند: «کاربر ۱۸ سالش شده؟»، «رمز درست است؟»، «سبد خرید خالی است؟». جواب هر کدام یک مقدار **boolean** است: `true` یا `false`. **عملگرهای مقایسه** (comparison operators؛ عملگرهایی که دو مقدار را با هم می‌سنجند) این سؤال‌ها را می‌سازند و **عملگرهای منطقی** (logical operators؛ عملگرهایی که چند شرط را با هم ترکیب یا برعکس می‌کنند) چند سؤال را به هم وصل می‌کنند. همه‌ی شرط‌های `if` و حلقه‌ها روی همین‌ها سوارند.
+
+  ### عملگرهای تساوی: `==`، `===`، `!=` و `!==`
+  طبق اسلاید ۳۱:
+
+  | عملگر | نام | کارش |
+  |---|---|---|
+  | `==` | Equal (تساوی) | **مقدار**ها را مقایسه می‌کند و اجازه‌ی type coercion (تبدیل نوع خودکار) می‌دهد |
+  | `===` | Strict Equal (تساوی سخت‌گیر) | **مقدار و نوع** را مقایسه می‌کند؛ هیچ تبدیلی انجام نمی‌دهد |
+  | `!=` | Not Equal (نابرابری) | نقیضِ `==` (با تبدیل نوع) |
+  | `!==` | Strict Not Equal (نابرابری سخت‌گیر) | نقیضِ `===` (بدون تبدیل نوع) |
+
+  ```js
+  console.log(5 == "5");  // true  ("5" is converted to 5)
+  console.log(5 === "5"); // false (number vs string)
+  console.log(5 != "5");  // false (they ARE loosely equal)
+  console.log(5 !== "5"); // true  (the types differ)
+  ```
+
+  قاعده‌های کامل تبدیل در `==` را در درس «تبدیل نوع ضمنی» دیدیم (مثلاً `null == undefined` برابر `true` و `null == 0` برابر `false` است). قاعده‌ی عملی: همیشه `===` و `!==` را ترجیح بده، مگر اینکه دلیل خاصی داشته باشی.
+
+  ### مقایسه با مقدار (by value) یا با مرجع (by reference)
+  یادداشت اسلاید ۳۱: **primitiveها با مقدارشان مقایسه می‌شوند، نه با مرجعشان.**
+
+  ::: analogy
+  primitiveها (عدد، رشته، boolean و …) مثل عددی هستند که روی کاغذ نوشته شده: دو کاغذ که رویشان `5` نوشته شده با هم برابرند. اما آرایه‌ها و شیءها مثل **خانه** هستند و متغیر فقط **آدرس** خانه را نگه می‌دارد؛ به این آدرس **reference** (مرجع) می‌گوییم. دو خانه با دکوراسیون کاملاً یکسان هنوز دو خانه‌ی جدا هستند. `==` و `===` برای آرایه‌ها و شیءها فقط می‌پرسند: «آیا هر دو آدرس به **همان یک** خانه اشاره می‌کنند؟»
+  :::
+
+  ```js
+  console.log("hi" === "hi"); // true  (primitives: compared by value)
+
+  const a = [1, 2];
+  const b = [1, 2];
+  const c = a;            // c points to the SAME array as a
+  console.log(a === b);   // false (two different arrays with equal content)
+  console.log(a == b);    // false (== does not help: both sides are objects)
+  console.log(a === c);   // true  (same reference)
+  console.log({} === {}); // false
+  console.log([] == []);  // false
+  ```
+
+  ::: tip
+  `[1] == 1` برابر `true` است (یک طرف primitive است، پس آرایه اول رشته‌ی `"1"` و بعد عدد `1` می‌شود)، اما `[1] == [1]` برابر `false` است: وقتی **هر دو** طرف آرایه یا شیء باشند هیچ تبدیلی رخ نمی‌دهد و فقط مرجع‌ها مقایسه می‌شوند.
+  :::
+
+  ### عملگرهای بزرگ‌تر و کوچک‌تر: `>`، `<`، `>=` و `<=`
+  برای عددها دقیقاً مثل ریاضی کار می‌کنند: `5 > 3` برابر `true`، `5 >= 5` برابر `true` و `5 > 5` برابر `false` است. اما دو حالت خاص داریم.
+
+  **حالت ۱: هر دو طرف رشته باشند؛ مقایسه‌ی لغت‌نامه‌ای (lexicographic)**
+
+  رشته‌ها حرف‌به‌حرف از چپ مقایسه می‌شوند و **اولین حرفِ متفاوت** تکلیف را روشن می‌کند. هر کاراکتر یک کد عددی (Unicode) دارد و مقایسه بر اساس همین کد است. اگر یک رشته ابتدای رشته‌ی دیگر باشد (مثل `"app"` و `"apple"`)، رشته‌ی کوتاه‌تر کوچک‌تر است.
+
+  | کاراکترها | کدها | ترتیب |
+  |---|---|---|
+  | رقم‌ها `"0"` تا `"9"` | ۴۸ تا ۵۷ | کوچک‌ترین |
+  | حروف بزرگ `"A"` تا `"Z"` | ۶۵ تا ۹۰ | وسط |
+  | حروف کوچک `"a"` تا `"z"` | ۹۷ تا ۱۲۲ | بزرگ‌ترین |
+
+  ```js
+  console.log("apple" < "banana"); // true  ("a" < "b")
+  console.log("Z" < "a");          // true  (uppercase codes are smaller: 90 < 97)
+  console.log("10" < "9");         // true  (compares "1" with "9" first!)
+  console.log("app" < "apple");    // true  (a prefix is smaller)
+  ```
+
+  **حالت ۲: نوع دو طرف فرق کند؛ هر دو به عدد تبدیل می‌شوند**
+
+  اگر حداقل یکی از دو طرف رشته نباشد، هر دو طرف با قاعده‌های `Number` به **عدد** تبدیل می‌شوند:
+
+  ```js
+  console.log("10" < 9); // false (numeric: 10 < 9)
+  console.log("5" > 3);  // true  (5 > 3)
+  console.log(true > 0); // true  (1 > 0)
+  console.log("a" > 1);  // false ("a" becomes NaN)
+  ```
+
+  #### `null`، `undefined` و `NaN` در مقایسه
+  - عملگرهای `>`، `<`، `>=` و `<=` مقدار `null` را به `0` تبدیل می‌کنند، ولی `==` برای `null` قانون ویژه دارد (فقط با `undefined` برابر است). نتیجه‌ی عجیب: `null >= 0` برابر `true` است، ولی `null == 0` و `null > 0` هر دو `false` هستند!
+  - `undefined` به `NaN` تبدیل می‌شود، پس `undefined >= 0`، `undefined <= 0` و `undefined == 0` همگی `false` هستند.
+  - **هر** مقایسه‌ای با `NaN` (`==`، `===`، `<`، `>`، `<=`، `>=`) نتیجه‌اش `false` است؛ حتی `NaN === NaN`. فقط `!=` و `!==` با `NaN` جواب `true` می‌دهند. برای تشخیص `NaN` از `Number.isNaN(x)` استفاده کن.
+
+  ```js
+  console.log(null >= 0, null == 0, null > 0); // true false false
+  console.log(undefined == 0, undefined >= 0); // false false
+  console.log(NaN === NaN, NaN !== NaN);       // false true
+  console.log(Number.isNaN(NaN));              // true
+  ```
+
+  #### دام مقایسه‌ی زنجیره‌ای
+  در ریاضی `3 > 2 > 1` درست است، اما JavaScript آن را **دوبه‌دو از چپ** حساب می‌کند و نتیجه‌ی مرحله‌ی اول (یک boolean) در مرحله‌ی دوم به عدد تبدیل می‌شود:
+
+  ```js
+  console.log(1 < 2 < 3); // true  -> (1 < 2) is true, then true < 3 -> 1 < 3 -> true
+  console.log(3 > 2 > 1); // false -> (3 > 2) is true, then true > 1 -> 1 > 1 -> false
+  ```
+
+  اولی فقط «از شانس» درست درآمده. برای بررسی اینکه `b` بین `a` و `c` است بنویس: `a < b && b < c`.
+
+  ### عملگرهای منطقی: `&&`، `||` و `!`
+  اسلاید ۳۱: عملگرهای منطقی **درست مثل زبان C** هستند: `&&` (AND؛ «و»)، `||` (OR؛ «یا») و `!` (NOT؛ «نقیض»). با آن‌ها می‌توانی مقدارهای boolean را **ترکیب** یا **برعکس** کنی.
+
+  | `a` | `b` | `a && b` | `a \|\| b` |
+  |---|---|---|---|
+  | `true` | `true` | `true` | `true` |
+  | `true` | `false` | `false` | `true` |
+  | `false` | `true` | `false` | `true` |
+  | `false` | `false` | `false` | `false` |
+
+  - `a && b` فقط وقتی `true` است که **هر دو** `true` باشند.
+  - `a || b` وقتی `true` است که **حداقل یکی** `true` باشد.
+  - `!a` مقدار را برعکس می‌کند: `!true` برابر `false` است.
+
+  ```js
+  const age = 20;
+  const hasTicket = true;
+  console.log(age >= 18 && hasTicket); // true  (both conditions hold)
+  console.log(age < 12 || age > 65);   // false (neither condition holds)
+  console.log(!(age >= 18));           // false (inverts the result)
+  ```
+
+  **اولویت (precedence):** اول `!`، بعد `&&` و در آخر `||`؛ درست مثل ریاضی که ضرب قبل از جمع انجام می‌شود. پس `true || false && false` یعنی `true || (false && false)` که `true` است. هر جا شک داری، پرانتز بگذار.
+
+  **برعکس کردن یک ترکیب (قوانین دمورگان):** `!(a && b)` همان `!a || !b` است و `!(a || b)` همان `!a && !b`. یعنی وقتی `!` را به داخل پرانتز می‌بری، `&&` و `||` جایشان را با هم عوض می‌کنند.
+
+  ### اتصال کوتاه (short-circuit evaluation)
+  JavaScript (مثل C) طرف راست را فقط وقتی حساب می‌کند که لازم باشد:
+
+  - در `a && b` اگر `a` falsy باشد، جواب از قبل معلوم است، پس `b` **اصلاً اجرا نمی‌شود**.
+  - در `a || b` اگر `a` truthy باشد، `b` **اصلاً اجرا نمی‌شود**.
+
+  ```js
+  false && console.log("A"); // nothing is printed: the right side is skipped
+  true && console.log("B");  // prints B
+  true || console.log("C");  // nothing is printed
+  false || console.log("D"); // prints D
+  ```
+
+  کاربرد مهمش «نگهبان» (guard) است: در `user && user.name` اگر `user` برابر `null` باشد، JavaScript اصلاً به `user.name` نمی‌رسد و خطا نمی‌دهد؛ در حالی که `null.name` خطای `TypeError` می‌دهد.
+
+  ### `&&` و `||` یکی از عملوندها را برمی‌گردانند، نه لزوماً boolean
+  اینجا JavaScript با C فرق دارد: حاصل `&&` و `||` لزوماً `true` یا `false` نیست، بلکه **یکی از خود عملوندها**ست:
+
+  - `a || b`: اگر `a` truthy باشد **خودِ `a`** را برمی‌گرداند، وگرنه **خودِ `b`** را. (اولین مقدار truthy، یا اگر نبود آخرین عملوند)
+  - `a && b`: اگر `a` falsy باشد **خودِ `a`** را برمی‌گرداند، وگرنه **خودِ `b`** را. (اولین مقدار falsy، یا اگر نبود آخرین عملوند)
+
+  ```js
+  console.log("a" && "b");          // "b"  ("a" is truthy, so the result is the second operand)
+  console.log(0 || "x");            // "x"
+  console.log(null && "yes");       // null (the first falsy operand)
+  console.log(1 && 2 && 3);         // 3    (no falsy operand: the last one)
+  console.log(null || 0 || "last"); // "last"
+  ```
+
+  اما `!` **همیشه** یک boolean واقعی برمی‌گرداند: `!"hello"` برابر `false` و `!0` برابر `true` است. برای همین `!!x` (دو بار نقیض) همان `Boolean(x)` است.
+
+  ### مقدار پیش‌فرض با `||` و جایگزین بهترش `??`
+  چون `||` اولین مقدار truthy را برمی‌گرداند، برای دادن مقدار پیش‌فرض (default value) زیاد استفاده می‌شود:
+
+  ```js
+  const input = "";
+  const name = input || "Guest";
+  console.log(name); // "Guest" (empty input, so the default is used)
+  ```
+
+  اما دام بزرگی دارد: `0` و `""` هم falsy هستند؛ پس اگر `0` یک مقدار **معتبر** باشد، به اشتباه جایگزین می‌شود. عملگر **`??`** (nullish coalescing؛ از ES2020) این مشکل را ندارد: طرف راست را **فقط** وقتی برمی‌گرداند که طرف چپ `null` یا `undefined` باشد.
+
+  ```js
+  const volume = 0;               // 0 is a valid volume!
+  console.log(volume || 50);      // 50 (bug: 0 is falsy, so it was replaced)
+  console.log(volume ?? 50);      // 0  (?? only replaces null/undefined)
+  console.log(null ?? "default"); // "default"
+  ```
+
+  ::: note
+  `??` را نمی‌توان بدون پرانتز کنار `||` یا `&&` نوشت: `a || b ?? c` خطای نحوی (SyntaxError) می‌دهد و باید نوشت `(a || b) ?? c`.
+  :::
+
+  ::: tip
+  - همیشه `===` و `!==` را ترجیح بده.
+  - برای `NaN` از `Number.isNaN` استفاده کن، نه از `x === NaN`.
+  - برای مقدار پیش‌فرضی که `0` یا `""` هم می‌تواند معتبر باشد، `??` را به جای `||` به کار ببر.
+  - در ترکیب‌های طولانی پرانتز بگذار تا مجبور نشوی اولویت‌ها را حدس بزنی.
+  :::
+
+  ::: trap
+  - `"10" < "9"` برابر `true` است (دو رشته، حرف‌به‌حرف)، ولی `"10" < 9` برابر `false` (یک طرف عدد است، پس مقایسه‌ی عددی).
+  - `"Z" < "a"` برابر `true` است: حروف بزرگ کد کوچک‌تری دارند.
+  - `null >= 0` برابر `true` است، ولی `null == 0` برابر `false`.
+  - `NaN === NaN` برابر `false` است.
+  - `3 > 2 > 1` برابر `false` است.
+  - `[1, 2] === [1, 2]` برابر `false` است (دو آرایه‌ی جدا).
+  - `"a" && "b"` برابر `"b"` است، نه `true`؛ و `0 || 10` برابر `10` است، حتی اگر `0` را عمداً گذاشته باشی.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۱، عملگر `===` (Strict Equal) چه چیزی را مقایسه می‌کند؟
+    options:
+      - فقط مقدار را، و در صورت نیاز نوع‌ها را به هم تبدیل می‌کند
+      - مقدار و نوع را، بدون هیچ تبدیل نوعی
+      - فقط نوع دو طرف را، بدون توجه به مقدار
+      - آدرس حافظه‌ی دو طرف را، حتی برای عددها و رشته‌ها
+    answer: 2
+    explain: |
+      `===` مقدار **و** نوع را مقایسه می‌کند و هیچ type coercion انجام نمی‌دهد؛ برای همین `5 === "5"` برابر `false` است. گزینه‌ی ۱ تعریف `==` است؛ گزینه‌ی ۳ غلط است چون `5 === 6` با وجود نوع یکسان `false` است؛ و گزینه‌ی ۴ هم غلط است، چون طبق اسلاید ۳۱ primitiveها با مقدارشان مقایسه می‌شوند، نه با مرجع.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(5 == "5", 5 === "5", 5 != "5", 5 !== "5");
+    options:
+      - out: "true true false false"
+      - out: "true false true false"
+      - out: "true false false true"
+      - out: "false false true true"
+    answer: 3
+    explain: |
+      `5 == "5"` رشته را به عدد تبدیل می‌کند، پس `true`؛ `5 === "5"` نوع‌ها را هم می‌سنجد، پس `false`. `!=` نقیضِ `==` است، پس `false`؛ و `!==` نقیضِ `===` است، پس `true`. گزینه‌ی ۱ فرق `==` و `===` را ندیده، گزینه‌ی ۲ نقیض‌ها را برعکس جفت کرده و گزینه‌ی ۴ فکر کرده `==` هم تبدیل نوع انجام نمی‌دهد.
+
+  - level: easy
+    stem: |
+      کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: '`"hi" === "hi"` برابر `true` است.'
+        expr: '"hi" === "hi"'
+        equals: 'true'
+      - text: '`10 >= 10` برابر `true` است.'
+        expr: '10 >= 10'
+        equals: 'true'
+      - text: '`3 < 5` برابر `true` است.'
+        expr: '3 < 5'
+        equals: 'true'
+      - text: '`7 !== 7` برابر `true` است.'
+        expr: '7 !== 7'
+        equals: 'true'
+    answer: 4
+    explain: |
+      `7 !== 7` می‌پرسد «آیا `7` و `7` (از نظر مقدار یا نوع) متفاوت‌اند؟» و جوابش `false` است؛ پس گزینه‌ی ۴ نادرست است. گزینه‌ی ۱ درست است، چون primitiveها (از جمله رشته‌ها) با مقدارشان مقایسه می‌شوند؛ `>=` در حالت تساوی هم `true` می‌دهد (گزینه‌ی ۲)؛ و `3 < 5` هم بدیهی است.
+
+  - level: medium
+    stem: |
+      کدام گزینه **درست** است؟
+    check: claims
+    options:
+      - text: '`null != undefined` برابر `true` است.'
+        expr: 'null != undefined'
+        equals: 'true'
+      - text: '`"1" !== 1` برابر `true` است.'
+        expr: '"1" !== 1'
+        equals: 'true'
+      - text: '`NaN != NaN` برابر `false` است.'
+        expr: 'NaN != NaN'
+        equals: 'false'
+      - text: '`"1" != 1` برابر `true` است.'
+        expr: '"1" != 1'
+        equals: 'true'
+    answer: 2
+    explain: |
+      `!==` بدون تبدیل مقایسه می‌کند و چون نوع رشته و عدد فرق دارد، `"1" !== 1` برابر `true` است. `null == undefined` درست است، پس نقیضش `null != undefined` برابر `false` است (گزینه‌ی ۱). `NaN` با خودش برابر نیست، پس `NaN != NaN` برابر `true` است (گزینه‌ی ۳). و `"1" == 1` با تبدیل نوع `true` است، پس `"1" != 1` برابر `false` است (گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const a = [1, 2];
+      const b = [1, 2];
+      const c = a;
+      console.log(a == b, a === c);
+      console.log([1] == 1, [1] == [1]);
+    options:
+      - out: ["false true", "true false"]
+      - out: ["true true", "true true"]
+      - out: ["false true", "false false"]
+      - out: ["true false", "true true"]
+    answer: 1
+    explain: |
+      `a` و `b` دو آرایه‌ی **جدا** با محتوای یکسان‌اند و `==` بین دو آرایه فقط مرجع را مقایسه می‌کند، پس `false`؛ اما `c` به **همان** آرایه‌ی `a` اشاره می‌کند، پس `true`. در خط بعد، `[1] == 1` یک طرف primitive دارد، پس آرایه به `"1"` و بعد به `1` تبدیل می‌شود و نتیجه `true` است؛ ولی `[1] == [1]` دو آرایه‌ی جداست، پس `false`. گزینه‌های ۲ و ۴ آرایه‌ها را با محتوا مقایسه کرده‌اند و گزینه‌ی ۳ نمی‌داند که آرایه در برابر عدد به primitive تبدیل می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const p1 = { name: "Ali" };
+      const p2 = { name: "Ali" };
+      const p3 = p1;
+      console.log(p1 == p2, p1 === p3, p1.name === p2.name);
+    options:
+      - out: "true true true"
+      - out: "false false true"
+      - out: "false true false"
+      - out: "false true true"
+    answer: 4
+    explain: |
+      `p1` و `p2` دو شیء جداگانه‌اند (دو «خانه»ی جدا با دکوراسیون یکسان)، پس `p1 == p2` برابر `false` است. `p3` همان مرجعِ `p1` را دارد، پس `p1 === p3` برابر `true` است. اما `p1.name` و `p2.name` رشته‌اند و primitiveها با **مقدار** مقایسه می‌شوند، پس `"Ali" === "Ali"` برابر `true` است. گزینه‌ی ۱ شیءها را با محتوا مقایسه کرده، گزینه‌ی ۲ مرجع مشترک را ندیده و گزینه‌ی ۳ فکر کرده رشته‌ها هم با مرجع مقایسه می‌شوند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log("apple" < "banana");
+      console.log("Z" < "a");
+      console.log("10" < "9");
+      console.log("10" < 9);
+    options:
+      - out: ["true", "false", "false", "false"]
+      - out: ["true", "true", "true", "false"]
+      - out: ["true", "false", "true", "false"]
+      - out: ["true", "true", "false", "false"]
+    answer: 2
+    explain: |
+      دو رشته حرف‌به‌حرف و با کد Unicode مقایسه می‌شوند: `"a"` از `"b"` کوچک‌تر است، پس `true`. کد `"Z"` (۹۰) از کد `"a"` (۹۷) کوچک‌تر است، پس `true` (گزینه‌های ۱ و ۳ فکر کرده‌اند ترتیب الفبایی به بزرگی و کوچکی حروف ربطی ندارد). در `"10" < "9"` اولین حرف‌ها `"1"` و `"9"` هستند، پس `true` (گزینه‌ی ۴ عددی مقایسه کرده). اما در `"10" < 9` یک طرف عدد است، پس مقایسه عددی است: `10 < 9` یعنی `false`.
+
+  - level: hard
+    stem: |
+      کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: '`"apple" > "app"` برابر `true` است.'
+        expr: '"apple" > "app"'
+        equals: 'true'
+      - text: '`"Apple" < "apple"` برابر `true` است.'
+        expr: '"Apple" < "apple"'
+        equals: 'true'
+      - text: '`2 > "12"` برابر `true` است.'
+        expr: '2 > "12"'
+        equals: 'true'
+      - text: '`"2" > "12"` برابر `true` است.'
+        expr: '"2" > "12"'
+        equals: 'true'
+    answer: 3
+    explain: |
+      در `2 > "12"` یک طرف عدد است، پس `"12"` به عدد `12` تبدیل می‌شود و `2 > 12` برابر `false` است؛ پس گزینه‌ی ۳ نادرست است. بقیه درست‌اند: `"app"` ابتدای `"apple"` است و رشته‌ی کوتاه‌تر کوچک‌تر است (گزینه‌ی ۱)؛ کد `"A"` از کد `"a"` کوچک‌تر است (گزینه‌ی ۲)؛ و در `"2" > "12"` هر دو طرف رشته‌اند و `"2"` از `"1"` بزرگ‌تر است (گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(true > false, "5" > 3, "a" > 1);
+    options:
+      - out: "true true false"
+      - out: "false true false"
+      - out: "true false false"
+      - out: "true true true"
+    answer: 1
+    explain: |
+      نوع دو طرف در هر سه مقایسه فرق دارد یا boolean است، پس همه به عدد تبدیل می‌شوند: `1 > 0` یعنی `true`؛ `5 > 3` یعنی `true`؛ و `"a"` به `NaN` تبدیل می‌شود و هر مقایسه‌ای با `NaN` برابر `false` است. گزینه‌ی ۲ فکر کرده booleanها قابل مقایسه نیستند، گزینه‌ی ۳ رشته‌ی `"5"` را به عدد تبدیل نکرده و گزینه‌ی ۴ فکر کرده حروف از رقم‌ها بزرگ‌ترند (که فقط در مقایسه‌ی دو **رشته** معنا دارد).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(null == 0, null > 0, null >= 0);
+      console.log(undefined == 0, undefined >= 0);
+    options:
+      - out: ["false false true", "false false"]
+      - out: ["true false true", "true true"]
+      - out: ["false false false", "false false"]
+      - out: ["true true true", "false false"]
+    answer: 1
+    explain: |
+      `==` برای `null` قانون ویژه دارد و `null` فقط با `undefined` برابر است، پس `null == 0` برابر `false` است. اما `>` و `>=` مقدار `null` را به `0` تبدیل می‌کنند: `0 > 0` یعنی `false` و `0 >= 0` یعنی `true`. `undefined` در `==` هم فقط با `null` برابر است و در `>=` به `NaN` تبدیل می‌شود، پس هر دو `false` هستند. گزینه‌های ۲ و ۴ فکر کرده‌اند `null == 0` است، و گزینه‌ی ۳ نمی‌داند که `>=` مقدار `null` را صفر می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const x = NaN;
+      console.log(x == NaN, x === x, x !== x, Number.isNaN(x));
+    options:
+      - out: "true true false true"
+      - out: "false true false true"
+      - out: "false false true true"
+      - out: "false false false false"
+    answer: 3
+    explain: |
+      `NaN` با هیچ چیز، حتی خودش، برابر نیست؛ پس `x == NaN` و `x === x` هر دو `false` هستند و `x !== x` برابر `true` است (یعنی `NaN` تنها مقداری است که با خودش «نابرابر» است!). `Number.isNaN(x)` راه درست تشخیص است و `true` می‌دهد. گزینه‌های ۱ و ۲ فکر کرده‌اند `NaN` با خودش برابر است و گزینه‌ی ۴ فکر کرده `Number.isNaN` هم نمی‌تواند `NaN` را تشخیص دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(1 < 2 < 3);
+      console.log(3 > 2 > 1);
+    options:
+      - out: ["true", "true"]
+      - out: ["true", "false"]
+      - out: ["false", "false"]
+      - out: ["false", "true"]
+    answer: 2
+    explain: |
+      مقایسه‌ها دوبه‌دو از چپ انجام می‌شوند. در خط اول، `1 < 2` برابر `true` است و بعد `true < 3` یعنی `1 < 3` که `true` است. در خط دوم، `3 > 2` برابر `true` است و بعد `true > 1` یعنی `1 > 1` که `false` است. گزینه‌ی ۱ عبارت‌ها را مثل ریاضی خوانده، گزینه‌ی ۳ فکر کرده مقایسه‌ی boolean با عدد همیشه `false` است و گزینه‌ی ۴ ترتیب را برعکس حساب کرده است.
+
+  - level: easy
+    stem: |
+      عملگر منطقی «یا» (OR) در JavaScript کدام است؟
+    options:
+      - '`||`'
+      - '`or`'
+      - '`OR`'
+      - '`|`'
+    answer: 1
+    explain: |
+      طبق اسلاید ۳۱، عملگرهای منطقی مثل زبان C هستند: `&&` (AND)، `||` (OR) و `!` (NOT). `or` و `OR` (گزینه‌های ۲ و ۳) کلمه‌ی کلیدی JavaScript نیستند (`or` در Python است)؛ و `|` تکی (گزینه‌ی ۴) یک عملگر بیتی (bitwise) است، نه OR منطقی.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(true && false, true || false, !true);
+    options:
+      - out: "true true false"
+      - out: "false false true"
+      - out: "true false false"
+      - out: "false true false"
+    answer: 4
+    explain: |
+      `&&` فقط وقتی `true` است که هر دو طرف `true` باشند، پس `false`. `||` وقتی `true` است که حداقل یک طرف `true` باشد، پس `true`. و `!true` برابر `false` است. گزینه‌ی ۱ تعریف `&&` را با `||` قاطی کرده، گزینه‌ی ۲ نتیجه‌ی `||` و `!` را برعکس گرفته و گزینه‌ی ۳ جای نتیجه‌ی `&&` و `||` را عوض کرده است.
+
+  - level: easy
+    stem: |
+      می‌خواهیم شرط زیر فقط وقتی `true` باشد که کاربر **هم** حداقل ۱۸ سال داشته باشد **و هم** بلیت داشته باشد. در جای خالی کدام عملگر قرار می‌گیرد؟
+
+      `age >= 18 ____ hasTicket`
+    options:
+      - '`||`'
+      - '`!`'
+      - '`&&`'
+      - '`==`'
+    answer: 3
+    explain: |
+      «هر دو شرط با هم» یعنی AND، که در JavaScript با `&&` نوشته می‌شود. `||` (گزینه‌ی ۱) با برقرار بودن **یکی** از دو شرط هم `true` می‌دهد؛ `!` (گزینه‌ی ۲) عملگری تک‌عملوندی است و دو شرط را به هم وصل نمی‌کند؛ و `==` (گزینه‌ی ۴) نتیجه‌ی دو مقایسه را با هم مقایسه می‌کند، نه اینکه هر دو را لازم بداند (مثلاً اگر هر دو `false` باشند، `false == false` برابر `true` می‌شود!).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(true || false && false);
+      console.log((true || false) && false);
+      console.log(!false && false);
+    options:
+      - out: ["false", "false", "false"]
+      - out: ["true", "false", "false"]
+      - out: ["true", "false", "true"]
+      - out: ["false", "false", "true"]
+    answer: 2
+    explain: |
+      اولویت `&&` از `||` بیشتر است، پس خط اول یعنی `true || (false && false)` که `true || false` و در نتیجه `true` است. در خط دوم پرانتز اول حساب می‌شود: `true && false` یعنی `false`. در خط سوم `!` اولویت بالاتری دارد: `(!false) && false` یعنی `true && false` که `false` است. گزینه‌های ۱ و ۴ خط اول را از چپ به راست حساب کرده‌اند و گزینه‌های ۳ و ۴ در خط سوم `!` را روی کل عبارت اعمال کرده‌اند.
+
+  - level: medium
+    stem: |
+      اگر `a` و `b` دو مقدار boolean باشند، کدام عبارت **همیشه** با `!(a && b)` هم‌ارز است؟
+    check: claims
+    options:
+      - text: '`!a && !b`'
+        expr: '[[true, true], [true, false], [false, true], [false, false]].every(([a, b]) => !(a && b) === (!a && !b))'
+        equals: 'true'
+      - text: '`a || b`'
+        expr: '[[true, true], [true, false], [false, true], [false, false]].every(([a, b]) => !(a && b) === (a || b))'
+        equals: 'true'
+      - text: '`!a && b`'
+        expr: '[[true, true], [true, false], [false, true], [false, false]].every(([a, b]) => !(a && b) === (!a && b))'
+        equals: 'true'
+      - text: '`!a || !b`'
+        expr: '[[true, true], [true, false], [false, true], [false, false]].every(([a, b]) => !(a && b) === (!a || !b))'
+        equals: 'true'
+    answer: 4
+    explain: |
+      طبق قانون دمورگان، وقتی `!` را به داخل پرانتز می‌بریم هر دو طرف نقیض می‌شوند و `&&` به `||` تبدیل می‌شود: `!(a && b)` همان `!a || !b` است. «نه هر دو» یعنی «حداقل یکی نه». گزینه‌ی ۱ اشتباه رایج است: مثلاً برای `a = true` و `b = false` مقدار `!(a && b)` برابر `true` است، ولی `!a && !b` برابر `false`. گزینه‌ی ۲ برای `a = b = true` و گزینه‌ی ۳ برای `a = true` و `b = false` جواب متفاوتی می‌دهند.
+
+  - level: easy
+    stem: |
+      در عبارت `a && b`، اگر `a` مقداری **falsy** باشد چه اتفاقی می‌افتد؟
+    options:
+      - '`b` هم ارزیابی می‌شود و حاصل همیشه `false` است.'
+      - '`b` اصلاً ارزیابی نمی‌شود و حاصل، خودِ `a` است.'
+      - 'خطای `TypeError` رخ می‌دهد، چون `a` boolean نیست.'
+      - '`b` ارزیابی می‌شود و حاصل، خودِ `b` است.'
+    answer: 2
+    explain: |
+      این همان اتصال کوتاه (short-circuit) است: وقتی `a` falsy است، جواب `&&` از قبل معلوم است، پس JavaScript سراغ `b` نمی‌رود و خودِ `a` را برمی‌گرداند؛ مثلاً `0 && f()` تابع `f` را اجرا نمی‌کند و حاصلش `0` است. گزینه‌ی ۱ از دو جهت غلط است: `b` ارزیابی نمی‌شود و حاصل هم لزوماً `false` نیست. JavaScript برای مقدارهای غیر boolean خطا نمی‌دهد (گزینه‌ی ۳)، و گزینه‌ی ۴ رفتار حالتی است که `a` **truthy** باشد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      false && console.log("A");
+      true && console.log("B");
+      true || console.log("C");
+      false || console.log("D");
+    options:
+      - out: ["A", "B", "C", "D"]
+      - out: ["B", "C"]
+      - out: ["A", "C"]
+      - out: ["B", "D"]
+    answer: 4
+    explain: |
+      در `&&` طرف راست فقط وقتی اجرا می‌شود که طرف چپ truthy باشد، پس `A` چاپ نمی‌شود ولی `B` چاپ می‌شود. در `||` طرف راست فقط وقتی اجرا می‌شود که طرف چپ falsy باشد، پس `C` چاپ نمی‌شود ولی `D` چاپ می‌شود. گزینه‌ی ۱ اتصال کوتاه را نمی‌شناسد و گزینه‌های ۲ و ۳ قاعده‌ی `||` (و در گزینه‌ی ۳ قاعده‌ی `&&`) را برعکس گرفته‌اند.
+
+  - level: medium
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const user = null;
+      const a = user && user.name;
+      const b = user || "Guest";
+      const c = user.name || "Guest";
+      console.log(a, b, c);
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 3
+    explain: |
+      در خط ۲، `user` برابر `null` و falsy است، پس `&&` اتصال کوتاه می‌کند و اصلاً به `user.name` نمی‌رسد (حاصل `null` است). خط ۳ هم بی‌خطر است و `"Guest"` می‌دهد. اما در خط ۴ اول باید خودِ `user.name` حساب شود و خواندن ویژگی از `null` خطای `TypeError` می‌دهد؛ `||` بعد از آن می‌آید و دیگر فرصتی برای نجات ندارد. پس گزینه‌ی «بدون خطا» هم نادرست است.
+
+  - level: hard
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟ (متغیر `y` هیچ‌جا تعریف نشده است.)
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      const a = "x" || y;
+      const b = false && y;
+      const c = y || "x";
+      console.log(a, b, c);
+    options:
+      - line: 1
+      - line: 2
+      - line: 3
+      - line: 0
+    answer: 3
+    explain: |
+      در خط ۱، `"x"` truthy است و `||` اتصال کوتاه می‌کند، پس `y` اصلاً خوانده نمی‌شود. در خط ۲ هم `false` باعث می‌شود `&&` سراغ `y` نرود. اما در خط ۳ عملوند **اول** خودِ `y` است و باید خوانده شود؛ چون `y` تعریف نشده، خطای `ReferenceError: y is not defined` رخ می‌دهد. پس گزینه‌ی «بدون خطا» هم نادرست است.
+
+  - level: medium
+    stem: |
+      حاصل `"a" && "b"` کدام است؟
+    check: value
+    expr: '"a" && "b"'
+    options:
+      - value: 'true'
+      - value: '"a"'
+      - value: '"ab"'
+      - value: '"b"'
+    answer: 4
+    explain: |
+      `&&` اگر عملوند اول truthy باشد، **خودِ عملوند دوم** را برمی‌گرداند؛ `"a"` رشته‌ای غیرخالی و truthy است، پس حاصل `"b"` است. برخلاف زبان C، حاصل لزوماً boolean نیست (گزینه‌ی ۱). عملوند اول فقط وقتی برگردانده می‌شد که falsy بود (گزینه‌ی ۲)، و `&&` هیچ‌وقت رشته‌ها را نمی‌چسباند (گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      حاصل کدام عبارت **درست** بیان شده است؟
+    check: claims
+    options:
+      - text: '`"" && "x"` برابر `"x"` است.'
+        expr: '"" && "x"'
+        equals: '"x"'
+      - text: '`1 && 0` برابر `1` است.'
+        expr: '1 && 0'
+        equals: '1'
+      - text: '`null || "x"` برابر `"x"` است.'
+        expr: 'null || "x"'
+        equals: '"x"'
+      - text: '`0 || null` برابر `0` است.'
+        expr: '0 || null'
+        equals: '0'
+    answer: 3
+    explain: |
+      `null` falsy است، پس `||` عملوند دوم یعنی `"x"` را برمی‌گرداند. در گزینه‌ی ۱، `""` falsy است و `&&` همان را برمی‌گرداند، پس حاصل `""` است. در گزینه‌ی ۲، `1` truthy است، پس `&&` عملوند دوم یعنی `0` را برمی‌گرداند. در گزینه‌ی ۴، `0` falsy است، پس `||` عملوند دوم یعنی `null` را برمی‌گرداند (حتی با اینکه `null` هم falsy است).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(0 && "A" || "B");
+      console.log("A" || "B" && "C");
+      console.log(null || 0 || "" || "last");
+    options:
+      - out: ["B", "A", "last"]
+      - out: ["false", "true", "true"]
+      - out: ["A", "C", "last"]
+      - out: ["B", "C", "null"]
+    answer: 1
+    explain: |
+      خط اول: `&&` اولویت دارد؛ `0 && "A"` حاصلش `0` است (اولین falsy) و بعد `0 || "B"` حاصلش `"B"` است. خط دوم: اول `"B" && "C"` حساب می‌شود که `"C"` است و بعد `"A" || "C"` چون `"A"` truthy است، `"A"` را برمی‌گرداند. خط سوم: `||` اولین مقدار truthy را برمی‌گرداند و چون `null`، `0` و `""` همه falsy هستند، حاصل `"last"` است. گزینه‌ی ۲ فکر کرده حاصل همیشه boolean است، و گزینه‌های ۳ و ۴ اولویت `&&` یا قاعده‌ی برگرداندن عملوند را اشتباه گرفته‌اند.
+
+  - level: medium
+    stem: |
+      کدام گزینه درباره‌ی عملگرهای منطقی در JavaScript **نادرست** است؟
+    options:
+      - '`&&` و `||` مثل زبان C اتصال کوتاه (short-circuit) دارند.'
+      - '`!` همیشه یک مقدار boolean برمی‌گرداند.'
+      - 'اولویت `&&` از `||` بیشتر است.'
+      - '`&&` و `||` همیشه `true` یا `false` برمی‌گردانند.'
+    answer: 4
+    explain: |
+      `&&` و `||` در JavaScript یکی از **خود عملوندها** را برمی‌گردانند؛ مثلاً `"a" && "b"` برابر `"b"` و `0 || "x"` برابر `"x"` است؛ پس گزینه‌ی ۴ نادرست است. سه گزینه‌ی دیگر درست‌اند: اتصال کوتاه دقیقاً مثل C است، `!` همیشه boolean واقعی می‌دهد (برای همین `!!x` همان `Boolean(x)` است) و `&&` قبل از `||` انجام می‌شود.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(!"hello", !!"hello", !0);
+    options:
+      - out: "false true true"
+      - out: "true false false"
+      - out: "false false true"
+      - out: "false true false"
+    answer: 1
+    explain: |
+      `"hello"` رشته‌ای غیرخالی و truthy است، پس `!"hello"` برابر `false` و `!!"hello"` (دو بار نقیض) برابر `true` است. `0` falsy است، پس `!0` برابر `true` است. گزینه‌ی ۲ truthy و falsy را برعکس گرفته (`"hello"` را falsy و `0` را truthy فرض کرده)، گزینه‌ی ۳ نقیض دوم را نادیده گرفته و گزینه‌ی ۴ فقط صفر را truthy حساب کرده است.
+
+  - level: hard
+    stem: |
+      حاصل `[] == ![]` کدام است؟
+    check: value
+    expr: '[] == ![]'
+    options:
+      - value: 'false'
+      - value: 'true'
+      - text: 'خطای `TypeError`'
+        value: '!! TypeError'
+      - value: 'undefined'
+    answer: 2
+    explain: |
+      اول `![]` حساب می‌شود: آرایه‌ی خالی truthy است، پس `![]` برابر `false` است. عبارت تبدیل می‌شود به `[] == false` که همان دام اسلاید ۲۱ است: `false -> 0` و `[] -> "" -> 0`، پس `0 == 0` یعنی `true`. به نظر می‌رسد «یک چیز با نقیض خودش برابر است»، اما در واقع دو تبدیل متفاوت (truthy بودن برای `!` و تبدیل عددی برای `==`) رخ داده است. JavaScript اینجا خطا نمی‌دهد و `==` همیشه boolean برمی‌گرداند، نه `undefined`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const volume = 0;
+      const a = volume || 50;
+      const b = volume ?? 50;
+      console.log(a, b);
+    options:
+      - out: "0 0"
+      - out: "50 50"
+      - out: "0 50"
+      - out: "50 0"
+    answer: 4
+    explain: |
+      `0` falsy است، پس `volume || 50` عملوند دوم یعنی `50` را برمی‌گرداند؛ این همان دام «مقدار پیش‌فرض با `||`» است که مقدار معتبرِ `0` را دور می‌ریزد. اما `??` فقط وقتی طرف راست را برمی‌گرداند که طرف چپ `null` یا `undefined` باشد؛ `0` هیچ‌کدام نیست، پس `b` برابر `0` می‌ماند. گزینه‌ی ۱ فکر کرده `||` صفر را نگه می‌دارد، گزینه‌ی ۲ فکر کرده `??` هم مثل `||` با falsyها رفتار می‌کند و گزینه‌ی ۳ رفتار دو عملگر را جابه‌جا کرده است.
+
+  - level: medium
+    stem: |
+      حاصل کدام عبارت `"x"` است؟
+    check: claims
+    options:
+      - text: '`undefined ?? "x"`'
+        expr: 'undefined ?? "x"'
+        equals: '"x"'
+      - text: '`0 ?? "x"`'
+        expr: '0 ?? "x"'
+        equals: '"x"'
+      - text: '`"" ?? "x"`'
+        expr: '"" ?? "x"'
+        equals: '"x"'
+      - text: '`false ?? "x"`'
+        expr: 'false ?? "x"'
+        equals: '"x"'
+    answer: 1
+    explain: |
+      `??` (nullish coalescing) طرف راست را **فقط** وقتی برمی‌گرداند که طرف چپ `null` یا `undefined` باشد؛ پس `undefined ?? "x"` برابر `"x"` است. `0`، `""` و `false` با اینکه falsy هستند، nullish (یعنی `null` یا `undefined`) نیستند؛ پس `??` خودِ آن‌ها را برمی‌گرداند و حاصل گزینه‌های ۲ تا ۴ به ترتیب `0`، `""` و `false` است. اگر به جای `??` از `||` استفاده می‌شد، هر چهار عبارت `"x"` می‌دادند.

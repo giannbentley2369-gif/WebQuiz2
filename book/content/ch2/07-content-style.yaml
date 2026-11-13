@@ -1,0 +1,616 @@
+id: ch2-content-style
+title: "تغییر متن، HTML و استایل عناصر"
+slides: "JS in HTML، اسلایدهای ۱۹ تا ۲۲"
+lesson: |
+  حالا که می‌توانیم عنصرها را پیدا کنیم و به رویدادها واکنش نشان دهیم، وقت آن است که **صفحه را تغییر دهیم**.
+  اسلاید ۲۲ (Manipulating The DOM، یعنی دستکاری DOM) این توانایی‌ها را خلاصه می‌کند:
+
+  - DOM صفحه را به شکل **درختی از اشیاء** نمایش می‌دهد.
+  - JavaScript می‌تواند **متن، HTML و استایل** را به‌صورت پویا (dynamic، یعنی هنگام اجرا و بدون reload صفحه)
+    تغییر دهد. (موضوع همین درس)
+  - می‌توان عنصرها را در لحظه **ساخت، درج و حذف** کرد. (درس‌های «ساختن و افزودن عناصر جدید» و «حذف و جایگزینی عناصر»)
+  - attributeهایی مثل `id`، `class` و `src` را به‌راحتی می‌توان تغییر داد. (اینجا مختصر، و کامل در درس
+    «ویژگی‌ها (Attributes) و کلاس‌ها»)
+  - متدهایی مثل `getElementById` و `querySelector` به پیدا کردن عنصرها کمک می‌کنند. (درس «پیدا کردن عناصر»)
+  - دستکاری DOM همان چیزی است که صفحه‌های وب را **تعاملی و پویا** می‌کند.
+
+  ### تغییر متن و HTML: `textContent`، `innerText` و `innerHTML`
+
+  | property | هنگام خواندن | هنگام نوشتن |
+  |---|---|---|
+  | `textContent` | همه‌ی متن عنصر و نوادگانش، بدون تگ‌ها (حتی متن‌های مخفی) | متن ساده؛ تگ‌ها **تفسیر نمی‌شوند** و عیناً به‌صورت متن نمایش داده می‌شوند |
+  | `innerText` | متنی که **واقعاً روی صفحه دیده می‌شود** (به CSS بستگی دارد و متن مخفی را حساب نمی‌کند) | متن ساده، مثل `textContent` |
+  | `innerHTML` | کد HTML **داخل** عنصر، به‌صورت رشته | رشته به‌عنوان HTML **تفسیر (parse)** می‌شود و عنصرهای واقعی ساخته می‌شوند |
+  | `outerHTML` | کد HTML **خودِ عنصر** همراه با تگ خودش | (در این درس فقط برای خواندن و دیدن نتیجه از آن استفاده می‌کنیم) |
+
+  خواندن:
+
+  ```html
+  <p id="p">Hello <b>big</b> world</p>
+  <script>
+    const p = document.getElementById("p");
+    console.log(p.textContent); // "Hello big world"
+    console.log(p.innerHTML);   // "Hello <b>big</b> world"
+    console.log(p.outerHTML);   // "<p id="p">Hello <b>big</b> world</p>"
+  </script>
+  ```
+
+  نوشتن:
+
+  ```html
+  <div id="a"></div>
+  <div id="b"></div>
+  <script>
+    document.getElementById("a").innerHTML = "<b>Hi</b> there";   // a bold "Hi", then " there"
+    document.getElementById("b").textContent = "<b>Hi</b> there"; // the tags are shown as text
+    console.log(document.getElementById("a").children.length);     // 1  (a real <b> element)
+    console.log(document.getElementById("b").children.length);     // 0  (just text)
+    console.log(document.getElementById("b").innerHTML);           // "&lt;b&gt;Hi&lt;/b&gt; there"
+  </script>
+  ```
+
+  در `div` دوم، کاربر دقیقاً نوشته‌ی `<b>Hi</b> there` را روی صفحه می‌بیند؛ مرورگر برای اینکه این علامت‌ها تگ
+  حساب نشوند، آن‌ها را در کد HTML به شکل `&lt;` و `&gt;` نگه می‌دارد.
+
+  **نوشتن، همه‌چیز را جایگزین می‌کند.** هر سه property هنگام نوشتن، کل محتوای قبلی عنصر (از جمله عنصرهای
+  فرزند) را پاک می‌کنند: اگر `card` یک `<h2>` و یک `<p>` داشته باشد، بعد از `card.textContent = "Empty"`
+  فقط یک گره‌ی متنی در آن می‌ماند. هر مقداری هم که بدهی به رشته تبدیل می‌شود: `s.textContent = 5 + 5` متن
+  `"10"` را می‌نویسد.
+
+  #### `innerText` چه فرقی با `textContent` دارد؟
+
+  ```html
+  <p id="p">Hi<span style="display: none"> secret</span></p>
+  <script>
+    const p = document.getElementById("p");
+    console.log(p.textContent); // "Hi secret"  (hidden text is included)
+    console.log(p.innerText);   // "Hi"         (only what is visible on the page)
+  </script>
+  ```
+
+  `innerText` به چیدمان و CSS صفحه وابسته است (برای همین کمی کندتر است)، ولی `textContent` فقط درخت DOM را
+  می‌خواند. برای **نوشتن** یک متن ساده (مثل `div.innerText = "Hello DOM!"` در مثال اسلاید ۲۴) هر دو تقریباً
+  یکسان کار می‌کنند.
+
+  ### دام `innerHTML +=` (پیش‌زمینه)
+
+  `a += b` یعنی `a = a + b`. پس `box.innerHTML += "<p>New</p>"` اول کل HTML داخل `box` را به رشته تبدیل
+  می‌کند، رشته‌ی جدید را به آن می‌چسباند و بعد **همه‌چیز را از نو parse می‌کند**. نتیجه: عنصرهای قبلی نابود
+  و نسخه‌های تازه‌ای جایشان ساخته می‌شوند؛ listenerهای آن‌ها و متغیرهایی که به آن‌ها اشاره می‌کردند از دست
+  می‌روند (متنی هم که کاربر در کادرها تایپ کرده بود پاک می‌شود).
+
+  ```html
+  <div id="box"><button id="btn">Click</button></div>
+  <script>
+    const btn = document.getElementById("btn");
+    btn.addEventListener("click", () => console.log("clicked"));
+    document.getElementById("box").innerHTML += "<p>New</p>";
+    console.log(document.getElementById("btn") === btn); // false: a brand-new button
+    // clicking the button now prints nothing: the new button has no listener
+  </script>
+  ```
+
+  راه بهتر برای اضافه کردن: ساختن عنصر با `createElement` و اضافه کردنش با `append` (درس «ساختن و افزودن عناصر جدید»)، یا
+  `insertAdjacentHTML("beforeend", "<p>New</p>")` که چیزهای قبلی را دست نمی‌زند.
+
+  ### امنیت: `innerHTML` و حمله‌ی XSS
+
+  اگر رشته‌ای که به `innerHTML` می‌دهی از **کاربر** آمده باشد (از یک کادر ورودی یا از آدرس صفحه)، مهاجم
+  می‌تواند به‌جای متن، کد HTML و JavaScript بفرستد تا در صفحه‌ی کاربران دیگر اجرا شود. به این حمله **XSS**
+  (Cross-Site Scripting، یعنی اجرای اسکریپت مهاجم در صفحه‌ی سایت دیگر) می‌گویند. تگ `<script>`ی که با
+  `innerHTML` درج شود اجرا نمی‌شود، ولی ترفندهای دیگر کار می‌کنند؛ مثلاً یک `<img>` با آدرس خراب که کد
+  `onerror` آن هنگام شکست بارگذاری تصویر اجرا می‌شود:
+
+  ```js
+  const comment = '<img src="x" onerror="alert(\'hacked\')">'; // typed by an attacker
+  box.innerHTML = comment;   // DANGEROUS: in a real browser the onerror code runs
+  box.textContent = comment; // safe: shown as plain text
+  ```
+
+  قانون ساده: **متنی که از کاربر می‌آید را با `textContent` در صفحه بگذار**، نه با `innerHTML`.
+
+  ### تغییر استایل: `element.style`
+
+  در مثال اسلاید ۱۹ دیدیم `title.style.color = 'red'` رنگ عنوان را قرمز می‌کند. قواعد:
+
+  - `element.style.property = "value"` یک **استایل inline** می‌سازد، یعنی attribute `style` خودِ عنصر را
+    تغییر می‌دهد.
+  - نام propertyهای CSS که خط تیره دارند، در JavaScript **camelCase** می‌شوند: `background-color` می‌شود
+    `backgroundColor` و `font-size` می‌شود `fontSize`. (راه دیگر: `el.style["background-color"]`.)
+  - مقدارها **رشته** هستند و برای اندازه‌ها **واحد** لازم است: `"20px"`، `"1.5rem"`. مقدار نامعتبر (مثلاً
+    عدد `20` بدون واحد برای `fontSize`) بی‌صدا نادیده گرفته می‌شود.
+  - `el.style.color = ""` آن استایل inline را حذف می‌کند.
+  - خواندن `el.style.color` **فقط استایل inline** را می‌بیند، نه قاعده‌هایی که در `<style>` یا فایل CSS
+    نوشته شده‌اند. برای دیدن استایل نهایی که واقعاً اعمال شده، از `getComputedStyle(el)` استفاده کن.
+
+  ```html
+  <style>
+    #p { color: green; }
+  </style>
+  <p id="p">Hi</p>
+  <script>
+    const p = document.getElementById("p");
+    console.log(p.style.color);             // ""  (the CSS rule is not inline)
+    console.log(getComputedStyle(p).color); // "rgb(0, 128, 0)"
+    p.style.backgroundColor = "yellow";
+    p.style.fontSize = "20px";
+    console.log(p.getAttribute("style"));   // "background-color: yellow; font-size: 20px;"
+  </script>
+  ```
+
+  دقت کن که `p.style.background-color = "red"` (با خط تیره) از نظر JavaScript یعنی `p.style.background`
+  منهای `color`، که سمت چپ انتساب نمی‌تواند باشد؛ این یک **خطای نحوی (SyntaxError)** است و چون خطاهای نحوی
+  پیش از اجرا پیدا می‌شوند، **هیچ خطی از آن اسکریپت** اجرا نمی‌شود. برای تغییرهای زیاد در ظاهر، بهتر است یک
+  کلاس CSS را اضافه یا حذف کنی (با `classList`، در درس «ویژگی‌ها (Attributes) و کلاس‌ها»).
+
+  ### `className` و تغییر `id`، `class` و `src` (اسلاید ۲۲)
+
+  - `el.className` کل attribute `class` را به‌صورت یک رشته برمی‌گرداند، مثلاً `"note big"`. مقداردهی به
+    آن **همه‌ی** کلاس‌های قبلی را جایگزین می‌کند و برای اضافه کردن باید با یک فاصله چسباند:
+    `el.className += " bold"`. چون `class` در JavaScript کلمه‌ی رزروشده است (برای تعریف کلاس)، نام این
+    property در DOM `className` انتخاب شده است.
+  - `el.id = "..."` و `img.src = "..."` هم attributeها را مستقیماً عوض می‌کنند.
+
+  ```html
+  <img id="pic" src="a.png" class="thumb">
+  <script>
+    const pic = document.getElementById("pic");
+    pic.id = "photo";
+    pic.className = "big";
+    pic.src = "b.png";
+    console.log(pic.outerHTML);                          // <img id="photo" src="b.png" class="big">
+    console.log(document.getElementById("pic") === null); // true: the old id is gone
+  </script>
+  ```
+
+  ### مثال Button Action، از نگاه این درس
+
+  دو خطِ داخل listener در اسلاید ۱۹ دقیقاً همین ابزارها هستند:
+
+  ```js
+  const title = document.querySelector('#title');
+  title.textContent = 'Goodbye World'; // change the text
+  title.style.color = 'red';           // change the style (inline)
+  ```
+
+  بعد از کلیک، عنوان در DOM به این شکل درمی‌آید و مرورگر آن را فوراً با متن جدید و به رنگ قرمز نشان می‌دهد
+  (اسلاید ۲۱):
+
+  ```html
+  <h1 id="title" style="color: red;">Goodbye World</h1>
+  ```
+
+  ::: tip
+  - برای گذاشتن **متن** (به‌خصوص متنی که از کاربر آمده) از `textContent` استفاده کن؛ `innerHTML` را فقط وقتی
+    به کار ببر که واقعاً می‌خواهی HTML مطمئنی را درج کنی.
+  - برای خواندن استایل نهایی یک عنصر، `getComputedStyle(el)` و برای نوشتن استایل، `el.style.prop` (camelCase،
+    مقدار رشته‌ای با واحد).
+  :::
+
+  ::: trap
+  - `textContent = "<b>Hi</b>"` تگ‌ها را **متن** می‌کند، ولی `innerHTML = "<b>Hi</b>"` یک عنصر `<b>` واقعی
+    می‌سازد.
+  - `innerHTML +=` کل محتوا را از نو می‌سازد: listenerها و ارجاع‌های قبلی از بین می‌روند.
+  - `el.style.color` رنگی را که در فایل CSS تعیین شده نشان نمی‌دهد و `""` برمی‌گرداند.
+  - `el.style.fontSize = 20` (بدون واحد) نادیده گرفته می‌شود؛ `"20px"` درست است.
+  - `el.style.background-color = ...` خطای نحوی است؛ `backgroundColor` درست است.
+  - `className = "x"` همه‌ی کلاس‌های قبلی را پاک می‌کند.
+  :::
+
+  ::: summary
+  - `textContent` (متن خام، شامل متن مخفی)، `innerText` (متن قابل دیدن)، `innerHTML` (HTML تفسیرشده).
+  - نوشتن در این propertyها کل محتوای قبلی را جایگزین می‌کند؛ `innerHTML +=` همه‌چیز را از نو می‌سازد.
+  - ورودی کاربر را با `innerHTML` درج نکن (خطر XSS)؛ از `textContent` استفاده کن.
+  - `el.style.camelCase = "value"` استایل inline می‌سازد؛ خواندن استایل نهایی با `getComputedStyle`.
+  - `className` رشته‌ی کلاس‌هاست و مقداردهی‌اش همه را جایگزین می‌کند؛ `id` و `src` هم مستقیم قابل تغییرند.
+  :::
+questions:
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="a"></div>
+      <div id="b"></div>
+    code: |
+      const a = document.getElementById("a");
+      const b = document.getElementById("b");
+      a.innerHTML = "<b>Hi</b> there";
+      b.textContent = "<b>Hi</b> there";
+      console.log(a.children.length, b.children.length);
+    options:
+      - out: "1 1"
+      - out: "0 0"
+      - out: "1 0"
+      - out: "0 1"
+    answer: 3
+    explain: |
+      `innerHTML` رشته را به‌عنوان HTML تفسیر می‌کند و یک عنصر `<b>` واقعی داخل `a` می‌سازد، پس `a` یک فرزندِ
+      عنصری دارد. `textContent` رشته را متن ساده حساب می‌کند و تگ‌ها را عیناً به‌صورت متن نشان می‌دهد؛ پس `b`
+      فقط یک گره‌ی متنی دارد و `children.length` آن `0` است. گزینه‌ی ۱ فکر کرده هر دو property یکسان‌اند،
+      گزینه‌ی ۲ فکر کرده هیچ‌کدام عنصر نمی‌سازد، و گزینه‌ی ۴ جای این دو را عوض کرده است.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hello <b>big</b> world</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(p.textContent);
+      console.log(p.innerHTML);
+    options:
+      - out: ["Hello <b>big</b> world", "Hello big world"]
+      - out: ["Hello big world", "Hello <b>big</b> world"]
+      - out: ["Hello big world", "Hello big world"]
+      - out: ["Hello", "Hello <b>big</b> world"]
+    answer: 2
+    explain: |
+      `textContent` متن همه‌ی گره‌های داخل عنصر را، بدون تگ‌ها، پشت هم می‌گذارد: `Hello big world` (متن داخل
+      `<b>` هم حساب می‌شود؛ رد گزینه‌ی ۴). `innerHTML` کد HTML داخل عنصر را همراه با تگ‌ها برمی‌گرداند:
+      `Hello <b>big</b> world` (رد گزینه‌ی ۳). گزینه‌ی ۱ جای این دو property را عوض کرده است.
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="card"><h2>Title</h2><p>Body</p></div>
+    code: |
+      const card = document.getElementById("card");
+      card.textContent = "Empty";
+      console.log(card.children.length, card.childNodes.length, card.innerHTML);
+    options:
+      - out: "0 1 Empty"
+      - out: "2 3 Empty"
+      - out: "2 1 Empty"
+      - out: "0 1 <h2>Title</h2><p>Body</p>Empty"
+    answer: 1
+    explain: |
+      نوشتن در `textContent` **کل** محتوای قبلی عنصر، از جمله عنصرهای `<h2>` و `<p>`، را پاک می‌کند و فقط یک
+      گره‌ی متنی با مقدار `Empty` باقی می‌گذارد؛ پس هیچ فرزندِ عنصری نمی‌ماند (`0`)، یک گره‌ی فرزند وجود دارد
+      (`1`) و `innerHTML` همان `Empty` است. گزینه‌های ۲ و ۳ فکر کرده‌اند عنصرهای قبلی می‌مانند، و گزینه‌ی ۴ فکر
+      کرده متن جدید به انتهای محتوای قبلی اضافه می‌شود.
+  - level: hard
+    stem: کد زیر اجرا می‌شود و سپس کاربر روی دکمه‌ی Click کلیک می‌کند. خروجی کامل Console کدام است؟
+    check: dom-output
+    html: |
+      <div id="box"><button id="btn">Click</button></div>
+    code: |
+      const btn = document.getElementById("btn");
+      btn.addEventListener("click", () => console.log("clicked"));
+      const box = document.getElementById("box");
+      box.innerHTML += "<p>New</p>";
+      console.log(document.getElementById("btn") === btn);
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["true", "clicked"]
+      - out: ["false", "clicked"]
+      - out: "false"
+      - out: "true"
+    answer: 3
+    explain: |
+      `box.innerHTML += ...` یعنی `box.innerHTML = box.innerHTML + ...`: کل HTML داخل `box` به رشته تبدیل و
+      دوباره parse می‌شود؛ دکمه‌ی قدیمی نابود و یک دکمه‌ی **تازه** با همان id ساخته می‌شود. پس `getElementById`
+      دکمه‌ی جدید را برمی‌گرداند که با `btn` قدیمی یکی نیست: `false` (رد گزینه‌های ۱ و ۴). listener روی دکمه‌ی
+      قدیمی ثبت شده بود و دکمه‌ی جدید هیچ listenerی ندارد؛ پس کلیک کاربر چیزی چاپ نمی‌کند (رد گزینه‌ی ۲).
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="b"></div>
+    code: |
+      const b = document.getElementById("b");
+      b.textContent = "<b>Hi</b>";
+      console.log(b.textContent, "|", b.innerHTML);
+    options:
+      - out: "Hi | <b>Hi</b>"
+      - out: "<b>Hi</b> | &lt;b&gt;Hi&lt;/b&gt;"
+      - out: "<b>Hi</b> | <b>Hi</b>"
+      - out: "Hi | Hi"
+    answer: 2
+    explain: |
+      با `textContent` رشته عیناً به متن تبدیل می‌شود، پس خواندن دوباره‌ی `textContent` همان `<b>Hi</b>` را
+      می‌دهد (رد گزینه‌های ۱ و ۴ که فکر کرده‌اند تگ‌ها تفسیر شده‌اند). اما در **کد HTML** این متن، علامت‌های
+      `<` و `>` باید به شکل `&lt;` و `&gt;` نوشته شوند تا تگ حساب نشوند؛ پس `innerHTML` مقدار
+      `&lt;b&gt;Hi&lt;/b&gt;` را برمی‌گرداند (رد گزینه‌ی ۳ که فکر کرده یک عنصر `<b>` ساخته شده است).
+  - level: easy
+    stem: چرا نباید متنی را که کاربر وارد کرده است مستقیماً با `innerHTML` در صفحه قرار داد؟
+    options:
+      - 'چون `innerHTML` رشته را به‌عنوان HTML تفسیر می‌کند و مهاجم می‌تواند کدی (مثلاً از طریق `onerror` یک تصویر) را در صفحه اجرا کند؛ برای متن کاربر از `textContent` استفاده می‌کنیم.'
+      - 'چون `innerHTML` همه‌ی حروف متن را به حروف بزرگ تبدیل می‌کند.'
+      - 'چون `innerHTML` فقط روی عنصر `<div>` کار می‌کند.'
+      - 'چون `innerHTML` متن را فقط در Console نشان می‌دهد و چیزی در صفحه نمایش نمی‌دهد.'
+    answer: 1
+    explain: |
+      `innerHTML` هر رشته‌ای را HTML حساب می‌کند؛ اگر کاربرِ مهاجم چیزی مثل `<img src="x" onerror="...">`
+      بفرستد، کد او در صفحه‌ی کاربران دیگر اجرا می‌شود که به آن XSS می‌گویند. `textContent` همان رشته را بی‌خطر و
+      به‌صورت متن نمایش می‌دهد. سه گزینه‌ی دیگر ساختگی‌اند: `innerHTML` حروف را تغییر نمی‌دهد، روی همه‌ی
+      عنصرها کار می‌کند، و نتیجه‌اش در خود صفحه دیده می‌شود.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      p.style.color = "red";
+      p.style.backgroundColor = "yellow";
+      p.style.fontSize = "20px";
+      console.log(p.getAttribute("style"));
+      console.log(p.style.color, p.style.fontSize, p.style.backgroundColor);
+    options:
+      - out: ["color: red; backgroundColor: yellow; fontSize: 20px;", "red 20px yellow"]
+      - out: ["color: red; background-color: yellow; font-size: 20px;", "red 20px yellow"]
+      - out: ["null", "red 20px yellow"]
+      - out: ["color: red; background-color: yellow; font-size: 20px;", "red 20 yellow"]
+    answer: 2
+    explain: |
+      `el.style.xxx = ...` استایل **inline** می‌سازد، یعنی attribute `style` را می‌نویسد؛ پس `getAttribute`
+      مقدار `null` نیست (رد گزینه‌ی ۳). در attribute، نام‌ها به شکل CSS (با خط تیره: `background-color`) ذخیره
+      می‌شوند، و فقط در JavaScript به شکل camelCase نوشته می‌شوند (رد گزینه‌ی ۱). مقدار `fontSize` همان رشته‌ی
+      `"20px"` است و واحدش حذف نمی‌شود (رد گزینه‌ی ۴).
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      p.style.fontSize = 20;
+      console.log(JSON.stringify(p.style.fontSize));
+      p.style.fontSize = "20px";
+      console.log(JSON.stringify(p.style.fontSize));
+    options:
+      - out: ['"20"', '"20px"']
+      - out: ['"20px"', '"20px"']
+      - out: ['""', '"20px"']
+      - out: ["20", '"20px"']
+    answer: 3
+    explain: |
+      برای اندازه‌ها در CSS واحد لازم است. عدد `20` بدون واحد یک مقدار نامعتبر برای `font-size` است و مرورگر
+      آن را **بی‌صدا نادیده می‌گیرد**؛ پس `fontSize` همان رشته‌ی خالی می‌ماند (رد گزینه‌ی ۱). مرورگر خودش `px`
+      اضافه نمی‌کند (رد گزینه‌ی ۲)، و مقدار propertyهای `style` همیشه رشته است، نه عدد (رد گزینه‌ی ۴). با
+      `"20px"` مقدار درست ثبت می‌شود.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log("start");
+      p.style.background-color = "red";
+      console.log("end");
+    options:
+      - out: ["start", "!! SyntaxError"]
+      - out: ["start", "end"]
+      - out: ["start", "!! ReferenceError"]
+      - out: "!! SyntaxError"
+    answer: 4
+    explain: |
+      `p.style.background-color = "red"` از نظر JavaScript یعنی `(p.style.background - color) = "red"`؛ حاصل
+      یک تفریق نمی‌تواند سمت چپ انتساب باشد و این یک **خطای نحوی** است. خطاهای نحوی پیش از اجرای کد، هنگام
+      خواندن کل اسکریپت پیدا می‌شوند؛ پس **هیچ خطی** اجرا نمی‌شود و حتی `start` هم چاپ نمی‌شود (رد گزینه‌های ۱ و
+      ۳). گزینه‌ی ۲ فکر کرده این خط کار می‌کند. شکل درست: `p.style.backgroundColor = "red"`.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <style>#p { color: green; }</style>
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(JSON.stringify(p.style.color));
+      console.log(getComputedStyle(p).color);
+    options:
+      - out: ['"green"', "rgb(0, 128, 0)"]
+      - out: ['""', "rgb(0, 128, 0)"]
+      - out: ['"green"', "green"]
+      - out: ['""', '""']
+    answer: 2
+    explain: |
+      `p.style` فقط استایل‌های **inline** (attribute `style` خودِ عنصر) را نشان می‌دهد؛ رنگ سبز در قاعده‌ی
+      `<style>` تعریف شده، پس `p.style.color` رشته‌ی خالی است (رد گزینه‌های ۱ و ۳). `getComputedStyle` استایل
+      **نهایی** اعمال‌شده را برمی‌گرداند و رنگ‌ها را به شکل `rgb(...)` گزارش می‌کند: `rgb(0, 128, 0)` (رد
+      گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p" class="note big">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      p.className = "warning";
+      console.log(p.className, p.className.includes("note"));
+      p.className += " bold";
+      console.log(p.getAttribute("class"));
+    options:
+      - out: ["note big warning true", "note big warning bold"]
+      - out: ["warning true", "warning bold"]
+      - out: ["warning false", "warningbold"]
+      - out: ["warning false", "warning bold"]
+    answer: 4
+    explain: |
+      مقداردهی به `className` **کل** attribute `class` را جایگزین می‌کند؛ پس `note` و `big` پاک می‌شوند و
+      `className` فقط `warning` است (رد گزینه‌های ۱ و ۲). `+= " bold"` رشته‌ی `" bold"` را که با فاصله شروع
+      می‌شود به انتهای آن می‌چسباند و نتیجه `warning bold` است، یعنی دو کلاس (رد گزینه‌ی ۳). برای اضافه و حذف
+      تک‌تک کلاس‌ها، `classList` راحت‌تر است.
+  - level: easy
+    stem: |
+      چرا برای کار با کلاس‌های یک عنصر در JavaScript از `el.className` استفاده می‌کنیم و نه از `el.class`؟
+    options:
+      - 'چون `class` در JavaScript یک کلمه‌ی رزروشده (برای تعریف کلاس) است و به همین دلیل property DOM با نام `className` تعریف شده است.'
+      - 'چون `el.class` فقط در Node.js کار می‌کند.'
+      - 'چون `className` فقط کلاس اولِ عنصر را برمی‌گرداند.'
+      - 'چون attribute `class` در HTML وجود ندارد.'
+    answer: 1
+    explain: |
+      `class` در JavaScript کلمه‌ی کلیدی تعریف کلاس است؛ برای همین، property متناظر با attribute `class` در
+      DOM `className` نام‌گذاری شده و `el.class` اصلاً وجود ندارد (`undefined`). `className` **همه‌ی** کلاس‌ها را
+      به‌صورت یک رشته برمی‌گرداند (رد گزینه‌ی ۳)، attribute `class` هم در HTML کاملاً رایج است (رد گزینه‌ی ۴)،
+      و در Node.js اصلاً DOM وجود ندارد (رد گزینه‌ی ۲).
+  - level: medium
+    stem: |
+      این کد مثال Button Action (اسلاید ۱۹) است. کاربر یک بار روی دکمه کلیک می‌کند و سپس در Console دستور
+      `console.log(document.querySelector("#title").outerHTML)` را اجرا می‌کنیم. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+    code: |
+      const btn = document.querySelector('button');
+
+      btn.addEventListener('click', () => {
+        const title = document.querySelector('#title');
+        title.textContent = 'Goodbye World';
+        title.style.color = 'red';
+      });
+    events:
+      - { type: click, target: "button" }
+    after: |
+      console.log(document.querySelector("#title").outerHTML);
+    options:
+      - out: '<h1 id="title" color="red">Goodbye World</h1>'
+      - out: '<h1 id="title">Goodbye World</h1>'
+      - out: '<h1 id="title" style="color: red;">Goodbye World</h1>'
+      - out: '<h1 id="title" style="color: red;">Hello World</h1>'
+    answer: 3
+    explain: |
+      `textContent` متن را به `Goodbye World` تغییر می‌دهد (رد گزینه‌ی ۴)، و `style.color = 'red'` یک استایل
+      inline می‌سازد؛ یعنی attribute `style="color: red;"` روی عنصر نوشته می‌شود (رد گزینه‌ی ۲ که فکر کرده
+      تغییر استایل در HTML دیده نمی‌شود). مرورگر attributeی به نام `color` نمی‌سازد (رد گزینه‌ی ۱). این همان
+      حالت اسلاید ۲۱ است: «Goodbye World» به رنگ قرمز.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <span id="s"></span>
+    code: |
+      const s = document.getElementById("s");
+      s.textContent = 5 + 5;
+      console.log(s.textContent, typeof s.textContent);
+      s.textContent = "5" + 5;
+      console.log(s.textContent);
+    options:
+      - out: ["10 number", "55"]
+      - out: ["10 string", "10"]
+      - out: ["5+5 string", "55"]
+      - out: ["10 string", "55"]
+    answer: 4
+    explain: |
+      اول عبارت `5 + 5` محاسبه می‌شود (`10`) و بعد در `textContent` نوشته می‌شود؛ هر مقداری که در `textContent`
+      بنویسی به **رشته** تبدیل می‌شود، پس خواندنش `"10"` با نوع `string` است (رد گزینه‌ی ۱). عبارت به‌صورت
+      متن `5+5` نوشته نمی‌شود (رد گزینه‌ی ۳). در خط بعد، `"5" + 5` الحاق رشته است و `"55"` می‌شود (همان
+      coercion فصل اول؛ رد گزینه‌ی ۲).
+  - level: hard
+    stem: |
+      کد زیر **در مرورگر** اجرا می‌شود. مقدار `p.textContent` و `p.innerText` به ترتیب کدام است؟
+    manual: "jsdom does not implement innerText (it depends on CSS and layout); the key follows the browser definition of innerText as the rendered text, which skips display:none content."
+    html: |
+      <p id="p">Hi<span style="display: none"> secret</span></p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(p.textContent);
+      console.log(p.innerText);
+    options:
+      - '`"Hi secret"` و `"Hi"`'
+      - '`"Hi"` و `"Hi secret"`'
+      - 'هر دو `"Hi secret"`'
+      - 'هر دو `"Hi"`'
+    answer: 1
+    explain: |
+      `textContent` همه‌ی متن‌های درخت DOM را، بدون توجه به CSS، برمی‌گرداند؛ پس متن `span` مخفی هم حساب
+      می‌شود: `"Hi secret"`. `innerText` فقط متنی را برمی‌گرداند که **واقعاً روی صفحه دیده می‌شود**؛ چون `span`
+      با `display: none` مخفی است، نتیجه `"Hi"` است. گزینه‌ی ۲ جای این دو را عوض کرده، و گزینه‌های ۳ و ۴ تفاوت
+      آن‌ها را نادیده گرفته‌اند.
+  - level: easy
+    stem: کدام عبارت درباره‌ی دستکاری DOM (اسلاید ۲۲) نادرست است؟
+    options:
+      - 'DOM صفحه را به شکل درختی از اشیاء نمایش می‌دهد.'
+      - 'JavaScript می‌تواند متن، HTML و استایل عنصرها را به‌صورت پویا تغییر دهد.'
+      - 'attributeهایی مثل `id`، `class` و `src` را می‌توان به‌راحتی تغییر داد.'
+      - 'تغییراتی که JavaScript در DOM می‌دهد، در فایل HTML روی سرور هم ذخیره می‌شود.'
+    answer: 4
+    explain: |
+      دستکاری DOM فقط درخت **داخل حافظه‌ی مرورگر** را تغییر می‌دهد؛ فایل HTML روی سرور (یا روی دیسک) دست
+      نمی‌خورد و با refresh صفحه همه‌چیز از روی فایل اصلی دوباره ساخته می‌شود. سه گزینه‌ی دیگر عیناً بندهای
+      اسلاید ۲۲ هستند: درختی از اشیاء، تغییر پویای متن و HTML و استایل، و تغییر آسان `id`، `class` و `src`.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p" style="color: blue">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      p.style.fontWeight = "bold";
+      console.log(p.getAttribute("style"));
+      p.style.color = "";
+      console.log(p.getAttribute("style"));
+    options:
+      - out: ["color: blue; font-weight: bold;", "font-weight: bold;"]
+      - out: ["font-weight: bold;", "font-weight: bold;"]
+      - out: ["color: blue; font-weight: bold;", "color: ; font-weight: bold;"]
+      - out: ["color: blue; fontWeight: bold;", "fontWeight: bold;"]
+    answer: 1
+    explain: |
+      `p.style.fontWeight = ...` فقط **یک** property را به استایل inline اضافه می‌کند و بقیه‌ی استایل‌های inline
+      (اینجا `color: blue`) سر جایشان می‌مانند (رد گزینه‌ی ۲). نام‌ها در attribute به شکل CSS (`font-weight`)
+      نوشته می‌شوند (رد گزینه‌ی ۴). مقداردهی رشته‌ی خالی، آن property را کاملاً از استایل inline حذف می‌کند و
+      چیزی مثل `color: ;` باقی نمی‌گذارد (رد گزینه‌ی ۳).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <img id="pic" src="a.png" class="thumb">
+    code: |
+      const pic = document.getElementById("pic");
+      pic.id = "photo";
+      pic.className = "big";
+      pic.src = "b.png";
+      console.log(pic.outerHTML);
+      console.log(document.getElementById("pic") === null);
+    options:
+      - out: ['<img id="pic" src="a.png" class="thumb">', "false"]
+      - out: ['<img id="photo" src="b.png" class="thumb big">', "true"]
+      - out: ['<img id="photo" src="b.png" class="big">', "true"]
+      - out: ['<img id="photo" src="b.png" class="big">', "false"]
+    answer: 3
+    explain: |
+      propertyهای `id`، `className` و `src` مستقیماً attributeهای عنصر را عوض می‌کنند، پس `outerHTML` مقدارهای
+      جدید را نشان می‌دهد (رد گزینه‌ی ۱). مقداردهی `className` کلاس قبلی (`thumb`) را جایگزین می‌کند، نه اینکه
+      به آن اضافه کند (رد گزینه‌ی ۲). چون id عنصر عوض شده، دیگر عنصری با id برابر `pic` وجود ندارد و
+      `getElementById` مقدار `null` برمی‌گرداند (رد گزینه‌ی ۴).
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="out"></div>
+    code: |
+      const out = document.getElementById("out");
+      out.innerHTML = "<script>console.log('script ran')<\/script>";
+      console.log("children:", out.children.length);
+    options:
+      - out: ["script ran", "children: 1"]
+      - out: ["children: 1", "script ran"]
+      - out: "children: 0"
+      - out: "children: 1"
+    answer: 4
+    explain: |
+      `innerHTML` تگ `<script>` را parse می‌کند و یک عنصر `<script>` واقعی داخل `div` می‌سازد (پس
+      `children.length` برابر `1` است؛ رد گزینه‌ی ۳)، ولی طبق استاندارد HTML، اسکریپتی که با `innerHTML` درج شود
+      **اجرا نمی‌شود**؛ پس `script ran` نه قبل و نه بعد چاپ نمی‌شود (رد گزینه‌های ۱ و ۲). با این حال `innerHTML`
+      برای ورودی کاربر امن نیست، چون راه‌های دیگری مثل `onerror` در تگ `<img>` همچنان کد را اجرا می‌کنند.
+      (`<\/script>` فقط برای این است که رشته تگ اسکریپتِ خودِ صفحه را زودتر از موعد نبندد.)
+  - level: easy
+    stem: |
+      برای اینکه رنگ پس‌زمینه‌ی عنصر `box` زرد شود، در جای خالی `box.style.______ = "yellow";` کدام گزینه
+      قرار می‌گیرد؟
+    options:
+      - '`background-color`'
+      - '`backgroundColor`'
+      - '`BackgroundColor`'
+      - '`bgColor`'
+    answer: 2
+    explain: |
+      در JavaScript، نام propertyهای CSS که خط تیره دارند camelCase می‌شوند: `background-color` می‌شود
+      `backgroundColor`. نوشتن `box.style.background-color` خطای نحوی می‌دهد، چون خط تیره به معنای تفریق است
+      (رد گزینه‌ی ۱). نام‌ها به حروف بزرگ و کوچک حساس‌اند و حرف اول کوچک است (رد گزینه‌ی ۳)، و `bgColor`
+      property CSS نیست و روی `style` هیچ اثری ندارد (رد گزینه‌ی ۴).
