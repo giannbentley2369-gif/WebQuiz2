@@ -1,0 +1,474 @@
+id: ch3-why-node
+title: "محدودیت‌های JavaScript و تولد Node.js"
+slides: "NodeJS & TS، اسلایدهای ۲ تا ۵"
+lesson: |
+  تا اینجای کتاب، JavaScript را فقط **داخل مرورگر** دیدیم: دکمه‌ها را کلیک‌پذیر کردیم، فرم‌ها را بررسی کردیم و DOM را تغییر دادیم. عنوان اسلاید اول این جلسه «**Beyond JavaScript**» است، یعنی «فراتر از JavaScript». در این درس می‌بینیم JavaScript اولش چه ضعف‌هایی داشت، چرا برنامه‌نویس‌ها خواستند آن را از مرورگر بیرون بیاورند و **Node.js** چطور این کار را ممکن کرد.
+
+  ### در این جلسه چه یاد می‌گیریم؟ (اسلاید ۲)
+
+  اسلاید ۲ سه هدف را روی سه کارت نشان می‌دهد:
+
+  | کارت | متن اسلاید | یعنی… | کجای این فصل؟ |
+  |---|---|---|---|
+  | a | Make console applications with JS | ساختن **برنامه‌های کنسولی** (console application: برنامه‌ای که در ترمینال اجرا می‌شود و صفحه‌ی گرافیکی ندارد) با JavaScript | Node.js و npm |
+  | b | Learn how JS runs on servers | یاد گرفتن اینکه JavaScript چطور روی **سرور** اجرا می‌شود | Node.js |
+  | c | Solve the old JS typing issues | حل مشکلات قدیمی **نوع‌دهی** (typing) در JavaScript | TypeScript (نیمه‌ی دوم فصل) |
+
+  ### چند مفهوم پایه قبل از شروع
+
+  #### زبان، موتور و محیط اجرا
+  این سه کلمه را زیاد می‌شنوی و نباید قاطی‌شان کنی:
+
+  - **زبان (language)**: خودِ JavaScript؛ یعنی قواعد نوشتن کد (`let`، تابع، حلقه و…).
+  - **موتور (engine)**: برنامه‌ای که کد JavaScript را می‌خواند، به زبان ماشین تبدیل و اجرا می‌کند. معروف‌ترینش **V8** است که Google برای مرورگر Chrome ساخت.
+  - **محیط اجرا (runtime)**: موتور به‌اضافه‌ی ابزارهای آماده‌ای که آن محیط در اختیار کد می‌گذارد. مرورگر به کد ما `document` و `window` و `alert` می‌دهد؛ Node.js به جای آن‌ها ابزارهایی مثل `fs` (کار با فایل)، `http` (ساختن سرور) و `process` (اطلاعات برنامه‌ی در حال اجرا) می‌دهد.
+
+  ::: analogy
+  زبان مثل **دستور پخت** است، موتور مثل **آشپزی** است که دستور را می‌خواند و انجام می‌دهد، و محیط اجرا مثل **کل آشپزخانه** است: آشپز به‌اضافه‌ی وسایلش. آشپزی به اسم V8 هم در آشپزخانه‌ی Chrome کار می‌کند و هم در آشپزخانه‌ی Node.js؛ آشپز یکی است ولی وسایل دو آشپزخانه فرق دارد. برای همین در Node.js خبری از `document` نیست، ولی می‌توانی فایل بخوانی.
+  :::
+
+  | | مرورگر (مثلاً Chrome) | Node.js |
+  |---|---|---|
+  | زبان | JavaScript | JavaScript |
+  | موتور | V8 | V8 |
+  | ابزارهای مخصوص | `window`، `document`، `alert`، `localStorage` | `fs`، `http`، `process`، `require` |
+  | کاربرد اصلی | رابط کاربری صفحه‌ی وب | سرور، برنامه‌ی کنسولی، ابزارهای برنامه‌نویسی |
+
+  #### client و server، frontend و backend
+  وقتی آدرس یک سایت را در مرورگر می‌زنی، مرورگرت یک **client** (کلاینت: برنامه‌ای که درخواست می‌فرستد) است و کامپیوتری که جواب می‌دهد یک **server** (سرور: برنامه یا کامپیوتری که به درخواست‌ها پاسخ می‌دهد). بخشی از برنامه که کاربر می‌بیند و در مرورگر اجرا می‌شود **frontend** (سمت کاربر) است و بخش پشت صحنه که روی سرور اجرا می‌شود (ذخیره در پایگاه داده، ورود کاربر، پرداخت و…) **backend** (سمت سرور).
+
+  #### I/O یعنی چه؟
+  **I/O** (Input/Output، ورودی/خروجی) هر کاری است که برنامه با «بیرون از خودش» انجام می‌دهد: خواندن و نوشتن فایل، فرستادن درخواست در شبکه، پرسیدن از پایگاه داده. این کارها در مقایسه با محاسبه‌ی خودِ CPU **خیلی کُند** هستند؛ پس یک سرور بیشتر وقتش را **منتظر I/O** است، نه مشغول حساب کردن. این نکته کلید فهمیدن Node.js است.
+
+  ### محدودیت‌های JavaScript (اسلاید ۳)
+
+  JavaScript در سال ۱۹۹۵ برای کارهای ساده‌ی صفحه‌ی وب ساخته شد. اسلاید ۳ پنج محدودیت آن را می‌شمارد:
+
+  **۱. فقط برای کارهای ساده‌ی مرورگر طراحی شده بود.** هدفش چیزهایی مثل بررسی یک فرم یا واکنش به کلیک بود، نه **برنامه‌های کامل و بزرگ** (full-scale applications) یا **منطق سمت سرور** (backend logic).
+
+  **۲. اجرای تک‌نخی (single-threaded) باعث مسدود شدن (blocking) می‌شد.** **thread** (نخ اجرا) را مثل یک کارگر در نظر بگیر. JavaScript فقط **یک** کارگر دارد که در هر لحظه یک کار انجام می‌دهد. اگر این کارگر درگیر یک محاسبه‌ی سنگین یا یک عملیات I/O طولانی شود، بقیه‌ی کارها **منتظر می‌مانند**؛ به این وضعیت **blocking** (مسدود شدن) می‌گوییم. مثال زیر را ببین:
+
+  ```js
+  setTimeout(() => console.log("timer"), 0);
+
+  const start = Date.now();
+  while (Date.now() - start < 200) {} // busy wait: blocks the only thread for 200 ms
+  console.log("loop done");
+  // Output:
+  // loop done
+  // timer
+  ```
+
+  با اینکه زمان تایمر `0` است، `timer` **بعد از** `loop done` چاپ می‌شود؛ چون تنها thread برنامه ۲۰۰ میلی‌ثانیه درگیر حلقه بود و نوبت به callback تایمر نمی‌رسید. (جزئیات صف‌ها و event loop را در فصل اول خواندیم.)
+
+  **۳. نوع‌دهی پویا (dynamic typing) خطاهای غیرقابل‌پیش‌بینی می‌ساخت.** در JavaScript نوع متغیر هنگام اجرا مشخص می‌شود و می‌تواند عوض شود. در پروژه‌های بزرگ این یعنی باگ‌هایی که فقط **هنگام اجرا** (runtime) پیدا می‌شوند و نگه‌داری کد را سخت می‌کنند:
+
+  ```js
+  function total(price, count) {
+    return price + count;
+  }
+  console.log(total(5, 2));   // 7
+  console.log(total("5", 2)); // "52" (a hidden bug: string concatenation!)
+  ```
+
+  جواب این مشکل **TypeScript** است که در نیمه‌ی دوم همین فصل می‌خوانیم.
+
+  **۴. نبودِ سیستم ماژول (module system).** **ماژول** (module) یعنی یک فایل کد با مرز مشخص که فقط چیزهایی را که خودش بخواهد به بقیه نشان می‌دهد. JavaScript اولیه چنین چیزی نداشت: همه‌ی فایل‌های `<script>` یک **محدوده‌ی سراسری** (global scope) مشترک داشتند و اسم‌ها با هم تداخل می‌کردند:
+
+  ```html
+  <script src="cart.js"></script>  <!-- var count = 5; -->
+  <script src="likes.js"></script> <!-- var count = 0; overwrites the cart count! -->
+  ```
+
+  پس سازمان‌دهی کد و استفاده‌ی دوباره از آن سخت بود. بعدها Node.js سیستم ماژول CommonJS (`require`) را آورد و خود زبان هم ES Modules (`import` و `export`) را به دست آورد.
+
+  **۵. ابزارهای محدود و مقیاس‌پذیری ضعیف.** ابزار درست‌وحسابی برای مدیریت کتابخانه‌ها، ساختن (build) و تست پروژه نبود و کد با بزرگ شدن پروژه به‌سختی قابل نگه‌داری بود؛ یعنی **scalability** (مقیاس‌پذیری: توانایی رشد کردن بدون به هم ریختن) ضعیفی داشت.
+
+  | محدودیت (اسلاید ۳) | جوابش در همین فصل |
+  |---|---|
+  | فقط مرورگر، نه برنامه‌ی کامل یا backend | Node.js (اجرای JS روی سرور و در ترمینال) |
+  | تک‌نخی و blocking در I/O | مدل event-driven و non-blocking در Node.js |
+  | dynamic typing | TypeScript |
+  | نبودِ module system | ماژول‌های CommonJS و ES Modules، پکیج‌های npm |
+  | ابزار محدود و مقیاس‌پذیری ضعیف | npm، bundlerها، TypeScript |
+
+  ### جرقه‌ی اولیه (Inception، اسلاید ۴)
+
+  چه شد که کسی به فکر بردن JavaScript به بیرون از مرورگر افتاد؟ اسلاید ۴ پنج دلیل می‌آورد:
+
+  ۱. برنامه‌نویس‌ها می‌خواستند مهارت JavaScript خود را **بیرون از مرورگر** هم به کار ببرند، مخصوصاً برای منطق **backend**؛ به جای اینکه برای سرور یک زبان دیگر (مثل PHP یا Java) هم یاد بگیرند.
+
+  ۲. برنامه‌های وب **پویاتر** شدند و تبادل داده بین client و server باید **سریع‌تر و یکپارچه‌تر** (unified) انجام می‌شد؛ اگر هر دو طرف یک زبان و یک قالب داده داشته باشند، این کار خیلی ساده‌تر است.
+
+  ۳. ظهور **AJAX** و **JSON** نشان داد JavaScript می‌تواند کارهای **ناهمگام** (asynchronous: کاری که شروع می‌شود و نتیجه‌اش بعداً می‌رسد، بدون اینکه برنامه منتظر بماند) را به‌خوبی مدیریت کند.
+     - **AJAX** (Asynchronous JavaScript And XML): روشی که صفحه‌ی وب **بدون بارگذاری دوباره** و در پس‌زمینه از سرور داده بگیرد؛ مثلاً وقتی در نقشه‌ی آنلاین جابه‌جا می‌شوی و تکه‌های جدید نقشه بدون refresh ظاهر می‌شوند.
+     - **JSON** (JavaScript Object Notation): یک قالب متنی برای جابه‌جایی داده که دقیقاً شبیه شیء‌های JavaScript است:
+
+       ```json
+       { "name": "Ali", "age": 21, "courses": ["Web", "AI"] }
+       ```
+
+  ۴. **بهبود موتورها** (engine improvements)، مخصوصاً **V8** ساخت Google، JavaScript را آن‌قدر سریع کرد که برای بار کاری سرور هم کافی بود. V8 کد JavaScript را مستقیم به **کد ماشین** تبدیل می‌کند.
+
+  ۵. همه‌ی این‌ها به ایده‌ی اجرای JavaScript **بیرون از مرورگر** رسید؛ یعنی شروع حرکت به سمت **server-side JavaScript** (JavaScript سمت سرور).
+
+  ::: info تاریخچه‌ی کوتاه
+  این تاریخ‌ها در اسلایدها نیست و فقط برای تصویر ذهنی بهتر آمده است: ۱۹۹۵ تولد JavaScript در شرکت Netscape؛ ۲۰۰۵ رواج نام AJAX؛ ۲۰۰۸ عرضه‌ی Chrome و موتور V8؛ ۲۰۰۹ معرفی Node.js توسط Ryan Dahl؛ ۲۰۱۰ عرضه‌ی npm.
+  :::
+
+  ### سرانجام Node.js آمد (اسلاید ۵)
+
+  **Node.js** یک **runtime** (محیط اجرا) برای JavaScript است که روی موتور V8 ساخته شده و اجازه می‌دهد کد JavaScript را **بیرون از مرورگر** (روی سرور یا در ترمینال کامپیوتر خودت) اجرا کنی. دقت کن: Node.js **زبان جدید نیست** (زبانش همان JavaScript است)، **فریم‌ورک** (framework) هم نیست و **مرورگر** هم نیست.
+
+  اسلاید ۵ پنج ویژگی آن را می‌گوید:
+
+  **۱. Powered by Google's fast V8 engine:** همان موتور سریع Chrome.
+
+  **۲. Event-driven, non-blocking I/O model:** مهم‌ترین ایده‌ی Node.js.
+  - **non-blocking I/O** (ورودی/خروجی غیرمسدودکننده): Node.js کار I/O (مثلاً خواندن فایل) را **شروع می‌کند و منتظر نمی‌ماند**؛ می‌رود سراغ ادامه‌ی کد. وقتی نتیجه آماده شد، خبرش می‌کنند.
+  - **event-driven** (رویدادمحور): کد ما به **رویدادها** (event) واکنش نشان می‌دهد: «درخواستی رسید»، «خواندن فایل تمام شد»، «زمان تایمر رسید». ما از قبل یک تابع **callback** (تابعی که بعداً صدا زده می‌شود) ثبت می‌کنیم و Node.js هر وقت آن رویداد رخ داد، آن را اجرا می‌کند.
+
+  ::: analogy گارسون رستوران
+  یک رستوران را با **یک گارسون** تصور کن (همان thread واحد).
+  **گارسون blocking**: سفارش میز ۱ را می‌گیرد، به آشپزخانه می‌دهد و **دم در آشپزخانه می‌ایستد** تا غذا آماده شود؛ در این مدت میزهای دیگر معطل‌اند.
+  **گارسون non-blocking (مثل Node.js)**: سفارش میز ۱ را به آشپزخانه می‌دهد و **فوراً** سراغ میز ۲ و ۳ می‌رود. هر وقت آشپزخانه **زنگ زد** (رویداد)، غذای آماده را می‌برد (اجرای callback).
+  با همان یک گارسون، رستوران دوم به مشتری‌های خیلی بیشتری می‌رسد. آشپزخانه اینجا همان سیستم‌عامل و بخش‌های داخلی Node.js است که کار I/O را در پس‌زمینه انجام می‌دهند.
+  :::
+
+  این تفاوت را در کد ببین. `fs.readFile` غیرمسدودکننده است و `fs.readFileSync` مسدودکننده:
+
+  ```js title=non-blocking.js
+  const fs = require("fs");
+
+  console.log("start");
+  fs.readFile(__filename, "utf8", () => {
+    console.log("file read"); // runs later, when the file is ready
+  });
+  console.log("end");
+  // Output: start, end, file read
+  ```
+
+  ```js title=blocking.js
+  const fs = require("fs");
+
+  console.log("start");
+  const text = fs.readFileSync(__filename, "utf8"); // waits here until the file is read
+  console.log("file read");
+  console.log("end");
+  // Output: start, file read, end
+  ```
+
+  (`__filename` در Node.js مسیر همین فایلِ در حال اجراست؛ یعنی برنامه دارد خودش را می‌خواند.)
+
+  **۳. Same language for frontend and backend:** یک زبان برای هر دو سمت. یک برنامه‌نویس می‌تواند هم frontend و هم backend بنویسد (به چنین کسی full-stack می‌گویند) و حتی کد مشترک (مثلاً تابع بررسی ایمیل) را در هر دو سمت استفاده کند.
+
+  **۴. Massive npm ecosystem for packages:** اکوسیستم عظیم **npm** (مدیر بسته‌ی Node) با میلیون‌ها پکیج آماده. در درس‌های بعدی مفصل می‌خوانیمش.
+
+  **۵. Turned JavaScript into a full platform:** JavaScript از «زبان اسکریپت‌نویسی مرورگر» به یک **پلتفرم کامل** تبدیل شد: سرور، برنامه‌ی کنسولی، ابزارهای ساخت پروژه و حتی برنامه‌ی دسکتاپ.
+
+  #### اولین برنامه‌ها با Node.js
+  یک فایل بساز و با دستور `node` اجرایش کن:
+
+  ```js title=hello.js
+  console.log("Hello from Node.js!");
+  ```
+
+  ```bash
+  node hello.js
+  # Hello from Node.js!
+  ```
+
+  این یک **برنامه‌ی کنسولی** است؛ همان هدف a در اسلاید ۲. حالا یک وب‌سرور خیلی کوچک (هدف b):
+
+  ```js title=server.js
+  const http = require("http");
+
+  const server = http.createServer((req, res) => {
+    res.end("Hello from a Node.js server!"); // the answer sent to the browser
+  });
+
+  server.listen(3000, () => {
+    console.log("Server running at http://localhost:3000");
+  });
+  ```
+
+  بعد از `node server.js` برنامه تمام نمی‌شود؛ منتظر **رویداد** «رسیدن درخواست» می‌ماند. هر بار که آدرس `http://localhost:3000` را در مرورگر باز کنی، callbackِ داده‌شده به `createServer` اجرا می‌شود و متن را برمی‌گرداند. این یعنی event-driven بودن.
+
+  #### در Node.js چه چیزهایی نیست و چه چیزهایی هست؟
+  Node.js صفحه‌ی وب ندارد، پس **DOM** هم ندارد: `window`، `document` و `alert` تعریف نشده‌اند. به جایش چیزهای دیگری دارد:
+
+  - `globalThis`: شیء سراسری که در **هر دو** محیط هست (در Node.js همان `global` است و در مرورگر همان `window`).
+  - `process`: اطلاعات برنامه‌ی در حال اجرا؛ مثل `process.argv` (آرگومان‌های خط فرمان)، `process.env` (متغیرهای محیطی) و `process.platform` (نام سیستم‌عامل).
+  - ماژول‌های داخلی مثل `fs` (فایل)، `http` (سرور)، `path` (مسیر فایل‌ها) و `os` (اطلاعات سیستم‌عامل).
+
+  ```js
+  // Running in Node.js
+  console.log(typeof window);     // "undefined"
+  console.log(typeof globalThis); // "object"
+  console.log(typeof process);    // "object"
+  console.log(document.title);    // ReferenceError: document is not defined
+  ```
+
+  ::: tip
+  Node.js **زبان** نیست؛ یک **runtime** است. زبانش همان JavaScript است و موتورش همان V8 مرورگر Chrome. فرق Node.js با مرورگر در **ابزارهای اطراف موتور** است: مرورگر DOM دارد و Node.js فایل و شبکه و `process`.
+  :::
+
+  ::: trap
+  «Node.js تک‌نخی است، پس در هر لحظه فقط به یک کاربر جواب می‌دهد.» این جمله **غلط** است. چون I/O در Node.js غیرمسدودکننده است، همان یک thread هر درخواست را راه می‌اندازد و سراغ درخواست بعدی می‌رود؛ پس هزاران درخواست هم‌زمان را مدیریت می‌کند. ولی دقت کن: کارِ **محاسباتی سنگین** (مثل حلقه‌ی طولانی بالا) هنوز همان یک thread را **مسدود می‌کند** و همه منتظر می‌مانند.
+  :::
+
+  ::: trap
+  `typeof window` در Node.js خطا **نمی‌دهد** و فقط رشته‌ی `"undefined"` برمی‌گرداند (`typeof` روی متغیر تعریف‌نشده خطا نمی‌دهد). ولی استفاده‌ی واقعی از آن، مثل `document.title` یا `window.innerWidth`، خطای `ReferenceError` می‌دهد.
+  :::
+
+  ::: summary
+  - اهداف جلسه: برنامه‌ی کنسولی با JS، اجرای JS روی سرور، حل مشکلات نوع‌دهی (با TypeScript).
+  - محدودیت‌های JS: فقط مرورگر، تک‌نخی و blocking، dynamic typing، نبودِ module system، ابزار و مقیاس‌پذیری ضعیف.
+  - جرقه‌ی اولیه: استفاده‌ی دوباره از مهارت JS در backend، تبادل داده‌ی یکپارچه، AJAX و JSON، موتور V8، JavaScript سمت سرور.
+  - Node.js: موتور V8، I/O رویدادمحور و غیرمسدودکننده، یک زبان برای frontend و backend، اکوسیستم npm، پلتفرم کامل.
+  :::
+questions:
+  - level: easy
+    stem: کدام گزینه جزو اهداف جلسه‌ی «Beyond JavaScript» (اسلاید ۲) **نیست**؟
+    options:
+      - 'ساختن برنامه‌های کنسولی (console application) با JavaScript'
+      - 'یاد گرفتن اینکه JavaScript چطور روی سرور اجرا می‌شود'
+      - 'طراحی ظاهر صفحه‌های وب با CSS'
+      - 'حل مشکلات قدیمی نوع‌دهی (typing) در JavaScript'
+    answer: 3
+    explain: |
+      سه کارت اسلاید ۲ این‌ها هستند: «Make console applications with JS» (گزینه‌ی ۱)، «Learn how JS runs on servers» (گزینه‌ی ۲) و «Solve the old JS typing issues» (گزینه‌ی ۴). طراحی ظاهر صفحه با CSS اصلاً موضوع این جلسه نیست؛ این جلسه درباره‌ی بردن JavaScript به بیرون از مرورگر (Node.js) و TypeScript است.
+  - level: easy
+    stem: طبق اسلاید ۳، کدام مورد از محدودیت‌های JavaScript در سال‌های اول **نبود**؟
+    options:
+      - 'اجرای تک‌نخی (single-threaded) که در محاسبات سنگین یا عملیات I/O باعث مسدود شدن (blocking) می‌شد'
+      - 'نوع‌دهی پویا (dynamic typing) که در پروژه‌های بزرگ خطاهای غیرمنتظره‌ی زمان اجرا می‌ساخت'
+      - 'نبودِ یک سیستم ماژول (module system) درست برای سازمان‌دهی و استفاده‌ی دوباره از کد'
+      - 'اینکه JavaScript در مرورگر اجرا نمی‌شد و فقط روی سرور کار می‌کرد'
+    answer: 4
+    explain: |
+      ماجرا برعکس است: JavaScript در اصل **برای مرورگر** و کارهای ساده‌ی آن طراحی شده بود و مشکلش این بود که برای برنامه‌های کامل و منطق backend ساخته نشده بود. گزینه‌های ۱، ۲ و ۳ دقیقاً سه مورد از پنج محدودیت اسلاید ۳ هستند (دو مورد دیگر: محدود بودن به کارهای ساده‌ی مرورگر، و ابزار محدود و مقیاس‌پذیری ضعیف).
+  - level: easy
+    stem: طبق اسلایدهای ۴ و ۵، بهبود کدام موتور JavaScript آن را برای کارهای سمت سرور به‌اندازه‌ی کافی سریع کرد و Node.js هم بر پایه‌ی همان ساخته شد؟
+    options:
+      - 'SpiderMonkey (موتور مرورگر Firefox)'
+      - 'V8 ساخت Google'
+      - 'JavaScriptCore (موتور مرورگر Safari)'
+      - 'Chakra (موتور قدیمی مرورگر Edge)'
+    answer: 2
+    explain: |
+      اسلاید ۴ می‌گوید «Engine improvements like Google's V8 made JavaScript fast enough for server workloads» و اسلاید ۵ می‌گوید Node.js «Powered by Google's fast V8 engine» است. بقیه‌ی گزینه‌ها هم موتورهای واقعی JavaScript هستند (مال Firefox، Safari و Edge قدیمی)، ولی Node.js از هیچ‌کدام استفاده نمی‌کند.
+  - level: medium
+    stem: یک رستوران فقط **یک گارسون** دارد. کدام رفتار گارسون، مدل **non-blocking I/O** در Node.js را درست نشان می‌دهد؟
+    options:
+      - 'سفارش میز ۱ را به آشپزخانه می‌دهد، فوراً سراغ میزهای دیگر می‌رود و هر وقت آشپزخانه زنگ زد، غذای آماده را می‌برد.'
+      - 'سفارش میز ۱ را به آشپزخانه می‌دهد و دم در آشپزخانه می‌ایستد تا غذا آماده شود؛ بعد سراغ میز ۲ می‌رود.'
+      - 'برای هر مشتری تازه یک گارسون جدید استخدام می‌شود تا هیچ مشتری‌ای منتظر نماند.'
+      - 'گارسون غذای همه‌ی میزها را خودش می‌پزد تا به آشپزخانه نیازی نباشد.'
+    answer: 1
+    explain: |
+      در non-blocking I/O، تنها thread برنامه (گارسون) کار کُند I/O را به سیستم (آشپزخانه) می‌سپارد، منتظر نمی‌ماند و وقتی نتیجه آماده شد، با یک رویداد (زنگ) callback اجرا می‌شود. گزینه‌ی ۲ همان مدل blocking است. گزینه‌ی ۳ مدل «یک thread برای هر درخواست» است که Node.js از آن استفاده نمی‌کند. در گزینه‌ی ۴ گارسون خودش همه‌ی کار را انجام می‌دهد، پس دوباره همه منتظر یک نفر می‌مانند.
+  - level: medium
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      const fs = require("fs");
+
+      console.log("start");
+      fs.readFile(__filename, "utf8", () => {
+        console.log("file read");
+      });
+      console.log("end");
+    options:
+      - out: ["start", "file read", "end"]
+      - out: ["start", "end", "file read"]
+      - out: ["file read", "start", "end"]
+      - out: ["start", "end"]
+    answer: 2
+    explain: |
+      `fs.readFile` غیرمسدودکننده (non-blocking) است: خواندن فایل را شروع می‌کند و منتظر نمی‌ماند، پس اول `end` چاپ می‌شود. وقتی خواندن فایل تمام شد، callback اجرا می‌شود و `file read` می‌آید. گزینه‌ی ۱ رفتار `readFileSync` (مسدودکننده) است. گزینه‌ی ۴ غلط است چون callback بالاخره اجرا می‌شود و برنامه تا تمام شدن کارهای در جریان بسته نمی‌شود.
+  - level: medium
+    stem: |
+      در هر چهار گزینه، ماژول `fs` قبلاً با `const fs = require("fs");` بارگذاری شده است. کدام گزینه در Node.js **دقیقاً** خروجی زیر را چاپ می‌کند؟
+
+      ```text
+      start
+      end
+      done
+      ```
+    check: option-output
+    prelude: const fs = require("fs");
+    expect: |
+      start
+      end
+      done
+    options:
+      - code: |
+          console.log("start");
+          fs.readFile(__filename, () => console.log("done"));
+          console.log("end");
+      - code: |
+          console.log("start");
+          fs.readFileSync(__filename);
+          console.log("done");
+          console.log("end");
+      - code: |
+          fs.readFile(__filename, () => console.log("start"));
+          console.log("end");
+          console.log("done");
+      - code: |
+          console.log("start");
+          fs.readFile(__filename, () => console.log("end"));
+          console.log("done");
+    answer: 1
+    explain: |
+      در گزینه‌ی ۱، `start` و `end` همگام چاپ می‌شوند و callback غیرمسدودکننده‌ی `readFile` بعداً `done` را چاپ می‌کند. گزینه‌ی ۲ با `readFileSync` منتظر می‌ماند و ترتیبش `start`، `done`، `end` است. در گزینه‌ی ۳، `start` داخل callback است و آخر از همه چاپ می‌شود (`end`، `done`، `start`). در گزینه‌ی ۴ هم `end` داخل callback است، پس ترتیب `start`، `done`، `end` می‌شود.
+  - level: hard
+    stem: خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      setTimeout(() => console.log("timer"), 0);
+      console.log("before loop");
+
+      const start = Date.now();
+      while (Date.now() - start < 100) {} // busy wait for about 100 ms
+      console.log("after loop");
+    options:
+      - out: ["before loop", "after loop", "timer"]
+      - out: ["timer", "before loop", "after loop"]
+      - out: ["before loop", "timer", "after loop"]
+      - out: ["before loop", "after loop"]
+    answer: 1
+    explain: |
+      JavaScript تک‌نخی است. حتی با زمان `0`، callback تایمر فقط وقتی اجرا می‌شود که کد همگام فعلی تمام شده باشد. حلقه‌ی `while` حدود ۱۰۰ میلی‌ثانیه تنها thread را **مسدود** می‌کند، پس `timer` نمی‌تواند وسط حلقه (گزینه‌ی ۳) یا قبل از همه (گزینه‌ی ۲) چاپ شود. گزینه‌ی ۴ هم غلط است، چون تایمر بالاخره اجرا می‌شود. این دقیقاً همان مشکل blocking در اسلاید ۳ است.
+  - level: easy
+    stem: کدام تعریف درباره‌ی **Node.js** درست است؟
+    options:
+      - 'یک زبان برنامه‌نویسی جدید که جایگزین JavaScript شده است'
+      - 'یک فریم‌ورک (framework) برای ساختن رابط کاربری، مثل React'
+      - 'یک محیط اجرا (runtime) برای JavaScript که روی موتور V8 ساخته شده و JS را بیرون از مرورگر اجرا می‌کند'
+      - 'یک مرورگر وب سبک که Google برای سرورها ساخته است'
+    answer: 3
+    explain: |
+      Node.js یک **runtime** است: موتور V8 به‌اضافه‌ی ابزارهایی مثل `fs` و `http` که اجرای JavaScript را روی سرور و در ترمینال ممکن می‌کند. زبانش همان JavaScript است (رد گزینه‌ی ۱)، کتابخانه‌ی رابط کاربری نیست (React یک کتابخانه‌ی UI است؛ رد گزینه‌ی ۲) و مرورگر هم نیست، چون اصلاً صفحه و DOM ندارد (رد گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر در **Node.js** کدام است؟
+    check: output
+    code: |
+      console.log(typeof window);
+      console.log(typeof globalThis);
+      console.log(typeof process);
+    options:
+      - out: ["object", "object", "undefined"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "undefined", "object"]
+      - out: ["undefined", "object", "object"]
+    answer: 4
+    explain: |
+      Node.js شیء `window` ندارد، ولی `typeof` روی متغیر تعریف‌نشده خطا نمی‌دهد و فقط `"undefined"` برمی‌گرداند (رد گزینه‌ی ۲). `globalThis` شیء سراسری استاندارد است که در هر دو محیط وجود دارد (رد گزینه‌ی ۳) و `process` هم مخصوص Node.js است و وجود دارد. گزینه‌ی ۱ جای مرورگر و Node.js را عوض کرده است.
+  - level: hard
+    stem: اگر کد زیر را در **Node.js** اجرا کنیم، اولین خطا در کدام خط رخ می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      console.log(typeof document);
+      const os = require("os");
+      console.log(typeof os.platform());
+      console.log(window.innerWidth);
+      console.log("finished");
+    options:
+      - { line: 1 }
+      - { line: 4 }
+      - { line: 5 }
+      - { line: 0 }
+    answer: 2
+    explain: |
+      خط ۱ فقط `undefined` چاپ می‌کند، چون `typeof` روی متغیر تعریف‌نشده خطا نمی‌دهد. خط‌های ۲ و ۳ هم سالم‌اند، چون `os` یک ماژول داخلی Node.js است. در خط ۴ واقعاً از `window` استفاده شده و Node.js چنین شیئی ندارد، پس `ReferenceError: window is not defined` رخ می‌دهد و برنامه همان‌جا متوقف می‌شود. برای همین خط ۵ هرگز اجرا نمی‌شود و گزینه‌ی «بدون خطا» هم غلط است.
+  - level: medium
+    stem: طبق اسلاید ۴، ظهور **AJAX** و **JSON** چه چیزی را درباره‌ی JavaScript نشان داد؟
+    options:
+      - 'اینکه JavaScript می‌تواند چند thread هم‌زمان داشته باشد.'
+      - 'اینکه JavaScript بدون XML نمی‌تواند داده‌ای از سرور بگیرد.'
+      - 'اینکه JavaScript می‌تواند عملیات ناهمگام (asynchronous) را به‌خوبی مدیریت کند.'
+      - 'اینکه JavaScript فقط باید در مرورگر بماند و برای سرور مناسب نیست.'
+    answer: 3
+    explain: |
+      اسلاید ۴: «The rise of AJAX and JSON showed JS could efficiently handle asynchronous operations». با AJAX صفحه در پس‌زمینه و بدون بارگذاری دوباره داده می‌گیرد، یعنی کاری ناهمگام. این ربطی به چندنخی شدن ندارد (رد گزینه‌ی ۱)؛ امروزه بیشتر داده با JSON جابه‌جا می‌شود نه XML (رد گزینه‌ی ۲)؛ و همین موفقیت‌ها الهام‌بخش بردن JS به سرور شد، نه برعکس (رد گزینه‌ی ۴).
+  - level: medium
+    stem: کدام گزینه منظور از **event-driven** (رویدادمحور) بودن Node.js را درست بیان می‌کند؟
+    options:
+      - 'برنامه خط‌به‌خط اجرا می‌شود و برای هر عملیات I/O آن‌قدر صبر می‌کند تا تمام شود.'
+      - 'برای هر درخواستی که به سرور می‌رسد، یک thread جدید ساخته می‌شود.'
+      - 'برنامه فقط به کلیک‌ها و رویدادهای موس کاربر روی صفحه واکنش نشان می‌دهد.'
+      - 'کد از قبل callbackهایی ثبت می‌کند و Node.js هر وقت رویدادی مثل «رسیدن درخواست» یا «تمام شدن خواندن فایل» رخ داد، آن‌ها را اجرا می‌کند.'
+    answer: 4
+    explain: |
+      در مدل رویدادمحور، برنامه برای رویدادها (درخواست، پایان I/O، تایمر و…) تابع callback ثبت می‌کند و Node.js وقتی رویداد رخ داد، آن تابع را صدا می‌زند. گزینه‌ی ۱ تعریف مدل blocking است و گزینه‌ی ۲ مدل «یک thread برای هر درخواست». گزینه‌ی ۳ رویداد را فقط به کلیک موس در صفحه محدود کرده، در حالی که Node.js اصلاً صفحه‌ای ندارد و رویدادهایش از جنس شبکه، فایل و تایمرند.
+  - level: hard
+    stem: کدام عبارت درباره‌ی Node.js **نادرست** است؟
+    options:
+      - 'چون Node.js روی سرور اجرا می‌شود، اشیای `document` و `window` در آن در دسترس‌اند تا صفحه را روی سرور بسازیم.'
+      - 'Node.js از همان موتور V8 استفاده می‌کند که در مرورگر Chrome هست.'
+      - 'با Node.js می‌توان برای frontend و backend از یک زبان استفاده کرد.'
+      - 'وقتی یک حلقه‌ی محاسباتی سنگین در حال اجراست، callbackهای دیگر (مثل تایمرها) باید منتظر تمام شدن آن بمانند.'
+    answer: 1
+    explain: |
+      Node.js صفحه‌ی وب و DOM ندارد؛ `document` و `window` در آن تعریف نشده‌اند و استفاده از آن‌ها `ReferenceError` می‌دهد (شیء سراسری‌اش `globalThis` یا `global` است). گزینه‌های ۲ و ۳ مستقیماً در اسلاید ۵ آمده‌اند. گزینه‌ی ۴ هم درست است، چون JavaScript تک‌نخی است و کار محاسباتی سنگین همان یک thread را مسدود می‌کند.
+  - level: medium
+    stem: |
+      جای خالی را کامل کن:
+
+      «Node.js به لطف مدل I/O ‌‌……… و ………، فقط با یک thread به تعداد زیادی درخواست هم‌زمان پاسخ می‌دهد.»
+    options:
+      - 'چندنخی (multi-threaded) و مسدودکننده (blocking)'
+      - 'همگام (synchronous) و مسدودکننده (blocking)'
+      - 'رویدادمحور (event-driven) و غیرمسدودکننده (non-blocking)'
+      - 'همگام (synchronous) و بدون callback'
+    answer: 3
+    explain: |
+      اسلاید ۵: «Event-driven, non-blocking I/O model». چون Node.js منتظر تمام شدن I/O نمی‌ماند و با رویداد و callback از نتیجه باخبر می‌شود، یک thread برای درخواست‌های زیاد کافی است. گزینه‌ی ۱ با «یک thread» تناقض دارد و گزینه‌های ۲ و ۴ (همگام و مسدودکننده) دقیقاً همان چیزی هستند که باعث معطل ماندن درخواست‌ها می‌شود.
+  - level: hard
+    stem: کدام جفتِ «محدودیت قدیمی JavaScript ← راه‌حلی که در این فصل می‌خوانیم» **نادرست** است؟
+    options:
+      - 'نوع‌دهی پویا (dynamic typing) ← TypeScript'
+      - 'اجرای تک‌نخی ← Node.js برای هر درخواست یک thread جدید می‌سازد تا هیچ کاری مسدود نشود'
+      - 'نبودِ module system ← ماژول‌های CommonJS و ES Modules و پکیج‌های npm'
+      - 'محدود بودن به مرورگر ← Node.js که JavaScript را روی سرور و در ترمینال اجرا می‌کند'
+    answer: 2
+    explain: |
+      Node.js همچنان **تک‌نخی** است و برای هر درخواست thread نمی‌سازد؛ راه‌حلش برای مشکل blocking، مدل **رویدادمحور و غیرمسدودکننده** است: I/O در پس‌زمینه انجام می‌شود و نتیجه با callback می‌رسد. سه جفت دیگر درست‌اند: TypeScript برای مشکلات نوع، ماژول‌ها و npm برای سازمان‌دهی و استفاده‌ی دوباره از کد، و خود Node.js برای بیرون آمدن از مرورگر.
+  - level: easy
+    stem: کدام مورد جزو ویژگی‌هایی که اسلاید ۵ («Then Came Node.js») برای Node.js می‌شمارد **نیست**؟
+    options:
+      - 'اکوسیستم عظیم npm برای پکیج‌ها'
+      - 'مدل I/O رویدادمحور و غیرمسدودکننده'
+      - 'استفاده از یک زبان برای frontend و backend'
+      - 'بررسی نوع‌ها (type checking) در زمان کامپایل'
+    answer: 4
+    explain: |
+      پنج مورد اسلاید ۵ این‌هاست: موتور V8، I/O رویدادمحور و غیرمسدودکننده، یک زبان برای frontend و backend، اکوسیستم عظیم npm، و تبدیل JavaScript به یک پلتفرم کامل. بررسی نوع در زمان کامپایل کار **TypeScript** است، نه Node.js. خود Node.js کد را بدون بررسی نوع اجرا می‌کند.
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js کدام است؟ (در این برنامه هیچ درخواستی به سرور فرستاده نمی‌شود. پورت `0` یعنی «هر پورت آزادی»، و `server.close` سرور را می‌بندد تا برنامه تمام شود.)
+    check: output
+    code: |
+      const http = require("http");
+
+      const server = http.createServer((req, res) => {
+        console.log("request received");
+        res.end("Hello");
+      });
+
+      server.listen(0, () => {
+        console.log("listening");
+        server.close(() => console.log("closed"));
+      });
+      console.log("setup done");
+    options:
+      - out: ["listening", "setup done", "closed"]
+      - out: ["setup done", "listening", "request received", "closed"]
+      - out: ["setup done", "listening", "closed"]
+      - out: ["request received", "listening", "setup done", "closed"]
+    answer: 3
+    explain: |
+      `createServer` و `listen` فقط callbackها را **ثبت** می‌کنند و صبر نمی‌کنند، پس اول `setup done` چاپ می‌شود (رد گزینه‌های ۱ و ۴). وقتی سرور آماده‌ی گوش دادن شد، رویدادِ آماده شدن رخ می‌دهد و `listening` چاپ می‌شود؛ بعد سرور بسته می‌شود و `closed` می‌آید. callbackِ `createServer` فقط با رسیدن یک **درخواست** اجرا می‌شود و چون درخواستی نیامده، `request received` هرگز چاپ نمی‌شود (رد گزینه‌ی ۲). این همان event-driven بودن است: کد فقط به رویدادهایی که واقعاً رخ می‌دهند واکنش نشان می‌دهد.
