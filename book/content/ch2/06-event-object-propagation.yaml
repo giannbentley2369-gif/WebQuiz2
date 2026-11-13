@@ -26,7 +26,8 @@ lesson: |
   <div id="outer"><span id="inner">Hi</span></div>
   <script>
     document.getElementById("outer").addEventListener("click", function (e) {
-      console.log(e.type, e.target.id, e.currentTarget.id, this.id); // click inner outer outer
+      // prints: click inner outer outer
+      console.log(e.type, e.target.id, e.currentTarget.id, this.id);
     });
   </script>
   ```
@@ -540,7 +541,9 @@ questions:
     code: |
       const list = document.getElementById("list");
       list.addEventListener("click", (e) => {
-        if (e.target.matches("li")) console.log("clicked", e.target.textContent, e.currentTarget.id);
+        if (e.target.matches("li")) {
+          console.log("clicked", e.target.textContent, e.currentTarget.id);
+        }
       });
       document.getElementById("add").addEventListener("click", () => {
         const li = document.createElement("li");
@@ -569,7 +572,8 @@ questions:
       <ul id="list"><li><b>Milk</b> (2)</li><li>Bread</li></ul>
     code: |
       document.getElementById("list").addEventListener("click", (e) => {
-        console.log(e.target.tagName, e.target.matches("li"), e.target.closest("li").textContent);
+        const li = e.target.closest("li");
+        console.log(e.target.tagName, e.target.matches("li"), li.textContent);
       });
     events:
       - { type: click, target: "#list b" }
@@ -730,3 +734,53 @@ questions:
       `target` عنصری است که کلیک واقعاً روی آن رخ داده (همان `<li>`) و `currentTarget` عنصری است که listener
       در حال اجرا روی آن ثبت شده (همان `<ul>`). گزینه‌ی ۲ این دو را برعکس گرفته است. این دو فقط وقتی یکی‌اند
       که کاربر مستقیماً روی خودِ عنصرِ صاحب listener کلیک کند، که اینجا چنین نیست (رد گزینه‌های ۳ و ۴).
+  - level: hard
+    stem: |
+      با HTML زیر:
+
+      ```html
+      <ul id="list"><li>A</li><li>B</li></ul>
+      ```
+
+      کد زیر اجرا می‌شود. کاربر ابتدا روی آیتم `A` و سپس روی فضای خالی خودِ لیست (روی `<ul>`، نه روی هیچ
+      `<li>`ی) کلیک می‌کند. با کلیک دوم، کدام خط خطا می‌دهد؟
+
+      ```js lines
+      const list = document.getElementById("list");
+      list.addEventListener("click", (e) => {
+        const li = e.target.closest("li");
+        console.log("clicked on", e.target.tagName);
+        console.log("item:", li.textContent);
+      });
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <ul id="list"><li>A</li><li>B</li></ul>
+    code: |
+      const list = document.getElementById("list"); console.log("~1");
+      list.addEventListener("click", (e) => { console.log("~2");
+        const li = e.target.closest("li"); console.log("~3");
+        console.log("clicked on", e.target.tagName); console.log("~4");
+        console.log("item:", li.textContent); console.log("~5");
+      }); console.log("~6");
+    events:
+      - { type: click, target: "#list li" }
+      - { type: click, target: "#list" }
+    options:
+      - text: 'خط ۳'
+        out: ["~1", "~6", "~2", "~3", "clicked on LI", "~4", "item: A", "~5", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "~6", "~2", "~3", "clicked on LI", "~4", "item: A", "~5", "~2", "~3", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "~6", "~2", "~3", "clicked on LI", "~4", "item: A", "~5", "~2", "~3", "clicked on UL", "~4", "!! TypeError"]
+      - text: 'هیچ خطایی رخ نمی‌دهد'
+        out: ["~1", "~6", "~2", "~3", "clicked on LI", "~4", "item: A", "~5", "~2", "~3", "clicked on UL", "~4", "item: undefined", "~5"]
+    answer: 3
+    explain: |
+      در کلیک دوم، `e.target` خودِ `<ul>` است. `closest("li")` از خودِ عنصر شروع می‌کند و به سمت اجداد بالا
+      می‌رود؛ نه `<ul>` و نه اجدادش `<li>` نیستند، پس `null` برمی‌گرداند و این **خطا نیست** (رد گزینه‌ی ۱). خط ۴
+      فقط `tagName` هدف را چاپ می‌کند (`UL`) و مشکلی ندارد (رد گزینه‌ی ۲). در خط ۵، خواندن `textContent` از
+      `null` خطای `TypeError` می‌دهد (رد گزینه‌ی ۴). در delegation همیشه نتیجه‌ی `closest` را بررسی کن:
+      `if (!li) return;`.
