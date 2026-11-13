@@ -118,7 +118,9 @@ lesson: |
   - نام propertyهای CSS که خط تیره دارند، در JavaScript **camelCase** می‌شوند: `background-color` می‌شود
     `backgroundColor` و `font-size` می‌شود `fontSize`. (راه دیگر: `el.style["background-color"]`.)
   - مقدارها **رشته** هستند و برای اندازه‌ها **واحد** لازم است: `"20px"`، `"1.5rem"`. مقدار نامعتبر (مثلاً
-    عدد `20` بدون واحد برای `fontSize`) بی‌صدا نادیده گرفته می‌شود.
+    عدد `20` بدون واحد برای `fontSize`) بی‌صدا نادیده گرفته می‌شود. (این قاعده برای صفحه‌ی استانداردی است که
+    با `<!DOCTYPE html>` شروع شده؛ در «حالت سازگاری» یا quirks mode، مرورگر بعضی عددهای بی‌واحد را قبول می‌کند.
+    یک دلیل دیگر برای اینکه همیشه DOCTYPE بنویسی.)
   - `el.style.color = ""` آن استایل inline را حذف می‌کند.
   - خواندن `el.style.color` **فقط استایل inline** را می‌بیند، نه قاعده‌هایی که در `<style>` یا فایل CSS
     نوشته شده‌اند. برای دیدن استایل نهایی که واقعاً اعمال شده، از `getComputedStyle(el)` استفاده کن.
@@ -192,7 +194,7 @@ lesson: |
     می‌سازد.
   - `innerHTML +=` کل محتوا را از نو می‌سازد: listenerها و ارجاع‌های قبلی از بین می‌روند.
   - `el.style.color` رنگی را که در فایل CSS تعیین شده نشان نمی‌دهد و `""` برمی‌گرداند.
-  - `el.style.fontSize = 20` (بدون واحد) نادیده گرفته می‌شود؛ `"20px"` درست است.
+  - در صفحه‌ی استاندارد، `el.style.fontSize = 20` (بدون واحد) نادیده گرفته می‌شود؛ `"20px"` درست است.
   - `el.style.background-color = ...` خطای نحوی است؛ `backgroundColor` درست است.
   - `className = "x"` همه‌ی کلاس‌های قبلی را پاک می‌کند.
   :::
@@ -348,7 +350,8 @@ questions:
       می‌شوند، و فقط در JavaScript به شکل camelCase نوشته می‌شوند (رد گزینه‌ی ۱). مقدار `fontSize` همان رشته‌ی
       `"20px"` است و واحدش حذف نمی‌شود (رد گزینه‌ی ۴).
   - level: hard
-    stem: خروجی کد زیر کدام است؟
+    stem: |
+      در یک صفحه‌ی استاندارد (که با `<!DOCTYPE html>` شروع می‌شود)، خروجی کد زیر کدام است؟
     check: dom-output
     html: |
       <p id="p">Hi</p>
@@ -614,3 +617,51 @@ questions:
       `backgroundColor`. نوشتن `box.style.background-color` خطای نحوی می‌دهد، چون خط تیره به معنای تفریق است
       (رد گزینه‌ی ۱). نام‌ها به حروف بزرگ و کوچک حساس‌اند و حرف اول کوچک است (رد گزینه‌ی ۳)، و `bgColor`
       property CSS نیست و روی `style` هیچ اثری ندارد (رد گزینه‌ی ۴).
+  - level: hard
+    stem: |
+      با HTML زیر:
+
+      ```html
+      <p class="note">A</p>
+      <p class="note">B</p>
+      ```
+
+      کد زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const notes = document.getElementsByClassName("note");
+      notes[0].textContent = "First note";
+      document.querySelectorAll(".note").textContent = "All notes";
+      notes[1].style.color = "red";
+      notes.style.color = "blue";
+      console.log("done");
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <p class="note">A</p>
+      <p class="note">B</p>
+    code: |
+      const notes = document.getElementsByClassName("note"); console.log("~1");
+      notes[0].textContent = "First note"; console.log("~2");
+      document.querySelectorAll(".note").textContent = "All notes"; console.log("~3");
+      notes[1].style.color = "red"; console.log("~4");
+      notes.style.color = "blue"; console.log("~5");
+      console.log("done"); console.log("~6");
+    options:
+      - text: 'خط ۲'
+        out: ["~1", "!! TypeError"]
+      - text: 'خط ۳'
+        out: ["~1", "~2", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "~2", "~3", "~4", "!! TypeError"]
+      - text: 'هیچ خطایی رخ نمی‌دهد'
+        out: ["~1", "~2", "~3", "~4", "~5", "done", "~6"]
+    answer: 3
+    explain: |
+      `notes[0]` و `notes[1]` عنصرهای واقعی‌اند، پس خط‌های ۲ و ۴ متن و رنگ را بدون مشکل تغییر می‌دهند (رد گزینه‌ی
+      ۱). خط ۳ یک دام بی‌صداست: NodeList خودش `textContent` ندارد و این انتساب فقط یک property بی‌اثر روی شیء
+      NodeList می‌سازد؛ **خطا نمی‌دهد** ولی متن هیچ پاراگرافی هم عوض نمی‌شود (رد گزینه‌ی ۲). در خط ۵، `notes` یک
+      HTMLCollection است که property `style` ندارد؛ `notes.style` برابر `undefined` است و نوشتن `color` روی
+      آن خطای `TypeError` می‌دهد (رد گزینه‌ی ۴). برای تغییر همه‌ی عنصرها باید روی مجموعه حلقه زد.
