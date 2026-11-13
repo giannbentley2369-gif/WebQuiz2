@@ -1,0 +1,371 @@
+id: ch3-npm-commands
+title: "دستورات npm و تنظیم mirror"
+slides: "NodeJS & TS، اسلاید ۱۰"
+lesson: |
+  در درس قبل دیدیم npm چیست. حالا با دستورهایش کار می‌کنیم. همه‌ی این دستورها را در **ترمینال** و داخل **پوشه‌ی پروژه** اجرا می‌کنیم. اسلاید ۱۰ پنج دستور اصلی و دو دستور برای تنظیم mirror را نشان می‌دهد:
+
+  | دستور (اسلاید ۱۰) | توضیح اسلاید | یعنی… |
+  |---|---|---|
+  | `npm init` | Create a new project and generate a package.json file | پروژه‌ی جدید بساز و `package.json` تولید کن |
+  | `npm install <package>` | Add a dependency to your project | یک وابستگی به پروژه اضافه کن |
+  | `npm uninstall <package>` | Remove a previously installed package | پکیجی را که قبلاً نصب شده حذف کن |
+  | `npm update` | Update all dependencies to newer versions | همه‌ی وابستگی‌ها را به نسخه‌های جدیدتر به‌روز کن |
+  | `npm run <script>` | Execute custom scripts defined in package.json | اسکریپت‌های تعریف‌شده در `package.json` را اجرا کن |
+  | `npm config set registry <url>` | Setting npm mirror (or set it in .npmrc file) | آدرس mirror را تنظیم کن |
+  | `npm config get registry` | Setting npm mirror | آدرس registry فعلی را نشان بده |
+
+  چیزهایی مثل `<package>`، `<script>` و `<url>` **جای‌نگهدار** (placeholder) هستند؛ یعنی به جایشان اسم واقعی می‌نویسی، مثلاً `npm install express`.
+
+  ### `npm init`: ساختن پروژه
+  `npm init` چند سؤال می‌پرسد (اسم پکیج، نسخه، توضیح، فایل ورودی، دستور تست، مخزن git، کلمه‌های کلیدی، نویسنده، مجوز و نوع ماژول) و بعد فایل `package.json` را می‌سازد. جلوی هر سؤال، جواب پیش‌فرض داخل پرانتز آمده است:
+
+  ```text
+  package name: (my-app)
+  version: (1.0.0)
+  description:
+  entry point: (index.js)
+  test command:
+  git repository:
+  keywords:
+  author:
+  license: (ISC)
+  type: (commonjs)
+  ```
+
+  اگر حوصله‌ی سؤال و جواب نداری، از `npm init -y` (یا `--yes`) استفاده کن تا **همه‌ی جواب‌های پیش‌فرض** را بپذیرد. نتیجه در پوشه‌ای به اسم `my-app`:
+
+  ```json title=package.json
+  {
+    "name": "my-app",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs"
+  }
+  ```
+
+  - `name` به‌طور پیش‌فرض **اسم پوشه** است و `version` از `1.0.0` شروع می‌شود.
+  - `main` فایل ورودی پکیج است (پیش‌فرض: `index.js`).
+  - `scripts.test` یک اسکریپت نمونه است که فقط پیام خطا چاپ می‌کند (در درس بعد می‌بینیمش).
+  - `license` پیش‌فرض `ISC` است.
+  - نسخه‌های جدید npm فیلد `"type": "commonjs"` را هم می‌نویسند؛ یعنی فایل‌های `.js` به‌صورت CommonJS اجرا می‌شوند (درس «ویژگی‌های Node.js»).
+
+  ### `npm install`: نصب پکیج
+  `npm install <package>` (یا کوتاهش `npm i <package>`) این کارها را با هم انجام می‌دهد:
+  1. آخرین نسخه‌ی پکیج را از registry دانلود می‌کند و در `node_modules` می‌گذارد (همراه وابستگی‌هایش).
+  2. اسم پکیج را با یک بازه‌ی `^` در بخش `dependencies` فایل `package.json` می‌نویسد.
+  3. فایل `package-lock.json` را می‌سازد یا به‌روز می‌کند.
+
+  ```bash
+  npm install is-number
+  # added 1 package in 304ms
+  ```
+
+  ```json title=package.json (after)
+  {
+    "name": "my-app",
+    "version": "1.0.0",
+    "dependencies": {
+      "is-number": "^7.0.0"
+    }
+  }
+  ```
+
+  حالت‌های دیگر `npm install`:
+
+  | دستور | کار |
+  |---|---|
+  | `npm install` (بدون اسم) | **همه‌ی** وابستگی‌های نوشته‌شده در `package.json` (طبق `package-lock.json`) را نصب می‌کند؛ مثلاً بعد از گرفتن پروژه از git |
+  | `npm install express axios` | چند پکیج را با هم نصب می‌کند |
+  | `npm install lodash@4.17.21` | نسخه‌ی مشخصی را نصب می‌کند (ولی به شکل `"^4.17.21"` ذخیره می‌شود) |
+  | `npm install -E lodash@4.17.21` | `-E` یا `--save-exact`: نسخه را دقیق و بدون `^` ذخیره می‌کند (`"4.17.21"`) |
+  | `npm install -D jest` | `-D` یا `--save-dev`: پکیج را در `devDependencies` ثبت می‌کند |
+  | `npm install -g typescript` | `-g` یا `--global`: نصب **سراسری** روی سیستم؛ معمولاً برای ابزارهای خط فرمان (مثل دستور `tsc`)؛ به `package.json` پروژه دست نمی‌زند |
+
+  ### `npm uninstall`: حذف پکیج
+  `npm uninstall <package>` پکیج را از `node_modules` پاک می‌کند و اسمش را از `package.json` (و `package-lock.json`) برمی‌دارد. اسم‌های کوتاه‌ترش `npm remove`، `npm rm` و `npm un` هستند.
+
+  ```bash
+  npm uninstall is-even
+  # removed 5 packages in 212ms   (the package and its own dependencies)
+  ```
+
+  ### `npm update`: به‌روزرسانی
+  `npm update` هر پکیج را به **جدیدترین نسخه‌ای که در بازه‌ی `package.json` جا می‌شود** می‌رساند و `package-lock.json` را به‌روز می‌کند. یعنی با `^6.0.0`، هیچ‌وقت خودکار به `7.0.0` (MAJOR جدید) نمی‌رود. دستور `npm outdated` نشان می‌دهد کدام پکیج‌ها نسخه‌ی جدیدتری دارند:
+
+  ```bash
+  npm outdated
+  # Package    Current  Wanted  Latest  Location                Depended by
+  # is-number    6.0.0   6.0.0   7.0.0  node_modules/is-number  my-app
+  npm update
+  # up to date in 209ms
+  ```
+
+  ستون `Wanted` بالاترین نسخه‌ی داخل بازه است و `Latest` آخرین نسخه‌ی منتشرشده. اینجا `npm update` کاری نکرد، چون `7.0.0` بیرون از بازه‌ی `^6.0.0` است. برای رفتن به MAJOR جدید باید آگاهانه `npm install is-number@7` بزنی.
+
+  ### `npm run <script>`
+  اسکریپت‌های بخش `scripts` فایل `package.json` را اجرا می‌کند؛ مثلاً `npm run build`. جزئیاتش را در درس بعد می‌خوانیم.
+
+  ### تنظیم mirror (Setting npm mirror)
+  به‌طور پیش‌فرض npm پکیج‌ها را از registry رسمی یعنی `https://registry.npmjs.org/` دانلود می‌کند. **mirror** (آینه) یک کپی از همین مخزن روی سرور دیگری است که همان پکیج‌ها را دارد. چرا از mirror استفاده می‌کنند؟
+  - **سرعت**: سروری که به تو نزدیک‌تر است، سریع‌تر جواب می‌دهد.
+  - **در دسترس بودن**: وقتی registry اصلی کُند است، قطع شده یا از شبکه‌ی تو به‌خوبی در دسترس نیست (مثلاً به‌خاطر محدودیت‌های دسترسی).
+  - **کنترل در شرکت‌ها**: بعضی شرکت‌ها registry داخلی خودشان را دارند.
+
+  اسلاید ۱۰ دو راه برای تنظیم آدرس registry نشان می‌دهد:
+
+  ```bash
+  npm config get registry
+  # https://registry.npmjs.org/          (the default)
+
+  npm config set registry https://registry.npmmirror.com/
+  npm config get registry
+  # https://registry.npmmirror.com/
+  ```
+
+  دستور `npm config set registry <url>` در عمل یک خط به فایل تنظیمات کاربر (`~/.npmrc` در پوشه‌ی خانه) اضافه می‌کند:
+
+  ```text title=~/.npmrc
+  registry=https://registry.npmmirror.com/
+  ```
+
+  راه دوم (به قول اسلاید «or set it in .npmrc file») این است که همین خط را خودت در یک فایل `.npmrc` بنویسی؛ مثلاً در پوشه‌ی پروژه، کنار `package.json`، تا فقط برای همان پروژه اعمال شود. هر دو راه یک نتیجه دارند.
+
+  چند نکته‌ی تکمیلی:
+  - `npm config delete registry` تنظیم را پاک می‌کند و npm به registry پیش‌فرض برمی‌گردد.
+  - برای فقط **یک** دستور: `npm install express --registry=https://registry.npmmirror.com/`
+  - اگر چند جا تنظیم شده باشد، اولویت با این ترتیب است: گزینه‌ی خود دستور (`--registry=…`)، بعد `.npmrc` پروژه، بعد `~/.npmrc` کاربر، و در آخر مقدار پیش‌فرض.
+
+  ### `npx`: اجرا بدون نصب دائمی
+  بعضی پکیج‌ها یک **دستور خط فرمان** (CLI) دارند. `npx <command>` آن دستور را اجرا می‌کند؛ اگر پکیج در پروژه نصب نباشد، آن را موقتاً در cache دانلود می‌کند (اول اجازه می‌گیرد؛ `--yes` این سؤال را حذف می‌کند) و دیگر به پروژه یا سیستم اضافه‌اش نمی‌کند. مثلاً پکیج `semver` می‌گوید کدام نسخه‌ها در یک بازه جا می‌شوند:
+
+  ```bash
+  npx --yes semver -r "^1.2.3" 1.2.2 1.2.3 1.9.0 2.0.0
+  # 1.2.3
+  # 1.9.0
+  ```
+
+  `npx` ابزارهای نصب‌شده در `node_modules/.bin` همان پروژه را هم اجرا می‌کند؛ مثلاً `npx jest`.
+
+  ### جمع‌بندی دستورها
+
+  | می‌خواهم… | دستور |
+  |---|---|
+  | پروژه‌ی جدید بسازم | `npm init` یا `npm init -y` |
+  | پکیجی برای اجرای برنامه نصب کنم | `npm install <package>` یا `npm i <package>` |
+  | پکیجی فقط برای توسعه نصب کنم | `npm install -D <package>` |
+  | ابزاری را سراسری نصب کنم | `npm install -g <package>` |
+  | همه‌ی وابستگی‌های پروژه را نصب کنم | `npm install` |
+  | پکیجی را حذف کنم | `npm uninstall <package>` |
+  | پکیج‌ها را در محدوده‌ی بازه‌شان به‌روز کنم | `npm update` |
+  | یک اسکریپت را اجرا کنم | `npm run <script>` |
+  | آدرس mirror را تنظیم کنم یا ببینم | `npm config set registry <url>` و `npm config get registry` |
+  | دستور یک پکیج را بدون نصب دائمی اجرا کنم | `npx <command>` |
+
+  ::: tip
+  اسم‌های کوتاه را بشناس: `npm i` یعنی `npm install`، `-D` یعنی `--save-dev`، `-g` یعنی `--global` و `-E` یعنی `--save-exact`. در تست‌ها معمولاً یکی از این‌ها را به‌جای دیگری می‌آورند.
+  :::
+
+  ::: trap
+  - `npm install` **بدون اسم** بیکار نیست: همه‌ی وابستگی‌های `package.json` را نصب می‌کند.
+  - `npm install -g` به `package.json` پروژه **دست نمی‌زند**؛ نصب سراسری مال سیستم است، نه پروژه.
+  - `npm config get registry` فقط **می‌خواند** و چیزی را عوض نمی‌کند؛ تنظیم کردن کار `set` است.
+  - `npm update` از بازه‌ی `package.json` بیرون نمی‌رود؛ با `^` هرگز MAJOR جدید نصب نمی‌کند.
+  :::
+questions:
+  - level: easy
+    stem: طبق اسلاید ۱۰، کدام دستور یک پروژه‌ی جدید می‌سازد و فایل `package.json` را تولید می‌کند؟
+    options:
+      - '`npm init`'
+      - '`npm start`'
+      - '`npm update`'
+      - '`npm config get registry`'
+    answer: 1
+    explain: |
+      اسلاید ۱۰: «`npm init`: Create a new project and generate a package.json file». `npm start` اسکریپت `start` را اجرا می‌کند، `npm update` وابستگی‌ها را به‌روز می‌کند و `npm config get registry` فقط آدرس registry را نشان می‌دهد؛ هیچ‌کدام `package.json` نمی‌سازند.
+  - level: easy
+    stem: در دستور `npm init -y`، گزینه‌ی `-y` چه کاری می‌کند؟
+    options:
+      - 'همه‌ی وابستگی‌های پروژه را نصب می‌کند.'
+      - 'فایل `package.json` قبلی را پاک می‌کند و پروژه را از نو می‌سازد.'
+      - 'به همه‌ی سؤال‌ها جواب پیش‌فرض می‌دهد و `package.json` را بدون پرسیدن سؤال می‌سازد.'
+      - 'پروژه را به‌جای npm با ابزار yarn می‌سازد.'
+    answer: 3
+    explain: |
+      `-y` کوتاه‌شده‌ی `--yes` است: یعنی «به همه‌ی سؤال‌ها بله بگو» و جواب‌های پیش‌فرض (اسم پوشه، نسخه‌ی `1.0.0`، `index.js` و…) را بپذیر. نصب وابستگی‌ها کار `npm install` است، `-y` چیزی را پاک نمی‌کند و ربطی به yarn ندارد.
+  - level: medium
+    stem: در پوشه‌ای به نام `my-app` دستور `npm init -y` را اجرا می‌کنیم. کدام مورد در `package.json` ساخته‌شده درست است؟
+    options:
+      - '`"name": "my-project"`'
+      - '`"version": "1.0.0"`'
+      - '`"main": "app.js"`'
+      - '`"license": "MIT"`'
+    answer: 2
+    explain: |
+      `npm init -y` نسخه را `1.0.0` می‌گذارد. اسم پیش‌فرض، اسم **پوشه** است (`"my-app"`، رد گزینه‌ی ۱)، فایل ورودی پیش‌فرض `index.js` است (رد گزینه‌ی ۳) و مجوز پیش‌فرض `ISC` است، نه `MIT` (رد گزینه‌ی ۴).
+  - level: medium
+    stem: در پروژه‌ای که `package.json` دارد، دستور `npm install axios` را می‌زنیم. کدام گزینه نتیجه را کامل و درست بیان می‌کند؟
+    options:
+      - 'فقط پوشه‌ی `node_modules/axios` ساخته می‌شود و `package.json` تغییری نمی‌کند.'
+      - '`axios` با بازه‌ای مثل `^1.21.1` به بخش `devDependencies` اضافه می‌شود.'
+      - '`axios` به‌صورت سراسری (global) روی سیستم نصب می‌شود.'
+      - '`axios` با بازه‌ای مثل `^1.21.1` به بخش `dependencies` اضافه می‌شود، کدش در `node_modules` قرار می‌گیرد و `package-lock.json` ساخته یا به‌روز می‌شود.'
+    answer: 4
+    explain: |
+      `npm install <package>` سه کار انجام می‌دهد: دانلود به `node_modules`، ثبت در `dependencies` با بازه‌ی `^` و ساخت یا به‌روزرسانی `package-lock.json`. گزینه‌ی ۱ ثبت در `package.json` را جا انداخته است. `devDependencies` فقط با `-D` پر می‌شود (رد گزینه‌ی ۲) و نصب سراسری فقط با `-g` انجام می‌شود (رد گزینه‌ی ۳).
+  - level: easy
+    stem: دستور کوتاه `npm i` همان کدام دستور است؟
+    options:
+      - '`npm init`'
+      - '`npm install`'
+      - '`npm info`'
+      - '`npm import`'
+    answer: 2
+    explain: |
+      `i` اسم کوتاه `install` است؛ پس `npm i express` همان `npm install express` است. `npm init` دستور جداگانه‌ای برای ساختن پروژه است، `npm info` اطلاعات یک پکیج را از registry نشان می‌دهد و دستوری به اسم `npm import` اصلاً وجود ندارد.
+  - level: medium
+    stem: می‌خواهیم `jest` (فریم‌ورک تست) را فقط به‌عنوان وابستگی **زمان توسعه** نصب کنیم. کدام دستور درست است؟
+    options:
+      - '`npm install -D jest`'
+      - '`npm install -g jest`'
+      - '`npm install jest`'
+      - '`npm update jest`'
+    answer: 1
+    explain: |
+      `-D` (یا `--save-dev`) پکیج را در `devDependencies` ثبت می‌کند. `-g` نصب سراسری روی سیستم است و `package.json` را تغییر نمی‌دهد. `npm install jest` بدون `-D` پکیج را در `dependencies` (وابستگی‌های زمان اجرا) می‌نویسد. `npm update` هم فقط پکیج‌های موجود را به‌روز می‌کند.
+  - level: medium
+    stem: هم‌تیمی‌ات پروژه را از git گرفته است. فایل‌های `package.json` و `package-lock.json` هستند، ولی پوشه‌ی `node_modules` نیست. برای نصب همه‌ی وابستگی‌ها کدام دستور را بزند؟
+    options:
+      - '`npm init`'
+      - '`npm update -g`'
+      - '`npm install`'
+      - '`npm run node_modules`'
+    answer: 3
+    explain: |
+      `npm install` بدون اسم پکیج، همه‌ی وابستگی‌های فهرست‌شده در `package.json` را با نسخه‌های قفل‌شده در `package-lock.json` نصب و `node_modules` را دوباره می‌سازد. `npm init` برای ساختن `package.json` تازه است، `npm update -g` پکیج‌های **سراسری** را به‌روز می‌کند و `npm run node_modules` دنبال اسکریپتی به این اسم می‌گردد و چون چنین اسکریپتی نیست، خطای `Missing script` می‌دهد.
+  - level: hard
+    stem: دستور `npm install -g typescript` را داخل پوشه‌ی یک پروژه اجرا می‌کنیم. کدام گزینه درست است؟
+    options:
+      - '`typescript` به بخش `dependencies` فایل `package.json` همین پروژه اضافه می‌شود.'
+      - '`typescript` فقط در پوشه‌ی `node_modules` همین پروژه نصب می‌شود و فقط در همین پروژه قابل استفاده است.'
+      - '`-g` یعنی نسخه‌ی پکیج از GitHub دانلود شود.'
+      - '`typescript` به‌صورت سراسری (global) نصب می‌شود؛ دستور `tsc` در ترمینال همه‌جا در دسترس است و `package.json` پروژه تغییری نمی‌کند.'
+    answer: 4
+    explain: |
+      `-g` کوتاه‌شده‌ی `--global` است: پکیج در پوشه‌ی سراسری npm نصب می‌شود (نه در `node_modules` پروژه) و دستورهای خط فرمانش، مثل `tsc`، در همه‌جای سیستم در دسترس قرار می‌گیرند. چون نصب سراسری مال سیستم است، `package.json` پروژه دست نمی‌خورد (رد گزینه‌های ۱ و ۲). `-g` هیچ ربطی به GitHub ندارد (رد گزینه‌ی ۳).
+  - level: easy
+    stem: کدام دستور پکیج `lodash` را هم از `node_modules` و هم از `package.json` حذف می‌کند؟
+    options:
+      - '`npm uninstall lodash`'
+      - '`npm update lodash`'
+      - '`npm delete lodash`'
+      - '`npm install lodash@0`'
+    answer: 1
+    explain: |
+      اسلاید ۱۰: «`npm uninstall <package>`: Remove a previously installed package». این دستور پکیج را از `node_modules`، `package.json` و `package-lock.json` حذف می‌کند. `npm update` پکیج را به‌روز می‌کند و حذفش نمی‌کند. دستوری به اسم `npm delete` در npm وجود ندارد (خطای `Unknown command` می‌دهد). `npm install lodash@0` هم یک نسخه‌ی قدیمی را **نصب** می‌کند.
+  - level: medium
+    stem: '`package.json` شامل `"is-number": "^6.0.0"` است و نسخه‌ی نصب‌شده `6.0.0` است. در registry، آخرین نسخه `7.0.0` است و نسخه‌ی دیگری با MAJOR برابر ۶ وجود ندارد. با اجرای `npm update` چه اتفاقی می‌افتد؟'
+    options:
+      - '`is-number` به `7.0.0` ارتقا پیدا می‌کند، چون `npm update` همیشه آخرین نسخه را نصب می‌کند.'
+      - 'خود برنامه‌ی npm به آخرین نسخه به‌روز می‌شود.'
+      - 'نسخه همان `6.0.0` می‌ماند، چون `7.0.0` بیرون از بازه‌ی `^6.0.0` است.'
+      - '`is-number` حذف می‌شود، چون نسخه‌اش قدیمی است.'
+    answer: 3
+    explain: |
+      `npm update` فقط تا جدیدترین نسخه‌ی **داخل بازه** جلو می‌رود و `^6.0.0` یعنی کمتر از `7.0.0`. چون نسخه‌ی جدیدتری در 6.x نیست، خروجی «up to date» است و نسخه `6.0.0` می‌ماند. در خروجی `npm outdated` هم ستون Wanted مقدار `6.0.0` و ستون Latest مقدار `7.0.0` را نشان می‌دهد. `npm update` نه خود npm را به‌روز می‌کند و نه پکیجی را حذف می‌کند.
+  - level: easy
+    stem: اگر هیچ تنظیمی تغییر نکرده باشد، خروجی دستور `npm config get registry` کدام است؟
+    options:
+      - '`https://npmjs.com/`'
+      - '`https://registry.npm.com/`'
+      - '`https://nodejs.org/registry/`'
+      - '`https://registry.npmjs.org/`'
+    answer: 4
+    explain: |
+      registry پیش‌فرض و رسمی npm آدرس `https://registry.npmjs.org/` است و `npm config get registry` همین را چاپ می‌کند. `npmjs.com` وب‌سایت npm برای جست‌وجو و خواندن مستندات است، نه آدرس registry. دو آدرس دیگر ساختگی‌اند.
+  - level: medium
+    stem: کدام دستور npm را تنظیم می‌کند که از این به بعد پکیج‌ها را از آدرس `https://registry.npmmirror.com/` دانلود کند؟
+    options:
+      - '`npm config get registry https://registry.npmmirror.com/`'
+      - '`npm config set registry https://registry.npmmirror.com/`'
+      - '`npm install registry https://registry.npmmirror.com/`'
+      - '`npm mirror https://registry.npmmirror.com/`'
+    answer: 2
+    explain: |
+      اسلاید ۱۰: «`npm config set registry <url>`». `set` مقدار را تنظیم و ذخیره می‌کند، ولی `get` فقط مقدار فعلی را **می‌خواند** (رد گزینه‌ی ۱). `npm install` برای نصب پکیج است و این دستور سعی می‌کند پکیجی به اسم `registry` نصب کند (رد گزینه‌ی ۳). دستوری به اسم `npm mirror` هم وجود ندارد (رد گزینه‌ی ۴).
+  - level: medium
+    stem: 'به‌جای دستور `npm config set registry <url>` می‌توان آدرس mirror را در یک فایل هم نوشت. کدام گزینه درست است؟'
+    options:
+      - 'نوشتن خط `registry=<url>` در فایل `.npmrc`'
+      - 'نوشتن `"registry": "<url>"` در بخش `dependencies` فایل `package.json`'
+      - 'نوشتن خط `registry=<url>` در فایل `.gitignore`'
+      - 'نوشتن `"registry": "<url>"` در فایل `package-lock.json`'
+    answer: 1
+    explain: |
+      اسلاید ۱۰ می‌گوید «or set it in .npmrc file». فایل `.npmrc` فایل تنظیمات npm است و خط `registry=<url>` در آن دقیقاً همان کار `npm config set registry <url>` را می‌کند (این دستور هم در اصل همین خط را در `~/.npmrc` می‌نویسد). بخش `dependencies` فقط اسم و نسخه‌ی پکیج‌ها را نگه می‌دارد، `.gitignore` فهرست فایل‌هایی است که git نادیده می‌گیرد و `package-lock.json` را هم خود npm می‌سازد.
+  - level: hard
+    stem: دستور `npm config set registry https://mirror.example.com/` را اجرا کرده‌ایم. کدام عبارت درست است؟
+    options:
+      - 'همه‌ی پکیج‌های پروژه فوراً از mirror دوباره دانلود و نصب می‌شوند.'
+      - 'آدرس mirror در فایل `package.json` پروژه ذخیره می‌شود.'
+      - 'خط `registry=https://mirror.example.com/` در فایل `.npmrc` کاربر ذخیره می‌شود، نصب‌های بعدی از mirror انجام می‌شوند و `npm config get registry` هم همین آدرس را نشان می‌دهد.'
+      - 'این تنظیم فقط برای همان یک دستور است و دستور بعدی دوباره از registry اصلی دانلود می‌کند.'
+    answer: 3
+    explain: |
+      `npm config set` تنظیم را **ماندگار** در فایل تنظیمات کاربر (`~/.npmrc`) ذخیره می‌کند و از آن به بعد همه‌ی دستورهای npm از mirror استفاده می‌کنند. خود این دستور چیزی نصب نمی‌کند (رد گزینه‌ی ۱) و به `package.json` هم دست نمی‌زند (رد گزینه‌ی ۲). تنظیم یک‌باره برای یک دستور، کار گزینه‌ی `--registry=<url>` روی همان دستور است (رد گزینه‌ی ۴).
+  - level: medium
+    stem: معمولاً چرا از یک **mirror** (نسخه‌ی آینه‌ی registry) برای npm استفاده می‌کنند؟
+    options:
+      - 'برای منتشر کردن پکیج بدون نیاز به حساب کاربری'
+      - 'برای حذف خودکار وابستگی‌های بلااستفاده'
+      - 'برای اجرای سریع‌تر اسکریپت‌های `package.json`'
+      - 'برای دانلود سریع‌تر و در دسترس بودن پکیج‌ها، وقتی registry اصلی کُند است یا از شبکه‌ی ما به‌خوبی در دسترس نیست'
+    answer: 4
+    explain: |
+      mirror کپی همان مخزن پکیج‌ها روی سرور دیگری است؛ پس فقط **محل دانلود** را عوض می‌کند. کاربردش سرعت بیشتر (سرور نزدیک‌تر) و در دسترس بودن (وقتی registry اصلی کُند یا محدود است) است. mirror ربطی به انتشار پکیج، حذف وابستگی‌ها یا سرعت اجرای اسکریپت‌ها ندارد.
+  - level: hard
+    stem: 'در فایل `~/.npmrc` کاربر نوشته شده `registry=https://user-mirror.example.com/` و در فایل `.npmrc` پروژه (کنار `package.json`) نوشته شده `registry=https://project-mirror.example.com/`. داخل پوشه‌ی پروژه، خروجی `npm config get registry` کدام است؟'
+    options:
+      - '`https://user-mirror.example.com/`'
+      - '`https://project-mirror.example.com/`'
+      - '`https://registry.npmjs.org/`'
+      - 'خطا می‌دهد، چون دو تنظیم با هم تداخل دارند.'
+    answer: 2
+    explain: |
+      تنظیمات npm از چند جا خوانده می‌شوند و جای **خاص‌تر** برنده است: گزینه‌ی خود دستور (`--registry=…`)، بعد `.npmrc` پروژه، بعد `~/.npmrc` کاربر و در آخر مقدار پیش‌فرض. پس داخل پروژه، آدرس `.npmrc` پروژه نشان داده می‌شود. مقدار پیش‌فرض فقط وقتی استفاده می‌شود که هیچ‌جا تنظیمی نباشد، و چند تنظیم هم‌زمان خطا نمی‌دهند.
+  - level: medium
+    stem: '`cowsay` پکیجی است که یک دستور خط فرمان دارد و در پروژه نصب نشده است. دستور `npx cowsay hello` چه کاری انجام می‌دهد؟'
+    options:
+      - 'پکیج `cowsay` را به `dependencies` فایل `package.json` اضافه می‌کند.'
+      - 'پکیج `cowsay` را در registry منتشر (publish) می‌کند.'
+      - 'دستورِ پکیج `cowsay` را بدون نصب دائمی در پروژه اجرا می‌کند و اگر لازم باشد، پکیج را موقتاً در cache دانلود می‌کند.'
+      - 'اسکریپتی به اسم `cowsay` را از بخش `scripts` فایل `package.json` اجرا می‌کند.'
+    answer: 3
+    explain: |
+      `npx` برای **اجرای** دستورِ یک پکیج است؛ پکیج را (در صورت نیاز) در cache دانلود می‌کند ولی به `package.json` یا `node_modules` پروژه اضافه نمی‌کند (رد گزینه‌ی ۱). انتشار پکیج کار `npm publish` است (رد گزینه‌ی ۲) و اجرای اسکریپت‌های `package.json` کار `npm run` است (رد گزینه‌ی ۴).
+  - level: hard
+    stem: کدام عبارت درباره‌ی دستورهای npm **نادرست** است؟
+    options:
+      - '`npm i lodash` همان `npm install lodash` است.'
+      - '`npm install -D webpack` پکیج را در `devDependencies` ثبت می‌کند.'
+      - '`npm uninstall lodash` اسم پکیج را از `package.json` هم حذف می‌کند.'
+      - '`npm install` بدون اسم پکیج هیچ کاری انجام نمی‌دهد.'
+    answer: 4
+    explain: |
+      `npm install` بدون اسم، **همه‌ی** وابستگی‌های نوشته‌شده در `package.json` را نصب می‌کند و رایج‌ترین دستور بعد از گرفتن یک پروژه است؛ پس گزینه‌ی ۴ نادرست است. گزینه‌ی ۱ درست است چون `i` اسم کوتاه `install` است، گزینه‌ی ۲ درست است چون `-D` همان `--save-dev` است و گزینه‌ی ۳ هم رفتار واقعی `npm uninstall` است.
+  - level: hard
+    stem: با تنظیمات پیش‌فرض npm، دستور `npm install lodash@4.17.21` را اجرا می‌کنیم. در بخش `dependencies` فایل `package.json` چه نوشته می‌شود؟
+    options:
+      - '`"lodash": "4.17.21"`'
+      - '`"lodash": "^4.17.21"`'
+      - '`"lodash": "~4.17.21"`'
+      - '`"lodash": "latest"`'
+    answer: 2
+    explain: |
+      همان نسخه‌ی `4.17.21` نصب می‌شود، ولی npm آن را به‌طور پیش‌فرض با پیشوند `^` ذخیره می‌کند. برای ذخیره‌ی دقیق و بدون `^` (گزینه‌ی ۱) باید `-E` یا `--save-exact` بزنی. npm پیشوند `~` (گزینه‌ی ۳) را به‌طور پیش‌فرض استفاده نمی‌کند و `latest` (گزینه‌ی ۴) هم نوشته نمی‌شود.
