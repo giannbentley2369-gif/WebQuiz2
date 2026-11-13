@@ -1,0 +1,1006 @@
+id: ch1-this
+title: "کلمه‌ی کلیدی this"
+slides: "Introduction to JS، اسلایدهای ۳۶، ۴۳ و ۴۴"
+lesson: |
+  به جمله‌ی «**من** گرسنه‌ام» فکر کن. اگر علی این را بگوید، یعنی علی گرسنه است؛ اگر سارا بگوید، یعنی سارا. خودِ جمله عوض نشده، ولی معنی «من» به **گوینده** بستگی دارد. کلمه‌ی کلیدی **`this`** (به معنای «این»؛ ارجاعی به شیئی که تابع را صدا زده) در JavaScript همین «من» است: داخل کدِ تابع نوشته می‌شود، ولی این‌که به چه شیئی اشاره کند به این بستگی دارد که **چه کسی و چطور** آن تابع را صدا زده است.
+
+  ### اسلایدها چه می‌گویند؟
+
+  اسلاید ۴۳:
+
+  - `this` به شیئی اشاره می‌کند که تابع را **صدا می‌زند** (Refers to the object that is calling the function).
+  - در اشیاء، `this` به **خود شیء** اشاره می‌کند.
+  - در کلاس‌ها، `this` به **نمونه‌ی (instance) ساخته‌شده** اشاره می‌کند.
+  - در arrow functionها، `this` از **محدوده‌ی بیرونی** (outer scope) به ارث می‌رسد.
+  - مقدار `this` به **نحوه‌ی صدا زدن** تابع بستگی دارد، **نه محل تعریف** آن.
+
+  اسلاید ۴۴ (ادامه):
+
+  - به شیئی اشاره می‌کند که تابع را صدا می‌زند؛ مقدارش به **بافتِ فراخوانی** (call context) بستگی دارد، نه به محل اعلان.
+  - در **محدوده‌ی سراسری** (global scope): `window` (در مرورگر) یا `undefined` (در strict mode).
+  - در **متدها** (method؛ تابعی که خاصیتِ یک شیء است): شیئی که **قبل از نقطه** آمده است.
+  - در **arrow functionها**: `this` را از محدوده‌ی بیرونی به ارث می‌برد (**lexical this**؛ یعنی `this`ی که از محل نوشته شدن کد تعیین می‌شود، نه از محل صدا زدن).
+  - می‌توان آن را به‌صورت دستی با **`call`**، **`apply`** یا **`bind`** تعیین کرد.
+
+  اسلاید ۳۶ هم در مقایسه‌ی دو روش تعریف تابع گفته بود: «Functions have their own `this`; arrows inherit `this`»؛ یعنی تابع‌های معمولی `this` مخصوص خودشان را دارند ولی arrow functionها آن را از بیرون به ارث می‌برند. در این درس همه‌ی این جمله‌ها را باز می‌کنیم.
+
+  ### کد اسلاید ۴۴
+
+  ```js title=sample.js
+  const obj = {
+    name: "Robert",
+    say() {
+      console.log(this.name);
+    }
+  };
+  obj.say(); // "Robert"
+  const f = obj.say;
+  f(); // undefined (or global)
+  ```
+
+  - `obj.say()`: قبل از نقطه `obj` آمده، پس `this` برابر `obj` است و `Robert` چاپ می‌شود.
+  - `const f = obj.say;`: فقط **خود تابع** در `f` ریخته می‌شود. تابع هیچ اتصال دائمی به `obj` ندارد.
+  - `f()`: این بار هیچ شیئی قبل از نقطه نیست؛ یک **صدا زدن ساده** (plain call) است و `this` دیگر `obj` نیست. نتیجه به محیط اجرا بستگی دارد:
+
+  | محیط اجرا | `this` داخل `f()` | خروجی `f()` |
+  |---|---|---|
+  | Node.js، فایل معمولی `.js` (CommonJS، بدون strict) | شیء سراسری (`globalThis`) | `undefined` (شیء سراسری Node.js خاصیت `name` ندارد) |
+  | مرورگر، تگ `<script>` معمولی (بدون strict) | `window` | یک خط **خالی** (چون `window.name` یک رشته‌ی واقعی و معمولاً `""` است) |
+  | strict mode (`"use strict"`) یا ES module | `undefined` | `TypeError: Cannot read properties of undefined (reading 'name')` |
+
+  منظور اسلاید از «(or global)» همین است: در حالت عادی `this` برابر **شیء سراسری** (global object) می‌شود؛ شیئی که متغیرها و توابع سراسری روی آن قرار دارند. نام استاندارد آن در همه‌ی محیط‌ها **`globalThis`** است (در مرورگر همان `window`). **strict mode** (حالت سخت‌گیرانه) با نوشتن `"use strict";` در ابتدای فایل یا تابع فعال می‌شود و بعضی رفتارهای خطرناک قدیمی را ممنوع می‌کند. **ES moduleها** (فایل‌هایی که با `import`/`export` کار می‌کنند) و بدنه‌ی کلاس‌ها **همیشه** strict هستند.
+
+  ### چهار قانون پیدا کردن `this`
+
+  برای یک تابع معمولی (غیر arrow)، به **محل صدا زدن** (call site) نگاه کن و این سؤال‌ها را **به همین ترتیب** بپرس؛ اولین جواب «بله» تعیین‌کننده است:
+
+  | اولویت | شکل فراخوانی | `this` برابر است با | مثال |
+  |---|---|---|---|
+  | ۱ | با `new` | شیء تازه‌ای که ساخته می‌شود | `new User("Ali")` |
+  | ۲ | با `call` / `apply` / `bind` | شیئی که صریحاً داده شده | `f.call(obj)` |
+  | ۳ | به شکل متد: `obj.f()` | شیء قبل از نقطه | `obj.say()` |
+  | ۴ | صدا زدن ساده: `f()` | شیء سراسری (`window` یا `globalThis`)؛ در strict mode: `undefined` | `f()` |
+
+  و **arrow function** از هیچ‌کدام از این قانون‌ها پیروی نمی‌کند: `this` آن همان `this`ِ جایی است که arrow در آن **نوشته شده** است.
+
+  ### قانون ۳: متد؛ شیءِ قبل از نقطه
+
+  فقط شیئی مهم است که **دقیقاً قبل از آخرین نقطه** آمده است:
+
+  ```js
+  const user = {
+    name: "outer",
+    profile: {
+      name: "inner",
+      show() {
+        console.log(this.name);
+      },
+    },
+  };
+  user.profile.show(); // inner (the object right before the dot is user.profile)
+  ```
+
+  و چون `this` به **فراخوانی** بستگی دارد نه به تعریف، یک تابع می‌تواند در اشیای مختلف `this`های مختلفی داشته باشد:
+
+  ```js
+  const robert = {
+    name: "Robert",
+    say() {
+      return "I am " + this.name;
+    },
+  };
+  const anna = { name: "Anna" };
+  anna.say = robert.say;   // the SAME function is now stored in anna too
+  console.log(anna.say()); // I am Anna (called on anna)
+  ```
+
+  ### قانون ۴: صدا زدن ساده و محدوده‌ی سراسری
+
+  وقتی تابعی بدون هیچ شیئی صدا زده شود (مثل `f()` در اسلاید ۴۴)، در حالت عادی `this` برابر شیء سراسری است و در strict mode برابر `undefined`. جمله‌ی اسلاید ۴۴ («In global scope: window (browser) or undefined (strict mode)») را دقیق‌تر این‌طور بخوان:
+
+  - در مرورگر، `this` در **بالاترین سطح** یک تگ `<script>` معمولی همیشه `window` است (حتی در strict mode).
+  - تابع معمولی‌ای که به‌صورت **ساده** صدا زده شود: بدون strict، `this` برابر `window` است و در strict mode برابر `undefined`. «undefined (strict mode)»ِ اسلاید همین حالت است.
+  - در بالاترین سطح یک ES module، `this` برابر `undefined` است.
+  - در Node.js، در بالاترین سطح یک فایل CommonJS، `this` برابر `module.exports` است که در ابتدا یک شیء خالی است:
+
+  ```js
+  // Node.js, a normal CommonJS file (app.js)
+  console.log(this);                    // {}
+  console.log(this === module.exports); // true
+  ```
+
+  یک تفاوت مرورگر و Node.js: در مرورگر، `var` سراسری (و function declaration سراسری) خاصیتِ `window` می‌شود، ولی `let` و `const` نمی‌شوند:
+
+  ```js
+  // Browser, a classic <script> (not strict)
+  var city = "Tabriz";
+  function show() {
+    console.log(this.city);
+  }
+  show();     // Tabriz (this = window, and var created window.city)
+  const obj = { city: "Shiraz", show };
+  obj.show(); // Shiraz (the same function, called as a method)
+  ```
+
+  ### قانون ۲: `call`، `apply` و `bind`
+
+  هر تابع سه متد دارد که با آن‌ها می‌توانی `this` را **دستی** تعیین کنی. اولین آرگومانِ هر سه، همان شیئی است که می‌خواهی `this` شود:
+
+  ```js
+  function introduce(greeting, punctuation) {
+    return greeting + ", " + this.name + punctuation;
+  }
+  const robert = { name: "Robert" };
+
+  console.log(introduce.call(robert, "Hi", "!"));       // Hi, Robert!
+  console.log(introduce.apply(robert, ["Hello", "?"])); // Hello, Robert?
+  const bound = introduce.bind(robert); // nothing runs yet: a NEW function is returned
+  console.log(bound("Hey", "."));       // Hey, Robert.
+  ```
+
+  | متد | تابع را همان لحظه اجرا می‌کند؟ | آرگومان‌ها | چه برمی‌گرداند؟ |
+  |---|---|---|---|
+  | `call(thisArg, a, b)` | بله | جدا‌جدا، با کاما | نتیجه‌ی تابع |
+  | `apply(thisArg, [a, b])` | بله | داخل **یک آرایه** | نتیجه‌ی تابع |
+  | `bind(thisArg)` | **خیر** | هنگام صدا زدن تابع جدید | یک **تابع جدید** با `this` دائمی |
+
+  برای حفظ کردن: **C**all با **C**omma (کاما)، **A**pply با **A**rray (آرایه).
+
+  با همین ابزار، مشکل خط آخر اسلاید ۴۴ حل می‌شود (هر سه را اجرا کرده‌ایم):
+
+  ```js
+  const obj = {
+    name: "Robert",
+    say() {
+      console.log(this.name);
+    }
+  };
+  const f = obj.say;
+  f.call(obj);   // Robert
+  f.apply(obj);  // Robert
+  f.bind(obj)(); // Robert
+  ```
+
+  تابعی که با `bind` ساخته شده، `this`ش **برای همیشه** قفل است: نه `call` و `apply` و نه یک `bind` دوباره نمی‌توانند آن را عوض کنند:
+
+  ```js
+  function show() {
+    console.log(this.name);
+  }
+  const a = { name: "A" };
+  const b = { name: "B" };
+  const f = show.bind(a);
+  f();         // A
+  f.call(b);   // A (a bound function ignores call/apply)
+  f.bind(b)(); // A (binding again has no effect)
+  ```
+
+  ### قانون ۱: `new`
+
+  وقتی تابعی با `new` صدا زده شود، یک شیء تازه ساخته می‌شود و `this` به آن اشاره می‌کند. کلاس‌ها (درس «کلاس‌ها (Classes) در JavaScript») همین کار را می‌کنند و قبل از ES6 همین کار با تابع‌های معمولی انجام می‌شد:
+
+  ```js
+  function Car(model) {
+    this.model = model; // "this" is the brand-new object
+  }
+  const c = new Car("Pride");
+  console.log(c.model); // Pride
+  ```
+
+  اگر چنین تابعی را **بدون** `new` صدا بزنی، یک صدا زدن ساده است: در حالت عادی `this` شیء سراسری می‌شود و `model` به‌اشتباه روی شیء سراسری ساخته می‌شود! کلاس‌ها برای جلوگیری از همین اشتباه، بدون `new` خطای `TypeError` می‌دهند.
+
+  ### arrow function و lexical this
+
+  arrow function **`this` مخصوص خودش را ندارد**؛ وقتی داخلش از `this` استفاده کنی، JavaScript آن را مثل یک متغیر معمولی از محدوده‌ی بیرونی (جایی که arrow **نوشته شده**) برمی‌دارد. نتیجه‌ها:
+
+  **۱. arrow به‌عنوان متد شیء، شیء را نمی‌شناسد (دام معروف):**
+
+  ```js
+  const counter = {
+    count: 10,
+    regular() {
+      return this.count; // this = counter
+    },
+    arrow: () => this.count, // this = the OUTER this, not counter
+  };
+  console.log(counter.regular()); // 10
+  console.log(counter.arrow());   // undefined (Node.js: the outer this is module.exports = {})
+  ```
+
+  آکولادهای object literal محدوده‌ی جدیدی برای `this` نمی‌سازند؛ پس `this` در `arrow` همان `this` بیرون از شیء است: در Node.js شیء `module.exports` و در یک `<script>` مرورگر، `window`.
+
+  **۲. arrow داخل متد، `this` متد را نگه می‌دارد (کاربرد درست):**
+
+  ```js
+  const team = {
+    name: "Blue",
+    members: ["Ali", "Sara"],
+    list() {
+      return this.members.map((m) => m + " of " + this.name); // the arrow uses list's this
+    },
+  };
+  console.log(team.list()); // [ 'Ali of Blue', 'Sara of Blue' ]
+  ```
+
+  در مقابل، یک تابع **معمولی** تودرتو `this` را گم می‌کند، چون به‌صورت ساده صدا زده می‌شود:
+
+  ```js
+  const team2 = {
+    name: "Blue",
+    show() {
+      function inner() {
+        return this.name; // inner() is a plain call: this is NOT team2
+      }
+      return inner();
+    },
+  };
+  console.log(team2.show()); // undefined in Node.js (TypeError in strict mode)
+  ```
+
+  **۳. `call`، `apply` و `bind` روی `this`ِ arrow اثری ندارند:**
+
+  ```js
+  const arrow = () => this;
+  const obj = { name: "obj" };
+  console.log(arrow.call(obj) === obj); // false
+  ```
+
+  **۴.** arrow function را نمی‌شود با `new` صدا زد (`TypeError: ... is not a constructor`).
+
+  ### callbackها و گم شدن `this`
+
+  **callback** (تابعی که به تابع دیگری داده می‌شود تا بعداً صدایش بزند) یکی از رایج‌ترین جاهای گم شدن `this` است:
+
+  ```js
+  const timer = {
+    label: "T1",
+    report() {
+      console.log("label:", this.label);
+    },
+  };
+  setTimeout(timer.report, 0);             // label: undefined (only the function is passed)
+  setTimeout(() => timer.report(), 0);     // label: T1 (fix 1: an arrow wrapper makes a real method call)
+  setTimeout(timer.report.bind(timer), 0); // label: T1 (fix 2: bind)
+  ```
+
+  `setTimeout(timer.report, 0)` فقط **خود تابع** را تحویل می‌دهد، نه `timer` را. بعداً تابع بدون `timer.` اجرا می‌شود و `this` دیگر `timer` نیست (در مرورگر `window` و در Node.js یک شیء داخلی به نام Timeout؛ در هر دو خاصیت `label` وجود ندارد). اشتباه رایج دیگر نوشتن `setTimeout(timer.report(), 0)` است: این‌جا تابع **همان لحظه** اجرا می‌شود و به‌جای تابع، مقدار برگشتی‌اش (`undefined`) به `setTimeout` می‌رسد؛ Node.js در این حالت خطای `TypeError` می‌دهد.
+
+  همین داستان داخل یک متد (در Node.js):
+
+  ```js
+  const user = {
+    name: "Sara",
+    later() {
+      setTimeout(() => console.log("arrow:", this.name), 0); // arrow: Sara
+      setTimeout(function () {
+        console.log("function:", this.name);                 // function: undefined (Node.js)
+      }, 0);
+    },
+  };
+  user.later();
+  ```
+
+  arrow داخل `later` نوشته شده و `this` آن همان `user` است؛ ولی `function` معمولی را تایمر صدا می‌زند، نه `user`، پس `this` آن دیگر `user` نیست.
+
+  ### `this` در کلاس‌ها
+
+  در `constructor` و در متدهایی که به شکل `instance.method()` صدا زده می‌شوند، `this` همان **نمونه** است (اسلاید ۴۳). اما بدنه‌ی کلاس همیشه strict است؛ پس متدی که از نمونه جدا شود، `this` برابر `undefined` می‌گیرد:
+
+  ```js
+  class User {
+    constructor(name) {
+      this.name = name;
+    }
+    greet() {
+      return "Hello, " + this.name;
+    }
+  }
+  const kermit = new User("Kermit");
+  console.log(kermit.greet()); // Hello, Kermit
+  const greet = kermit.greet;
+  greet(); // TypeError: Cannot read properties of undefined (reading 'name')
+  ```
+
+  دو راه‌حل رایج: در `constructor` بنویسی `this.greet = this.greet.bind(this);`، یا متد را به شکل یک class field با arrow function تعریف کنی: `greet = () => "Hello, " + this.name;` (این arrow، `this` را از نمونه‌ی در حال ساخت می‌گیرد).
+
+  ### پیش‌نمایش فصل دوم: `this` در event handlerها
+
+  در فصل دوم با **event handler** (تابعی که هنگام رخ دادن یک رویداد، مثل کلیک، اجرا می‌شود) کار می‌کنیم. اگر handler یک تابع معمولی باشد، `this` همان عنصری است که listener روی آن نصب شده؛ اگر arrow باشد، `this` بیرونی (در یک `<script>` معمولی، `window`) را نگه می‌دارد:
+
+  ```js
+  const btn = document.querySelector("#btn"); // <button id="btn">Save</button>
+  btn.addEventListener("click", function () {
+    console.log(this.id);         // btn (this = the element)
+  });
+  btn.addEventListener("click", () => {
+    console.log(this === window); // true (an arrow keeps the outer this)
+  });
+  ```
+
+  ::: tip نکته
+  - برای تابع معمولی فقط به **خط صدا زدن** نگاه کن، نه به جایی که تابع تعریف شده؛ به ترتیب: `new` ← `call`/`apply`/`bind` ← `obj.f()` ← `f()`.
+  - برای arrow function فقط به **جای نوشته شدن** نگاه کن: `this` آن همان `this` بیرونی است و با هیچ روشی عوض نمی‌شود.
+  - `call` و `apply` همان لحظه اجرا می‌کنند (Comma / Array)؛ `bind` اجرا نمی‌کند و تابع جدیدی با `this` دائمی برمی‌گرداند.
+  - برای متدهای شیء شکل کوتاه `say() {}` (یا `function`) بنویس، نه arrow؛ برای callbackهای داخل متد، arrow بهترین انتخاب است.
+  :::
+
+  ::: trap دام تستی
+  - `const f = obj.say; f();` شیء را گم می‌کند: Node.js (CommonJS، بدون strict) ← `undefined`؛ مرورگر ← خط خالی (`window.name` برابر `""`)؛ strict mode یا ES module ← `TypeError`. **همیشه محیط اجرا را در صورت سؤال پیدا کن.**
+  - arrow function به‌عنوان متد شیء، `this` را از بیرون می‌گیرد، نه از خود شیء.
+  - `setTimeout(obj.say, 1000)` شیء را گم می‌کند و `setTimeout(obj.say(), 1000)` تابع را **همان لحظه** اجرا می‌کند. درستش: `setTimeout(() => obj.say(), 1000)` یا `setTimeout(obj.say.bind(obj), 1000)`.
+  - تابع معمولی تودرتو داخل متد، `this` متد را به ارث نمی‌برد؛ arrow تودرتو می‌برد.
+  - متد جداشده از نمونه‌ی کلاس، حتی در فایلِ بدون `"use strict"`، خطای `TypeError` می‌دهد، چون بدنه‌ی کلاس همیشه strict است.
+  - در بالاترین سطح یک فایل CommonJS در Node.js، `this` برابر `{}` (یعنی `module.exports`) است، نه `window` یا `undefined`.
+  :::
+
+  ::: summary
+  | فراخوانی | `this` |
+  |---|---|
+  | `new F()` | شیء تازه |
+  | `f.call(o)` / `f.apply(o)` / `f.bind(o)()` | `o` |
+  | `o.f()` | `o` (شیء قبل از نقطه) |
+  | `f()` | `window` یا `globalThis` (بدون strict)؛ `undefined` (strict) |
+  | arrow function | `this` محدوده‌ی بیرونی (lexical)؛ غیرقابل تغییر |
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۳، کلمه‌ی کلیدی `this` (در حالت کلی) به چه چیزی اشاره می‌کند؟
+    options:
+      - 'به خودِ تابعی که `this` داخل آن نوشته شده است.'
+      - 'همیشه به شیء سراسری `window`.'
+      - 'به شیئی که تابع را صدا می‌زند.'
+      - 'به اولین شیئی که در برنامه ساخته شده است.'
+    answer: 3
+    explain: |
+      اسلاید ۴۳: «Refers to the object that is calling the function»؛ یعنی شیئی که تابع را صدا زده است (مثلاً در `obj.say()`، شیء `obj`). `this` به خود تابع اشاره نمی‌کند (رد گزینه‌ی ۱). فقط در صدا زدن ساده و بدون strict mode در مرورگر برابر `window` می‌شود، نه «همیشه» (رد گزینه‌ی ۲). ترتیب ساخته شدن اشیاء هم هیچ ربطی به آن ندارد (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      طبق اسلایدهای ۴۳ و ۴۴، مقدار `this` در یک تابع معمولی به چه چیزی بستگی دارد؟
+    options:
+      - 'به نحوه‌ی صدا زدن تابع (call context)، نه محل تعریف آن.'
+      - 'به محل تعریف تابع در کد، نه نحوه‌ی صدا زدن آن.'
+      - 'به نام تابع و تعداد پارامترهایش.'
+      - 'به نوع مقداری که تابع برمی‌گرداند.'
+    answer: 1
+    explain: |
+      اسلاید ۴۳: «The value of this depends on how a function is called, not where it's defined» و اسلاید ۴۴: «Value depends on call context, not declaration». گزینه‌ی ۲ دقیقاً برعکس است؛ «محل نوشته شدن» فقط برای arrow functionها تعیین‌کننده است. نام تابع، تعداد پارامترها و مقدار برگشتی هم هیچ اثری روی `this` ندارند (رد گزینه‌های ۳ و ۴).
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۴، `this` در محدوده‌ی سراسری (global scope) چیست؟
+    options:
+      - 'همیشه `null`'
+      - 'در مرورگر `document` و در strict mode یک شیء خالی `{}`'
+      - 'همیشه شیء `console`'
+      - 'در مرورگر `window` و در strict mode برابر `undefined`'
+    answer: 4
+    explain: |
+      اسلاید ۴۴: «In global scope: window (browser) or undefined (strict mode)». دقیق‌ترش این است که تابعی که به‌صورت ساده و بدون شیء صدا زده شود، در مرورگر `window` و در strict mode مقدار `undefined` می‌گیرد (بالاترین سطح خود تگ `<script>` همیشه `window` است). `null` و `console` هیچ‌کدام مقدار پیش‌فرض `this` نیستند (رد گزینه‌های ۱ و ۳) و `document` فقط یکی از خاصیت‌های `window` است (رد گزینه‌ی ۲).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+      obj.say();
+    options:
+      - out: "undefined"
+      - out: "Robert"
+      - out: "say"
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      در `obj.say()` شیء `obj` قبل از نقطه آمده، پس داخل `say` مقدار `this` برابر `obj` است و `this.name` همان `"Robert"` است. گزینه‌ی ۱ جواب حالتی است که متد از شیء جدا شود (`const f = obj.say; f();`)، گزینه‌ی ۳ نام متد را با `this.name` اشتباه گرفته و در فراخوانی متد به این شکل هیچ خطایی رخ نمی‌دهد (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      اسلاید ۳۶ می‌گوید: «تابع‌های معمولی `this` مخصوص خودشان را دارند، ولی arrow functionها `this` را ......». جای خالی کدام است؟
+    options:
+      - 'همیشه برابر `undefined` می‌گیرند'
+      - 'از اولین آرگومانی که به آن‌ها داده می‌شود می‌گیرند'
+      - 'از شیئی که قبل از نقطه آمده می‌گیرند'
+      - 'از محدوده‌ی بیرونی به ارث می‌برند'
+    answer: 4
+    explain: |
+      اسلاید ۳۶: «Functions have their own `this`; arrows inherit `this`» و اسلاید ۴۴ آن را lexical this می‌نامد: arrow function `this` را از محدوده‌ای که در آن نوشته شده می‌گیرد. `this`ِ arrow همیشه `undefined` نیست (مثلاً داخل یک متد، همان شیء است؛ رد گزینه‌ی ۱)، آرگومان‌ها روی آن اثری ندارند (رد گزینه‌ی ۲) و «شیء قبل از نقطه» قانونِ تابع‌های معمولی است، نه arrow (رد گزینه‌ی ۳).
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۳، در کلاس‌ها `this` (مثلاً داخل `constructor`) به چه چیزی اشاره می‌کند؟
+    options:
+      - 'به نمونه‌ی (instance) تازه‌ای که با `new` ساخته می‌شود'
+      - 'به خود کلاس'
+      - 'به شیء سراسری `window`'
+      - 'به کلاس والد (parent)'
+    answer: 1
+    explain: |
+      اسلاید ۴۳: «In classes, `this` points to the created instance». وقتی `new User("Kermit")` اجرا می‌شود، شیء تازه‌ای ساخته می‌شود و `constructor` با `this` برابر همان شیء اجرا می‌شود؛ برای همین `this.name = name` روی نمونه خاصیت می‌سازد. `this` به خود کلاس (گزینه‌ی ۲)، شیء سراسری (گزینه‌ی ۳) یا کلاس والد (گزینه‌ی ۴) اشاره نمی‌کند؛ کلاس والد فقط از طریق `super` در دسترس است.
+
+  - level: medium
+    stem: |
+      فایل `sample.js` زیر (کد اسلاید ۴۴) با دستور `node sample.js` اجرا می‌شود؛ یک فایل معمولی CommonJS، بدون `"use strict"`. خروجی چیست؟
+    check: output
+    code: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+      obj.say();
+      const f = obj.say;
+      f();
+    options:
+      - out: ["Robert", "Robert"]
+      - out: ["Robert", "undefined"]
+      - out: ["Robert", "!! TypeError"]
+      - out: ["Robert", ""]
+    answer: 2
+    explain: |
+      `obj.say()` یک فراخوانی متد است و `Robert` چاپ می‌کند. `f()` صدا زدن ساده است و تابع اتصالش به `obj` را ندارد؛ بدون strict mode، `this` برابر شیء سراسری Node.js است که خاصیت `name` ندارد، پس `undefined` چاپ می‌شود. گزینه‌ی ۱ فکر کرده تابع `obj` را به خاطر می‌سپارد، گزینه‌ی ۳ جواب strict mode است و گزینه‌ی ۴ (خط خالی) جواب مرورگر است که در آن `window.name` برابر `""` است.
+
+  - level: medium
+    stem: |
+      کد اسلاید ۴۴ این بار با `"use strict"` در ابتدای فایل و در Node.js اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      "use strict";
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+      obj.say();
+      const f = obj.say;
+      f();
+    options:
+      - out: ["Robert", "undefined"]
+      - out: ["Robert", "Robert"]
+      - out: "!! TypeError"
+      - out: ["Robert", "!! TypeError"]
+    answer: 4
+    explain: |
+      `obj.say()` مثل قبل `Robert` چاپ می‌کند. در strict mode، صدا زدن ساده‌ی `f()` به `this` مقدار `undefined` می‌دهد و خواندن `undefined.name` خطای `TypeError: Cannot read properties of undefined (reading 'name')` می‌دهد. گزینه‌ی ۱ رفتار حالت عادی (بدون strict) است، گزینه‌ی ۲ فکر کرده `this` حفظ می‌شود و گزینه‌ی ۳ فراموش کرده که خط `obj.say()` قبل از خطا اجرا شده و خروجی‌اش باقی می‌ماند.
+
+  - level: hard
+    stem: |
+      کد زیر در **مرورگر** و داخل یک تگ `<script>` معمولی (بدون strict mode) اجرا می‌شود. خروجی کنسول چیست؟
+    check: dom-output
+    code: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+      obj.say();
+      const f = obj.say;
+      f();
+      console.log("end");
+    options:
+      - out: ["Robert", "undefined", "end"]
+      - out: ["Robert", "", "end"]
+      - out: ["Robert", "!! TypeError"]
+      - out: ["Robert", "Robert", "end"]
+    answer: 2
+    explain: |
+      در `f()` شیئی قبل از نقطه نیست، پس در یک اسکریپت معمولی مرورگر `this` برابر `window` است. برخلاف Node.js، `window` واقعاً خاصیتی به نام `name` دارد (نام پنجره) که معمولاً رشته‌ی خالی `""` است؛ پس `console.log` یک خط خالی چاپ می‌کند و بعد `end`. گزینه‌ی ۱ جواب Node.js است، گزینه‌ی ۳ جواب strict mode و گزینه‌ی ۴ فکر کرده تابع اتصالش به `obj` را حفظ می‌کند.
+
+  - level: easy
+    stem: |
+      در **strict mode**، در کدام شکل فراخوانی، مقدار `this` داخل یک تابع معمولی `f` برابر `undefined` می‌شود؟
+    options:
+      - '`f()` (صدا زدن ساده، بدون شیء قبل از نقطه)'
+      - '`obj.f()`'
+      - '`f.call(obj)`'
+      - '`new f()`'
+    answer: 1
+    explain: |
+      در صدا زدن ساده هیچ شیئی برای `this` وجود ندارد؛ بدون strict mode شیء سراسری جای آن را می‌گیرد، ولی در strict mode `this` همان `undefined` می‌ماند. در `obj.f()` مقدار `this` برابر `obj` است (رد گزینه‌ی ۲)، در `f.call(obj)` صریحاً `obj` داده شده (رد گزینه‌ی ۳) و با `new` شیء تازه‌ای ساخته می‌شود که `this` به آن اشاره می‌کند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = {
+        name: "outer",
+        profile: {
+          name: "inner",
+          show() {
+            console.log(this.name);
+          },
+        },
+      };
+      user.profile.show();
+    options:
+      - out: "outer"
+      - out: "undefined"
+      - out: "inner"
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      قانون متد می‌گوید `this` شیئی است که **دقیقاً قبل از آخرین نقطه** آمده؛ در `user.profile.show()` این شیء `user.profile` است، پس `this.name` برابر `"inner"` است. گزینه‌ی ۱ فکر کرده بیرونی‌ترین شیء (`user`) تعیین‌کننده است، گزینه‌ی ۲ تصور کرده در اشیای تودرتو `this` گم می‌شود و در این فراخوانی هیچ خطایی رخ نمی‌دهد (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const robert = {
+        name: "Robert",
+        say() {
+          return "I am " + this.name;
+        },
+      };
+      const anna = { name: "Anna" };
+      console.log(robert.say.call(anna));
+      anna.say = robert.say;
+      console.log(anna.say());
+    options:
+      - out: ["I am Robert", "I am Robert"]
+      - out: ["I am Anna", "I am Robert"]
+      - out: ["I am Anna", "I am Anna"]
+      - out: ["I am Robert", "I am Anna"]
+    answer: 3
+    explain: |
+      `this` به **نحوه‌ی صدا زدن** بستگی دارد، نه به جایی که تابع تعریف شده. در `robert.say.call(anna)` مقدار `this` صریحاً `anna` است. در خط بعد همان تابع در `anna.say` هم ذخیره می‌شود و `anna.say()` یک فراخوانی متد روی `anna` است. پس هر دو بار `I am Anna`. گزینه‌های ۱، ۲ و ۴ فرض کرده‌اند تابع برای همیشه به `robert`، یعنی جایی که تعریف شده، وابسته است.
+
+  - level: medium
+    stem: |
+      فایل `app.js` زیر با دستور `node app.js` (یک فایل CommonJS) اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      console.log(this);
+      console.log(this === module.exports);
+    options:
+      - out: ["undefined", "false"]
+      - out: ["{}", "true"]
+      - out: ["{}", "false"]
+      - out: ["undefined", "true"]
+    answer: 2
+    explain: |
+      در بالاترین سطح یک فایل CommonJS در Node.js، `this` برابر `module.exports` است که در ابتدا یک شیء خالی است و `{}` چاپ می‌شود. گزینه‌های ۱ و ۴ رفتار ES module (که در آن `this` در بالاترین سطح `undefined` است) را در نظر گرفته‌اند و گزینه‌ی ۳ نفهمیده که این شیء خالی دقیقاً همان `module.exports` است.
+
+  - level: hard
+    stem: |
+      کد زیر در **مرورگر** داخل یک تگ `<script>` معمولی اجرا می‌شود. خروجی چیست؟
+    check: dom-output
+    code: |
+      "use strict";
+      function whoAmI() {
+        return this;
+      }
+      console.log(whoAmI() === undefined);
+      console.log(this === window);
+    options:
+      - out: ["true", "true"]
+      - out: ["true", "false"]
+      - out: ["false", "true"]
+      - out: ["false", "false"]
+    answer: 1
+    explain: |
+      در strict mode، تابعی که به‌صورت ساده صدا زده شود `this` برابر `undefined` می‌گیرد؛ پس خط اول `true` است (رد گزینه‌های ۳ و ۴). اما `this` در **بالاترین سطح** یک `<script>` معمولی، حتی در strict mode، همان `window` است؛ پس خط دوم هم `true` است (رد گزینه‌ی ۲). «undefined (strict mode)» در اسلاید ۴۴ مربوط به همین صدا زدن ساده‌ی تابع است.
+
+  - level: medium
+    stem: |
+      کد زیر در **مرورگر** داخل یک تگ `<script>` معمولی (بدون strict mode) اجرا می‌شود. خروجی چیست؟
+    check: dom-output
+    code: |
+      var city = "Tabriz";
+      function show() {
+        console.log(this.city);
+      }
+      show();
+      const obj = { city: "Shiraz", show };
+      obj.show();
+    options:
+      - out: ["undefined", "Shiraz"]
+      - out: ["Shiraz", "Shiraz"]
+      - out: "!! TypeError"
+      - out: ["Tabriz", "Shiraz"]
+    answer: 4
+    explain: |
+      در مرورگر، `var` سراسری خاصیتِ `window` می‌شود (`window.city`). `show()` صدا زدن ساده است و بدون strict، `this` برابر `window` است؛ پس `Tabriz` چاپ می‌شود. `{ city: "Shiraz", show }` همان `show: show` است و `obj.show()` همان تابع را به شکل متد صدا می‌زند، پس `Shiraz`. گزینه‌ی ۱ جواب Node.js است (آنجا `var` سراسری روی شیء سراسری نمی‌نشیند)، گزینه‌ی ۲ فکر کرده تابع بعد از قرار گرفتن در `obj` به آن وابسته می‌شود و گزینه‌ی ۳ جواب strict mode است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+      const f = obj.say;
+      f.call(obj);
+      f.apply(obj);
+      f.bind(obj)();
+    options:
+      - out: ["Robert", "Robert", "Robert"]
+      - out: ["Robert", "Robert", "undefined"]
+      - out: ["undefined", "undefined", "undefined"]
+      - out: ["Robert", "Robert"]
+    answer: 1
+    explain: |
+      طبق اسلاید ۴۴، `this` را می‌شود دستی با `call`، `apply` یا `bind` تعیین کرد. `call` و `apply` تابع را همان لحظه با `this` برابر `obj` اجرا می‌کنند و `bind` تابع جدیدی می‌سازد که `()` بعد از آن، همان تابع جدید را اجرا می‌کند؛ پس هر سه `Robert` چاپ می‌کنند. گزینه‌ی ۲ فکر کرده `bind` اثری ندارد، گزینه‌ی ۴ پرانتزِ اجرای تابعِ ساخته‌شده با `bind` را نادیده گرفته و گزینه‌ی ۳ تصور کرده متدِ جداشده را دیگر نمی‌شود به شیء وصل کرد.
+
+  - level: easy
+    stem: |
+      کدام جمله درباره‌ی `call`، `apply` و `bind` **درست** است؟
+    options:
+      - '`bind` تابع را همان لحظه اجرا می‌کند، ولی `call` یک تابع جدید برمی‌گرداند.'
+      - '`apply` آرگومان‌ها را جدا‌جدا با کاما می‌گیرد و `call` آن‌ها را داخل یک آرایه.'
+      - '`call` و `apply` تابع را همان لحظه اجرا می‌کنند، ولی `bind` آن را اجرا نمی‌کند و تابع جدیدی با `this` ثابت برمی‌گرداند.'
+      - 'این سه متد فقط روی arrow functionها کار می‌کنند.'
+    answer: 3
+    explain: |
+      `call(thisArg, a, b)` و `apply(thisArg, [a, b])` تابع را بلافاصله اجرا می‌کنند و `bind(thisArg)` فقط یک تابع جدید با `this` دائمی می‌سازد. گزینه‌ی ۱ نقش `bind` و `call` را جابه‌جا کرده و گزینه‌ی ۲ نقش `apply` و `call` را (Call با Comma، Apply با Array). گزینه‌ی ۴ برعکس است: این متدها `this` تابع‌های معمولی را تعیین می‌کنند و روی `this`ِ arrow function اصلاً اثری ندارند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function introduce(greeting, punctuation) {
+        return greeting + ", " + this.name + punctuation;
+      }
+      const robert = { name: "Robert" };
+      console.log(introduce.call(robert, "Hi", "!"));
+      console.log(introduce.apply(robert, ["Hello", "?"]));
+    options:
+      - out: ["Hi, undefined!", "Hello, undefined?"]
+      - out: ["Hi, Robert!", "!! TypeError"]
+      - out: ["Hi, Robert!", "Hello,?, Robertundefined"]
+      - out: ["Hi, Robert!", "Hello, Robert?"]
+    answer: 4
+    explain: |
+      `call` آرگومان‌ها را جدا‌جدا و `apply` داخل یک آرایه می‌گیرد؛ هر دو `this` را برابر `robert` می‌کنند، پس `Hi, Robert!` و `Hello, Robert?`. گزینه‌ی ۱ فکر کرده تابعِ بیرون از شیء نمی‌تواند `this` بگیرد. گزینه‌ی ۳ فرض کرده `apply` آرایه را به‌عنوان **یک** آرگومان می‌دهد (این رفتارِ `call` با آرایه است: `greeting` کل آرایه می‌شود و `punctuation` برابر `undefined`). گزینه‌ی ۲ تصور کرده دادن آرایه به `apply` خطاست.
+
+  - level: medium
+    stem: |
+      با فرض شیء زیر، کدام کد باعث می‌شود `f()` عبارت `Robert` را چاپ کند و هیچ خطایی هم رخ ندهد؟
+    check: option-output
+    expect: "Robert"
+    code: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+    prelude: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+    options:
+      - text: '`const f = obj.say.call(obj); f();`'
+        code: 'const f = obj.say.call(obj); f();'
+      - text: '`const f = obj.say.bind(obj); f();`'
+        code: 'const f = obj.say.bind(obj); f();'
+      - text: '`const f = obj.say; f.bind(obj); f();`'
+        code: 'const f = obj.say; f.bind(obj); f();'
+      - text: '`const f = obj.say; f();`'
+        code: 'const f = obj.say; f();'
+    answer: 2
+    explain: |
+      `bind` تابع جدیدی با `this` دائمی برابر `obj` می‌سازد و آن را در `f` می‌ریزیم؛ پس `f()` چاپ می‌کند `Robert`. در گزینه‌ی ۱، `call` تابع را **همان لحظه** اجرا می‌کند (`Robert` چاپ می‌شود) و مقدار برگشتی‌اش (`undefined`) در `f` می‌نشیند، پس `f()` خطای `TypeError: f is not a function` می‌دهد. در گزینه‌ی ۳ تابعِ ساخته‌شده با `bind` دور ریخته می‌شود و خود `f` تغییری نمی‌کند، پس مثل گزینه‌ی ۴ در Node.js مقدار `undefined` چاپ می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function show() {
+        console.log(this.name);
+      }
+      const a = { name: "A" };
+      const b = { name: "B" };
+      const f = show.bind(a);
+      const g = f.bind(b);
+      g();
+      f.call(b);
+    options:
+      - out: ["B", "B"]
+      - out: ["A", "B"]
+      - out: ["A", "A"]
+      - out: ["B", "A"]
+    answer: 3
+    explain: |
+      `show.bind(a)` تابعی می‌سازد که `this` آن **برای همیشه** `a` است. `bind` دوباره (`f.bind(b)`) و `call` (`f.call(b)`) نمی‌توانند `this`ِ یک تابعِ bindشده را عوض کنند؛ پس هر دو خط `A` چاپ می‌کنند. گزینه‌های ۱، ۲ و ۴ فرض کرده‌اند آخرین `bind` یا `call` برنده است.
+
+  - level: medium
+    stem: |
+      کدام جمله **نادرست** است؟
+    options:
+      - 'در فراخوانی `obj.f()`، مقدار `this` داخل `f` برابر `obj` است.'
+      - '`f.bind(obj)` تابع `f` را بلافاصله اجرا می‌کند و نتیجه‌ی آن را برمی‌گرداند.'
+      - 'arrow function مقدار `this` را از محدوده‌ی بیرونی می‌گیرد.'
+      - '`apply` آرگومان‌های تابع را به شکل یک آرایه دریافت می‌کند.'
+    answer: 2
+    explain: |
+      `bind` تابع را اجرا **نمی‌کند**؛ فقط تابع جدیدی با `this` ثابت برمی‌گرداند که بعداً باید صدایش بزنی (`f.bind(obj)()`). اجرای فوری کار `call` و `apply` است؛ پس گزینه‌ی ۲ نادرست است. گزینه‌ی ۱ قانون متد (شیء قبل از نقطه)، گزینه‌ی ۳ lexical this و گزینه‌ی ۴ تفاوت `apply` با `call` است که همگی درست‌اند.
+
+  - level: hard
+    stem: |
+      کد زیر در Node.js (فایل CommonJS، بدون strict mode) اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      function Car(model) {
+        this.model = model;
+      }
+      const c = new Car("Pride");
+      console.log(c.model);
+      const d = Car("Tiba");
+      console.log(d);
+      console.log(globalThis.model);
+    options:
+      - out: ["Pride", "undefined", "Tiba"]
+      - out: ["Pride", "Car { model: 'Tiba' }", "undefined"]
+      - out: ["Pride", "!! TypeError"]
+      - out: ["Pride", "undefined", "undefined"]
+    answer: 1
+    explain: |
+      با `new`، شیء تازه‌ای ساخته می‌شود و `this` به آن اشاره می‌کند، پس `c.model` برابر `Pride` است. `Car("Tiba")` بدون `new` یک صدا زدن ساده است: تابع چیزی برنمی‌گرداند (`d` برابر `undefined`) و چون strict نیست، `this` شیء سراسری است و `model` به‌اشتباه روی `globalThis` ساخته می‌شود. گزینه‌ی ۲ فکر کرده بدون `new` هم شیء ساخته می‌شود، گزینه‌ی ۳ تابع معمولی را با کلاس (که بدون `new` خطا می‌دهد) اشتباه گرفته و گزینه‌ی ۴ اثر جانبی روی شیء سراسری را ندیده است.
+
+  - level: medium
+    stem: |
+      کدام جمله درباره‌ی arrow functionها **درست** است؟
+    options:
+      - 'اگر arrow function به‌عنوان متد یک شیء تعریف شود، `this` آن همان شیء است.'
+      - 'می‌توان arrow function را با `new` صدا زد تا شیء جدیدی بسازد.'
+      - '`this` در arrow function هنگام صدا زدن و بر اساس شیء قبل از نقطه تعیین می‌شود.'
+      - 'arrow function `this` مخصوص خودش را ندارد و `call`، `apply` و `bind` هم نمی‌توانند `this` آن را عوض کنند.'
+    answer: 4
+    explain: |
+      arrow function `this` را از محدوده‌ای که در آن **نوشته شده** می‌گیرد (lexical this) و هیچ روشی آن را عوض نمی‌کند. گزینه‌ی ۱ دام معروف است: arrow به‌عنوان متد، `this` بیرون از شیء را می‌گیرد، نه خود شیء را. گزینه‌ی ۲ غلط است، چون arrow constructor نیست و `new` روی آن خطای `TypeError` می‌دهد. گزینه‌ی ۳ قانونِ تابع‌های معمولی است، نه arrow.
+
+  - level: hard
+    stem: |
+      کد زیر در Node.js (فایل CommonJS) اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      const counter = {
+        count: 10,
+        regular() {
+          return this.count;
+        },
+        arrow: () => this.count,
+      };
+      console.log(counter.regular(), counter.arrow());
+    options:
+      - out: "10 10"
+      - out: "10 undefined"
+      - out: "undefined undefined"
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      `regular` یک متد معمولی است و در `counter.regular()` مقدار `this` برابر `counter` است، پس `10`. اما `arrow` یک arrow function است و `this` را از بیرونِ object literal می‌گیرد؛ در بالاترین سطح فایل CommonJS، `this` برابر `module.exports` (یعنی `{}`) است که `count` ندارد، پس `undefined`. گزینه‌ی ۱ دام اصلی است (فکر کرده arrow هم شیء را می‌شناسد). گزینه‌ی ۳ متد معمولی را هم بی‌`this` فرض کرده و خطایی هم رخ نمی‌دهد، چون `this` در این‌جا `undefined` نیست (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      کد زیر در **مرورگر** داخل یک تگ `<script>` معمولی اجرا می‌شود. خروجی چیست؟
+    check: dom-output
+    code: |
+      var count = 99;
+      const counter = {
+        count: 10,
+        arrow: () => this.count,
+      };
+      console.log(counter.arrow());
+    options:
+      - out: "10"
+      - out: "undefined"
+      - out: "99"
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      arrow function `this` را از بیرونِ object literal می‌گیرد؛ در بالاترین سطح یک `<script>` مرورگر، `this` برابر `window` است. `var count = 99` در مرورگر خاصیت `window.count` را می‌سازد، پس `this.count` برابر `99` است. گزینه‌ی ۱ فکر کرده arrow شیء `counter` را می‌شناسد، گزینه‌ی ۲ جواب Node.js است (آنجا `this` بیرونی `module.exports` است و `var` روی آن نمی‌نشیند) و خطایی هم رخ نمی‌دهد (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const team = {
+        name: "Blue",
+        members: ["Ali", "Sara"],
+        list() {
+          return this.members.map((m) => m + " of " + this.name);
+        },
+      };
+      console.log(team.list());
+    options:
+      - out: "['Ali of Blue', 'Sara of Blue']"
+      - out: "['Ali of undefined', 'Sara of undefined']"
+      - out: "['Ali of ', 'Sara of ']"
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      `team.list()` یک فراخوانی متد است، پس داخل `list` مقدار `this` برابر `team` است. callbackِ `map` یک arrow function است و `this` را از `list` به ارث می‌برد؛ پس `this.name` داخل آن هم `"Blue"` است. گزینه‌ی ۲ رفتار یک `function` معمولی را به arrow نسبت داده، گزینه‌ی ۳ جواب همان حالت در مرورگر است (`window.name` برابر `""`) و گزینه‌ی ۴ فکر کرده `this.members` در دسترس نیست.
+
+  - level: medium
+    stem: |
+      کد زیر در Node.js (فایل CommonJS، بدون strict mode) اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      const team = {
+        name: "Blue",
+        show() {
+          function inner() {
+            return this.name;
+          }
+          return inner();
+        },
+      };
+      console.log(team.show());
+    options:
+      - out: "Blue"
+      - out: "!! TypeError"
+      - out: "!! ReferenceError"
+      - out: "undefined"
+    answer: 4
+    explain: |
+      داخل `show` مقدار `this` برابر `team` است، ولی `inner` یک تابع **معمولی** است که به‌صورت ساده (`inner()`) صدا زده شده؛ پس `this` خودش را دارد که بدون strict، شیء سراسری Node.js است و `name` ندارد: `undefined`. تابع معمولیِ تودرتو `this` متد بیرونی را به ارث نمی‌برد (رد گزینه‌ی ۱؛ این رفتار arrow است). گزینه‌ی ۲ جواب strict mode است و گزینه‌ی ۳ هم غلط است، چون خواندن خاصیتِ ناموجود هیچ‌وقت `ReferenceError` نمی‌دهد.
+
+  - level: hard
+    stem: |
+      کد زیر در Node.js (فایل CommonJS) اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      const arrow = () => this;
+      const obj = { name: "obj" };
+      console.log(arrow.call(obj) === obj);
+      console.log(arrow.bind(obj)() === module.exports);
+    options:
+      - out: ["true", "false"]
+      - out: ["false", "true"]
+      - out: ["true", "true"]
+      - out: ["false", "false"]
+    answer: 2
+    explain: |
+      `this`ِ arrow function همان `this` محل تعریفش است: بالاترین سطح فایل CommonJS، یعنی `module.exports`. `call` و `bind` روی `this`ِ arrow هیچ اثری ندارند؛ پس `arrow.call(obj)` باز هم `module.exports` را برمی‌گرداند (نه `obj`) و خط اول `false` است، ولی خط دوم `true`. گزینه‌های ۱ و ۳ فکر کرده‌اند `call` می‌تواند `this`ِ arrow را عوض کند و گزینه‌ی ۴ `this` بالاترین سطح Node.js را چیزی جز `module.exports` فرض کرده است.
+
+  - level: hard
+    stem: |
+      کد زیر در Node.js اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      const timer = {
+        label: "T1",
+        report() {
+          console.log("label:", this.label);
+        },
+      };
+      setTimeout(timer.report, 0);
+      setTimeout(() => timer.report(), 0);
+      setTimeout(timer.report.bind(timer), 0);
+    options:
+      - out: ["label: T1", "label: T1", "label: T1"]
+      - out: ["label: undefined", "label: undefined", "label: T1"]
+      - out: ["label: undefined", "label: T1", "label: T1"]
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      در خط اول فقط **خود تابع** به `setTimeout` داده می‌شود و بعداً بدون `timer.` اجرا می‌شود؛ `this` دیگر `timer` نیست (در Node.js یک شیء داخلی Timeout و در مرورگر `window`) و `label` ندارد، پس `undefined`. در خط دوم arrow function، `timer.report()` را به شکل یک فراخوانی متد واقعی اجرا می‌کند و در خط سوم `bind` مقدار `this` را قفل کرده؛ هر دو `T1` چاپ می‌کنند. گزینه‌ی ۱ گم شدن `this` را ندیده، گزینه‌ی ۲ تصور کرده arrow wrapper هم `this` را گم می‌کند و گزینه‌ی ۴ فکر کرده دادن متد به `setTimeout` خطاست.
+
+  - level: medium
+    stem: |
+      با فرض شیء زیر، کدام دستور در Node.js با تأخیر (از طریق `setTimeout`) **فقط** عبارت `Robert` را چاپ می‌کند و هیچ خطایی هم نمی‌دهد؟
+    check: option-output
+    expect: "Robert"
+    code: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+    prelude: |
+      const obj = {
+        name: "Robert",
+        say() {
+          console.log(this.name);
+        }
+      };
+    options:
+      - text: '`setTimeout(obj.say, 0);`'
+        code: 'setTimeout(obj.say, 0);'
+      - text: '`setTimeout(obj.say(), 0);`'
+        code: 'setTimeout(obj.say(), 0);'
+      - text: '`setTimeout(() => obj.say(), 0);`'
+        code: 'setTimeout(() => obj.say(), 0);'
+      - text: '`setTimeout(obj.say.call, 0);`'
+        code: 'setTimeout(obj.say.call, 0);'
+    answer: 3
+    explain: |
+      arrow wrapper تابعی است که بعداً `obj.say()` را **به شکل متد** صدا می‌زند، پس `this` برابر `obj` است. گزینه‌ی ۱ فقط تابع را می‌دهد و `this` گم می‌شود (`undefined` چاپ می‌شود). گزینه‌ی ۲ تابع را **همان لحظه** اجرا می‌کند (`Robert` بدون تأخیر چاپ می‌شود) و مقدار برگشتی‌اش (`undefined`) به `setTimeout` می‌رسد که در Node.js خطای `TypeError` می‌دهد. گزینه‌ی ۴ متد `call` را بدون تابعی که باید رویش صدا زده شود جدا کرده و آن هم `TypeError` می‌دهد.
+
+  - level: hard
+    stem: |
+      کد زیر در Node.js اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      const user = {
+        name: "Sara",
+        later() {
+          setTimeout(() => console.log("arrow:", this.name), 0);
+          setTimeout(function () {
+            console.log("function:", this.name);
+          }, 0);
+        },
+      };
+      user.later();
+    options:
+      - out: ["arrow: Sara", "function: Sara"]
+      - out: ["arrow: undefined", "function: Sara"]
+      - out: ["arrow: undefined", "function: undefined"]
+      - out: ["arrow: Sara", "function: undefined"]
+    answer: 4
+    explain: |
+      `user.later()` یک فراخوانی متد است و داخل `later` مقدار `this` برابر `user` است. callbackِ اول arrow است و `this` را از `later` به ارث می‌برد: `Sara`. callbackِ دوم یک `function` معمولی است که بعداً توسط تایمر صدا زده می‌شود، نه به شکل `user.something()`؛ پس `this` خودش را دارد (در Node.js شیء Timeout) و `name` ندارد: `undefined`. گزینه‌ی ۱ فکر کرده تابع معمولی هم `this` را به ارث می‌برد، گزینه‌ی ۲ نقش arrow و function را برعکس کرده و گزینه‌ی ۳ تصور کرده arrow هم `this` را گم می‌کند.
+
+  - level: hard
+    stem: |
+      کد زیر در Node.js (فایل CommonJS، **بدون** `"use strict"`) اجرا می‌شود. خروجی چیست؟
+    check: output
+    code: |
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+        greet() {
+          return "Hello, " + this.name;
+        }
+      }
+      const kermit = new User("Kermit");
+      const greet = kermit.greet;
+      console.log(kermit.greet());
+      console.log(greet());
+    options:
+      - out: ["Hello, Kermit", "Hello, Kermit"]
+      - out: ["Hello, Kermit", "Hello, undefined"]
+      - out: ["Hello, Kermit", "!! TypeError"]
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      `kermit.greet()` فراخوانی متد است و `Hello, Kermit` چاپ می‌کند. `greet()` صدا زدن ساده‌ی همان تابع است؛ بدنه‌ی کلاس **همیشه** strict است (حتی اگر فایل `"use strict"` نداشته باشد)، پس `this` برابر `undefined` است و خواندن `this.name` خطای `TypeError` می‌دهد. گزینه‌ی ۲ رفتار یک تابع معمولیِ غیر strict را به متد کلاس نسبت داده، گزینه‌ی ۱ فکر کرده متد به نمونه وصل می‌ماند و گزینه‌ی ۴ فراموش کرده که خط اول قبل از خطا اجرا شده است.
+
+  - level: hard
+    stem: |
+      (پیش‌نمایش فصل دوم) کاربر یک بار روی دکمه کلیک می‌کند. خروجی کنسول چیست؟
+    check: dom-output
+    html: |
+      <button id="btn">Save</button>
+    code: |
+      const btn = document.querySelector("#btn");
+      btn.addEventListener("click", function () {
+        console.log("function:", this.id);
+      });
+      btn.addEventListener("click", () => {
+        console.log("arrow:", this === window);
+      });
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: ["function: btn", "arrow: true"]
+      - out: ["function: undefined", "arrow: false"]
+      - out: ["function: btn", "arrow: false"]
+      - out: ["function: undefined", "arrow: true"]
+    answer: 1
+    explain: |
+      وقتی handler یک `function` معمولی باشد، مرورگر آن را با `this` برابر **عنصری** صدا می‌زند که listener روی آن نصب شده؛ پس `this.id` برابر `btn` است (رد گزینه‌های ۲ و ۴). arrow function `this` خودش را ندارد و `this` بیرونی، یعنی بالاترین سطح `<script>` که `window` است، را نگه می‌دارد؛ پس `true` (رد گزینه‌ی ۳).

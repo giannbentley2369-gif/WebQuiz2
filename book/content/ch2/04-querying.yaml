@@ -53,11 +53,12 @@ lesson: |
   <button class="btn">B</button>
   <script>
     const buttons = document.getElementsByClassName("btn");
-    console.log(buttons.length, buttons[0].textContent, buttons.item(1).textContent); // 2 A B
-    console.log(document.getElementsByClassName("btn primary").length);             // 1
-    console.log(Array.from(buttons).map((b) => b.textContent));                       // ["A", "B"]
-    for (const b of buttons) console.log(b.textContent);                              // A, then B
-    buttons.forEach((b) => console.log(b)); // TypeError: buttons.forEach is not a function
+    console.log(buttons.length);                                        // 2
+    console.log(buttons[0].textContent, buttons.item(1).textContent);   // A B
+    console.log(document.getElementsByClassName("btn primary").length); // 1
+    console.log(Array.from(buttons).map((b) => b.textContent));         // ["A", "B"]
+    for (const b of buttons) console.log(b.textContent);                // A, then B
+    buttons.forEach((b) => console.log(b)); // TypeError: not a function
   </script>
   ```
 
@@ -105,10 +106,10 @@ lesson: |
   <input type="text" id="user">
   <script>
     console.log(document.querySelector("#title").textContent);         // "Shop"
-    console.log(document.querySelector(".nav-link").textContent);      // "Home" (only the first)
+    console.log(document.querySelector(".nav-link").textContent);      // "Home" (first)
     console.log(document.querySelectorAll("a.nav-link").length);       // 2
     console.log(document.querySelectorAll(".nav-link.active").length); // 1
-    console.log(document.querySelector("input[type='text']").id);      // "user" (the checkbox is skipped)
+    console.log(document.querySelector("input[type='text']").id);      // "user"
     console.log(document.querySelectorAll("#menu > a").length);        // 3
     console.log(document.querySelectorAll("h1, .note").length);        // 2
     console.log(document.querySelector(".nope"));                      // null
@@ -173,7 +174,7 @@ lesson: |
     const live = document.getElementsByClassName("item"); // HTMLCollection (live)
     const fixed = document.querySelectorAll(".item");     // NodeList (static)
 
-    const li = document.createElement("li");              // a new <li> (see the lesson on adding elements)
+    const li = document.createElement("li");              // a brand-new <li>
     li.className = "item";
     document.getElementById("list").appendChild(li);
 
@@ -190,7 +191,7 @@ lesson: |
   for (let i = 0; i < reds.length; i++) {
     reds[i].classList.remove("red"); // the element leaves the live collection immediately!
   }
-  console.log(document.getElementsByClassName("red").length); // 2  (items 2 and 4 were skipped)
+  console.log(document.getElementsByClassName("red").length); // 2 (items 2, 4 skipped)
   ```
 
   راه‌حل: روی یک کپی ثابت حلقه بزن (`for (const p of Array.from(reds))`) یا از `querySelectorAll` استفاده کن
@@ -210,11 +211,14 @@ lesson: |
   </div>
   <script>
     const box = document.querySelector(".box");
-    console.log(box.querySelector("p").textContent);   // "Inside box" (first <p> INSIDE .box)
-    console.log(box.querySelectorAll(".note").length); // 1  (document-wide it would be 2)
-    console.log(typeof box.getElementById);            // "undefined" -> calling it throws TypeError
+    console.log(box.querySelector("p").textContent);   // "Inside box"
+    console.log(box.querySelectorAll(".note").length); // 1 (in the whole page: 2)
+    console.log(typeof box.getElementById);            // "undefined"
   </script>
   ```
+
+  چون `box.getElementById` وجود ندارد (`undefined` است)، صدا زدن `box.getElementById("x")` خطای `TypeError`
+  می‌دهد.
 
   ### idی که با رقم شروع می‌شود (`id="2223"` در اسلاید ۱۰)
 
@@ -352,12 +356,13 @@ questions:
     code: |
       const a = document.getElementsByClassName("btn");
       const b = document.querySelectorAll(".btn");
-      console.log(a.constructor.name, b.constructor.name, typeof a.forEach, typeof b.forEach);
+      console.log(a.constructor.name, b.constructor.name);
+      console.log(typeof a.forEach, typeof b.forEach);
     options:
-      - out: "NodeList HTMLCollection function undefined"
-      - out: "Array Array function function"
-      - out: "HTMLCollection NodeList function function"
-      - out: "HTMLCollection NodeList undefined function"
+      - out: ["NodeList HTMLCollection", "function undefined"]
+      - out: ["Array Array", "function function"]
+      - out: ["HTMLCollection NodeList", "function function"]
+      - out: ["HTMLCollection NodeList", "undefined function"]
     answer: 4
     explain: |
       `getElementsByClassName` یک `HTMLCollection` و `querySelectorAll` یک `NodeList` برمی‌گرداند (رد گزینه‌ی
@@ -636,7 +641,8 @@ questions:
       <p id="x">first</p>
       <p id="x">second</p>
     code: |
-      console.log(document.getElementById("x").textContent, document.querySelectorAll("#x").length);
+      const first = document.getElementById("x");
+      console.log(first.textContent, document.querySelectorAll("#x").length);
     options:
       - out: "second 2"
       - out: "first 1"
@@ -694,14 +700,63 @@ questions:
       <button class="btn">B</button>
     code: |
       const buttons = document.getElementsByClassName("btn");
-      console.log(buttons.length, buttons[0].textContent, buttons.item(1).textContent, buttons[5]);
+      console.log(buttons.length, buttons[0].textContent);
+      console.log(buttons.item(1).textContent, buttons[5]);
     options:
-      - out: "2 A B null"
-      - out: "2 A B undefined"
-      - out: "2 B A undefined"
-      - out: "3 A B undefined"
+      - out: ["2 A", "B null"]
+      - out: ["2 A", "B undefined"]
+      - out: ["2 B", "A undefined"]
+      - out: ["3 A", "B undefined"]
     answer: 2
     explain: |
       HTMLCollection شبه‌آرایه است: `length` برابر `2`، `buttons[0]` اولین دکمه (`A`) و `item(1)` دومین دکمه
       (`B`) است (رد گزینه‌ی ۳). خواندن اندیسی که وجود ندارد (`buttons[5]`) مثل آرایه `undefined` می‌دهد (رد
       گزینه‌ی ۱؛ فقط `buttons.item(5)` مقدار `null` برمی‌گرداند). گزینه‌ی ۴ هم تعداد دکمه‌ها را اشتباه شمرده است.
+  - level: hard
+    stem: |
+      صفحه‌ای فقط HTML زیر را دارد:
+
+      ```html
+      <a class="nav-link" href="#home">Home</a>
+      <a class="nav-link" href="#shop">Shop</a>
+      ```
+
+      کد JavaScript زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const links = document.getElementsByClassName("nav-link");
+      console.log(links.length);
+      const active = document.querySelector(".nav-link.active");
+      const firstLink = links[0];
+      console.log(firstLink.textContent);
+      console.log(active.textContent);
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <a class="nav-link" href="#home">Home</a>
+      <a class="nav-link" href="#shop">Shop</a>
+    code: |
+      const links = document.getElementsByClassName("nav-link"); console.log("~1");
+      console.log(links.length); console.log("~2");
+      const active = document.querySelector(".nav-link.active"); console.log("~3");
+      const firstLink = links[0]; console.log("~4");
+      console.log(firstLink.textContent); console.log("~5");
+      console.log(active.textContent); console.log("~6");
+    options:
+      - text: 'خط ۳'
+        out: ["~1", "2", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "2", "~2", "~3", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "2", "~2", "~3", "~4", "!! TypeError"]
+      - text: 'خط ۶'
+        out: ["~1", "2", "~2", "~3", "~4", "Home", "~5", "!! TypeError"]
+    answer: 4
+    explain: |
+      هیچ لینکی هر دو کلاس `nav-link` و `active` را ندارد، پس `querySelector` در خط ۳ مقدار `null` برمی‌گرداند؛
+      پیدا نکردن عنصر خطا **نیست** (رد گزینه‌ی ۱). خواندن `links[0]` از یک HTMLCollection مثل آرایه کار می‌کند و
+      اولین لینک را می‌دهد (رد گزینه‌ی ۲)، و خط ۵ متن `Home` را چاپ می‌کند (رد گزینه‌ی ۳). اما در خط ۶ برنامه
+      می‌خواهد `textContent` را از `null` بخواند و خطای `TypeError: Cannot read properties of null` می‌گیرد. درس
+      این تست: نتیجه‌ی `querySelector` و `getElementById` را قبل از استفاده بررسی کن (`if (active) ...`).

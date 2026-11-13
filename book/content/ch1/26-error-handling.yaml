@@ -1,0 +1,928 @@
+id: ch1-errors
+title: "مدیریت خطا: try، catch، finally و throw"
+slides: "Introduction to JS، اسلاید ۵۰"
+lesson: |
+  ### خطا (Error) یعنی چه؟
+  تا اینجا فرض می‌کردیم کد همیشه بی‌دردسر اجرا می‌شود؛ اما در دنیای واقعی کاربر متن اشتباه وارد می‌کند، سرور جواب خراب می‌فرستد یا خودمان اسم یک متغیر را غلط تایپ می‌کنیم. طبق اسلاید ۵۰، **خطاها (errors) وقتی رخ می‌دهند که کد در زمان اجرا (runtime) خراب می‌شود**؛ یعنی کد از نظر دستور زبان درست نوشته شده، اما هنگام اجرا به کاری می‌رسد که انجامش ممکن نیست. چند نمونه:
+
+  - صدا زدن چیزی که تابع نیست؛
+  - خواندن یک ویژگی (property) از `null` یا `undefined`؛
+  - دادن یک متن خراب به `JSON.parse` (تابعی که متن JSON را به شیء تبدیل می‌کند و در درس بعد کاملش را می‌بینیم).
+
+  جمله‌ی دوم اسلاید ۵۰ مهم‌تر است: **اگر به خطا رسیدگی نکنیم (handle نکنیم)، کل برنامه متوقف می‌شود** و خط‌های بعدی اصلاً اجرا نمی‌شوند:
+
+  ```js
+  console.log("Step 1");
+  JSON.parse("{ bad json }"); // throws a SyntaxError
+  console.log("Step 2");      // never runs
+  ```
+
+  این کد فقط `Step 1` را چاپ می‌کند. بعد در Console مرورگر پیام قرمز `Uncaught SyntaxError: ...` ظاهر می‌شود و اجرای بقیه‌ی همان اسکریپت متوقف می‌شود (صفحه باز می‌ماند، ولی کدِ بعد از خطا اجرا نمی‌شود). Node.js هم پیام `SyntaxError: ...` را نشان می‌دهد و کل برنامه را می‌بندد. واژه‌ی **Uncaught** یعنی «گرفته‌نشده»: خطایی که هیچ کدی آن را نگرفت. در گزینه‌های تست‌های این کتاب هم چنین خطایی با برچسب «Uncaught» نشان داده می‌شود.
+
+  ::: analogy
+  بندبازی را تصور کن که روی طناب راه می‌رود. اگر زیرش تور ایمنی نباشد، یک لغزش یعنی پایان نمایش. `try...catch` همان تور ایمنی است: کار پرخطر را داخل `try` انجام می‌دهی و اگر لغزیدی، `catch` تو را می‌گیرد و نمایش ادامه پیدا می‌کند. `finally` هم مثل خاموش کردن نورافکن‌ها در پایان نمایش است: چه افتاده باشی چه نه، انجام می‌شود.
+  :::
+
+  ### شیء خطا (Error object): `name` و `message`
+  وقتی خطایی رخ می‌دهد، JavaScript یک **شیء خطا** می‌سازد و آن را «پرتاب» (throw) می‌کند. مهم‌ترین ویژگی‌های این شیء:
+
+  - `name`: نوع خطا، مثل `"TypeError"` یا `"SyntaxError"`؛
+  - `message`: توضیح متنی خطا، مثل `"f is not a function"`؛
+  - `stack`: مسیر فراخوانی‌هایی که به خطا رسید (برای اشکال‌زدایی یا debugging).
+
+  خودمان هم می‌توانیم با `new Error("...")` یک شیء خطا بسازیم:
+
+  ```js
+  const e = new Error("Disk full");
+  console.log(e.name);    // Error
+  console.log(e.message); // Disk full
+  console.log(String(e)); // Error: Disk full
+  console.log(typeof e);  // object
+  ```
+
+  ### انواع خطاهای داخلی (built-in)
+  JavaScript چند نوع خطای آماده دارد. این جدول را خوب یاد بگیر؛ سؤال «این کد چه خطایی می‌دهد؟» بسیار پرتکرار است:
+
+  | نوع خطا | چه زمانی رخ می‌دهد؟ | مثال |
+  |---|---|---|
+  | `ReferenceError` | استفاده از اسمی که تعریف نشده، یا استفاده از متغیر `let`/`const` پیش از خط تعریفش (TDZ) | `console.log(totl)` |
+  | `TypeError` | کاری که با آن نوع داده ممکن نیست: صدا زدن چیزی که تابع نیست، خواندن ویژگی از `null` یا `undefined`، مقدار دادن دوباره به `const` | `null.length` |
+  | `SyntaxError` | دستور زبان (syntax) نامعتبر؛ چه در خود کد، چه در متنی که به `JSON.parse` داده‌ایم | `JSON.parse("{ bad json }")` |
+  | `RangeError` | عددی بیرون از بازه‌ی مجاز | `new Array(-1)` |
+  | `Error` | نوع پایه و عمومی همه‌ی خطاها؛ معمولاً خودمان با `throw new Error("...")` می‌سازیمش | `new Error("Disk full")` |
+
+  پیام‌های واقعی V8 (موتور Chrome و Node.js) برای چند نمونه را ببین. هر خط را جداگانه در نظر بگیر، چون اولین خطا برنامه را متوقف می‌کند:
+
+  ```js
+  null.length;        // TypeError: Cannot read properties of null (reading 'length')
+  const f = 5; f();   // TypeError: f is not a function
+  console.log(totl);  // ReferenceError: totl is not defined
+  new Array(-1);      // RangeError: Invalid array length
+  (1.5).toFixed(200); // RangeError: toFixed() digits argument must be between 0 and 100
+  ```
+
+  تابعی که بی‌پایان خودش را صدا بزند هم به `RangeError: Maximum call stack size exceeded` می‌رسد.
+
+  دقت کن که **خواندن ویژگیِ ناموجود خطا نیست**؛ فقط `undefined` می‌دهد. خطا وقتی رخ می‌دهد که بخواهیم از خودِ `null` یا `undefined` ویژگی بخوانیم:
+
+  ```js
+  const user = { name: "Sara", address: null };
+  console.log(user.age);          // undefined (no error)
+  console.log(user.address.city); // TypeError: Cannot read properties of null (reading 'city')
+  ```
+
+  ### `try...catch`: اجرای امن کد پرخطر
+  طبق اسلاید ۵۰، از `try...catch` برای **اجرای امن کد پرخطر (risky code)** استفاده می‌کنیم. ساختارش این است:
+
+  ```js
+  try {
+    // risky code
+  } catch (err) {
+    // runs only if something inside try threw an error
+    // err is the error object that was thrown
+  }
+  ```
+
+  #### کد اسلاید ۵۰ قدم‌به‌قدم
+  ```js title=errorhandling.js
+  try {
+    JSON.parse("{ bad json }");
+  } catch (err) {
+    console.log("Oops:", err.message);
+  } finally {
+    console.log("Done!");
+  }
+  ```
+
+  خروجی در Node.js (و Chrome، که هر دو موتور V8 دارند):
+
+  ```text
+  Oops: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+  Done!
+  ```
+
+  1. `JSON.parse` متن `{ bad json }` را می‌خواند. بعد از `{` باید اسم یک کلید داخل دابل‌کوتیشن بیاید، اما در **position 2** (شمارش از صفر: `{` جایگاه ۰ است و فاصله جایگاه ۱) به حرف `b` می‌رسد؛ پس یک `SyntaxError` پرتاب می‌کند.
+  2. بقیه‌ی بلوک `try` (اگر خطی مانده بود) رد می‌شود و اجرا به `catch` می‌پرد. `err` همان شیء `SyntaxError` است و `err.message` متن خطا را می‌دهد.
+  3. بلوک `finally` اجرا می‌شود و `Done!` چاپ می‌شود.
+  4. برنامه به‌طور عادی از خط بعد از کل این ساختار ادامه پیدا می‌کند؛ هیچ خطای Uncaughtی نداریم.
+
+  متن `message` به موتور بستگی دارد (مثلاً Firefox جمله‌ی دیگری می‌نویسد)، اما `err.name` همه‌جا `"SyntaxError"` است.
+
+  #### قواعد جریان اجرا
+  - اگر در `try` خطایی رخ ندهد، `try` تا آخر اجرا می‌شود و `catch` **کلاً رد می‌شود**.
+  - اگر در یک خط از `try` خطا رخ دهد، **بقیه‌ی خط‌های `try` اجرا نمی‌شوند** و اجرا مستقیم به `catch` می‌رود. بعد از `catch` هم دیگر به `try` برنمی‌گردد.
+  - `finally` (اگر باشد) در هر دو حالت، آخر از همه اجرا می‌شود.
+  - سپس برنامه از خط بعد از کل ساختار ادامه می‌دهد.
+
+  ```js
+  console.log("A");
+  try {
+    console.log("B");
+    JSON.parse("oops"); // throws a SyntaxError
+    console.log("C");   // skipped
+  } catch (err) {
+    console.log("D:", err.name);
+  } finally {
+    console.log("E");
+  }
+  console.log("F");     // the program goes on
+  // Output: A, B, D: SyntaxError, E, F
+  ```
+
+  | حالت | `try` | `catch` | `finally` | ادامه‌ی برنامه بعد از ساختار |
+  |---|---|---|---|---|
+  | خطایی رخ نمی‌دهد | کامل اجرا می‌شود | اجرا نمی‌شود | اجرا می‌شود | بله |
+  | خطا در `try` رخ می‌دهد | تا خطِ خطا اجرا می‌شود | اجرا می‌شود | اجرا می‌شود | بله |
+  | خطا رخ می‌دهد و `catch` نداریم (`try...finally`) | تا خطِ خطا اجرا می‌شود | — | اجرا می‌شود | نه؛ خطا به بیرون می‌رود |
+
+  #### شکل‌های مجاز
+  - `try...catch`، `try...finally` و `try...catch...finally` مجازند. `try` تنها (بدون `catch` و `finally`) خطای `SyntaxError` دارد.
+  - اسم پارامتر `catch` دلخواه است (`err`، `e`، `error`).
+  - اگر به شیء خطا نیازی نداری، از ES2019 به بعد می‌توانی پرانتز را حذف کنی (**optional catch binding**، یعنی «پارامتر اختیاری catch»):
+
+  ```js
+  try {
+    JSON.parse("{");
+  } catch {
+    console.log("invalid JSON"); // no error variable needed
+  }
+  ```
+
+  ### `throw`: ساختن خطای خودمان
+  اسلاید ۵۰ می‌گوید **`throw` به ما اجازه می‌دهد خطای خودمان را بسازیم**. `throw` (پرتاب کردن) اجرای تابع فعلی را **همان لحظه** متوقف می‌کند (شبیه `return`، اما برای خطا) و اجرا را به نزدیک‌ترین `catch` می‌برد؛ حتی اگر آن `catch` در تابعِ صدازننده باشد.
+
+  ```js
+  function withdraw(balance, amount) {
+    if (amount > balance) {
+      throw new Error("Insufficient funds");
+    }
+    return balance - amount;
+  }
+
+  try {
+    console.log(withdraw(100, 30));  // 70
+    console.log(withdraw(100, 500)); // throws
+    console.log("never printed");
+  } catch (err) {
+    console.log("Error:", err.message); // Error: Insufficient funds
+  }
+  ```
+
+  می‌توانی نوع دقیق‌تری هم پرتاب کنی، مثل `throw new TypeError("Age must be a number")` یا `throw new RangeError("Age must be between 0 and 150")`.
+
+  در JavaScript هر مقداری را می‌شود پرتاب کرد (مثل `throw "oops"` یا `throw 404`)، اما این کار **توصیه نمی‌شود**، چون یک رشته `name`، `message` و `stack` ندارد:
+
+  ```js
+  try {
+    throw "Something bad"; // a string, not an Error object
+  } catch (err) {
+    console.log(typeof err);  // string
+    console.log(err.message); // undefined
+  }
+  ```
+
+  ### کلاس خطای سفارشی (custom error)
+  با `extends` (که در درس کلاس‌ها دیدیم) می‌توانیم نوع خطای مخصوص برنامه‌ی خودمان را بسازیم:
+
+  ```js
+  class ValidationError extends Error {
+    constructor(message) {
+      super(message); // the Error constructor sets this.message
+      this.name = "ValidationError";
+    }
+  }
+
+  try {
+    throw new ValidationError("Email is required");
+  } catch (err) {
+    console.log(err.name);                       // ValidationError
+    console.log(err.message);                    // Email is required
+    console.log(err instanceof ValidationError); // true
+    console.log(err instanceof Error);           // true
+  }
+  ```
+
+  اگر خط `this.name = ...` را ننویسی، `name` از `Error` به ارث می‌رسد و همان `"Error"` می‌ماند (هرچند `instanceof` درست کار می‌کند). با `instanceof` داخل `catch` می‌فهمیم دقیقاً با چه نوع خطایی روبه‌رو هستیم.
+
+  ### `finally`: کاری که همیشه انجام می‌شود
+  طبق اسلاید ۵۰، `finally` **چه خطا رخ بدهد چه ندهد** اجرا می‌شود. جای کارهای «جمع‌وجور کردن» (cleanup) است: بستن فایل یا اتصال، پنهان کردن نشانگر «در حال بارگذاری» و از این قبیل. حتی اگر `try` یا `catch` با `return` از تابع خارج شوند، `finally` قبل از خروج اجرا می‌شود:
+
+  ```js
+  function load() {
+    try {
+      console.log("loading");
+      return "data";
+    } finally {
+      console.log("cleanup"); // runs before the function really returns
+    }
+  }
+  console.log(load());
+  // loading
+  // cleanup
+  // data
+  ```
+
+  ::: warning هرگز در finally از return استفاده نکن
+  `return` داخل `finally` مقدار برگشتیِ `try` یا `catch` را **جایگزین** می‌کند (و حتی خطایی را که در حال پرتاب شدن است بی‌صدا از بین می‌برد):
+
+  ```js
+  function getValue() {
+    try {
+      throw new Error("fail");
+    } catch (e) {
+      return "from catch";
+    } finally {
+      return "from finally"; // overrides "from catch"
+    }
+  }
+  console.log(getValue()); // from finally
+  ```
+  :::
+
+  ### BEST PRACTICE: فقط خطایی را بگیر که واقعاً می‌توانی رسیدگی کنی
+  کادر BEST PRACTICE اسلاید ۵۰ می‌گوید: **Catch only errors you can actually handle**. یعنی:
+
+  - خطایی را بگیر که **انتظارش را داری و می‌دانی با آن چه کنی**؛ مثلاً اگر متن تنظیمات کاربر JSON معتبری نیست، پیام بده و تنظیمات پیش‌فرض را بگذار.
+  - خطاهای دیگر (مثل باگ‌های برنامه) را **پنهان نکن**؛ آن‌ها را دوباره پرتاب کن (**rethrow**) تا لایه‌ی بالاتر به آن‌ها رسیدگی کند یا دست‌کم در Console دیده شوند.
+  - `catch` خالی (`catch (e) {}`) که همه‌ی خطاها را بی‌صدا می‌بلعد، باگ‌ها را پنهان می‌کند و پیدا کردنشان را خیلی سخت می‌کند.
+
+  ```js
+  function readSettings(text) {
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      if (err instanceof SyntaxError) { // expected: bad user input
+        console.log("Invalid settings, using defaults");
+        return { theme: "light" };
+      }
+      throw err; // not ours to handle: rethrow it
+    }
+  }
+  console.log(readSettings('{"theme": "dark"}').theme); // dark
+  console.log(readSettings("oops").theme);
+  // Invalid settings, using defaults
+  // light
+  ```
+
+  ### خطا در زنجیره‌ی فراخوانی‌ها بالا می‌رود
+  اگر تابعی خطا را نگیرد، خطا به تابعِ صدازننده می‌رود، بعد به صدازننده‌ی او و همین‌طور بالا، تا اولین `catch`ی که پیدا شود (اگر هیچ `catch`ی نباشد، برنامه متوقف می‌شود). در `try`های تودرتو (nested) هم خطا به نزدیک‌ترین `catch` بیرونی می‌رود، اما `finally`های داخلی سر راه اجرا می‌شوند:
+
+  ```js
+  try {
+    try {
+      null.length; // TypeError
+    } finally {
+      console.log("inner finally");
+    }
+  } catch (err) {
+    console.log("outer catch:", err.name);
+  }
+  // inner finally
+  // outer catch: TypeError
+  ```
+
+  اگر خودِ `catch` هم خطا بدهد، آن خطای جدید به `catch` بیرونی‌تر می‌رود.
+
+  ### دو چیزی که try...catch نمی‌تواند بگیرد
+  **۱. اشتباه دستوری در خود کد.** موتور JavaScript قبل از اجرای یک اسکریپت، کل آن را می‌خواند و تجزیه (parse) می‌کند. اگر خود کد اشتباه دستوری داشته باشد، **هیچ خطی اجرا نمی‌شود**، حتی خط‌های قبل از `try`:
+
+  ```js
+  console.log("start"); // does NOT run either!
+  try {
+    let x = ;           // SyntaxError in the source code itself
+  } catch (err) {
+    console.log("caught");
+  }
+  // Only: Uncaught SyntaxError: Unexpected token ';'
+  ```
+
+  اما `SyntaxError`ِ `JSON.parse` فرق دارد: کدِ ما درست است و فقط **داده‌ای** که در زمان اجرا به `JSON.parse` داده‌ایم خراب است؛ پس یک خطای زمان اجراست و `catch` آن را می‌گیرد (همان کد اسلاید ۵۰).
+
+  **۲. خطایی که بعداً در یک callback ناهمگام رخ می‌دهد.** `try...catch` فقط خطاهایی را می‌گیرد که **در همان مدتی که بلوک `try` در حال اجراست** رخ دهند. تابعی که به `setTimeout` می‌دهیم (callback، یعنی تابعی که برای اجرای بعدی تحویل می‌دهیم) بعداً اجرا می‌شود؛ وقتی `try...catch` مدت‌ها تمام شده است (جزئیاتش را در درس «JavaScript ناهمگام (Asynchronous) و Callback» می‌بینیم):
+
+  ```js
+  try {
+    setTimeout(() => {
+      null.length; // TypeError, thrown 100 ms later
+    }, 100);
+  } catch (err) {
+    console.log("never caught here");
+  }
+  // Uncaught TypeError (the program crashes after 100 ms)
+  ```
+
+  راه درست این است که `try...catch` را **داخل** همان callback بگذاری:
+
+  ```js
+  setTimeout(() => {
+    try {
+      null.length;
+    } catch (err) {
+      console.log("caught inside the callback:", err.name); // TypeError
+    }
+  }, 100);
+  ```
+
+  برای Promiseها از `.catch()` و برای `async/await` از `try...catch` دورِ `await` استفاده می‌کنیم که در درس‌های بعدی همین فصل می‌بینیم.
+
+  ::: tip
+  - `err.name` نوع خطا و `err.message` متن آن است؛ `String(err)` هر دو را به شکل `Name: message` می‌دهد.
+  - همیشه یک شیء `Error` (یا زیرکلاسی از آن) پرتاب کن، نه رشته یا عدد.
+  - `finally` برای کارهای پایانی (cleanup) است و همیشه اجرا می‌شود.
+  - در کلاس خطای سفارشی، `this.name` را خودت تنظیم کن.
+  :::
+
+  ::: trap دام‌های تستی
+  - بعد از خطِ خطا، **بقیه‌ی `try` اجرا نمی‌شود**؛ بعد از `catch` هم به `try` برنمی‌گردیم، بلکه برنامه از بعدِ کل ساختار ادامه پیدا می‌کند.
+  - `finally` حتی وقتی `try` یا `catch` با `return` خارج می‌شوند اجرا می‌شود (قبل از برگشتن مقدار)؛ و `return` داخل `finally` برنده است.
+  - `throw "text"` یک رشته پرتاب می‌کند؛ پس `err.message` برابر `undefined` است.
+  - `try` تنها، بدون `catch` یا `finally`، خطای `SyntaxError` دارد.
+  - خواندن ویژگیِ ناموجود (`user.age`) فقط `undefined` می‌دهد، اما خواندن ویژگی از `null` یا `undefined` (مثل `user.address.city` وقتی `address` برابر `null` است) `TypeError` می‌دهد.
+  - اشتباه دستوری در خود کد با `try...catch` گرفته نمی‌شود و هیچ خطی از آن اسکریپت اجرا نمی‌شود؛ اما خطای `JSON.parse` گرفته می‌شود.
+  - `try...catch` دورِ `setTimeout`، خطای داخل callback را نمی‌گیرد.
+  :::
+
+  ::: summary
+  - خطای زمان اجرا (runtime error) اگر رسیدگی نشود، برنامه را متوقف می‌کند.
+  - `try`: کد پرخطر؛ `catch (err)`: رسیدگی به خطا؛ `finally`: همیشه اجرا می‌شود؛ `throw`: پرتاب خطای خودمان.
+  - نوع‌های مهم: `ReferenceError`، `TypeError`، `SyntaxError`، `RangeError` و نوع پایه‌ی `Error`.
+  - فقط خطایی را بگیر که می‌توانی رسیدگی کنی؛ بقیه را دوباره پرتاب کن (rethrow).
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۰، اگر در زمان اجرای برنامه خطایی رخ دهد و هیچ کدی به آن رسیدگی نکند (handle نشود)، چه اتفاقی می‌افتد؟
+    options:
+      - JavaScript فقط همان خط را نادیده می‌گیرد و بقیه‌ی خط‌ها را اجرا می‌کند.
+      - اجرای برنامه متوقف می‌شود و خط‌های بعد از خطا اجرا نمی‌شوند.
+      - 'مقدار آن خط خودکار `undefined` می‌شود و برنامه بدون پیام خطا ادامه پیدا می‌کند.'
+      - JavaScript برنامه را از اول دوباره اجرا می‌کند.
+    answer: 2
+    explain: |
+      اسلاید ۵۰ صریحاً می‌گوید: «Without handling, they stop the whole program». خطای رسیدگی‌نشده (Uncaught) اجرای برنامه را همان‌جا متوقف می‌کند و خط‌های بعدی اجرا نمی‌شوند. گزینه‌های ۱ و ۳ رفتار زبانی را توصیف می‌کنند که خطا را نادیده می‌گیرد؛ JavaScript چنین کاری نمی‌کند و پیام قرمز Uncaught نشان می‌دهد. گزینه‌ی ۴ هم ساختگی است؛ هیچ اجرای دوباره‌ای در کار نیست.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۰، کدهای کدام بلوک **چه خطا رخ بدهد چه ندهد** اجرا می‌شوند؟
+    options:
+      - '`catch`'
+      - '`try`'
+      - '`throw`'
+      - '`finally`'
+    answer: 4
+    explain: |
+      طبق اسلاید ۵۰، `finally` «whether an error happened or not» اجرا می‌شود. `catch` فقط وقتی اجرا می‌شود که در `try` خطایی رخ داده باشد. `try` هم اگر وسطش خطا رخ دهد، بقیه‌ی خط‌هایش اجرا نمی‌شود. `throw` اصلاً بلوک نیست؛ دستوری برای پرتاب کردن خطاست.
+
+  - level: easy
+    stem: |
+      در ساختار `try { ... } catch (err) { ... }`، پارامتر `err` چیست؟
+    options:
+      - یک مقدار boolean که نشان می‌دهد خطا رخ داده است یا نه
+      - شماره‌ی خطی که خطا در آن رخ داده است
+      - 'همان چیزی که پرتاب شده است؛ برای خطاهای JavaScript یک شیء خطا با ویژگی‌هایی مثل `name` و `message`'
+      - همیشه یک رشته (string) شامل متن خطا
+    answer: 3
+    explain: |
+      وقتی در `try` چیزی پرتاب می‌شود، همان چیز به پارامتر `catch` داده می‌شود؛ برای خطاهای خود JavaScript (و `new Error(...)`) یک شیء خطاست که `err.name` (نوع) و `err.message` (متن) دارد، مثل `err.message` در کد اسلاید ۵۰. اگر `err` یک boolean بود (گزینه‌ی ۱)، همیشه `true` می‌شد و فایده‌ای نداشت. شماره‌ی خط (گزینه‌ی ۲) فقط داخل `err.stack` دیده می‌شود. گزینه‌ی ۴ هم غلط است: متن خطا در `err.message` است و `err` فقط وقتی رشته می‌شود که کسی خودش یک رشته پرتاب کند (`throw "..."`).
+
+  - level: easy
+    stem: |
+      خروجی کد اسلاید ۵۰ در Node.js کدام است؟
+    check: output
+    code: |
+      try {
+        JSON.parse("{ bad json }");
+      } catch (err) {
+        console.log("Oops:", err.message);
+      } finally {
+        console.log("Done!");
+      }
+    options:
+      - out: ["Oops: Expected property name or '}' in JSON at position 2 (line 1 column 3)", "Done!"]
+      - out: ["Done!"]
+      - out: ["Oops: Expected property name or '}' in JSON at position 2 (line 1 column 3)"]
+      - out: ["!! SyntaxError"]
+    answer: 1
+    explain: |
+      `JSON.parse` روی متن نامعتبر `{ bad json }` یک `SyntaxError` پرتاب می‌کند؛ پس اجرا به `catch` می‌رود و `Oops:` همراه `err.message` چاپ می‌شود. بعد `finally` هم `Done!` را چاپ می‌کند. گزینه‌ی ۲ فرض کرده `catch` اجرا نمی‌شود، گزینه‌ی ۳ فراموش کرده `finally` همیشه اجرا می‌شود و گزینه‌ی ۴ فراموش کرده که خطا داخل `try` رخ داده و گرفته می‌شود، پس Uncaught نیست.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const e = new Error("Disk full");
+      console.log(e.name);
+      console.log(e.message);
+    options:
+      - out: ["Disk full", "Error"]
+      - out: ["Error: Disk full", "Disk full"]
+      - out: ["undefined", "Disk full"]
+      - out: ["Error", "Disk full"]
+    answer: 4
+    explain: |
+      `name` نوع خطاست و برای شیئی که با `new Error(...)` ساخته شده، `Error` است. `message` همان متنی است که به سازنده دادیم: `Disk full`. گزینه‌ی ۱ جای این دو را عوض کرده؛ `Error: Disk full` (گزینه‌ی ۲) حاصل `String(e)` است، نه `e.name`؛ و `name` برای شیء خطا همیشه مقدار دارد، پس `undefined` (گزینه‌ی ۳) هم غلط است.
+
+  - level: easy
+    stem: |
+      فرض کن به جای `total + 1` اشتباهی نوشته‌ایم `totl + 1` و اسم `totl` هیچ‌جا تعریف نشده است. هنگام اجرای این عبارت، مقدار `name` در خطای پرتاب‌شده کدام است؟
+    check: value
+    expr: '(() => { try { totl + 1; return "no error"; } catch (err) { return err.name; } })()'
+    options:
+      - '`"TypeError"`'
+      - '`"ReferenceError"`'
+      - '`"SyntaxError"`'
+      - '`"RangeError"`'
+    answer: 2
+    explain: |
+      استفاده از اسمی که هیچ‌جا تعریف نشده، `ReferenceError` می‌دهد (`totl is not defined`). `TypeError` برای کار نامعتبر روی یک مقدارِ موجود است (مثل `null.length`)، `SyntaxError` برای اشتباه در دستور زبان است (عبارت `totl + 1` از نظر نگارشی کاملاً درست است) و `RangeError` برای عدد خارج از بازه (مثل `new Array(-1)`).
+
+  - level: easy
+    stem: |
+      در جای خالی کدام کلمه قرار بگیرد تا خروجی کد دقیقاً `Error: Age cannot be negative` شود؟
+    check: option-output
+    expect: "Error: Age cannot be negative"
+    code: |
+      function setAge(age) {
+        if (age < 0) {
+          ___ new RangeError("Age cannot be negative");
+        }
+        return age;
+      }
+
+      try {
+        setAge(-5);
+        console.log("Age saved");
+      } catch (err) {
+        console.log("Error:", err.message);
+      }
+    options:
+      - text: '`return`'
+        code: |
+          function setAge(age) {
+            if (age < 0) {
+              return new RangeError("Age cannot be negative");
+            }
+            return age;
+          }
+          try {
+            setAge(-5);
+            console.log("Age saved");
+          } catch (err) {
+            console.log("Error:", err.message);
+          }
+      - text: '`catch`'
+        code: |
+          function setAge(age) {
+            if (age < 0) {
+              catch new RangeError("Age cannot be negative");
+            }
+            return age;
+          }
+          try {
+            setAge(-5);
+            console.log("Age saved");
+          } catch (err) {
+            console.log("Error:", err.message);
+          }
+      - text: '`throw`'
+        code: |
+          function setAge(age) {
+            if (age < 0) {
+              throw new RangeError("Age cannot be negative");
+            }
+            return age;
+          }
+          try {
+            setAge(-5);
+            console.log("Age saved");
+          } catch (err) {
+            console.log("Error:", err.message);
+          }
+      - text: '`error`'
+        code: |
+          function setAge(age) {
+            if (age < 0) {
+              error new RangeError("Age cannot be negative");
+            }
+            return age;
+          }
+          try {
+            setAge(-5);
+            console.log("Age saved");
+          } catch (err) {
+            console.log("Error:", err.message);
+          }
+    answer: 3
+    explain: |
+      `throw` شیء خطا را پرتاب می‌کند؛ اجرای `setAge` همان‌جا قطع می‌شود، خط `Age saved` رد می‌شود و `catch` پیام را چاپ می‌کند. با `return`، شیء `RangeError` فقط به‌عنوان یک مقدار معمولی برگردانده می‌شود و هیچ خطایی پرتاب نمی‌شود؛ پس `Age saved` چاپ می‌شود. `catch` فقط بعد از بلوک `try` معنا دارد و `error` هم کلمه‌ی کلیدی نیست؛ هر دو `SyntaxError` می‌دهند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      try {
+        console.log("A");
+        JSON.parse("{ bad json }");
+        console.log("B");
+      } catch (err) {
+        console.log("C:", err.name);
+      } finally {
+        console.log("D");
+      }
+      console.log("E");
+    options:
+      - out: ["A", "C: SyntaxError", "D", "E"]
+      - out: ["A", "B", "C: SyntaxError", "D", "E"]
+      - out: ["A", "C: SyntaxError", "D"]
+      - out: ["A", "C: SyntaxError", "B", "D", "E"]
+    answer: 1
+    explain: |
+      `A` چاپ می‌شود، بعد `JSON.parse` خطا می‌دهد و بقیه‌ی `try` (یعنی `B`) رد می‌شود. `catch` نام خطا را چاپ می‌کند، `finally` حرف `D` را، و چون خطا گرفته شده، برنامه ادامه پیدا می‌کند و `E` هم چاپ می‌شود. گزینه‌ی ۲ فکر کرده خط‌های بعد از خطا در `try` هم اجرا می‌شوند، گزینه‌ی ۴ فکر کرده بعد از `catch` اجرا به `try` برمی‌گردد و گزینه‌ی ۳ فکر کرده بعد از خطا برنامه حتماً متوقف می‌شود؛ در حالی که خطای گرفته‌شده برنامه را متوقف نمی‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let step = 0;
+      try {
+        step = 1;
+        throw new Error("stop");
+        step = 2;
+      } catch (e) {
+        step = step + 10;
+      }
+      console.log(step);
+    options:
+      - out: "12"
+      - out: "11"
+      - out: "1"
+      - out: "2"
+    answer: 2
+    explain: |
+      `step = 1` اجرا می‌شود، بعد `throw` اجرای `try` را قطع می‌کند و خط `step = 2` هرگز اجرا نمی‌شود. در `catch` مقدار `1 + 10` یعنی `11` ذخیره و در آخر چاپ می‌شود. `12` یعنی فکر کنیم `step = 2` هم اجرا شده، `1` یعنی فکر کنیم `catch` اجرا نشده و `2` یعنی فکر کنیم `throw` هیچ اثری نداشته است.
+
+  - level: medium
+    stem: |
+      کد زیر را در Node.js اجرا می‌کنیم. کدام خط خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const user = { name: "Sara", address: null };
+      console.log(user.name.toUpperCase());
+      console.log(user.age);
+      console.log(user.address.city);
+      console.log("done");
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 3
+    explain: |
+      خط ۲ مشکلی ندارد (`SARA` چاپ می‌شود). خط ۳ ویژگی‌ای را می‌خواند که وجود ندارد؛ این خطا نیست و فقط `undefined` چاپ می‌شود. اما در خط ۴، `user.address` برابر `null` است و خواندن ویژگی از `null` خطای `TypeError: Cannot read properties of null (reading 'city')` می‌دهد؛ پس برنامه همان‌جا متوقف می‌شود و `done` هرگز چاپ نمی‌شود.
+
+  - level: medium
+    stem: |
+      کدام جمله **نادرست** است؟
+    check: claims
+    want: false
+    setup: |
+      function errName(fn) {
+        try { fn(); return "no error"; } catch (e) { return e.name; }
+      }
+    options:
+      - text: '`JSON.parse("{name: 1}")` خطای `TypeError` می‌دهد.'
+        expr: 'errName(() => JSON.parse("{name: 1}"))'
+        equals: '"TypeError"'
+      - text: '`null.length` خطای `TypeError` می‌دهد.'
+        expr: 'errName(() => null.length)'
+        equals: '"TypeError"'
+      - text: '`new Array(-1)` خطای `RangeError` می‌دهد.'
+        expr: 'errName(() => new Array(-1))'
+        equals: '"RangeError"'
+      - text: 'اگر اسم `price` هیچ‌جا تعریف نشده باشد، `price * 2` خطای `ReferenceError` می‌دهد.'
+        expr: 'errName(() => price * 2)'
+        equals: '"ReferenceError"'
+    answer: 1
+    explain: |
+      متن `{name: 1}` یک JSON نامعتبر است (کلید باید داخل دابل‌کوتیشن باشد) و `JSON.parse` برای متن نامعتبر `SyntaxError` می‌دهد، نه `TypeError`؛ پس جمله‌ی گزینه‌ی ۱ نادرست است. سه جمله‌ی دیگر درست‌اند: خواندن ویژگی از `null` یعنی `TypeError`، طول منفی برای آرایه یعنی `RangeError` و اسم تعریف‌نشده یعنی `ReferenceError`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      class ValidationError extends Error {
+        constructor(message) {
+          super(message);
+          this.name = "ValidationError";
+        }
+      }
+
+      try {
+        throw new ValidationError("Email is required");
+      } catch (err) {
+        console.log(err.name);
+        console.log(err.message);
+        console.log(err instanceof ValidationError, err instanceof Error);
+      }
+    options:
+      - out: ["Error", "Email is required", "true false"]
+      - out: ["ValidationError", "Email is required", "true true"]
+      - out: ["ValidationError", "Email is required", "true false"]
+      - out: ["ValidationError", "undefined", "true true"]
+    answer: 2
+    explain: |
+      `super(message)` سازنده‌ی `Error` را صدا می‌زند و `message` را تنظیم می‌کند و خط بعد، `name` را به `ValidationError` تغییر می‌دهد. چون `ValidationError` از `Error` ارث می‌برد (`extends`)، شیء هم نمونه‌ی `ValidationError` است و هم نمونه‌ی `Error`؛ پس `true true`. گزینه‌ی ۱ خط `this.name = ...` را نادیده گرفته، گزینه‌ی ۳ ارث‌بری را فراموش کرده و گزینه‌ی ۴ فکر کرده `message` بدون مقداردهی دستی تنظیم نمی‌شود، در حالی که `super(message)` این کار را می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function load() {
+        try {
+          console.log("loading");
+          return "data";
+        } finally {
+          console.log("cleanup");
+        }
+      }
+      const result = load();
+      console.log(result);
+    options:
+      - out: ["loading", "data"]
+      - out: ["loading", "data", "cleanup"]
+      - out: ["cleanup", "loading", "data"]
+      - out: ["loading", "cleanup", "data"]
+    answer: 4
+    explain: |
+      `return "data"` مقدار برگشتی را آماده می‌کند، اما قبل از اینکه تابع واقعاً خارج شود، `finally` اجرا می‌شود و `cleanup` را چاپ می‌کند؛ بعد `load()` مقدار `data` را برمی‌گرداند و `console.log` بیرونی آن را چاپ می‌کند. گزینه‌ی ۱ فکر کرده `return` از روی `finally` می‌پرد، گزینه‌ی ۲ فکر کرده `finally` بعد از چاپ مقدار برگشتی اجرا می‌شود و گزینه‌ی ۳ فکر کرده `finally` قبل از `try` اجرا می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      try {
+        throw "Something bad";
+      } catch (err) {
+        console.log(typeof err);
+        console.log(err.message);
+      }
+    options:
+      - out: ["object", "Something bad"]
+      - out: ["string", "Something bad"]
+      - out: ["string", "undefined"]
+      - out: ["string", "!! TypeError"]
+    answer: 3
+    explain: |
+      هر مقداری که `throw` شود، عیناً به `catch` می‌رسد؛ اینجا یک رشته پرتاب شده، پس `typeof err` برابر `string` است. رشته ویژگی‌ای به اسم `message` ندارد و خواندن ویژگیِ ناموجود فقط `undefined` می‌دهد (خطا فقط برای خواندن ویژگی از `null` و `undefined` است؛ رد گزینه‌ی ۴). گزینه‌ی ۱ فکر کرده JavaScript رشته را خودکار به شیء `Error` تبدیل می‌کند و گزینه‌ی ۲ فکر کرده هر چیزی که پرتاب شود `message` دارد. برای همین همیشه `new Error(...)` پرتاب کن.
+
+  - level: medium
+    stem: |
+      کادر BEST PRACTICE اسلاید ۵۰ می‌گوید: «Catch only errors you can actually handle». کدام روش با این توصیه سازگار است؟
+    options:
+      - 'فقط خطایی را بگیریم که برایش راه‌حل مشخصی داریم (مثلاً متن JSON نامعتبرِ کاربر) و خطاهای دیگر را با `throw err` دوباره پرتاب کنیم.'
+      - 'کل برنامه را داخل یک `try` بزرگ بگذاریم و با یک `catch` خالی همه‌ی خطاها را بی‌صدا نادیده بگیریم.'
+      - 'از `try...catch` اصلاً استفاده نکنیم تا هر خطایی برنامه را متوقف کند.'
+      - 'هر خطایی را بگیریم و به جایش `undefined` برگردانیم تا برنامه هیچ‌وقت متوقف نشود.'
+    answer: 1
+    explain: |
+      این توصیه یعنی خطایی را بگیر که انتظارش را داری و می‌دانی با آن چه کنی، و بقیه را (مثل باگ‌های برنامه) پنهان نکن؛ بهترین کار این است که آن‌ها را دوباره پرتاب کنی (rethrow). گزینه‌های ۲ و ۴ همه‌ی خطاها، حتی باگ‌ها، را بی‌صدا می‌بلعند و پیدا کردن مشکل را بسیار سخت می‌کنند. گزینه‌ی ۳ هم خلاف اسلاید است که `try...catch` را برای اجرای امن کد پرخطر پیشنهاد می‌کند.
+
+  - level: medium
+    stem: |
+      کدام کد **بدون خطا** اجرا می‌شود؟
+    check: option-throws
+    want: ok
+    options:
+      - code: 'try { JSON.parse("{"); }'
+      - code: 'try { JSON.parse("{"); } finally (err) { console.log("invalid JSON"); }'
+      - code: 'catch (err) { console.log("invalid JSON"); }'
+      - code: 'try { JSON.parse("{"); } catch { console.log("invalid JSON"); }'
+    answer: 4
+    explain: |
+      گزینه‌ی ۴ از **optional catch binding** (از ES2019) استفاده می‌کند: وقتی به شیء خطا نیازی نداریم، می‌توان پرانتز `(err)` را حذف کرد؛ خطای `JSON.parse` گرفته می‌شود و `invalid JSON` چاپ می‌شود. گزینه‌ی ۱ فقط `try` دارد که مجاز نیست (`try` باید `catch` یا `finally` داشته باشد)، `finally` پارامتر نمی‌گیرد (گزینه‌ی ۲) و `catch` بدون `try` معنا ندارد (گزینه‌ی ۳)؛ هر سه `SyntaxError` می‌دهند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function divide(a, b) {
+        if (b === 0) throw new Error("Division by zero");
+        return a / b;
+      }
+
+      try {
+        console.log(divide(10, 2));
+        console.log(divide(1, 0));
+        console.log(divide(9, 3));
+      } catch (err) {
+        console.log("Error:", err.message);
+      }
+      console.log("program continues");
+    options:
+      - out: ["5", "Error: Division by zero", "3", "program continues"]
+      - out: ["5", "Infinity", "3", "program continues"]
+      - out: ["5", "Error: Division by zero", "program continues"]
+      - out: ["5", "Error: Division by zero"]
+    answer: 3
+    explain: |
+      `divide(10, 2)` عدد `5` را برمی‌گرداند. `divide(1, 0)` با `throw` خطا پرتاب می‌کند، پس خط بعدیِ `try` (یعنی `divide(9, 3)`) هرگز اجرا نمی‌شود و اجرا به `catch` می‌رود. چون خطا گرفته شده، برنامه بعد از ساختار ادامه پیدا می‌کند و `program continues` چاپ می‌شود. گزینه‌ی ۱ فکر کرده بعد از `catch` به `try` برمی‌گردیم؛ گزینه‌ی ۲ رفتار خودِ JavaScript برای `1 / 0` (یعنی `Infinity`) را در نظر گرفته، اما شرط `b === 0` قبل از تقسیم خطا پرتاب می‌کند؛ گزینه‌ی ۴ فکر کرده خطای گرفته‌شده هم برنامه را متوقف می‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function getValue() {
+        try {
+          throw new Error("fail");
+        } catch (e) {
+          return "from catch";
+        } finally {
+          return "from finally";
+        }
+      }
+      console.log(getValue());
+    options:
+      - out: ["from catch"]
+      - out: ["from finally"]
+      - out: ["from catch", "from finally"]
+      - out: ["!! SyntaxError"]
+    answer: 2
+    explain: |
+      `try` خطا پرتاب می‌کند و `catch` با `return "from catch"` می‌خواهد خارج شود، اما قبل از خروج `finally` اجرا می‌شود و `return` داخل آن، مقدار برگشتی را **جایگزین** می‌کند؛ پس نتیجه `from finally` است. گزینه‌ی ۱ فکر کرده `finally` نمی‌تواند مقدار برگشتی را عوض کند. گزینه‌ی ۳ فکر کرده هر `return` جداگانه چیزی چاپ می‌کند، در حالی که تابع فقط یک مقدار برمی‌گرداند و فقط یک `console.log` داریم. گزینه‌ی ۴ فکر کرده `return` داخل `finally` مجاز نیست؛ مجاز است، فقط کار خطرناکی است و نباید از آن استفاده کرد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function parseAge(text) {
+        try {
+          const age = JSON.parse(text);
+          if (age < 0) throw new RangeError("negative age");
+          return age;
+        } catch (err) {
+          if (err instanceof SyntaxError) return 0;
+          throw err; // rethrow: we cannot handle it here
+        }
+      }
+
+      try {
+        console.log(parseAge("25"));
+        console.log(parseAge("abc"));
+        console.log(parseAge("-3"));
+        console.log("end");
+      } catch (err) {
+        console.log("outer:", err.name, err.message);
+      }
+    options:
+      - out: ["25", "0", "outer: RangeError negative age"]
+      - out: ["25", "0", "-3", "end"]
+      - out: ["25", "0", "outer: RangeError negative age", "end"]
+      - out: ["25", "0", "0", "end"]
+    answer: 1
+    explain: |
+      `"25"` یک JSON معتبر است و `25` برمی‌گردد. `"abc"` JSON نامعتبر است، پس `SyntaxError` رخ می‌دهد و `catch` داخلی که این نوع خطا را می‌شناسد، `0` برمی‌گرداند. `"-3"` معتبر است ولی منفی است، پس `RangeError` پرتاب می‌شود؛ `catch` داخلی نمی‌تواند به آن رسیدگی کند و با `throw err` دوباره پرتابش می‌کند. خطا به `catch` بیرونی می‌رسد و چون بقیه‌ی `try` بیرونی رد می‌شود، `end` چاپ نمی‌شود. گزینه‌ی ۲ بررسی منفی بودن را نادیده گرفته، گزینه‌ی ۳ فکر کرده بعد از `catch` بیرونی، `end` هم چاپ می‌شود و گزینه‌ی ۴ فکر کرده `catch` داخلی برای هر خطایی `0` برمی‌گرداند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      try {
+        try {
+          null.length;
+        } finally {
+          console.log("inner finally");
+        }
+        console.log("after inner");
+      } catch (err) {
+        console.log("outer catch:", err.name);
+      } finally {
+        console.log("outer finally");
+      }
+    options:
+      - out: ["outer catch: TypeError", "inner finally", "outer finally"]
+      - out: ["inner finally", "after inner", "outer finally"]
+      - out: ["inner finally", "!! TypeError"]
+      - out: ["inner finally", "outer catch: TypeError", "outer finally"]
+    answer: 4
+    explain: |
+      `null.length` خطای `TypeError` می‌دهد. `try` داخلی `catch` ندارد، پس خطا به بیرون می‌رود؛ اما قبل از آن `finally` داخلی اجرا می‌شود (`inner finally`). خط `after inner` رد می‌شود، `catch` بیرونی خطا را می‌گیرد و در آخر `finally` بیرونی اجرا می‌شود. گزینه‌ی ۱ ترتیب را اشتباه گرفته (`finally` داخلی زودتر است)، گزینه‌ی ۲ فکر کرده `finally` خطا را «حل» می‌کند و گزینه‌ی ۳ فکر کرده بدون `catch` داخلی، خطا گرفته نمی‌شود؛ اما `catch` بیرونی آن را می‌گیرد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log("start");
+      try {
+        let x = ;
+      } catch (err) {
+        console.log("caught:", err.name);
+      }
+    options:
+      - out: ["start", "caught: SyntaxError"]
+      - out: ["!! SyntaxError"]
+      - out: ["caught: SyntaxError"]
+      - out: ["start", "!! SyntaxError"]
+    answer: 2
+    explain: |
+      `let x = ;` اشتباه دستوری در **خود کد** است. موتور قبل از اجرای اسکریپت کل آن را تجزیه (parse) می‌کند و همین‌جا متوقف می‌شود؛ پس هیچ خطی، حتی `console.log("start")`، اجرا نمی‌شود و `try...catch` هم فرصت گرفتن خطا را پیدا نمی‌کند. گزینه‌های ۱ و ۳ فکر کرده‌اند `catch` این خطا را می‌گیرد و گزینه‌ی ۴ فکر کرده خط‌های قبل از اشتباه اجرا می‌شوند. (برخلاف این مورد، `SyntaxError`ِ `JSON.parse` در زمان اجرا رخ می‌دهد و قابل گرفتن است.)
+
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      try {
+        setTimeout(() => {
+          const user = null;
+          console.log(user.name);
+        }, 0);
+        console.log("timer scheduled");
+      } catch (err) {
+        console.log("caught:", err.name);
+      }
+      console.log("after try");
+    options:
+      - out: ["timer scheduled", "after try", "!! TypeError"]
+      - out: ["timer scheduled", "caught: TypeError", "after try"]
+      - out: ["timer scheduled", "after try", "caught: TypeError"]
+      - out: ["caught: TypeError", "after try"]
+    answer: 1
+    explain: |
+      `setTimeout` فقط تابع را برای بعد ثبت می‌کند و بلافاصله برمی‌گردد؛ پس `try` بدون خطا تمام می‌شود و `timer scheduled` و بعد `after try` چاپ می‌شوند. وقتی تایمر اجرا می‌شود، `try...catch` مدت‌ها تمام شده است؛ پس `TypeError`ِ `user.name` گرفته نمی‌شود و برنامه با خطای Uncaught متوقف می‌شود. گزینه‌های ۲، ۳ و ۴ همه فرض کرده‌اند `catch` بیرونی خطای callback را می‌گیرد. راه درست، گذاشتن `try...catch` داخل خودِ callback است.
+
+  - level: hard
+    stem: |
+      کدام جمله درباره‌ی `SyntaxError` **درست** است؟
+    options:
+      - 'هر `SyntaxError`ی را می‌توان با `try...catch` گرفت، چون همه از یک نوع‌اند.'
+      - '`JSON.parse` برای متن نامعتبر خطا نمی‌دهد و فقط `undefined` برمی‌گرداند.'
+      - 'اشتباه دستوری در یک خط از کد فقط همان خط را از کار می‌اندازد و خط‌های دیگر اجرا می‌شوند.'
+      - 'خطای `JSON.parse("{ bad json }")` قابل گرفتن است، چون در زمان اجرا و به‌خاطر داده‌ی خراب رخ می‌دهد؛ اما اشتباه دستوری در خود اسکریپت پیش از اجرای هر خطی گزارش می‌شود و `try...catch` همان اسکریپت نمی‌تواند آن را بگیرد.'
+    answer: 4
+    explain: |
+      فرق در **زمان** رخ دادن خطاست. کدی که `JSON.parse` را صدا می‌زند از نظر دستوری سالم است و خطا وقتی رخ می‌دهد که داده‌ی خراب خوانده می‌شود؛ پس `catch` آن را می‌گیرد (کد اسلاید ۵۰). اما اگر خود اسکریپت اشتباه دستوری داشته باشد، موتور هنگام تجزیه‌ی (parse) کد متوقف می‌شود و هیچ خطی اجرا نمی‌شود؛ پس گزینه‌های ۱ و ۳ غلط‌اند. گزینه‌ی ۲ هم غلط است، چون `JSON.parse` برای متن نامعتبر `SyntaxError` پرتاب می‌کند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      class AppError extends Error {}
+
+      try {
+        throw new AppError("Server down");
+      } catch (err) {
+        console.log(err.name, err instanceof AppError, err.message);
+      }
+    options:
+      - out: "AppError true Server down"
+      - out: "Error false Server down"
+      - out: "Error true Server down"
+      - out: "AppError false Server down"
+    answer: 3
+    explain: |
+      کلاس `AppError` چیزی به `Error` اضافه نکرده است؛ پس `message` را سازنده‌ی `Error` تنظیم می‌کند، اما `name` از `Error` به ارث می‌رسد و همان `Error` می‌ماند. با این حال شیء واقعاً با `new AppError` ساخته شده و `instanceof AppError` برابر `true` است. گزینه‌های ۱ و ۴ فکر کرده‌اند `name` خودکار اسم کلاس می‌شود (برای همین در کلاس‌های خطای سفارشی `this.name` را دستی تنظیم می‌کنیم) و گزینه‌های ۲ و ۴ ارث‌بری را در `instanceof` نادیده گرفته‌اند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function c() {
+        const settings = null;
+        return settings.theme;
+      }
+      function b() {
+        const theme = c();
+        console.log("b got", theme);
+      }
+      function a() {
+        try {
+          b();
+          console.log("a done");
+        } catch (err) {
+          console.log("a caught", err.name);
+        }
+      }
+      a();
+      console.log("end");
+    options:
+      - out: ["b got undefined", "a done", "end"]
+      - out: ["!! TypeError"]
+      - out: ["a caught TypeError", "a done", "end"]
+      - out: ["a caught TypeError", "end"]
+    answer: 4
+    explain: |
+      در `c`، `settings` برابر `null` است و `settings.theme` خطای `TypeError` می‌دهد. نه `c` و نه `b` این خطا را نمی‌گیرند، پس خطا در زنجیره‌ی فراخوانی بالا می‌رود تا به `try`ِ تابع `a` برسد؛ در این مسیر `b got ...` و `a done` رد می‌شوند. `catch` تابع `a` خطا را می‌گیرد و بعد برنامه ادامه پیدا می‌کند و `end` چاپ می‌شود. گزینه‌ی ۱ فکر کرده خواندن ویژگی از `null` فقط `undefined` می‌دهد، گزینه‌ی ۲ فکر کرده خطا فقط در همان تابعی که رخ داده قابل گرفتن است و گزینه‌ی ۳ فکر کرده بعد از `catch` به ادامه‌ی `try` برمی‌گردیم.
