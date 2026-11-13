@@ -1,0 +1,614 @@
+id: ch2-remove
+title: "حذف و جایگزینی عناصر"
+slides: "JS in HTML، اسلایدهای ۲۷ تا ۳۰"
+lesson: |
+  در درس قبل عنصر ساختیم و به صفحه اضافه کردیم. حالا نوبت برعکسش است: **برداشتن** عنصر از صفحه یا **عوض کردن** آن با عنصری دیگر. بستن یک اعلان (notification)، حذف یک کار از لیست کارها (todo list) و پاک کردن پیام خطا بعد از اصلاح فرم همه از همین جنس‌اند.
+
+  ::: analogy
+  درخت DOM را مثل یک قفسه‌ی کتاب در نظر بگیر. وقتی کتابی را از قفسه برمی‌داری، کتاب **نابود نمی‌شود**؛ فقط دیگر در قفسه نیست و اگر هنوز در دستت باشد (یعنی در یک متغیر نگهش داشته باشی) می‌توانی دوباره سر جایش یا جای دیگری بگذاری. حذف عنصر از DOM هم دقیقاً همین است.
+  :::
+
+  ### سه ابزار اصلی (اسلاید ۲۷)
+
+  اسلاید ۲۷ می‌گوید:
+
+  - با `.remove()` عنصر را **مستقیم** حذف کن؛
+  - یا `.removeChild()` را روی **عنصر پدر** صدا بزن؛
+  - `replaceChild()` یک عنصر را با عنصر دیگری **عوض** می‌کند؛
+  - **همیشه اول عنصر را پیدا کن** (query کن)، بعد حذفش کن؛
+  - برای رابط‌های پویا مثل لیست کارها و اعلان‌ها کاربرد دارد؛
+  - با رویدادها ترکیبش کن تا کاربر با کلیک چیزی را حذف کند.
+
+  #### `remove()`: عنصر خودش را حذف می‌کند
+
+  ```js
+  const note = document.getElementById("note");
+  note.remove();   // the element removes itself, together with all its children
+  ```
+
+  - به پدر احتیاجی ندارد و آرگومان هم نمی‌گیرد.
+  - عنصر را **همراه با همه‌ی فرزندانش** (کل زیردرخت) از صفحه برمی‌دارد.
+  - مقدار برگشتی‌اش `undefined` است.
+  - اگر عنصر از قبل در صفحه نباشد (مثلاً قبلاً حذف شده یا هیچ‌وقت اضافه نشده)، **هیچ اتفاقی نمی‌افتد** و خطایی هم رخ نمی‌دهد.
+
+  #### `removeChild()`: پدر فرزندش را بیرون می‌کند
+
+  ```js
+  const list = document.getElementById("list");
+  const first = list.firstElementChild;
+  const removed = list.removeChild(first);
+  console.log(removed === first);    // true  -> it returns the removed node
+  console.log(removed.isConnected);  // false -> no longer in the page
+  ```
+
+  - روی **پدر** صدا زده می‌شود و فرزند را به‌عنوان آرگومان می‌گیرد.
+  - **گره‌ی حذف‌شده را برمی‌گرداند.**
+  - آرگومان باید **فرزند مستقیم** همان پدر باشد؛ وگرنه خطای `NotFoundError` رخ می‌دهد (مثلاً اگر قبلاً حذف شده باشد یا نوه باشد نه فرزند).
+  - روش قدیمی‌تر است؛ الگوی معروف `el.parentNode.removeChild(el)` همان کار `el.remove()` را می‌کند.
+
+  #### `replaceChild()`: عوض کردن یک فرزند با گره‌ای دیگر
+
+  ```js
+  parent.replaceChild(newChild, oldChild);
+  ```
+
+  - روی **پدر** صدا زده می‌شود.
+  - ترتیب آرگومان‌ها مثل `insertBefore` است: **اول جدید، بعد قدیمی**.
+  - **گره‌ی قدیمی** (همان که بیرون رفت) را برمی‌گرداند.
+  - اگر `oldChild` فرزند این پدر نباشد، خطای `NotFoundError` می‌گیری.
+  - اگر `newChild` از قبل جای دیگری در صفحه باشد، به جای جدید **منتقل** می‌شود (کپی نمی‌شود).
+
+  ```html
+  <ul id="list"><li>A</li><li id="b">B</li><li>C</li></ul>
+  ```
+
+  ```js
+  const list = document.getElementById("list");
+  const fresh = document.createElement("li");
+  fresh.textContent = "X";
+  const old = list.replaceChild(fresh, document.getElementById("b"));
+  console.log(list.textContent);  // "AXC"
+  console.log(old.textContent);   // "B"  -> the replaced node is returned
+  ```
+
+  نسخه‌ی مدرن‌تر `oldEl.replaceWith(newEl)` است که روی **خودِ عنصر قدیمی** صدا زده می‌شود و `undefined` برمی‌گرداند؛ یعنی `old.replaceWith(fresh)` همان `old.parentNode.replaceChild(fresh, old)` است.
+
+  | متد | روی چه چیزی صدا زده می‌شود؟ | مقدار برگشتی | اگر گره فرزندِ مورد انتظار نباشد |
+  |---|---|---|---|
+  | `el.remove()` | خود عنصر | `undefined` | خطا نمی‌دهد؛ کاری نمی‌کند |
+  | `parent.removeChild(child)` | پدر | گره‌ی حذف‌شده | `NotFoundError` |
+  | `parent.replaceChild(newC, oldC)` | پدر | گره‌ی قدیمی | `NotFoundError` |
+  | `oldEl.replaceWith(newEl)` | عنصر قدیمی | `undefined` | — |
+
+  ### اول پیدا کن، بعد حذف کن!
+
+  `getElementById` و `querySelector` اگر چیزی پیدا نکنند `null` برمی‌گردانند. صدا زدن متد روی `null` خطاست:
+
+  ```js
+  document.getElementById("nope").remove();
+  // Uncaught TypeError: Cannot read properties of null (reading 'remove')
+  ```
+
+  پس قبل از حذف مطمئن شو عنصر پیدا شده:
+
+  ```js
+  const el = document.getElementById("nope");
+  if (el) el.remove();   // classic guard
+  el?.remove();          // optional chaining: does nothing when el is null
+  ```
+
+  `?.` (optional chaining؛ «اگر سمت چپ `null` یا `undefined` بود، ادامه نده») در این حالت بدون خطا `undefined` برمی‌گرداند.
+
+  ### مثال اسلایدهای ۲۸ تا ۳۰: Title Goes Away!
+
+  ```html lines title=doc.html
+  <!DOCTYPE html>
+  <html>
+  <body>
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+      <script>
+          const btn = document.querySelector('button');
+          btn.addEventListener('click', () => {
+              const element = document.getElementById("title");
+              element.remove();
+          });
+      </script>
+  </body>
+  </html>
+  ```
+
+  - **خط ۷:** دکمه را پیدا می‌کنیم.
+  - **خط ۸:** listener کلیک را وصل می‌کنیم.
+  - **خط ۹:** در **هر** کلیک، عنوانی با `id="title"` را جست‌وجو می‌کنیم (همان «اول پیدا کن»).
+  - **خط ۱۰:** عنوان را حذف می‌کنیم.
+
+  **قبل از کلیک (اسلاید ۲۹):** عنوان بزرگ «Hello World» و زیرش دکمه‌ی «CLICK ME!».
+  **بعد از کلیک (اسلاید ۳۰):** عنوان ناپدید شده و فقط دکمه مانده که حالا بالای صفحه قرار گرفته (چون جای خالیِ عنوان هم از بین رفته است).
+
+  **کلیک دوم چه می‌شود؟** این‌بار `getElementById("title")` چیزی پیدا نمی‌کند و `null` برمی‌گرداند؛ پس `element.remove()` در کنسول خطای `TypeError: Cannot read properties of null (reading 'remove')` می‌دهد. ظاهر صفحه تغییری نمی‌کند و دکمه هم سر جایش است؛ خطا فقط همان اجرای listener را متوقف می‌کند و با هر کلیک بعدی دوباره تکرار می‌شود. راه‌های رفع:
+
+  - `element?.remove();` یا `if (element) element.remove();`
+  - غیرفعال کردن دکمه بعد از کلیک اول: `btn.disabled = true;`
+  - اجرای listener فقط یک بار: `btn.addEventListener('click', handler, { once: true });` (گزینه‌ی `once` باعث می‌شود listener بعد از اولین اجرا خودبه‌خود حذف شود.)
+
+  ### حذف‌شده یعنی نابودشده؟ نه!
+
+  ```js
+  const msg = document.getElementById("msg");
+  msg.remove();                  // gone from the page...
+  console.log(msg.textContent);  // ...but still alive in the variable
+  document.body.append(msg);     // put it back (an "undo" feature)
+  ```
+
+  بعد از `remove()` متغیر `msg` **`null` نمی‌شود**؛ همان شیء با همه‌ی متن، attributeها و فرزندانش در حافظه است و فقط به صفحه وصل نیست (`isConnected` برابر `false`). هر وقت هیچ متغیری دیگر به آن اشاره نکند، garbage collector (بخش خودکار پاک‌سازی حافظه‌ی JavaScript) آن را پاک می‌کند.
+
+  ### خالی کردن یک عنصر (حذف همه‌ی فرزندان)
+
+  ```js
+  list.innerHTML = "";            // 1) simplest
+  list.textContent = "";          // 2) also removes every child
+  list.replaceChildren();         // 3) modern: no arguments = no children
+  while (list.firstChild) {       // 4) classic loop
+    list.removeChild(list.firstChild);
+  }
+  ```
+
+  در هر چهار روش خودِ `list` سر جایش می‌ماند و فقط **محتوایش** خالی می‌شود؛ اما `list.remove()` خودِ لیست را از صفحه برمی‌دارد. در روش ۴ دقت کن که `firstChild` گره‌های متنیِ فاصله و خط جدید بین تگ‌ها را هم شامل می‌شود؛ حلقه آن‌قدر ادامه می‌دهد تا هیچ فرزندی (از هر نوع) نماند.
+
+  ### دام حلقه روی مجموعه‌ی زنده
+
+  `getElementsByClassName` یک HTMLCollection **زنده** (live؛ با هر تغییر DOM خودش به‌روز می‌شود) برمی‌گرداند. حذف در یک حلقه‌ی معمولی روی آن **نصف عنصرها را جا می‌اندازد**:
+
+  ```js
+  const items = document.getElementsByClassName("item"); // live collection of 4 items
+  for (let i = 0; i < items.length; i++) {
+    items[i].remove();   // BUG: after each removal the collection shrinks and shifts
+  }
+  // only items 1 and 3 are removed; 2 and 4 stay
+  ```
+
+  بعد از حذف `items[0]`، عنصر دوم به خانه‌ی ۰ می‌لغزد ولی `i` به ۱ رفته است؛ پس از رویش می‌پرد. راه درست:
+
+  ```js
+  document.querySelectorAll(".item").forEach((el) => el.remove()); // static NodeList
+  // or
+  while (items.length > 0) items[0].remove();
+  ```
+
+  ### کاربردها: لیست کارها و اعلان‌ها (ترکیب با رویداد)
+
+  **دکمه‌ی حذف برای هر کار** با event delegation (یک listener روی پدر برای همه‌ی فرزندان، که در درس رویدادها دیدیم):
+
+  ```html
+  <ul id="todos">
+    <li>Read slides <button class="del">x</button></li>
+    <li>Do homework <button class="del">x</button></li>
+  </ul>
+  ```
+
+  ```js
+  document.getElementById("todos").addEventListener("click", (e) => {
+    if (e.target.classList.contains("del")) {
+      e.target.parentElement.remove();   // remove the <li> that holds this button
+    }
+  });
+  ```
+
+  `e.target` خودِ دکمه است؛ اگر `e.target.remove()` بنویسیم فقط دکمه حذف می‌شود و متن کار می‌ماند. برای همین سراغ پدرش (`parentElement`) یا نزدیک‌ترین `<li>` با `e.target.closest("li")` می‌رویم.
+
+  **اعلانی که خودش بعد از ۳ ثانیه بسته می‌شود:**
+
+  ```js
+  function showToast(text) {
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.textContent = text;
+    document.body.append(toast);
+    setTimeout(() => toast.remove(), 3000);   // auto-dismiss after 3 seconds
+  }
+  showToast("Saved!");
+  ```
+
+  **پنهان کردن با حذف کردن فرق دارد:** `el.style.display = "none"` یا `el.hidden = true` فقط عنصر را **نامرئی** می‌کنند؛ عنصر هنوز در DOM است و `querySelector` پیدایش می‌کند. `remove()` واقعاً آن را از درخت بیرون می‌برد.
+
+  ::: tip
+  - `el.remove()` ساده‌ترین راه است: نه پدر می‌خواهد نه آرگومان، و روی عنصرِ از قبل حذف‌شده هم خطا نمی‌دهد.
+  - `removeChild` و `replaceChild` روی **پدر** صدا زده می‌شوند و هر دو گره‌ای را که بیرون رفته **برمی‌گردانند**.
+  - `replaceChild(جدید, قدیمی)`؛ ترتیبش مثل `insertBefore(جدید, مرجع)` است: «اول جدید».
+  - گره‌ی حذف‌شده در متغیرت زنده می‌ماند و می‌شود دوباره اضافه‌اش کرد.
+  :::
+
+  ::: trap
+  - در مثال «Title Goes Away!»، کلیک دوم خطای `TypeError` (خواندن `remove` از `null`) می‌دهد، چون عنوان دیگر وجود ندارد.
+  - `removeChild` روی گره‌ای که فرزند مستقیم آن پدر نیست (یا قبلاً حذف شده) خطای `NotFoundError` می‌دهد، ولی `remove()` در همین وضعیت بی‌صدا هیچ کاری نمی‌کند.
+  - جابه‌جا نوشتن آرگومان‌ها در `replaceChild(old, fresh)` معمولاً به `NotFoundError` می‌رسد، چون `fresh` فرزند آن پدر نیست.
+  - حذف در حلقه‌ی `for` روی HTMLCollection زنده فقط نصف عنصرها را حذف می‌کند.
+  - حذف پدر یعنی حذف کل زیردرختش؛ فرزندان جداگانه در صفحه نمی‌مانند.
+  :::
+
+  ::: summary
+  حذف: `el.remove()` (ساده) یا `parent.removeChild(child)` (برمی‌گرداند، سخت‌گیر). جایگزینی: `parent.replaceChild(newC, oldC)` یا `oldC.replaceWith(newC)`. خالی کردن: `innerHTML = ""`، `textContent = ""`، `replaceChildren()` یا حلقه‌ی `while (firstChild)`. قبل از حذف، عنصر را پیدا کن و `null` بودنش را بررسی کن.
+  :::
+questions:
+  - level: easy
+    stem: کدام متد عنصر را **بدون نیاز به دسترسی به پدرش** و بدون هیچ آرگومانی از صفحه حذف می‌کند؟
+    options:
+      - '`el.removeChild()`'
+      - '`el.remove()`'
+      - '`el.replaceChild()`'
+      - '`delete el`'
+    answer: 2
+    explain: |
+      `el.remove()` روی خودِ عنصر صدا زده می‌شود و آن را با همه‌ی فرزندانش از DOM برمی‌دارد. `removeChild` و `replaceChild` روی **پدر** صدا زده می‌شوند و آرگومان لازم دارند. `delete` فقط برای حذف property از یک شیء است و روی یک متغیر هیچ اثری روی DOM ندارد.
+
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li id="a">A</li><li>B</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const a = document.getElementById("a");
+      const removed = list.removeChild(a);
+      console.log(removed === a, list.children.length, removed.textContent);
+    options:
+      - out: "true 1 A"
+      - out: "!! TypeError"
+      - out: "true 1"
+      - out: "false 1 AB"
+    answer: 1
+    explain: |
+      `removeChild` همان گره‌ای را که حذف کرده **برمی‌گرداند**؛ پس `removed === a` برقرار است. لیست یک فرزند کمتر دارد (۱) و گره‌ی حذف‌شده هنوز متنش (`A`) را دارد، چون حذف از DOM آن را نابود نمی‌کند. گزینه‌ی ۲ فرض کرده مقدار برگشتی `undefined` است، گزینه‌ی ۳ فکر کرده محتوای گره پاک می‌شود و گزینه‌ی ۴ تصور کرده پدر برگردانده می‌شود.
+
+  - level: easy
+    stem: 'در جای خالی `parent.replaceChild(______)` برای این‌که `oldChild` با `newChild` عوض شود، کدام گزینه قرار می‌گیرد؟'
+    options:
+      - '`oldChild, newChild`'
+      - '`parent, newChild`'
+      - '`newChild, oldChild`'
+      - '`newChild`'
+    answer: 3
+    explain: |
+      امضای درست `parent.replaceChild(newChild, oldChild)` است: **اول جدید، بعد قدیمی** (درست مثل `insertBefore(جدید, مرجع)`). گزینه‌ی ۱ ترتیب را برعکس کرده که معمولاً به `NotFoundError` می‌رسد، گزینه‌ی ۲ پدر را بی‌دلیل آرگومان کرده و گزینه‌ی ۴ مشخص نکرده کدام فرزند باید عوض شود (این شکلِ تک‌آرگومانی مال `oldChild.replaceWith(newChild)` است).
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li id="a">A</li></ul>
+      <p id="note">N</p>
+    code: |
+      const list = document.getElementById("list");
+      const note = document.getElementById("note");
+      list.removeChild(document.getElementById("a"));
+      console.log(list.children.length);
+      list.removeChild(note);
+      console.log("done");
+    options:
+      - out: ["0", "done"]
+      - out: ["!! NotFoundError"]
+      - out: ["0", "!! TypeError"]
+      - out: ["0", "!! NotFoundError"]
+    answer: 4
+    explain: |
+      حذف `#a` درست است، چون فرزند مستقیم لیست است؛ پس `0` چاپ می‌شود. اما `#note` فرزند `list` نیست (هم‌سطح آن است) و `removeChild` در این حالت خطای `NotFoundError` می‌دهد؛ پس `done` چاپ نمی‌شود. گزینه‌ی ۱ فرض کرده `removeChild` هر عنصری را حذف می‌کند، گزینه‌ی ۲ خطا را به خط اول نسبت داده و گزینه‌ی ۳ نوع خطا را اشتباه گفته است (`note` پیدا شده و `null` نیست).
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li><li id="b">B</li><li>C</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const old = document.getElementById("b");
+      const fresh = document.createElement("li");
+      fresh.textContent = "X";
+      const r = list.replaceChild(fresh, old);
+      console.log(list.textContent, r.textContent);
+    options:
+      - out: "AXC X"
+      - out: "AXC B"
+      - out: "ABC X"
+      - out: "AXBC B"
+    answer: 2
+    explain: |
+      `replaceChild(fresh, old)` عنصر B را برمی‌دارد و X را **در همان جای** آن می‌گذارد؛ پس متن لیست `AXC` است. مقدار برگشتی **گره‌ی قدیمی** است، یعنی B. گزینه‌ی ۱ فکر کرده گره‌ی جدید برگردانده می‌شود، گزینه‌ی ۳ جای آرگومان‌ها را برعکس فهمیده و گزینه‌ی ۴ تصور کرده X فقط قبل از B درج می‌شود و B می‌ماند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li><li>B</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const old = list.querySelector("li");
+      const fresh = document.createElement("li");
+      fresh.textContent = "NEW";
+      list.replaceChild(old, fresh);
+      console.log(list.textContent);
+    options:
+      - out: "NEWB"
+      - out: "AB"
+      - out: "!! NotFoundError"
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      آرگومان‌ها جابه‌جا نوشته شده‌اند: `replaceChild(old, fresh)` یعنی «`fresh` را با `old` عوض کن». اما `fresh` اصلاً فرزند `list` نیست، پس مرورگر خطای `NotFoundError` می‌دهد و `console.log` اجرا نمی‌شود. گزینه‌ی ۱ نتیجه‌ی نسخه‌ی درست (`replaceChild(fresh, old)`) است، گزینه‌ی ۲ فرض کرده خطا بی‌صدا نادیده گرفته می‌شود و گزینه‌ی ۴ نوع خطا را اشتباه گفته است (هر دو آرگومان گره‌اند و هیچ‌کدام `null` نیست).
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li id="a">A</li><li id="b">B</li><li id="c">C</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const a = document.getElementById("a");
+      const c = document.getElementById("c");
+      list.replaceChild(a, c);
+      console.log(list.textContent, list.children.length);
+    options:
+      - out: "BA 2"
+      - out: "ABA 3"
+      - out: "ABC 3"
+      - out: "AB 2"
+    answer: 1
+    explain: |
+      C با A عوض می‌شود. اما A از قبل در صفحه است، پس از جای قبلی‌اش **منتقل** می‌شود (کپی نمی‌شود): ابتدا از اول لیست برداشته می‌شود و بعد جای C می‌نشیند. نتیجه B، A و دو فرزند است. گزینه‌ی ۲ تصور کرده A کپی می‌شود، گزینه‌ی ۳ فکر کرده چیزی تغییر نمی‌کند و گزینه‌ی ۴ ترتیب را اشتباه گفته است.
+
+  - level: easy
+    stem: 'دستور `old.replaceWith(fresh)` معادل کدام دستور است؟'
+    options:
+      - '`old.parentNode.replaceChild(old, fresh)`'
+      - '`fresh.parentNode.replaceChild(old, fresh)`'
+      - '`old.removeChild(fresh)`'
+      - '`old.parentNode.replaceChild(fresh, old)`'
+    answer: 4
+    explain: |
+      `replaceWith` روی **عنصر قدیمی** صدا زده می‌شود و آن را با گره‌ی جدید عوض می‌کند. در نسخه‌ی قدیمی باید روی پدرِ `old` صدا بزنیم و اول جدید، بعد قدیمی را بدهیم: `old.parentNode.replaceChild(fresh, old)`. گزینه‌ی ۱ ترتیب آرگومان‌ها را برعکس کرده، گزینه‌ی ۲ هم پدر و هم ترتیب را اشتباه گرفته و گزینه‌ی ۳ اصلاً جایگزین نمی‌کند (و چون `fresh` فرزند `old` نیست، خطا هم می‌دهد).
+
+  - level: easy
+    stem: در مثال «Title Goes Away!» (اسلاید ۲۸)، طبق تصویر اسلاید ۳۰ بعد از **اولین** کلیک روی دکمه چه چیزی روی صفحه دیده می‌شود؟
+    options:
+      - عنوان «Hello World» و دکمه، بدون تغییر
+      - فقط دکمه‌ی «CLICK ME!»
+      - فقط عنوان «Hello World»
+      - یک صفحه‌ی کاملاً خالی
+    answer: 2
+    explain: |
+      listener عنصر `#title` (یعنی `<h1>`) را پیدا و حذف می‌کند؛ دکمه دست نمی‌خورد و چون جای عنوان خالی شده، بالای صفحه قرار می‌گیرد. گزینه‌ی ۱ اثر `remove()` را نادیده گرفته، گزینه‌ی ۳ عنصر حذف‌شده را اشتباه گرفته و گزینه‌ی ۴ تصور کرده کل body حذف می‌شود.
+
+  - level: medium
+    stem: صفحه‌ی زیر همان کد اسلاید ۲۸ است. کاربر **دو بار** روی دکمه کلیک می‌کند. خروجی کنسول کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+    code: |
+      const btn = document.querySelector('button');
+      btn.addEventListener('click', () => {
+          const element = document.getElementById("title");
+          element.remove();
+      });
+    events:
+      - { type: click, target: "button", times: 2 }
+    after: |
+      console.log(document.querySelectorAll("h1").length, document.querySelectorAll("button").length);
+    eventsNote: 'بعد از دو کلیک این دستور اجرا می‌شود: `console.log(document.querySelectorAll("h1").length, document.querySelectorAll("button").length);`'
+    options:
+      - out: ["0 1"]
+      - out: ["!! TypeError", "0 0"]
+      - out: ["!! TypeError", "0 1"]
+      - out: ["0 0"]
+    answer: 3
+    explain: |
+      کلیک اول عنوان را حذف می‌کند و خروجی ندارد. در کلیک دوم `getElementById("title")` مقدار `null` برمی‌گرداند و `null.remove()` خطای `TypeError: Cannot read properties of null (reading 'remove')` می‌دهد. این خطا فقط همان اجرای listener را متوقف می‌کند؛ دکمه سر جایش است، پس در پایان ۰ عنوان و ۱ دکمه داریم. گزینه‌های ۱ و ۴ خطای کلیک دوم را ندیده‌اند و گزینه‌های ۲ و ۴ فکر کرده‌اند دکمه هم حذف می‌شود.
+
+  - level: medium
+    stem: در مثال اسلاید ۲۸، برای این‌که کلیک‌های دوم به بعد **هیچ خطایی** ندهند، خط `element.remove();` را با کدام گزینه عوض کنیم؟
+    options:
+      - '`element?.remove();`'
+      - '`element.remove(true);`'
+      - '`document.removeChild(element);`'
+      - '`element.innerHTML = "";`'
+    answer: 1
+    explain: |
+      با optional chaining (`?.`)، وقتی `element` برابر `null` است متد صدا زده نمی‌شود و خطایی رخ نمی‌دهد؛ در کلیک اول هم عنوان مثل قبل حذف می‌شود. در گزینه‌ی ۲ آرگومان اضافه هیچ اثری ندارد و `null.remove` باز هم `TypeError` می‌دهد. در گزینه‌ی ۳ عنوان فرزند مستقیم `document` نیست (فرزند body است)، پس همان کلیک اول `NotFoundError` می‌دهد. گزینه‌ی ۴ عنوان را حذف نمی‌کند (فقط خالی‌اش می‌کند) و روی `null` هم خطا می‌دهد.
+
+  - level: hard
+    stem: اجرای کدام خط از کد زیر باعث خطا می‌شود؟
+    check: dom-output
+    lines: true
+    html: |
+      <ul id="list"><li>1</li><li>2</li></ul>
+    code: |
+      const list = document.querySelector("#list");
+      const first = list.firstElementChild;
+      first.remove();
+      console.log("A");
+      first.remove();
+      console.log("B");
+      list.removeChild(first);
+      console.log("C");
+    options:
+      - text: خط ۳
+        out: ["!! TypeError"]
+      - text: خط ۵
+        out: ["A", "!! NotFoundError"]
+      - text: خط ۷
+        out: ["A", "B", "!! NotFoundError"]
+      - text: هیچ خطایی رخ نمی‌دهد
+        out: ["A", "B", "C"]
+    answer: 3
+    explain: |
+      خط ۳ اولین `<li>` را حذف می‌کند. در خط ۵ عنصر دیگر در صفحه نیست، ولی `remove()` روی عنصرِ جداشده **بی‌صدا هیچ کاری نمی‌کند**. اما در خط ۷، `first` دیگر فرزند `list` نیست و `removeChild` سخت‌گیر است: خطای `NotFoundError` می‌دهد و `C` چاپ نمی‌شود. گزینه‌ی ۲ همین سخت‌گیری را به `remove()` نسبت داده و گزینه‌ی ۴ آن را از `removeChild` هم انتظار نداشته است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="box"><p id="msg">Saved!</p></div>
+    code: |
+      const box = document.getElementById("box");
+      const msg = document.getElementById("msg");
+      msg.remove();
+      console.log(box.children.length, msg.textContent);
+      box.append(msg);
+      console.log(box.children.length, document.getElementById("msg") === msg);
+    options:
+      - out: ["0", "!! TypeError"]
+      - out: ["1 Saved!", "1 true"]
+      - out: ["0 Saved!", "1 false"]
+      - out: ["0 Saved!", "1 true"]
+    answer: 4
+    explain: |
+      `remove()` عنصر را از صفحه برمی‌دارد ولی متغیر `msg` هنوز به همان شیء اشاره می‌کند و متنش سالم است؛ پس `0 Saved!` چاپ می‌شود. با `append` همان عنصر دوباره به صفحه برمی‌گردد و `getElementById` دقیقاً همان شیء را پیدا می‌کند (`true`). گزینه‌ی ۱ فکر کرده متغیر بعد از حذف `null` می‌شود، گزینه‌ی ۲ حذف را بی‌اثر دانسته و گزینه‌ی ۳ تصور کرده عنصرِ برگردانده‌شده شیء دیگری است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="card"><h2>Title</h2><p>Text</p></div>
+    code: |
+      const card = document.getElementById("card");
+      const title = card.querySelector("h2");
+      card.remove();
+      console.log(document.querySelectorAll("h2, p").length, title.isConnected, card.children.length);
+    options:
+      - out: "2 true 0"
+      - out: "0 false 2"
+      - out: "0 false 0"
+      - out: "0 true 2"
+    answer: 2
+    explain: |
+      حذف یک عنصر یعنی حذف **کل زیردرختش**؛ پس `<h2>` و `<p>` هم دیگر در صفحه نیستند (۰) و `title.isConnected` برابر `false` است. اما در حافظه زیردرخت سالم می‌ماند: `card` هنوز دو فرزندش را دارد. گزینه‌ی ۱ فکر کرده فرزندان در صفحه باقی می‌مانند، گزینه‌ی ۳ تصور کرده فرزندان نابود می‌شوند و گزینه‌ی ۴ `title` را هنوز متصل به صفحه دانسته است.
+
+  - level: medium
+    stem: کدام جمله **نادرست** است؟
+    options:
+      - '`el.remove()` به دسترسی به پدر نیاز ندارد.'
+      - '`parent.removeChild(child)` گره‌ی حذف‌شده را برمی‌گرداند.'
+      - '`parent.replaceChild(newC, oldC)` گره‌ی قدیمی را برمی‌گرداند.'
+      - بعد از اجرای `el.remove()`، متغیر `el` خودبه‌خود برابر `null` می‌شود.
+    answer: 4
+    explain: |
+      `remove()` فقط عنصر را از درخت DOM جدا می‌کند و به متغیرهای ما دست نمی‌زند؛ `el` همچنان به همان شیء اشاره می‌کند و می‌شود آن را دوباره به صفحه اضافه کرد. پس گزینه‌ی ۴ نادرست است. سه جمله‌ی دیگر رفتار واقعی این متدها را توصیف می‌کنند.
+
+  - level: easy
+    stem: بعد از اجرای کدام دستور، `document.querySelector("#ad")` دیگر عنصر `#ad` را **پیدا نمی‌کند**؟ (`ad` همان عنصر `#ad` است.)
+    options:
+      - '`ad.remove()`'
+      - '`ad.style.display = "none"`'
+      - '`ad.hidden = true`'
+      - '`ad.textContent = ""`'
+    answer: 1
+    explain: |
+      فقط `remove()` عنصر را واقعاً از درخت DOM بیرون می‌برد، پس جست‌وجوها دیگر آن را پیدا نمی‌کنند. `display = "none"` و `hidden = true` فقط عنصر را **نامرئی** می‌کنند و `textContent = ""` فقط محتوایش را خالی می‌کند؛ در این سه حالت عنصر هنوز در DOM است و `querySelector` پیدایش می‌کند.
+
+  - level: easy
+    stem: 'هدف این است که همه‌ی فرزندان لیست `list` حذف شوند ولی خودِ `<ul>` در صفحه بماند. کدام گزینه این کار را **انجام نمی‌دهد**؟'
+    options:
+      - '`list.innerHTML = ""`'
+      - '`list.replaceChildren()`'
+      - '`while (list.firstChild) list.removeChild(list.firstChild);`'
+      - '`list.remove()`'
+    answer: 4
+    explain: |
+      `list.remove()` خودِ لیست را (همراه فرزندانش) از صفحه برمی‌دارد، در حالی که خواسته‌ی ما ماندن `<ul>` بود. سه گزینه‌ی دیگر فقط محتوا را خالی می‌کنند: `innerHTML = ""` همه‌ی فرزندان را دور می‌ریزد، `replaceChildren()` بدون آرگومان یعنی «هیچ فرزندی نداشته باش» و حلقه‌ی `while` آن‌قدر اولین فرزند را حذف می‌کند تا چیزی نماند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (به فاصله‌ها و خطوط جدیدِ داخل HTML دقت کن.)
+    check: dom-output
+    html: |
+      <ul id="list">
+        <li>A</li>
+        <li>B</li>
+      </ul>
+    code: |
+      const list = document.getElementById("list");
+      let count = 0;
+      while (list.firstChild) {
+        list.removeChild(list.firstChild);
+        count++;
+      }
+      console.log(count, list.childNodes.length);
+    options:
+      - out: "2 0"
+      - out: "5 0"
+      - out: "2 3"
+      - out: "3 0"
+    answer: 2
+    explain: |
+      `firstChild` همه‌ی انواع گره را حساب می‌کند، از جمله گره‌های متنیِ فاصله و خط جدید بین تگ‌ها. این لیست ۵ گره‌ی فرزند دارد: متنِ فاصله، `<li>A`، متنِ فاصله، `<li>B` و متنِ فاصله‌ی آخر. حلقه همه را یکی‌یکی حذف می‌کند؛ پس `count` برابر ۵ و در پایان هیچ گره‌ای نمانده است. گزینه‌ی ۱ فقط عنصرها را شمرده (منطق `children`)، گزینه‌ی ۳ فکر کرده گره‌های متنی حذف نمی‌شوند و گزینه‌ی ۴ فاصله‌ی آخر را جا انداخته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul>
+      <li class="item">1</li><li class="item">2</li><li class="item">3</li><li class="item">4</li>
+      </ul>
+    code: |
+      const items = document.getElementsByClassName("item");
+      for (let i = 0; i < items.length; i++) {
+        items[i].remove();
+      }
+      console.log(items.length, document.querySelector("ul").textContent.trim());
+    options:
+      - out: "2 24"
+      - out: "0"
+      - out: "2 13"
+      - out: "3 234"
+    answer: 1
+    explain: |
+      `getElementsByClassName` یک مجموعه‌ی **زنده** است. وقتی `i = 0` است، آیتم ۱ حذف می‌شود و مجموعه کوچک می‌شود: حالا `items[0]` آیتم ۲ است، ولی `i` به ۱ می‌رود و آیتم ۳ حذف می‌شود. بعد `i = 2` است و طول مجموعه هم ۲؛ حلقه تمام می‌شود و آیتم‌های ۲ و ۴ می‌مانند. گزینه‌ی ۲ همان چیزی است که برنامه‌نویس انتظار داشت (با `querySelectorAll(...).forEach` به دست می‌آید)، گزینه‌ی ۳ آیتم‌های حذف‌شده را جابه‌جا گفته و گزینه‌ی ۴ فرض کرده فقط اولین آیتم حذف می‌شود.
+
+  - level: medium
+    stem: کاربر روی دکمه‌ی x **دومین** آیتم لیست کلیک می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <ul id="todos">
+        <li>Read <button class="del">x</button></li>
+        <li>Code <button class="del">x</button></li>
+        <li>Sleep <button class="del">x</button></li>
+      </ul>
+    code: |
+      const todos = document.getElementById("todos");
+      todos.addEventListener("click", (e) => {
+        if (e.target.classList.contains("del")) {
+          e.target.parentElement.remove();
+        }
+      });
+    events:
+      - { type: click, target: "#todos li:nth-child(2) .del" }
+    after: |
+      console.log(todos.children.length, todos.querySelectorAll(".del").length);
+    eventsNote: 'بعد از کلیک این دستور اجرا می‌شود: `console.log(todos.children.length, todos.querySelectorAll(".del").length);`'
+    options:
+      - out: "3 2"
+      - out: "2 3"
+      - out: "2 2"
+      - out: "0 0"
+    answer: 3
+    explain: |
+      کلیک روی دکمه تا `<ul>` بالا می‌رود (bubbling) و listener پدر اجرا می‌شود. `e.target` خودِ دکمه است و `parentElement` آن، `<li>` «Code»؛ پس کل این آیتم همراه دکمه‌اش حذف می‌شود و ۲ آیتم و ۲ دکمه می‌ماند. گزینه‌ی ۱ فکر کرده فقط دکمه حذف می‌شود (این نتیجه‌ی `e.target.remove()` است)، گزینه‌ی ۲ دکمه‌ی آیتم حذف‌شده را هنوز شمرده و گزینه‌ی ۴ تصور کرده خودِ `<ul>` (صاحب listener) حذف می‌شود.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    code: |
+      const note = document.createElement("div");
+      note.className = "toast";
+      note.textContent = "Saved!";
+      document.body.append(note);
+      setTimeout(() => note.remove(), 0);
+      console.log(document.querySelectorAll(".toast").length);
+      setTimeout(() => console.log(document.querySelectorAll(".toast").length), 10);
+    options:
+      - out: ["0", "0"]
+      - out: ["1", "1"]
+      - out: ["0", "1"]
+      - out: ["1", "0"]
+    answer: 4
+    explain: |
+      callback تایمر حتی با تأخیر `0` بعد از تمام شدن کد همگامِ فعلی اجرا می‌شود (event loop در فصل اول). پس اولین `console.log` هنوز اعلان را در صفحه می‌بیند (`1`). بعد تایمر اول اعلان را حذف می‌کند و تایمر دوم (۱۰ میلی‌ثانیه بعد) `0` چاپ می‌کند. گزینه‌ی ۱ فکر کرده `setTimeout(..., 0)` فوراً اجرا می‌شود، گزینه‌ی ۲ حذف را بی‌اثر دانسته و گزینه‌ی ۳ ترتیب را برعکس کرده است.
