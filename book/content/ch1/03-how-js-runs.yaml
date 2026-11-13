@@ -1,0 +1,414 @@
+id: ch1-runtime
+title: "JavaScript چطور اجرا می‌شود؟ موتورها و APIها"
+slides: "Introduction to JS، اسلایدهای ۱۰ و ۱۱"
+lesson: |
+  تا اینجا فهمیدیم JavaScript چیست. حالا سؤال این است: وقتی کد JavaScript می‌نویسیم، **چه کسی** آن را می‌خواند و اجرا می‌کند؟ و یک زبان برنامه‌نویسی چطور می‌تواند پیام نشان دهد، از اینترنت داده بگیرد یا صفحه را عوض کند؟
+
+  ::: analogy
+  کد JavaScript مثل یک **دستور پخت** است. **موتور** (engine) آشپزی است که دستور را می‌خواند و قدم‌به‌قدم اجرا می‌کند. اما آشپز بدون **آشپزخانه** کاری از پیش نمی‌برد: اجاق، یخچال و چاقو را آشپزخانه در اختیارش می‌گذارد. این آشپزخانه همان **محیط اجرا** (environment) است و ابزارهایش همان **APIها**. نکته‌ی جالب: یک آشپز (مثلاً موتور V8) می‌تواند در دو آشپزخانه‌ی مختلف کار کند: مرورگر و Node.js.
+  :::
+
+  ### JavaScript چطور اجرا می‌شود؟ (اسلاید ۱۰)
+
+  #### اجرای خط‌به‌خط
+
+  کد JavaScript **خط‌به‌خط** (line-by-line) و از بالا به پایین اجرا می‌شود؛ یا **داخل مرورگر** به کمک یک **موتور** (engine: برنامه‌ای که کد JavaScript را می‌خواند و اجرا می‌کند)، یا **روی کامپیوتر خودت** به کمک **Node.js**.
+
+  ```js
+  console.log("1: start");
+  const sum = 2 + 3;
+  console.log("2: sum is", sum);
+  console.log("3: end");
+  ```
+
+  خروجی:
+
+  ```text
+  1: start
+  2: sum is 5
+  3: end
+  ```
+
+  اگر یک خط **هنگام اجرا** خطا بدهد، خط‌های قبلی اجرا شده‌اند، ولی برنامه همان‌جا متوقف می‌شود:
+
+  ```js
+  console.log("A");
+  console.log(B);   // ReferenceError: B is not defined
+  console.log("C"); // never runs
+  ```
+
+  خروجی: `A` و سپس خطای `ReferenceError` (یعنی «این اسم تعریف نشده است»)؛ `C` هرگز چاپ نمی‌شود.
+
+  #### موتورهای JavaScript
+
+  هر مرورگر موتور مخصوص خودش را دارد:
+
+  | مرورگر یا محیط | موتور JavaScript |
+  |---|---|
+  | Chrome (و مرورگرهای مبتنی بر Chromium مثل Edge) | **V8** (ساخت Google) |
+  | Firefox | **SpiderMonkey** (اولین موتور JavaScript تاریخ؛ آن را Brendan Eich در Netscape نوشت و امروز Mozilla نگهداری‌اش می‌کند) |
+  | Safari | JavaScriptCore (ساخت Apple) |
+  | Node.js | **V8** (همان موتور Chrome) |
+
+  اسلاید فقط V8 و SpiderMonkey را نام برده و بقیه را با «etc.» رد شده است؛ این دو را حتماً به خاطر بسپار.
+
+  #### داخل موتور چه می‌گذرد؟
+
+  اسلاید ۱۰ می‌گوید: «Code is **parsed**, **optimized**, and compiled to **machine code**». یعنی:
+
+  ```text
+  source code (.js file)
+          |
+          v
+   [ parse ]           read the whole code, check the syntax, build a tree of it
+          |
+          v
+   [ run + optimize ]  start running quickly, watch which parts run often
+          |
+          v
+   [ machine code ]    hot parts are compiled (JIT) to fast code the CPU understands
+  ```
+
+  - **Parse** (تجزیه): موتور اول کل کد را می‌خواند، syntax (دستور نگارش) آن را بررسی می‌کند و یک ساختار درختی از آن می‌سازد.
+  - **Optimize** (بهینه‌سازی): موتور حین اجرا می‌بیند کدام قسمت‌ها زیاد اجرا می‌شوند.
+  - **Machine code** (زبان ماشین): آن قسمت‌ها به زبان ماشین (کدی که مستقیماً روی پردازنده اجرا می‌شود) کامپایل می‌شوند؛ همان JIT که در درس «Transpile و ویژگی‌های زبان JavaScript» دیدیم.
+
+  یک نتیجه‌ی مهم از مرحله‌ی parse: چون موتور **قبل از اجرا** کل فایل را می‌خواند، اگر جایی از فایل **خطای syntax** (SyntaxError) باشد، حتی خط‌های سالمِ قبل از آن هم اجرا نمی‌شوند:
+
+  ```js
+  console.log("A");
+  console.log("B");
+  console.log("C"; // SyntaxError: missing ) after argument list
+  ```
+
+  اجرای این فایل با Node.js **هیچ خروجی‌ای** ندارد و فقط `SyntaxError` می‌دهد. پس «خط‌به‌خط» درباره‌ی **اجرا** است؛ خطای syntax قبل از شروع اجرا پیدا می‌شود. (در Console مرورگر، هر بار که Enter می‌زنی همان ورودی جداگانه parse و اجرا می‌شود.)
+
+  #### کارهای async بدون مسدود کردن
+
+  موتور کارهای ناهمگام مثل **تایمرها** (timers)، **Promiseها** (promises: قول یک نتیجه در آینده) و **رویدادهای کاربر** (user events، مثل کلیک) را **بدون مسدود کردن** (without blocking) برنامه مدیریت می‌کند: کد منتظر نمی‌ماند و جلو می‌رود و هر وقت نتیجه آماده شد، کار مربوطه انجام می‌شود. این همان non-blocking event loop است که در درس قبل دیدیم.
+
+  #### APIهای محیط
+
+  مرورگر یا Node.js، **APIها**یی مثل **DOM**، **HTTP** و **File system** در اختیار JavaScript می‌گذارند. اسلاید ۱۱ همین موضوع را باز می‌کند.
+
+  ### APIهای JavaScript (اسلاید ۱۱)
+
+  - JavaScript فقط «داده و تابع» نیست (JavaScript isn't just about data and functions).
+  - JavaScript همیشه داخل یک **محیط** (environment) اجرا می‌شود: مرورگر، Node.js و ...
+  - این محیط‌ها **API** فراهم می‌کنند (Application Programming Interfaces؛ «رابط‌های برنامه‌نویسی کاربردی»): مجموعه‌ای از اشیاء و تابع‌های آماده که کد تو با آن‌ها از امکانات محیط استفاده می‌کند.
+  - APIها به JavaScript اجازه می‌دهند با **دنیای بیرون** ارتباط بگیرد: پیام نشان بدهد (show messages)، داده بگیرد (fetch data) و صفحه را تغییر دهد (manipulate the page).
+  - **بدون این APIها، JavaScript به‌تنهایی کار زیادی جز محاسبات نمی‌تواند بکند.**
+
+  ::: analogy
+  API مثل **منوی رستوران** است: از روی منو «کباب» سفارش می‌دهی و کباب تحویل می‌گیری، بدون اینکه بدانی آشپزخانه چطور کار می‌کند. کد تو هم مثلاً `fetch(...)` را صدا می‌زند و داده می‌گیرد، بدون اینکه درگیر جزئیات شبکه شود.
+  :::
+
+  JavaScript خالص (فقط خود زبان) این کار را بلد است:
+
+  ```js
+  const prices = [120, 80, 50];
+  const total = prices[0] + prices[1] + prices[2];
+  const average = total / prices.length;
+  console.log(total, average); // 250 83.33333333333333
+  console.log(Math.round(average)); // 83
+  ```
+
+  همه‌اش محاسبه است. البته برای **دیدن** نتیجه از `console.log` استفاده کردیم که خودش یک API محیط است!
+
+  #### نمودار اسلاید ۱۱: یک موتور، دو محیط
+
+  ```text
+  +--------------------+     +--------------------+
+  |         JS         |     |      Node JS       |
+  |  +--------------+  |     |  +--------------+  |
+  |  |   V8 engine  |  |     |  |   V8 engine  |  |
+  |  +--------------+  |     |  +--------------+  |
+  |  |   Web APIs   |  |     |  |  System APIs |  |
+  |  +--------------+  |     |  +--------------+  |
+  |     Client Side    |     |     Server Side    |
+  +--------------------+     +--------------------+
+  ```
+
+  - **جعبه‌ی چپ (JS در مرورگر):** موتور V8 به‌علاوه‌ی **Web APIs**. این سمت **Client Side** (سمت کاربر) است: کد روی دستگاه کاربر و داخل مرورگرش اجرا می‌شود.
+  - **جعبه‌ی راست (Node JS):** همان موتور V8 به‌علاوه‌ی **System APIs**. این سمت **Server Side** (سمت سرور) است: کد روی سرور (یا کامپیوتر خودت) اجرا می‌شود و به امکانات سیستم‌عامل، مثل فایل‌ها، دسترسی دارد.
+
+  پیام نمودار: **موتور در هر دو یکی است؛ چیزی که فرق می‌کند APIهای محیط است.**
+
+  #### چند نمونه API
+
+  در مرورگر (Web APIs):
+
+  ```js
+  alert("Welcome!");                                  // show a message (dialog)
+  document.querySelector("h1").textContent = "Hi!";  // manipulate the page (DOM)
+  fetch("/api/products");                             // fetch data over HTTP
+  ```
+
+  در Node.js (System APIs)، مثلاً کار با **فایل‌ها** (File system):
+
+  ```js title=notes.js
+  const fs = require("fs"); // Node.js System API: the file system
+
+  fs.writeFileSync("note.txt", "Hello from Node.js!");
+  const text = fs.readFileSync("note.txt", "utf8");
+  console.log(text); // Hello from Node.js!
+  ```
+
+  | قابلیت | مرورگر | Node.js |
+  |---|---|---|
+  | خود زبان: `Math`، `JSON`، آرایه‌ها، رشته‌ها | دارد | دارد |
+  | `console` و `setTimeout` | دارد | دارد |
+  | DOM (`document`) و `alert` | دارد | **ندارد** |
+  | کار با فایل‌ها (`fs`) و شیء `process` | **ندارد** | دارد |
+
+  می‌توانی این تفاوت را با `typeof` امتحان کنی (`typeof` برای اسمی که اصلاً تعریف نشده، خطا نمی‌دهد و `"undefined"` برمی‌گرداند):
+
+  ```js
+  // In Node.js:
+  console.log(typeof Math, typeof JSON); // object object (part of the language)
+  console.log(typeof console);           // object (provided by the environment)
+  console.log(typeof document);          // undefined (no DOM in Node.js)
+  console.log(typeof process);           // object (a Node.js System API)
+  ```
+
+  همین کد در مرورگر، برای `typeof document` مقدار `"object"` و برای `typeof process` مقدار `"undefined"` می‌دهد. و اگر در Node.js مستقیماً از `document` استفاده کنی (مثلاً `document.title = "Hi"`)، خطای `ReferenceError: document is not defined` می‌گیری.
+
+  ### زبان، موتور و محیط اجرا: سه چیز متفاوت
+
+  | مفهوم | چیست؟ | مثال |
+  |---|---|---|
+  | **زبان** (language) | قواعد و syntax؛ استانداردش ECMAScript است | JavaScript |
+  | **موتور** (engine) | برنامه‌ای که کد را parse، بهینه و به زبان ماشین تبدیل و اجرا می‌کند | V8، SpiderMonkey |
+  | **محیط اجرا** (runtime environment) | موتور + APIها (+ event loop) | مرورگر، Node.js |
+
+  ::: tip
+  **Node.js نه زبان برنامه‌نویسی است و نه موتور**؛ یک **محیط اجرا** (runtime) است: موتور V8 به‌علاوه‌ی System APIها، برای اجرای JavaScript بیرون از مرورگر. V8 هم مرورگر نیست؛ موتوری است که داخل Chrome (و Node.js) کار می‌کند.
+  :::
+
+  ::: trap
+  - DOM (یعنی `document` و هر چیزی که صفحه را تغییر می‌دهد) **جزو خود زبان JavaScript نیست**؛ مرورگر آن را می‌دهد. برای همین `document` در Node.js وجود ندارد و استفاده از آن `ReferenceError` می‌دهد.
+  - `console` و `setTimeout` هم جزو خود زبان (استاندارد ECMAScript) نیستند و محیط‌ها آن‌ها را می‌دهند؛ فقط چون هم مرورگر و هم Node.js آن‌ها را دارند، همه‌جا در دسترس‌اند.
+  - «اجرای خط‌به‌خط» یعنی خطای **هنگام اجرا** برنامه را از همان خط متوقف می‌کند؛ ولی خطای **syntax** قبل از اجرا (در مرحله‌ی parse) پیدا می‌شود و هیچ خطی اجرا نمی‌شود.
+  - Chrome و Node.js موتور **مشترک** دارند (V8)، ولی APIهایشان فرق دارد.
+  :::
+
+  ::: summary
+  - کد JavaScript خط‌به‌خط اجرا می‌شود: در مرورگر با یک موتور، یا روی کامپیوتر با Node.js.
+  - موتورها: Chrome از V8 و Firefox از SpiderMonkey استفاده می‌کند؛ Node.js هم V8 دارد.
+  - موتور کد را parse، بهینه و به machine code کامپایل می‌کند.
+  - کارهای async (تایمر، Promise، رویدادهای کاربر) بدون مسدود کردن برنامه انجام می‌شوند.
+  - محیط اجرا APIها را می‌دهد: مرورگر = V8 + Web APIs (Client Side)؛ Node.js = V8 + System APIs (Server Side). بدون APIها، JavaScript فقط محاسبه می‌کند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۱۰، کدام جفت «مرورگر و موتور JavaScript آن» درست است؟
+    options:
+      - Chrome و SpiderMonkey
+      - Firefox و V8
+      - Firefox و SpiderMonkey
+      - Chrome و Babel
+    answer: 3
+    explain: |
+      اسلاید ۱۰: «Chrome uses V8, Firefox uses SpiderMonkey». گزینه‌های ۱ و ۲ جای دو موتور را عوض کرده‌اند. Babel اصلاً موتور نیست؛ یک ابزار transpile است که کد جدید را به syntax قدیمی تبدیل می‌کند (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      Node.js برای اجرای کد JavaScript از کدام موتور استفاده می‌کند؟
+    options:
+      - SpiderMonkey
+      - V8
+      - یک موتور اختصاصی که هیچ ربطی به مرورگرها ندارد
+      - JScript
+    answer: 2
+    explain: |
+      طبق نمودار اسلاید ۱۱، هر دو جعبه (مرورگر و Node JS) موتور V8 دارند؛ یعنی Node.js همان موتور Chrome را به کار می‌برد. SpiderMonkey موتور Firefox است، پس گزینه‌ی ۳ هم غلط است چون Node.js موتور مشترک با Chrome دارد. JScript هم موتور نیست؛ نسخه‌ی کپی‌شده‌ی JavaScript توسط Microsoft بود.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۱۰، کدام کارها به‌صورت ناهمگام (async) و **بدون مسدود کردن** برنامه انجام می‌شوند؟
+    options:
+      - تعریف متغیرها و حلقه‌ها
+      - جمع و ضرب اعداد
+      - نوشتن تگ‌های HTML
+      - تایمرها، Promiseها و رویدادهای کاربر مثل کلیک
+    answer: 4
+    explain: |
+      اسلاید ۱۰ می‌گوید: «Handles async tasks (timers, promises, user events) without blocking». تعریف متغیر، حلقه و محاسبات (گزینه‌های ۱ و ۲) کارهای همگام (synchronous) هستند که همان لحظه انجام می‌شوند. نوشتن تگ‌های HTML هم اصلاً کار JavaScript نیست (گزینه‌ی ۳).
+
+  - level: easy
+    stem: |
+      **API** مخفف چیست و در این درس به چه معناست؟
+    options:
+      - 'Application Programming Interface: امکاناتی که محیط اجرا در اختیار کد می‌گذارد تا با دنیای بیرون ارتباط بگیرد'
+      - 'Advanced Programming Interpreter: نوعی موتور اجرای JavaScript'
+      - 'Application Program Installer: ابزاری برای نصب برنامه‌ها'
+      - 'Automatic Program Integration: ابزاری برای transpile کردن کد'
+    answer: 1
+    explain: |
+      اسلاید ۱۱: محیط‌ها «APIs (Application Programming Interfaces)» فراهم می‌کنند و APIها به JavaScript اجازه می‌دهند با دنیای بیرون ارتباط بگیرد (پیام نشان دهد، داده بگیرد، صفحه را تغییر دهد). سه گزینه‌ی دیگر بازشدهای ساختگی هستند؛ موتور، نصب‌کننده و ابزار transpile هیچ‌کدام تعریف API نیستند.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «طبق اسلاید ۱۰، کد JavaScript توسط موتور ......، بهینه (optimized) و به ...... کامپایل می‌شود.»
+    options:
+      - transpile می‌شود ــ زبان Java
+      - فشرده می‌شود ــ HTML
+      - parse می‌شود ــ زبان ماشین (machine code)
+      - parse می‌شود ــ ECMAScript
+    answer: 3
+    explain: |
+      جمله‌ی اسلاید: «Code is parsed, optimized, and compiled to machine code». موتور کد را به Java تبدیل نمی‌کند و transpile هم کار ابزارهایی مثل Babel است، نه موتور (رد گزینه‌ی ۱). خروجی موتور HTML نیست (رد گزینه‌ی ۲) و ECMAScript هم استاندارد زبان است، نه مقصد کامپایل (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      کدام جمله درباره‌ی Node.js **درست** است؟
+    options:
+      - یک زبان برنامه‌نویسی جدید است که از JavaScript مشتق شده.
+      - یک موتور JavaScript است که Mozilla ساخته.
+      - یک مرورگر مخصوص سرورهاست.
+      - یک محیط اجراست که با موتور V8 و System APIها، JavaScript را بیرون از مرورگر اجرا می‌کند.
+    answer: 4
+    explain: |
+      طبق نمودار اسلاید ۱۱، Node.js یعنی موتور V8 به‌علاوه‌ی System APIها (Server Side)؛ پس یک محیط اجرا (runtime) است. زبانش همان JavaScript است، نه زبانی جدید (رد گزینه‌ی ۱). موتور Mozilla، SpiderMonkey است و Node.js از V8 استفاده می‌کند (رد گزینه‌ی ۲). Node.js مرورگر نیست و صفحه نمایش نمی‌دهد (رد گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      جاهای خالی نمودار اسلاید ۱۱ را پر کن:
+
+      «مرورگر = V8 + ...... (Client Side) و Node.js = V8 + ...... (Server Side)»
+    options:
+      - System APIs ــ Web APIs
+      - Web APIs ــ System APIs
+      - DOM ــ Babel
+      - Web APIs ــ SpiderMonkey
+    answer: 2
+    explain: |
+      در نمودار، جعبه‌ی نارنجی (JS، سمت Client) شامل V8 و Web APIs است و جعبه‌ی سبز (Node JS، سمت Server) شامل V8 و System APIs. گزینه‌ی ۱ جای این دو را عوض کرده. Babel ابزار transpile است، نه API (رد گزینه‌ی ۳) و SpiderMonkey یک موتور است، نه مجموعه‌ای از APIها؛ ضمن اینکه Node.js از V8 استفاده می‌کند (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      طبق اسلاید ۱۱، اگر محیط اجرا هیچ APIای در اختیار JavaScript نگذارد، JavaScript به‌تنهایی چه کاری می‌تواند بکند؟
+    options:
+      - فقط می‌تواند صفحه را تغییر دهد، ولی نمی‌تواند داده بگیرد.
+      - فقط می‌تواند پیام نمایش دهد.
+      - کار زیادی جز محاسبات (کار با عدد، رشته و داده‌ها در حافظه) نمی‌تواند بکند.
+      - همه‌ی کارها را می‌تواند، چون APIها بخشی از خود زبان‌اند.
+    answer: 3
+    explain: |
+      اسلاید ۱۱: «Without these APIs, JavaScript alone couldn't do much beyond calculations». تغییر صفحه (DOM) و نمایش پیام هر دو از طریق APIهای محیط انجام می‌شوند، پس بدون API هیچ‌کدام ممکن نیستند (رد گزینه‌های ۱ و ۲). APIها را محیط (مرورگر یا Node.js) می‌دهد، نه خود زبان (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      کدام مورد جزو **خود زبان** JavaScript نیست و محیط اجرا (مرورگر) آن را فراهم می‌کند؟
+    options:
+      - '`Math.round(2.6)`'
+      - '`JSON.stringify([1, 2])`'
+      - '`"abc".toUpperCase()`'
+      - '`document.getElementById("btn")`'
+    answer: 4
+    explain: |
+      `document` بخشی از DOM است که **مرورگر** به‌عنوان Web API می‌دهد؛ برای همین در Node.js وجود ندارد. `Math`، `JSON` و متدهای رشته مثل `toUpperCase` جزو خود زبان (استاندارد ECMAScript) هستند و در هر محیطی، چه مرورگر و چه Node.js، کار می‌کنند.
+
+  - level: medium
+    stem: |
+      خروجی اجرای کد زیر با Node.js چیست؟
+    check: output
+    code: |
+      console.log("first");
+      console.log(total);
+      console.log("last");
+    options:
+      - out: ["first", "!! ReferenceError"]
+      - out: ["!! ReferenceError"]
+      - out: ["first", "undefined", "last"]
+      - out: ["first", "total", "last"]
+    answer: 1
+    explain: |
+      کد خط‌به‌خط اجرا می‌شود: خط ۱ `first` را چاپ می‌کند، خط ۲ از اسم `total` استفاده می‌کند که هیچ‌جا تعریف نشده و خطای `ReferenceError` می‌دهد و برنامه همان‌جا متوقف می‌شود؛ پس `last` چاپ نمی‌شود. گزینه‌ی ۲ فراموش کرده خط ۱ قبل از خطا اجرا شده است. اسم تعریف‌نشده `undefined` نیست، خطاست (رد گزینه‌ی ۳) و `total` بدون کوتیشن یک اسم است، نه متن (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی اجرای کد زیر با Node.js چیست؟ (دقت کن که در خط ۳ پرانتز بسته جا افتاده است.)
+    check: output
+    lines: true
+    code: |
+      console.log("one");
+      console.log("two");
+      console.log("three";
+    options:
+      - out: ["one", "two", "!! SyntaxError"]
+      - out: ["one", "two", "three"]
+      - out: ["one", "!! SyntaxError"]
+      - out: ["!! SyntaxError"]
+    answer: 4
+    explain: |
+      طبق اسلاید ۱۰، کد اول **parse** می‌شود و بعد اجرا. خطای syntax در همین مرحله‌ی parse پیدا می‌شود، یعنی **پیش از اجرای هر خطی**؛ پس حتی `one` و `two` هم چاپ نمی‌شوند و فقط `SyntaxError` گزارش می‌شود. گزینه‌ی ۱ فکر کرده خطای syntax مثل خطای هنگام اجرا فقط از خط ۳ به بعد را متوقف می‌کند. موتور پرانتز جاافتاده را نادیده نمی‌گیرد (رد گزینه‌ی ۲) و گزینه‌ی ۳ هم هیچ منطقی ندارد.
+
+  - level: hard
+    stem: |
+      خروجی اجرای کد زیر با **Node.js** چیست؟
+    check: output
+    code: |
+      console.log(typeof Math, typeof console);
+      console.log(typeof document, typeof process);
+    options:
+      - out: ["object object", "object undefined"]
+      - out: ["object object", "undefined object"]
+      - out: ["object undefined", "undefined object"]
+      - out: ["object object", "!! ReferenceError"]
+    answer: 2
+    explain: |
+      `Math` جزو خود زبان است و `console` را هم Node.js فراهم می‌کند؛ پس هر دو `object` هستند. `document` جزو DOM است و فقط مرورگر آن را دارد؛ در Node.js تعریف نشده و `typeof` برای آن `undefined` برمی‌گرداند، اما `process` یک System API در Node.js است (`object`). گزینه‌ی ۱ نتیجه‌ی مرورگر است. گزینه‌ی ۳ فکر کرده `console` فقط مال مرورگر است. `typeof` روی اسم تعریف‌نشده خطا نمی‌دهد (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      کد زیر داخل یک تگ `<script>` در یک صفحه‌ی وب و در **مرورگر** اجرا می‌شود. خروجی Console چیست؟
+    check: dom-output
+    html: |
+      <h1>Hello</h1>
+    code: |
+      console.log(typeof document, typeof window);
+      console.log(typeof process);
+    options:
+      - out: ["object object", "undefined"]
+      - out: ["undefined undefined", "object"]
+      - out: ["object object", "object"]
+      - out: ["object object", "!! ReferenceError"]
+    answer: 1
+    explain: |
+      در مرورگر، `document` (درخت DOM) و `window` (شیء سراسری مرورگر) Web APIهایی هستند که مرورگر می‌دهد، پس هر دو `object` هستند. `process` مخصوص Node.js (System API) است و در مرورگر تعریف نشده؛ `typeof` آن `undefined` است و خطا نمی‌دهد (رد گزینه‌ی ۴). گزینه‌ی ۲ نتیجه را با Node.js قاطی کرده و گزینه‌ی ۳ فکر کرده همه‌ی APIها همه‌جا هستند.
+
+  - level: hard
+    stem: |
+      کد زیر را با Node.js اجرا می‌کنیم (`node app.js`). کدام خط خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      const max = Math.max(3, 9, 4);
+      console.log("max:", max);
+      const data = JSON.stringify({ max: max });
+      console.log(data);
+      document.title = data;
+    options:
+      - line: 1
+      - line: 3
+      - line: 5
+      - line: 0
+    answer: 3
+    explain: |
+      `Math` و `JSON` جزو خود زبان JavaScript هستند و در Node.js هم کار می‌کنند، پس خط‌های ۱ تا ۴ بدون مشکل اجرا می‌شوند (`max: 9` و `{"max":9}` چاپ می‌شود). اما `document` یک Web API مرورگر است و در Node.js وجود ندارد؛ پس خط ۵ خطای `ReferenceError: document is not defined` می‌دهد. گزینه‌ی «هیچ خطایی رخ نمی‌دهد» فقط در مرورگر درست بود.
+
+  - level: hard
+    stem: |
+      کدام جمله **نادرست** است؟
+    options:
+      - Chrome و Node.js هر دو از موتور V8 استفاده می‌کنند.
+      - DOM بخشی از خود زبان JavaScript است؛ برای همین در Node.js هم `document` در دسترس است.
+      - مرورگر Web APIها را و Node.js، System APIها را در اختیار JavaScript می‌گذارد.
+      - موتور JavaScript کد را parse می‌کند و آن را به زبان ماشین کامپایل می‌کند.
+    answer: 2
+    explain: |
+      DOM یک Web API است که **مرورگر** فراهم می‌کند و جزو خود زبان نیست؛ برای همین در Node.js شیء `document` وجود ندارد و گزینه‌ی ۲ نادرست است. گزینه‌ی ۱ طبق نمودار اسلاید ۱۱ درست است (هر دو جعبه V8 دارند). گزینه‌ی ۳ همان نمودار اسلاید ۱۱ است و گزینه‌ی ۴ همان جمله‌ی اسلاید ۱۰.
