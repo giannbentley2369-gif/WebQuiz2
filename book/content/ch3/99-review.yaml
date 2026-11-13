@@ -149,7 +149,7 @@ questions:
         import { User } from "./types.js";
         const u: User = { name: "Sara", age: 21 };
         console.log(formatUser(u));
-    manual: Bundling cannot run in the automatic checker; tsc elides interfaces and type-only imports (types.ts compiles to an empty module), and Rollup/esbuild tree-shaking keeps only the used export formatUser.
+    manual: Bundling cannot run in the automatic checker; verified with tsc 7 (types.ts emitted as export {}, the type-only import of User removed from app.js) and esbuild 0.25.0 --bundle, whose output contained only formatUser.
     options:
       - '`formatUser` و `parseUser` هر دو در bundle می‌مانند، چون هر دو با `export` بیرون داده شده‌اند.'
       - '`formatUser` می‌ماند، `parseUser` حذف می‌شود و از `User` هیچ اثری نیست، چون interface همان هنگام کامپایل حذف شده است.'
