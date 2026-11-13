@@ -1,0 +1,790 @@
+id: ch1-arrays
+title: "آرایه‌ها و متدهای push، pop، shift و unshift"
+slides: "Introduction to JS، اسلایدهای ۴۵ و ۴۶"
+lesson: |
+  فرض کن می‌خواهی نمره‌های ۳۰ دانشجو را نگه داری. ساختن ۳۰ متغیر (`score1`، `score2`، …) کار عاقلانه‌ای نیست. **array** (آرایه؛ فهرستی **مرتب** از مقدارها) همه را زیر یک نام جمع می‌کند و به هر کدام با یک شماره دسترسی می‌دهد.
+
+  ::: analogy
+  آرایه مثل یک **قطار** است که واگن‌هایش پشت سر هم شماره خورده‌اند؛ فقط شماره‌گذاری از **صفر** شروع می‌شود. واگن شماره‌ی `0` اولین واگن است، واگن `1` دومی و… . هر واگن یک بار (مقدار) دارد و ترتیب واگن‌ها مهم است. به شماره‌ی هر واگن **index** (اندیس) می‌گوییم.
+  :::
+
+  ### آرایه چیست؟ (اسلاید ۴۵)
+  اسلاید ۴۵ این پنج نکته را می‌گوید:
+
+  - آرایه‌ها مجموعه‌های **مرتبی** (ordered) از مقدارها را نگه می‌دارند.
+  - به عضوها (element) با **اندیس** (index) دسترسی داریم و اندیس **از ۰ شروع می‌شود**.
+  - یک آرایه می‌تواند **نوع‌های مختلف** را کنار هم نگه دارد (عدد، رشته، شیء و …).
+  - آرایه‌ها متدهای **آماده** (built-in) برای **اضافه کردن**، **حذف کردن** و **تبدیل کردن** داده‌ها دارند.
+  - متدهای رایج: `push`، `pop`، `map`، `filter` و `forEach`. (در این درس `push` و `pop` و دوستانشان را می‌بینیم و `map`، `filter` و `forEach` را در درس بعد.)
+
+  آرایه را با براکت `[ ]` می‌سازیم و عضوها را با ویرگول جدا می‌کنیم:
+
+  ```js
+  const empty = [];                                          // an empty array
+  const scores = [18, 20, 17];                               // three numbers
+  const mixed = [1, "two", true, null, { name: "Ali" }, [5, 6]]; // mixed types
+
+  console.log(scores[0]);     // 18  (the FIRST element has index 0)
+  console.log(scores[2]);     // 17  (the third element)
+  console.log(mixed[4].name); // "Ali" (an object inside the array)
+  console.log(mixed[5][1]);   // 6   (an array inside the array)
+  ```
+
+  | | عضو اول | عضو دوم | عضو سوم |
+  |---|---|---|---|
+  | اندیس (index) | `0` | `1` | `2` |
+  | مقدار در `scores` | `18` | `20` | `17` |
+
+  ### طول آرایه و دسترسی به عضوها
+  property به نام **`length`** تعداد عضوهای آرایه را می‌دهد. چون اندیس از ۰ شروع می‌شود، **اندیس آخرین عضو همیشه `length - 1` است**:
+
+  ```js
+  const colors = ["red", "green", "blue"];
+  console.log(colors.length);             // 3
+  console.log(colors[colors.length - 1]); // "blue"    (the last element)
+  console.log(colors[3]);                 // undefined (no element there, but NO error)
+  console.log(colors[-1]);                // undefined (negative indexes do NOT count from the end)
+  console.log(colors.at(-1));             // "blue"    (at() does accept negative indexes)
+  ```
+
+  - خواندن اندیسی که عضو ندارد **خطا نمی‌دهد** و فقط `undefined` برمی‌گرداند.
+  - برخلاف Python، `arr[-1]` آخرین عضو **نیست**؛ برای آخرین عضو بنویس `arr[arr.length - 1]` یا از متد جدیدتر `arr.at(-1)` استفاده کن.
+
+  #### عوض کردن عضوها با اندیس
+  ```js
+  const colors = ["red", "green", "blue"];
+  colors[1] = "yellow";       // replace an element
+  colors[3] = "black";        // index 3 === length: adds at the end
+  console.log(colors);        // [ 'red', 'yellow', 'blue', 'black' ]
+
+  colors[6] = "white";        // jumping past the end leaves EMPTY slots
+  console.log(colors.length); // 7
+  console.log(colors);        // [ 'red', 'yellow', 'blue', 'black', <2 empty items>, 'white' ]
+  console.log(colors[5]);     // undefined
+  ```
+
+  اگر به اندیسی جلوتر از انتهای آرایه مقدار بدهی، خانه‌های بین راه **خالی** (empty) می‌مانند و `length` برابر «بزرگ‌ترین اندیس + ۱» می‌شود. خود `length` را هم می‌توان عوض کرد: `arr.length = 2` آرایه را کوتاه می‌کند و `arr.length = 0` آن را کاملاً خالی می‌کند.
+
+  ```js
+  const nums = [1, 2, 3, 4];
+  nums.length = 2;
+  console.log(nums); // [ 1, 2 ]
+  nums.length = 0;
+  console.log(nums); // []
+  ```
+
+  ### سؤال اسلاید ۴۵: خروجی این کد چیست؟
+  ```js title=array.js
+  const numbers = [1, 2, 3];
+  numbers.push(4);
+  console.log(numbers[0]);
+  ```
+
+  **جواب: `1`.** `push(4)` عدد ۴ را به **انتهای** آرایه اضافه می‌کند و آرایه `[1, 2, 3, 4]` می‌شود؛ عضوِ اندیس `0` هنوز همان `1` است. دو دام در این سؤال هست:
+
+  1. اگر فکر کنی `push` به **ابتدای** آرایه اضافه می‌کند، جواب را `4` می‌دهی (کار ابتدای آرایه با `unshift` است).
+  2. اگر فکر کنی آرایه‌ی `const` قابل تغییر نیست، جواب را «خطا» می‌دهی. اما `const` فقط **انتساب دوباره** (`numbers = [...]`) را منع می‌کند؛ تغییر **محتوای** آرایه با `push` کاملاً مجاز است.
+
+  ### `push` و `pop`: کار با انتهای آرایه (اسلاید ۴۶)
+  اسلاید ۴۶ می‌گوید: `push` / `pop` به **انتها** اضافه می‌کنند / از **انتها** حذف می‌کنند.
+
+  ```js
+  const fruits = ["apple", "banana"];
+
+  console.log(fruits.push("cherry")); // 3 -> push returns the NEW LENGTH
+  console.log(fruits);                // [ 'apple', 'banana', 'cherry' ]
+
+  console.log(fruits.pop());          // "cherry" -> pop returns the REMOVED element
+  console.log(fruits);                // [ 'apple', 'banana' ]
+  ```
+
+  ### `shift` و `unshift`: کار با ابتدای آرایه (اسلاید ۴۶)
+  اسلاید ۴۶ می‌گوید: `shift` / `unshift` از **ابتدا** حذف می‌کنند / به **ابتدا** اضافه می‌کنند. (ترتیب کلمه‌ها با ترتیب متدها جور است: `shift` حذف می‌کند و `unshift` اضافه.)
+
+  ```js
+  const fruits = ["apple", "banana"];
+
+  console.log(fruits.unshift("kiwi")); // 3 -> unshift also returns the NEW LENGTH
+  console.log(fruits);                 // [ 'kiwi', 'apple', 'banana' ]
+
+  console.log(fruits.shift());         // "kiwi" -> shift returns the REMOVED element
+  console.log(fruits);                 // [ 'apple', 'banana' ]
+  ```
+
+  وقتی از ابتدا اضافه یا حذف می‌کنیم، اندیس همه‌ی عضوهای دیگر یکی جابه‌جا می‌شود: بعد از `unshift("kiwi")`، `"apple"` که در اندیس `0` بود به اندیس `1` می‌رود.
+
+  | متد | کجا؟ | چه می‌کند؟ | چه برمی‌گرداند؟ | آرایه‌ی اصلی را تغییر می‌دهد؟ |
+  |---|---|---|---|---|
+  | `push(x, ...)` | انتها | یک یا چند عضو **اضافه** می‌کند | طول **جدید** آرایه | بله |
+  | `pop()` | انتها | آخرین عضو را **حذف** می‌کند | عضو **حذف‌شده** | بله |
+  | `unshift(x, ...)` | ابتدا | یک یا چند عضو **اضافه** می‌کند | طول **جدید** آرایه | بله |
+  | `shift()` | ابتدا | اولین عضو را **حذف** می‌کند | عضو **حذف‌شده** | بله |
+
+  ::: tip راه حفظ کردن
+  - `push` و `pop` جفتِ **انتهای** آرایه‌اند و `shift` و `unshift` جفتِ **ابتدای** آن.
+  - در هر جفت، کلمه‌ی **بلندتر** آرایه را **بلندتر** می‌کند: `push` در برابر `pop`، و `unshift` در برابر `shift`.
+  - متدهای «اضافه‌کن» (`push` و `unshift`) **طول جدید** را برمی‌گردانند و متدهای «حذف‌کن» (`pop` و `shift`) **عضو حذف‌شده** را.
+  :::
+
+  چند جزئیات مهم دیگر:
+
+  ```js
+  const nums = [3, 4];
+  nums.unshift(1, 2);           // several values keep their order: [ 1, 2, 3, 4 ]
+  nums.push(5, 6);              // [ 1, 2, 3, 4, 5, 6 ]
+  console.log(nums.join(", ")); // "1, 2, 3, 4, 5, 6"
+
+  const box = [1, 2];
+  box.push([3, 4]);             // pushes ONE element (a nested array)
+  console.log(box.length);      // 3
+  console.log(box[2]);          // [ 3, 4 ]
+
+  const empty = [];
+  console.log(empty.pop());     // undefined (nothing to remove, no error)
+  console.log(empty.shift());   // undefined
+  console.log(empty.length);    // 0
+  ```
+
+  - `push` و `unshift` می‌توانند **چند** مقدار بگیرند و آن‌ها را **با همان ترتیب** اضافه می‌کنند؛ `unshift(1, 2)` حاصل `[1, 2, 3, 4]` را می‌دهد، نه `[2, 1, 3, 4]`.
+  - اگر به `push` یک **آرایه** بدهی، کل آن آرایه **یک عضو** می‌شود (آرایه‌ی تودرتو)، نه این‌که عضوهایش تک‌تک اضافه شوند.
+  - `pop` و `shift` روی آرایه‌ی خالی خطا نمی‌دهند و `undefined` برمی‌گردانند.
+  - هر چهار متد آرایه‌ی **اصلی** را تغییر می‌دهند (mutate؛ «جهش» یا تغییر درجا) و `const` جلویشان را نمی‌گیرد.
+
+  ::: analogy پشته و صف
+  - `push` + `pop` یعنی **پشته** (stack)، مثل بشقاب‌های روی هم: آخرین بشقابی که گذاشتی، اولین بشقابی است که برمی‌داری (LIFO: Last In, First Out).
+  - `push` + `shift` یعنی **صف** (queue)، مثل صف نانوایی: هر کس اول آمده، اول می‌رود (FIFO: First In, First Out).
+  :::
+
+  ### `for...of`: پیمایش مستقیم مقدارها (اسلاید ۴۶)
+  اسلاید ۴۶ می‌گوید `for...of` روی **مقدارهای** هر iterable (چیزی که می‌شود عضوهایش را یکی‌یکی پیمود؛ مثل آرایه و رشته) **مستقیم** حلقه می‌زند؛ یعنی دیگر لازم نیست با اندیس کار کنی:
+
+  ```js
+  const scores = [18, 20, 17];
+
+  for (let i = 0; i < scores.length; i++) { // classic for: works with indexes
+    console.log(scores[i]);                  // 18, then 20, then 17
+  }
+
+  for (const score of scores) {              // for...of: gives the values directly
+    console.log(score);                      // 18, then 20, then 17
+  }
+
+  for (const ch of "Hi!") {                  // strings are iterable too
+    console.log(ch);                         // "H", then "i", then "!"
+  }
+  ```
+
+  داخل `for...of` می‌توانی از `break` (خروج از حلقه) و `continue` (رفتن به دور بعد) استفاده کنی. حواست باشد با `for...in` اشتباهش نگیری: `for...in` برای **کلیدهای شیء** است و روی آرایه، **اندیس‌ها** را آن هم به‌صورت **رشته** می‌دهد:
+
+  ```js
+  const letters = ["x", "y"];
+  for (const i in letters) {
+    console.log(i, typeof i); // 0 string, then 1 string
+  }
+  for (const v of letters) {
+    console.log(v);           // x, then y
+  }
+  ```
+
+  ### جست‌وجو در آرایه: `includes` و `indexOf`
+  ```js
+  const ids = [10, 20, 30, 20];
+  console.log(ids.includes(20));   // true
+  console.log(ids.includes("20")); // false (strict comparison like ===, no coercion)
+  console.log(ids.indexOf(20));    // 1  (index of the FIRST match)
+  console.log(ids.indexOf(99));    // -1 (not found)
+  ```
+
+  - `includes(x)` فقط جواب «هست / نیست» می‌دهد (`true` یا `false`).
+  - `indexOf(x)` **اندیسِ اولین** عضو برابر با `x` را می‌دهد و اگر پیدا نکند **`-1`**.
+  - هر دو مثل `===` مقایسه می‌کنند؛ پس رشته‌ی `"20"` با عدد `20` برابر نیست و دو شیء با محتوای یکسان هم برابر نیستند (مگر همان یک شیء باشند).
+
+  ### آرایه هم شیء است: `typeof` و `Array.isArray`
+  آرایه در واقع نوع خاصی از **شیء** است که کلیدهایش اندیس‌ها هستند؛ برای همین `typeof` نمی‌تواند آرایه را از شیء معمولی تشخیص دهد:
+
+  ```js
+  console.log(typeof [1, 2]);                        // "object" (not "array"!)
+  console.log(Array.isArray([1, 2]));                // true
+  console.log(Array.isArray({ 0: "a", length: 1 })); // false (looks like an array, but is not)
+  console.log(Array.isArray("abc"));                 // false
+  ```
+
+  ### چند متد مفید دیگر: `slice`، `splice`، `join`، `concat` و `reverse`
+  - `slice(start, end)`: یک **تکه** از آرایه را در آرایه‌ی **جدید** کپی می‌کند؛ از اندیس `start` تا قبل از `end` (خودِ `end` شامل نمی‌شود). آرایه‌ی اصلی **تغییر نمی‌کند**. اندیس منفی از انتها می‌شمارد و `slice()` بدون ورودی کل آرایه را کپی می‌کند.
+  - `splice(start, deleteCount, ...items)`: **درجا** از اندیس `start` به تعداد `deleteCount` عضو حذف می‌کند و (اگر بدهی) عضوهای تازه را همان‌جا می‌گذارد. آرایه‌ی اصلی **تغییر می‌کند** و خروجی‌اش آرایه‌ای از عضوهای **حذف‌شده** است.
+
+  ```js
+  const letters = ["a", "b", "c", "d", "e"];
+
+  console.log(letters.slice(1, 3));     // [ 'b', 'c' ] (index 3 is NOT included)
+  console.log(letters.slice(-2));       // [ 'd', 'e' ] (the last two)
+  console.log(letters);                 // [ 'a', 'b', 'c', 'd', 'e' ] (unchanged)
+
+  const removed = letters.splice(1, 2); // remove 2 elements starting at index 1
+  console.log(removed);                 // [ 'b', 'c' ]
+  console.log(letters);                 // [ 'a', 'd', 'e' ] (changed!)
+
+  letters.splice(1, 0, "x");            // remove nothing, insert "x" at index 1
+  console.log(letters);                 // [ 'a', 'x', 'd', 'e' ]
+  ```
+
+  - `join(separator)`: عضوها را با جداکننده‌ی دلخواه به یک **رشته** می‌چسباند (جداکننده‌ی پیش‌فرض `","` است). آرایه را تغییر نمی‌دهد.
+  - `concat(...)`: آرایه‌ی **جدیدی** از عضوهای آرایه و ورودی‌ها می‌سازد. آرایه را تغییر نمی‌دهد.
+  - `reverse()`: ترتیب عضوها را **درجا** برعکس می‌کند و **همان آرایه** را برمی‌گرداند (نه یک کپی).
+
+  ```js
+  const nums = [1, 2, 3];
+  console.log(nums.join());          // "1,2,3"
+  console.log(nums.join(" - "));     // "1 - 2 - 3"
+  const more = nums.concat([4, 5]);
+  console.log(more);                 // [ 1, 2, 3, 4, 5 ]
+  console.log(nums);                 // [ 1, 2, 3 ] (unchanged)
+  const back = nums.reverse();
+  console.log(nums);                 // [ 3, 2, 1 ] (changed in place!)
+  console.log(back === nums);        // true (the same array)
+  ```
+
+  | آرایه‌ی اصلی را تغییر می‌دهند (mutating) | آرایه‌ی اصلی را تغییر نمی‌دهند (non-mutating) |
+  |---|---|
+  | `push`، `pop`، `shift`، `unshift`، `splice`، `reverse`، `sort` | `slice`، `concat`، `join`، `includes`، `indexOf`، `at` |
+
+  (جدول کامل‌تر، همراه با `map`، `filter`، `reduce` و `sort` را در درس بعد می‌بینیم.)
+
+  ### آرایه‌ها هم با reference کپی می‌شوند
+  آرایه شیء است، پس مثل هر شیء دیگری متغیر فقط **reference** (نشانی) آن را نگه می‌دارد. `const b = a` آرایه‌ی تازه‌ای نمی‌سازد:
+
+  ```js
+  const a = [1, 2, 3];
+  const b = a;                     // the same array, two names
+  b.push(4);
+  console.log(a);                  // [ 1, 2, 3, 4 ]
+  console.log(a === b);            // true
+
+  const c = [...a];                // a real (shallow) copy with spread
+  const d = a.slice();             // another way to copy
+  c.push(5);
+  console.log(a.length, c.length); // 4 5
+  console.log([1, 2] === [1, 2]);  // false (two different arrays)
+  ```
+
+  `[...a]` با spread (سه نقطه) یک آرایه‌ی **جدید** با همان عضوها می‌سازد؛ مثل `{ ...obj }` برای شیءها، این کپی هم **سطحی** است.
+
+  ::: tip نکته
+  - آخرین عضو: `arr[arr.length - 1]` (یا `arr.at(-1)`).
+  - اندیسِ بدون عضو `undefined` می‌دهد و خطا نمی‌دهد.
+  - برای فهمیدن «آرایه است یا نه» از `Array.isArray(x)` استفاده کن، نه `typeof`.
+  - برای کپی آرایه: `[...arr]` یا `arr.slice()`.
+  :::
+
+  ::: trap دام‌های تستی آرایه‌ها
+  - `arr[-1]` آخرین عضو **نیست** و `undefined` می‌دهد.
+  - `push` و `unshift` **طول جدید** را برمی‌گردانند، نه آرایه را؛ `list = list.push(x)` آرایه‌ات را با یک **عدد** عوض می‌کند!
+  - `pop` و `shift` عضو حذف‌شده را برمی‌گردانند و روی آرایه‌ی خالی `undefined` می‌دهند (نه خطا).
+  - `arr.push([4, 5])` فقط **یک** عضو (یک آرایه‌ی تودرتو) اضافه می‌کند.
+  - `if (arr.indexOf(x))` غلط است: اگر `x` در اندیس `0` باشد، `0` falsy است و شرط اجرا نمی‌شود؛ و اگر نباشد، `-1` truthy است و شرط اجرا می‌شود! بنویس `arr.includes(x)` یا `arr.indexOf(x) !== -1`.
+  - `typeof []` برابر `"object"` است.
+  - `slice` آرایه را تغییر نمی‌دهد، ولی `splice` تغییر می‌دهد.
+  - آرایه‌ی `const` را می‌توان با `push`، `pop` و… تغییر داد؛ فقط `arr = [...]` ممنوع است.
+  :::
+
+  ::: summary
+  - آرایه = فهرست مرتب، با اندیس از ۰؛ `length` تعداد عضوهاست و نوع عضوها می‌تواند مختلف باشد.
+  - انتها: `push` (اضافه، طول جدید را برمی‌گرداند) و `pop` (حذف، عضو را برمی‌گرداند)؛ ابتدا: `unshift` (اضافه) و `shift` (حذف). هر چهار آرایه را تغییر می‌دهند.
+  - `for...of` مقدارها را مستقیم می‌دهد؛ `includes` و `indexOf` برای جست‌وجو هستند (`-1` یعنی پیدا نشد).
+  - `slice` و `concat` و `join` کپی/خروجی تازه می‌سازند؛ `splice` و `reverse` درجا تغییر می‌دهند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      خروجی کد زیر (سؤال اسلاید ۴۵) چیست؟
+    check: output
+    code: |
+      const numbers = [1, 2, 3];
+      numbers.push(4);
+      console.log(numbers[0]);
+    options:
+      - out: "1"
+      - out: "4"
+      - out: "[1, 2, 3, 4]"
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      `push` عدد ۴ را به **انتهای** آرایه اضافه می‌کند و آرایه `[1, 2, 3, 4]` می‌شود؛ عضو اندیس `0` هنوز `1` است. گزینه‌ی ۲ فکر کرده `push` به ابتدا اضافه می‌کند (کار `unshift`)، گزینه‌ی ۳ فرض کرده `numbers[0]` کل آرایه را می‌دهد، و گزینه‌ی ۴ همان تصور غلطِ «آرایه‌ی `const` تغییرناپذیر است» را دارد؛ `const` فقط انتساب دوباره را منع می‌کند.
+
+  - level: easy
+    stem: |
+      با فرض `const colors = ["red", "green", "blue"];` حاصل `colors[1]` کدام است؟
+    check: value
+    setup: |
+      const colors = ["red", "green", "blue"];
+    expr: 'colors[1]'
+    options:
+      - value: '"red"'
+      - value: '"green"'
+      - value: '"blue"'
+      - value: 'undefined'
+    answer: 2
+    explain: |
+      طبق اسلاید ۴۵، اندیس از **۰** شروع می‌شود: `colors[0]` اولین عضو (`"red"`)، `colors[1]` دومین عضو (`"green"`) و `colors[2]` سومین عضو است. گزینه‌ی ۱ اندیس را از ۱ شمرده و گزینه‌ی ۳ اندیس ۱ را «آخرین» فرض کرده است. `undefined` فقط برای اندیسی است که عضوی ندارد، مثل `colors[3]`.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۶، کدام متد یک عضو را به **ابتدای** آرایه اضافه می‌کند؟
+    options:
+      - '`push`'
+      - '`pop`'
+      - '`shift`'
+      - '`unshift`'
+    answer: 4
+    explain: |
+      اسلاید ۴۶: «`shift` / `unshift`: remove/add at the start»؛ یعنی `shift` از ابتدا **حذف** می‌کند و `unshift` به ابتدا **اضافه** می‌کند. `push` به **انتها** اضافه می‌کند و `pop` از **انتها** حذف می‌کند. راه حفظ کردن: در هر جفت، کلمه‌ی بلندتر (`push` و `unshift`) آرایه را بلندتر می‌کند.
+
+  - level: easy
+    stem: |
+      متد `pop()` چه چیزی را برمی‌گرداند؟
+    options:
+      - طول جدید آرایه
+      - عضوی که حذف کرده است (آخرین عضو آرایه)
+      - یک آرایه‌ی جدید که عضو آخر را ندارد
+      - همیشه `undefined`، چون فقط آرایه را تغییر می‌دهد
+    answer: 2
+    explain: |
+      `pop` آخرین عضو را از آرایه‌ی **اصلی** حذف می‌کند و **همان عضو حذف‌شده** را برمی‌گرداند (`shift` هم برای ابتدای آرایه همین کار را می‌کند). «طول جدید» (گزینه‌ی ۱) خروجی `push` و `unshift` است. `pop` آرایه‌ی جدیدی نمی‌سازد و همان آرایه را درجا تغییر می‌دهد (رد گزینه‌ی ۳). `undefined` (گزینه‌ی ۴) فقط وقتی برمی‌گردد که آرایه خالی باشد.
+
+  - level: easy
+    stem: |
+      حاصل `typeof [1, 2, 3]` کدام است؟
+    check: value
+    expr: 'typeof [1, 2, 3]'
+    options:
+      - value: '"array"'
+      - value: '"list"'
+      - value: '"object"'
+      - value: '"number"'
+    answer: 3
+    explain: |
+      آرایه در JavaScript نوع خاصی از **شیء** است، پس `typeof` برایش `"object"` برمی‌گرداند. نوعی به نام `"array"` یا `"list"` در خروجی `typeof` وجود ندارد (گزینه‌های ۱ و ۲) و نوع عضوها هم (`"number"`، گزینه‌ی ۴) ربطی به نوع خود آرایه ندارد. برای تشخیص آرایه باید از `Array.isArray(x)` استفاده کرد.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const fruits = ["apple", "kiwi"];
+      for (const f of fruits) {
+        console.log(f);
+      }
+    options:
+      - out: ["apple", "kiwi"]
+      - out: ["0", "1"]
+      - out: "['apple', 'kiwi']"
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      طبق اسلاید ۴۶، `for...of` روی **مقدارهای** آرایه حلقه می‌زند؛ پس در هر دور `f` یکی از عضوهاست و هر کدام در یک خط چاپ می‌شود. گزینه‌ی ۲ کار `for...in` است که **اندیس‌ها** را می‌دهد. گزینه‌ی ۳ فرض کرده کل آرایه یک بار چاپ می‌شود و گزینه‌ی ۴ فکر کرده تعریف `const` در حلقه مشکل دارد؛ در `for...of` هر دور یک متغیر تازه ساخته می‌شود، پس `const` مجاز است.
+
+  - level: easy
+    stem: |
+      با فرض `const arr = [10, 20, 30];` حاصل `arr[3]` کدام است؟
+    check: value
+    setup: |
+      const arr = [10, 20, 30];
+    expr: 'arr[3]'
+    options:
+      - value: '30'
+      - value: 'null'
+      - value: 'undefined'
+      - text: 'خطای `RangeError`'
+        value: '!! RangeError'
+    answer: 3
+    explain: |
+      آرایه سه عضو دارد و اندیس‌هایش `0`، `1` و `2` است؛ در اندیس `3` عضوی نیست. خواندن اندیسِ بدون عضو در JavaScript **خطا نمی‌دهد** و `undefined` برمی‌گرداند (برخلاف زبان‌هایی مثل Java که خطای «خارج از محدوده» می‌دهند؛ رد گزینه‌ی ۴). گزینه‌ی ۱ اندیس را از ۱ شمرده و `null` (گزینه‌ی ۲) را JavaScript خودش برنمی‌گرداند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const q = [2, 3];
+      console.log(q.push(4));
+      console.log(q.unshift(1));
+      console.log(q.pop());
+      console.log(q.shift());
+      console.log(q);
+    options:
+      - out: ["[2, 3, 4]", "[1, 2, 3, 4]", "[1, 2, 3]", "[2, 3]", "[2, 3]"]
+      - out: ["3", "4", "1", "4", "[2, 3]"]
+      - out: ["4", "1", "4", "1", "[2, 3]"]
+      - out: ["3", "4", "4", "1", "[2, 3]"]
+    answer: 4
+    explain: |
+      `push(4)` آرایه را `[2, 3, 4]` می‌کند و **طول جدید** یعنی `3` را برمی‌گرداند؛ `unshift(1)` آرایه را `[1, 2, 3, 4]` می‌کند و طول جدید `4` را می‌دهد. `pop()` آخرین عضو یعنی `4` را حذف می‌کند و **همان** را برمی‌گرداند و `shift()` اولین عضو یعنی `1` را. در پایان `[2, 3]` می‌ماند. گزینه‌ی ۱ فرض کرده این متدها آرایه را برمی‌گردانند، گزینه‌ی ۲ کار `pop` و `shift` را جابه‌جا کرده و گزینه‌ی ۳ خروجی متدهای «اضافه‌کن» را عضو اضافه‌شده پنداشته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const arr = [5, 6, 7];
+      console.log(arr[-1]);
+      console.log(arr[arr.length - 1]);
+      console.log(arr.at(-1));
+    options:
+      - out: ["7", "7", "7"]
+      - out: ["undefined", "7", "7"]
+      - out: "!! RangeError"
+      - out: ["undefined", "undefined", "7"]
+    answer: 2
+    explain: |
+      برخلاف Python، در JavaScript اندیس منفی از انتها نمی‌شمارد: `arr[-1]` دنبال کلیدی به نام `"-1"` می‌گردد که وجود ندارد، پس `undefined` می‌دهد (بدون خطا؛ رد گزینه‌های ۱ و ۳). `arr.length - 1` برابر `2` است و `arr[2]` آخرین عضو یعنی `7` است (رد گزینه‌ی ۴). متد `at` اندیس منفی را می‌فهمد و `at(-1)` هم `7` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const arr = ["a", "b"];
+      arr[4] = "e";
+      console.log(arr.length);
+      console.log(arr[3]);
+    options:
+      - out: ["3", "undefined"]
+      - out: ["5", "null"]
+      - out: "!! RangeError"
+      - out: ["5", "undefined"]
+    answer: 4
+    explain: |
+      دادن مقدار به اندیسی جلوتر از انتها مجاز است: `"e"` در اندیس `4` قرار می‌گیرد و خانه‌های `2` و `3` **خالی** (empty) می‌مانند. `length` همیشه «بزرگ‌ترین اندیس + ۱» است، پس `5` (رد گزینه‌ی ۱ که فقط عضوهای واقعی را شمرده). خواندن خانه‌ی خالی `undefined` می‌دهد، نه `null` (رد گزینه‌ی ۲)؛ و هیچ خطایی هم رخ نمی‌دهد (رد گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const ids = [10, 20, 30];
+      console.log(ids.indexOf(20));
+      console.log(ids.indexOf(40));
+      console.log(ids.includes("10"));
+    options:
+      - out: ["1", "-1", "false"]
+      - out: ["2", "-1", "true"]
+      - out: ["1", "undefined", "true"]
+      - out: ["1", "-1", "true"]
+    answer: 1
+    explain: |
+      `indexOf` اندیس اولین عضو برابر را می‌دهد: `20` در اندیس `1` است (گزینه‌ی ۲ از ۱ شمرده). اگر عضو پیدا نشود، `indexOf` عدد `-1` برمی‌گرداند، نه `undefined` (رد گزینه‌ی ۳). `includes` مثل `===` مقایسه می‌کند و رشته‌ی `"10"` را به عدد تبدیل نمی‌کند، پس `false` (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = [1, 2, 3, 4, 5];
+      const s = a.slice(1, 3);
+      console.log(s, a.length);
+      const r = a.splice(1, 2);
+      console.log(r, a);
+    options:
+      - out: ["[2, 3] 5", "[2, 3] [1, 4, 5]"]
+      - out: ["[2, 3, 4] 5", "[2, 3] [1, 4, 5]"]
+      - out: ["[2, 3] 3", "[2, 3] [1, 4, 5]"]
+      - out: ["[2, 3] 5", "[2, 3] [1, 2, 3, 4, 5]"]
+    answer: 1
+    explain: |
+      `slice(1, 3)` از اندیس `1` تا **قبل از** اندیس `3` را در آرایه‌ی **جدید** کپی می‌کند: `[2, 3]` (گزینه‌ی ۲ اندیس پایانی را هم حساب کرده) و `a` دست‌نخورده با طول `5` می‌ماند (رد گزینه‌ی ۳). اما `splice(1, 2)` از اندیس `1`، **دو** عضو را از خودِ `a` حذف می‌کند و آن‌ها را برمی‌گرداند؛ پس `a` می‌شود `[1, 4, 5]`. گزینه‌ی ۴ فرض کرده `splice` هم مثل `slice` آرایه را تغییر نمی‌دهد.
+
+  - level: medium
+    stem: |
+      کدام گزینه **درست** است؟
+    check: claims
+    options:
+      - text: 'حاصل `typeof [1, 2]` برابر `"array"` است.'
+        expr: 'typeof [1, 2]'
+        equals: '"array"'
+      - text: 'حاصل `Array.isArray([1, 2])` برابر `true` و حاصل `Array.isArray({ length: 2 })` برابر `false` است.'
+        expr: '[Array.isArray([1, 2]), Array.isArray({ length: 2 })]'
+        equals: '[true, false]'
+      - text: '`typeof {}` و `typeof []` نتیجه‌های متفاوتی دارند.'
+        expr: 'typeof {} === typeof []'
+        equals: 'false'
+      - text: 'حاصل `Array.isArray("abc")` برابر `true` است، چون رشته هم اندیس و `length` دارد.'
+        expr: 'Array.isArray("abc")'
+        equals: 'true'
+    answer: 2
+    explain: |
+      `Array.isArray` تنها راه مطمئن تشخیص آرایه است: برای آرایه‌ی واقعی `true` و برای شیئی که فقط شبیه آرایه است (مثل `{ length: 2 }`) `false` می‌دهد. `typeof` برای آرایه `"object"` می‌دهد (رد گزینه‌ی ۱)؛ به همین دلیل `typeof {}` و `typeof []` هر دو `"object"` و **یکسان**‌اند (رد گزینه‌ی ۳). رشته هم با این‌که اندیس و `length` دارد آرایه نیست (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = [1, 2];
+      const b = a;
+      const c = [...a];
+      b.push(3);
+      console.log(a.length, c.length, a === b);
+    options:
+      - out: "2 2 false"
+      - out: "3 3 true"
+      - out: "3 2 true"
+      - out: "2 2 true"
+    answer: 3
+    explain: |
+      `const b = a` آرایه‌ی تازه‌ای نمی‌سازد و `a` و `b` دو نام برای **یک** آرایه‌اند؛ پس `b.push(3)` طول همان آرایه را `3` می‌کند و `a === b` هم `true` است (رد گزینه‌های ۱ و ۴). اما `[...a]` یک آرایه‌ی **جدید** (کپی) ساخته بود که از این تغییر خبر ندارد و طولش `2` می‌ماند (رد گزینه‌ی ۲).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const letters = ["a", "b", "c"];
+      const joined = letters.join("-");
+      const reversed = letters.reverse();
+      console.log(joined);
+      console.log(letters);
+      console.log(reversed === letters);
+    options:
+      - out: ["a-b-c", "['a', 'b', 'c']", "false"]
+      - out: ["c-b-a", "['c', 'b', 'a']", "true"]
+      - out: ["a-b-c", "['c', 'b', 'a']", "true"]
+      - out: ["a-b-c", "['c', 'b', 'a']", "false"]
+    answer: 3
+    explain: |
+      `join("-")` یک **رشته** می‌سازد و آن لحظه آرایه هنوز `["a", "b", "c"]` است، پس `joined` برابر `a-b-c` می‌ماند و بعداً عوض نمی‌شود (رد گزینه‌ی ۲). `reverse()` آرایه را **درجا** برعکس می‌کند (رد گزینه‌ی ۱) و **همان آرایه** را برمی‌گرداند، نه یک کپی؛ پس `reversed === letters` برابر `true` است (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let list = ["x"];
+      list = list.push("y");
+      console.log(list);
+    options:
+      - out: "2"
+      - out: "['x', 'y']"
+      - out: "1"
+      - out: "!! TypeError"
+    answer: 1
+    explain: |
+      `push` آرایه را درجا تغییر می‌دهد و **طول جدید** (`2`) را برمی‌گرداند، نه خود آرایه را. چون نتیجه دوباره در `list` ریخته شده، `list` حالا عدد `2` است و آرایه گم شده! گزینه‌ی ۲ همان تصور غلطِ «`push` آرایه را برمی‌گرداند» است و گزینه‌ی ۳ طول قبلی را گفته است. خطایی هم رخ نمی‌دهد، چون `list` با `let` تعریف شده و انتساب دوباره‌اش مجاز است.
+
+  - level: medium
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const arr = [1, 2, 3];
+      arr.push(4);
+      arr[0] = 100;
+      arr.length = 0;
+      arr = [5, 6];
+      console.log(arr);
+    options:
+      - line: 2
+      - line: 4
+      - line: 5
+      - line: 0
+    answer: 3
+    explain: |
+      خط‌های ۲ تا ۴ فقط **محتوای** همان آرایه را تغییر می‌دهند (اضافه کردن، عوض کردن عضو و خالی کردن با `length = 0`) که برای آرایه‌ی `const` مجاز است. خط ۵ می‌خواهد متغیر `arr` را به آرایه‌ی **دیگری** وصل کند، یعنی انتساب دوباره؛ پس `TypeError: Assignment to constant variable.` رخ می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const letters = ["x", "y"];
+      for (const i in letters) {
+        console.log(i, typeof i);
+      }
+      for (const v of letters) {
+        console.log(v);
+      }
+    options:
+      - out: ["x string", "y string", "x", "y"]
+      - out: ["0 string", "1 string", "x", "y"]
+      - out: ["0 number", "1 number", "x", "y"]
+      - out: ["0 string", "1 string", "0", "1"]
+    answer: 2
+    explain: |
+      `for...in` برای کلیدهای شیء ساخته شده و روی آرایه **اندیس‌ها** را می‌دهد (رد گزینه‌ی ۱)؛ و چون کلیدهای هر شیء رشته‌اند، اندیس‌ها هم به‌صورت **رشته** (`"0"` و `"1"`) می‌آیند، نه عدد (رد گزینه‌ی ۳). اما `for...of` طبق اسلاید ۴۶ خودِ **مقدارها** را می‌دهد: `x` و `y` (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const stack = [];
+      console.log(stack.pop());
+      console.log(stack.shift());
+      console.log(stack.length);
+      console.log(stack.push("a", "b"));
+    options:
+      - out: "!! RangeError"
+      - out: ["undefined", "undefined", "0", "2"]
+      - out: ["undefined", "undefined", "-2", "2"]
+      - out: ["null", "null", "0", "['a', 'b']"]
+    answer: 2
+    explain: |
+      `pop` و `shift` روی آرایه‌ی خالی خطا نمی‌دهند (رد گزینه‌ی ۱) و چون چیزی برای حذف نیست `undefined` برمی‌گردانند، نه `null` (رد گزینه‌ی ۴). طول هم منفی نمی‌شود و `0` می‌ماند (رد گزینه‌ی ۳). `push("a", "b")` هر دو مقدار را اضافه می‌کند و **طول جدید** یعنی `2` را برمی‌گرداند، نه آرایه را.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = [1, 2];
+      const n = a.push([3, 4]);
+      console.log(n, a.length);
+      console.log(a[2]);
+    options:
+      - out: ["4 4", "3"]
+      - out: ["4 4", "[3, 4]"]
+      - out: ["[1, 2, [3, 4]] 3", "[3, 4]"]
+      - out: ["3 3", "[3, 4]"]
+    answer: 4
+    explain: |
+      وقتی به `push` یک **آرایه** می‌دهیم، کل آن آرایه **یک عضو** می‌شود: `a` برابر `[1, 2, [3, 4]]` با طول `3` است و `a[2]` همان آرایه‌ی تودرتوی `[3, 4]` است. گزینه‌های ۱ و ۲ فرض کرده‌اند عضوهای `[3, 4]` تک‌تک اضافه می‌شوند (برای این کار باید نوشت `a.push(...[3, 4])`). گزینه‌ی ۳ فکر کرده `push` آرایه را برمی‌گرداند، در حالی که طول جدید را برمی‌گرداند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const line = [];
+      line.push("Ali");
+      line.push("Sara");
+      line.unshift("VIP");
+      const first = line.shift();
+      line.push(first);
+      console.log(line.join(", "));
+      console.log(line.indexOf("Ali"));
+    options:
+      - out: ["Ali, Sara, VIP", "0"]
+      - out: ["VIP, Ali, Sara", "1"]
+      - out: ["Sara, VIP, Ali", "2"]
+      - out: ["Ali, Sara, VIP", "1"]
+    answer: 1
+    explain: |
+      گام‌به‌گام: بعد از دو `push` داریم `["Ali", "Sara"]`؛ `unshift("VIP")` آن را `["VIP", "Ali", "Sara"]` می‌کند. `shift()` عضو اول یعنی `"VIP"` را حذف می‌کند و برمی‌گرداند، پس `first` برابر `"VIP"` و آرایه `["Ali", "Sara"]` است؛ سپس `push(first)` آن را به انتها می‌برد: `["Ali", "Sara", "VIP"]`. `"Ali"` حالا در اندیس `0` است (رد گزینه‌ی ۴). گزینه‌ی ۲ اثر `shift` و `push` آخر را نادیده گرفته و گزینه‌ی ۳ فرض کرده `shift` عضو آخر را برمی‌دارد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const mixed = [1, "two", { three: 3 }, [4, 5], null];
+      console.log(mixed.length);
+      console.log(typeof mixed[2], typeof mixed[3], typeof mixed[4]);
+      console.log(mixed[3][1] + mixed[2].three);
+    options:
+      - out: ["5", "object array null", "8"]
+      - out: ["6", "object object object", "8"]
+      - out: ["5", "object object object", "8"]
+      - out: ["5", "object object object", "53"]
+    answer: 3
+    explain: |
+      آرایه پنج عضو دارد؛ آرایه‌ی تودرتوی `[4, 5]` فقط **یک** عضو حساب می‌شود (رد گزینه‌ی ۲). `typeof` برای شیء، آرایه و حتی `null` (یک اشکال تاریخی JavaScript) `"object"` می‌دهد؛ نوعی به نام `"array"` یا `"null"` وجود ندارد (رد گزینه‌ی ۱). `mixed[3][1]` عدد `5` و `mixed[2].three` عدد `3` است و جمع دو عدد `8` می‌شود، نه چسباندن رشته‌ای (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const word = "JS!";
+      let result = "";
+      for (const ch of word) {
+        if (ch === "!") break;
+        result = ch + result;
+      }
+      console.log(result, word.length);
+    options:
+      - out: "JS 3"
+      - out: "!SJ 3"
+      - out: "SJ 2"
+      - out: "SJ 3"
+    answer: 4
+    explain: |
+      `for...of` روی رشته هم کار می‌کند و حرف‌ها را یکی‌یکی می‌دهد (اسلاید ۴۶: «arrays, strings, etc.»). چون هر حرف **جلوی** `result` چسبانده می‌شود، `"J"` و بعد `"S"` نتیجه را `"SJ"` می‌کنند (رد گزینه‌ی ۱). با رسیدن به `"!"`، `break` از حلقه خارج می‌شود و `"!"` اضافه نمی‌شود (رد گزینه‌ی ۲). حلقه رشته‌ی اصلی را تغییر نمی‌دهد و طولش `3` است (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const months = ["Jan", "Mar", "Apr"];
+      const removed = months.splice(1, 0, "Feb");
+      console.log(months);
+      console.log(removed);
+    options:
+      - out: ["['Jan', 'Feb', 'Mar', 'Apr']", "[]"]
+      - out: ["['Jan', 'Feb', 'Apr']", "['Mar']"]
+      - out: ["['Jan', 'Mar', 'Apr']", "['Feb']"]
+      - out: ["['Jan', 'Feb', 'Mar', 'Apr']", "4"]
+    answer: 1
+    explain: |
+      `splice(1, 0, "Feb")` یعنی «از اندیس ۱، **صفر** عضو حذف کن و `"Feb"` را همان‌جا بگذار»؛ پس `"Feb"` قبل از `"Mar"` درج می‌شود و چیزی حذف نمی‌شود (رد گزینه‌ی ۲ که یک عضو را جایگزین کرده). `splice` آرایه‌ی اصلی را تغییر می‌دهد (رد گزینه‌ی ۳) و همیشه **آرایه‌ای از عضوهای حذف‌شده** را برمی‌گرداند که این‌جا خالی است؛ طول جدید را برنمی‌گرداند (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const users = [{ id: 1 }, { id: 2 }];
+      const target = users[0];
+      console.log(users.includes({ id: 1 }));
+      console.log(users.includes(target));
+      console.log(users.indexOf(target));
+    options:
+      - out: ["true", "true", "0"]
+      - out: ["false", "true", "1"]
+      - out: ["false", "false", "-1"]
+      - out: ["false", "true", "0"]
+    answer: 4
+    explain: |
+      `includes` و `indexOf` مثل `===` مقایسه می‌کنند و شیءها با **reference** مقایسه می‌شوند. `{ id: 1 }` در خط سوم یک شیء **تازه** است که فقط محتوایش شبیه عضو اول است، پس `false` (رد گزینه‌ی ۱). اما `target` **همان** شیء اندیس `0` است: `includes` برایش `true` می‌دهد (رد گزینه‌ی ۳) و `indexOf` اندیس `0` را (رد گزینه‌ی ۲ که از ۱ شمرده).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const admins = ["root", "ali"];
+      if (admins.indexOf("root")) {
+        console.log("root is admin");
+      } else {
+        console.log("root is not admin");
+      }
+      if (admins.indexOf("guest")) {
+        console.log("guest is admin");
+      }
+    options:
+      - out: "root is admin"
+      - out: ["root is admin", "guest is admin"]
+      - out: ["root is not admin", "guest is admin"]
+      - out: "root is not admin"
+    answer: 3
+    explain: |
+      `indexOf` اندیس را برمی‌گرداند، نه `true`/`false`. `"root"` در اندیس `0` است و `0` **falsy** است، پس شرط اول برقرار نیست و `root is not admin` چاپ می‌شود (رد گزینه‌های ۱ و ۲). `"guest"` پیدا نمی‌شود و `indexOf` عدد `-1` را می‌دهد که **truthy** است، پس شرط دوم برقرار است و `guest is admin` هم چاپ می‌شود (رد گزینه‌ی ۴). راه درست: `admins.includes("root")` یا `admins.indexOf("root") !== -1`.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [3, 4];
+      nums.unshift(1, 2);
+      nums.push(5, 6);
+      console.log(nums.join(""));
+      console.log(nums.shift() + nums.pop());
+    options:
+      - out: ["213456", "7"]
+      - out: ["123456", "7"]
+      - out: ["123456", "16"]
+      - out: ["123465", "7"]
+    answer: 2
+    explain: |
+      `unshift(1, 2)` و `push(5, 6)` مقدارها را **با همان ترتیبی که نوشته شده‌اند** اضافه می‌کنند، پس آرایه `[1, 2, 3, 4, 5, 6]` می‌شود و `join("")` حاصل `123456` را می‌دهد (رد گزینه‌های ۱ و ۴ که ترتیب را برعکس کرده‌اند). `shift()` عدد `1` و `pop()` عدد `6` را برمی‌گرداند و جمع دو **عدد** `7` است؛ گزینه‌ی ۳ آن‌ها را مثل رشته به هم چسبانده است.
