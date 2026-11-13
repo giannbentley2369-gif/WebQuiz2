@@ -1,0 +1,797 @@
+id: ch1-functions
+title: "توابع: پارامتر، مقدار بازگشتی و توابع درجه‌ی یک"
+slides: "Introduction to JS، اسلایدهای ۱۷ و ۳۳"
+lesson: |
+  فرض کن یک دستگاه آب‌میوه‌گیری داری. میوه را داخلش می‌ریزی (ورودی)، دکمه را می‌زنی و آب‌میوه تحویل می‌گیری (خروجی). هر بار که آب‌میوه بخواهی، دستگاه تازه‌ای نمی‌سازی؛ همان دستگاه را دوباره روشن می‌کنی، شاید با میوه‌ای دیگر. **تابع (function)** در برنامه‌نویسی دقیقاً همین دستگاه است: یک بار ساخته (تعریف) می‌شود و هر بار که لازم شد، با ورودی‌های تازه «روشن» (صدا زده) می‌شود.
+
+  ### تابع چیست؟ (اسلاید ۳۳)
+
+  اسلاید ۳۳ پنج جمله‌ی کلیدی درباره‌ی تابع دارد:
+
+  - تابع یک **بلوک کدِ قابل‌استفاده‌ی دوباره** (reusable block of code) است.
+  - کمک می‌کند از **تکرار** کد جلوگیری کنیم و کد **منظم** (organized) بماند.
+  - می‌تواند **پارامتر** (parameter) یعنی **ورودی** بگیرد.
+  - می‌تواند یک **مقدار برگرداند** (return a value) یعنی **خروجی** داشته باشد.
+  - **یک بار تعریف می‌شود و بارها استفاده می‌شود** (Defined once, used many times).
+
+  بیا ببینیم بدون تابع چه مشکلی داریم. می‌خواهیم مساحت سه مستطیل را چاپ کنیم:
+
+  ```js
+  // Without a function: the same logic is written three times
+  console.log("Area: " + 3 * 4);
+  console.log("Area: " + 5 * 2);
+  console.log("Area: " + 7 * 7);
+  ```
+
+  اگر فردا بخواهیم متن پیام را عوض کنیم، باید هر سه خط را دست بزنیم (و احتمال جا انداختن یکی‌شان کم نیست). با تابع، منطق را **یک جا** می‌نویسیم و **سه بار** صدا می‌زنیم:
+
+  ```js
+  function printArea(width, height) {
+    console.log("Area: " + width * height);
+  }
+
+  printArea(3, 4); // Area: 12
+  printArea(5, 2); // Area: 10
+  printArea(7, 7); // Area: 49
+  ```
+
+  ### اجزای یک تابع
+
+  رایج‌ترین شکل نوشتن تابع، **function declaration** (اعلان تابع با کلمه‌ی کلیدی `function`) است:
+
+  ```js
+  function add(a, b) {   // keyword + name + parameter list
+    return a + b;        // body: "return" sends a value back
+  }
+
+  const sum = add(2, 3); // call: 2 and 3 are the arguments
+  console.log(sum);      // 5
+  ```
+
+  | بخش | در این مثال | کارش چیست؟ |
+  |---|---|---|
+  | کلمه‌ی کلیدی | `function` | به JavaScript می‌گوید «دارم یک تابع تعریف می‌کنم». |
+  | نام تابع | `add` | بعداً تابع را با همین نام صدا می‌زنیم. |
+  | فهرست پارامترها | `(a, b)` | نام ورودی‌ها، جدا شده با کاما؛ می‌تواند خالی باشد: `()` |
+  | بدنه (body) | `{ return a + b; }` | کدی که **هر بار** با صدا زدن تابع اجرا می‌شود. |
+  | مقدار بازگشتی | `a + b` | چیزی که `return` به جایی که تابع را صدا زده تحویل می‌دهد. |
+
+  نکته‌ی مهم: **تعریف تابع آن را اجرا نمی‌کند.** بدنه فقط وقتی اجرا می‌شود که تابع را **صدا بزنیم** (call یا invoke، یعنی فراخوانی): نام تابع و بعد پرانتز، مثل `add(2, 3)`. روش کوتاه‌ترِ ES6 یعنی arrow function را در درس بعد («Function declaration در برابر Arrow function») می‌بینیم.
+
+  ### میم اسلاید ۳۳: تابع در زبان‌های مختلف
+
+  کنار اسلاید ۳۳ یک میم معروف از «پو خرسه»ی کت‌وشلواری هست. هر ردیف یک زبان را با کلمه‌ای که برای تعریف تابع به کار می‌برد نشان می‌دهد:
+
+  | زبان | کلمه‌ی تعریف تابع | پو در میم |
+  |---|---|---|
+  | JavaScript | `function` | پوی معمولی با پیراهن قرمز |
+  | Go (Golang) | `func` | پوی کت‌وشلواری |
+  | Kotlin | `fun` | کت‌وشلوار و یک زینت گرد |
+  | Rust | `fn` | شیک‌ترین: کت‌وشلوار، عینک تک‌چشمی و سبیل |
+  | Python | `def` | پو با قیافه‌ی درهم و دندان‌های بیرون‌زده |
+  | Java | کلمه‌ی خاصی ندارد؛ امضای کامل متد را می‌نویسد | زشت‌ترین و گیج‌ترین پو |
+
+  شوخی میم این است که هر چه کلمه‌ی کلیدی **کوتاه‌تر** باشد، زبان «شیک‌تر» به نظر می‌رسد: از `function` به `func`، بعد `fun` و در نهایت `fn`. کلمه‌ی `def` در Python و امضای طولانی متد در Java هم دست انداخته شده‌اند.
+
+  در ردیف آخر، یک متد Java برچسب‌گذاری شده است:
+
+  ```text
+  public int max(int x, int y) {
+      if (x > y)
+          return x;
+      else
+          return y;
+  }
+  ```
+
+  | برچسب در میم | بخش در متد Java | معادل در JavaScript |
+  |---|---|---|
+  | modifier (سطح دسترسی) | `public` | ندارد |
+  | return-type (نوع مقدار بازگشتی) | `int` اول (قبل از `max`) | ندارد؛ نوع خروجی نوشته نمی‌شود |
+  | method-name (نام متد) | `max` | نام تابع |
+  | parameter-list (فهرست پارامترها) | `(int x, int y)` | `(x, y)`، بدون نوع |
+  | body of the method (بدنه‌ی متد) | `{ ... }` | `{ ... }` |
+
+  همین تابع در JavaScript این‌طور نوشته می‌شود (بدون modifier و بدون هیچ نوعی):
+
+  ```js
+  function max(x, y) {
+    if (x > y) return x;
+    else return y;
+  }
+
+  console.log(max(4, 9)); // 9
+  ```
+
+  ::: note
+  در JavaScript فقط `function` (و در درس بعد، `=>`) تابع می‌سازد. نوشتن `def`، `func`، `fun` یا `fn` به‌جای `function` در JavaScript خطای `SyntaxError` (خطای نحوی، یعنی «این نگارش را نمی‌فهمم») می‌دهد.
+  :::
+
+  ### پارامتر در برابر آرگومان
+
+  - **parameter** (پارامتر): **نامی** که هنگام **تعریف** تابع داخل پرانتز می‌نویسیم؛ مثل یک جعبه‌ی خالیِ برچسب‌دار.
+  - **argument** (آرگومان): **مقدار واقعی** که هنگام **صدا زدن** تابع می‌فرستیم و آن جعبه را پر می‌کند.
+
+  در `function add(a, b)`، `a` و `b` پارامتر هستند و در `add(2, 3)`، `2` و `3` آرگومان. آرگومان‌ها **به ترتیب** در پارامترها ریخته می‌شوند: `a` می‌شود `2` و `b` می‌شود `3`. پارامترها مثل متغیرهایی هستند که فقط داخل همان تابع وجود دارند.
+
+  ### `return`: خروجی تابع
+
+  **۱.** مقداری که `return` می‌کنیم به **همان جایی که تابع صدا زده شده** برمی‌گردد؛ می‌توانیم آن را در متغیر بریزیم یا در یک عبارت به کار ببریم: `add(2, 3) * 10` برابر `50` است.
+
+  **۲.** `return` تابع را **همان لحظه تمام می‌کند**؛ خط‌های بعد از آن اجرا نمی‌شوند:
+
+  ```js
+  function checkAge(age) {
+    if (age < 18) {
+      return "Too young";
+      console.log("never printed"); // unreachable: return already ended the function
+    }
+    return "Welcome";
+  }
+
+  console.log(checkAge(15)); // Too young
+  console.log(checkAge(20)); // Welcome
+  ```
+
+  JavaScript برای کدِ «غیرقابل‌دسترس» بعد از `return` خطا نمی‌دهد (برخلاف Java که چنین کدی را کامپایل نمی‌کند)؛ آن خط فقط هیچ‌وقت اجرا نمی‌شود.
+
+  **۳.** تابعی که `return` ندارد، یا فقط یک `return;` خالی دارد، مقدار **`undefined`** برمی‌گرداند:
+
+  ```js
+  function sayHi() {
+    console.log("Hi!");   // prints something, but returns nothing
+  }
+  function stop() {
+    return;               // bare return: ends the function, the value is undefined
+  }
+
+  const r = sayHi();      // Hi!
+  console.log(r);         // undefined
+  console.log(stop());    // undefined
+  ```
+
+  ### چاپ کردن با برگرداندن فرق دارد
+
+  `console.log` مقدار را فقط **روی صفحه نشان می‌دهد** و برنامه چیزی تحویل نمی‌گیرد. `return` مقدار را **به برنامه تحویل می‌دهد** تا ذخیره یا دوباره استفاده شود:
+
+  ```js
+  function doubleAndPrint(x) {
+    console.log(x * 2);   // shows 10, returns undefined
+  }
+  function doubleAndReturn(x) {
+    return x * 2;         // prints nothing, hands 10 back
+  }
+
+  const a = doubleAndPrint(5);  // 10
+  const b = doubleAndReturn(5); // (nothing is printed here)
+  console.log(a, b);            // undefined 10
+  ```
+
+  ### آرگومان کمتر یا بیشتر: JavaScript خطا نمی‌دهد!
+
+  ```js
+  function add(a, b) {
+    return a + b;
+  }
+
+  console.log(add(2));       // NaN (b is undefined, and 2 + undefined is NaN)
+  console.log(add(2, 3, 4)); // 5   (the extra argument 4 is ignored)
+  ```
+
+  - پارامتری که آرگومانی برایش فرستاده نشده، مقدار `undefined` می‌گیرد.
+  - آرگومان اضافه **بی‌صدا نادیده گرفته می‌شود**.
+  - در هیچ‌کدام از این دو حالت خطایی رخ نمی‌دهد (Java در هر دو حالت خطای کامپایل می‌داد).
+
+  ### Default parameters (مقدار پیش‌فرض پارامتر)
+
+  از ES6 می‌توانیم برای یک پارامتر مقدار پیش‌فرض بگذاریم تا اگر آرگومانی برایش نیامد، `undefined` نماند:
+
+  ```js
+  function greet(name = "Guest") {
+    return "Hello, " + name + "!";
+  }
+
+  console.log(greet("Sara"));    // Hello, Sara!
+  console.log(greet());          // Hello, Guest!
+  console.log(greet(undefined)); // Hello, Guest!
+  console.log(greet(null));      // Hello, null!
+  ```
+
+  قانون: مقدار پیش‌فرض **فقط وقتی** استفاده می‌شود که آرگومانِ آن جایگاه **`undefined`** باشد (یعنی فرستاده نشده باشد یا خودمان `undefined` فرستاده باشیم). `null`، `0` و `""` مقدار واقعی حساب می‌شوند و مقدار پیش‌فرض را کنار می‌زنند.
+
+  ### Function expression (تابع به‌عنوان یک مقدار)
+
+  تابع را می‌شود بدون نام هم نوشت و مثل هر مقدار دیگری در یک متغیر ریخت. به این شکل **function expression** (عبارت تابعی) می‌گویند:
+
+  ```js
+  const square = function (n) {  // an anonymous function stored in a variable
+    return n * n;
+  };
+
+  console.log(square(6)); // 36
+  ```
+
+  این تابع را با نام متغیرش (`square`) صدا می‌زنیم. تفاوت مهم آن با function declaration در **hoisting** (اینکه آیا می‌شود تابع را قبل از خط تعریفش صدا زد) است که در درس بعد و درس «Hoisting و TDZ» می‌بینیم. arrow function هم در واقع شکل کوتاه‌تری از همین function expression است.
+
+  ### توابع first-class هستند (اسلاید ۱۷)
+
+  اسلاید ۱۷ می‌گوید:
+
+  - توابع **first-class object** هستند (شهروند درجه‌یک: می‌توان آن‌ها را **پاس داد، ذخیره کرد و برگرداند**).
+  - توابع می‌توانند **متد یک object** باشند یا **بلوک کد مستقل** (standalone).
+
+  «first-class» یعنی تابع در JavaScript یک **مقدار** است، درست مثل عدد و رشته. هر کاری با یک عدد می‌کنی، با یک تابع هم می‌توانی بکنی:
+
+  **۱) ذخیره در متغیر، آرایه یا object:**
+
+  ```js
+  function hello() {
+    return "Hello!";
+  }
+
+  const greetFn = hello;          // store the function itself (no parentheses!)
+  const tools = [hello];          // store it in an array
+  console.log(greetFn());         // Hello!
+  console.log(tools[0]());        // Hello!
+  console.log(greetFn === hello); // true (the same function, not a copy)
+  ```
+
+  **۲) پاس دادن به‌عنوان آرگومان (callback):**
+
+  ```js
+  function repeat(times, action) {  // action is a function (a callback)
+    for (let i = 1; i <= times; i++) {
+      action(i);                     // repeat decides when to call it
+    }
+  }
+  function showStep(n) {
+    console.log("Step " + n);
+  }
+
+  repeat(3, showStep);
+  // Step 1
+  // Step 2
+  // Step 3
+  ```
+
+  **۳) برگرداندن از یک تابع دیگر:**
+
+  ```js
+  function makeMultiplier(k) {
+    return function (x) {   // a brand-new function is returned
+      return x * k;
+    };
+  }
+
+  const double = makeMultiplier(2);
+  const triple = makeMultiplier(3);
+  console.log(double(5));             // 10
+  console.log(triple(5));             // 15
+  console.log(makeMultiplier(10)(4)); // 40 (call the returned function right away)
+  ```
+
+  تابعِ برگشتی هنوز `k` را «به یاد دارد»، حتی بعد از اینکه اجرای `makeMultiplier` تمام شده است. اسم این پدیده **closure** (بستار) است که در درس «Closure» مفصل می‌خوانیم.
+
+  **۴) متد یک object یا تابع مستقل:**
+
+  ```js
+  const calculator = {
+    brand: "Casio",
+    add: function (a, b) {  // a function stored in an object = a method
+      return a + b;
+    },
+  };
+  function subtract(a, b) { // a standalone function
+    return a - b;
+  }
+
+  console.log(calculator.add(2, 3));  // 5
+  console.log(subtract(9, 4));        // 5
+  console.log(typeof calculator.add); // function
+  ```
+
+  تابع در JavaScript نوعی object است، ولی `typeof` برای آن رشته‌ی `"function"` را برمی‌گرداند (نه `"object"`).
+
+  ### Callback و Higher-order function
+
+  - **callback** (تابع بازخوان): تابعی که به تابع دیگری **پاس داده می‌شود** تا آن تابع، هر وقت لازم بود، **صدایش بزند** («بعداً خبرم کن!»). در مثال بالا `showStep` یک callback است.
+  - **higher-order function** (تابع مرتبه‌بالا): تابعی که یک تابع را **به‌عنوان آرگومان می‌گیرد** یا یک تابع را **برمی‌گرداند**. `repeat` و `makeMultiplier` تابع مرتبه‌بالا هستند.
+
+  callback لزوماً «بعداً» اجرا نمی‌شود؛ دقیقاً همان لحظه‌ای اجرا می‌شود که تابع گیرنده صدایش بزند. در `repeat`، هر بار که به خط `action(i)` می‌رسیم، callback همان‌جا و قبل از ادامه‌ی حلقه اجرا می‌شود. خود JavaScript پر از توابع مرتبه‌بالاست: `setTimeout(callback, ms)` (درس‌های برنامه‌نویسی ناهمگام)، متدهای آرایه مثل `map` و `forEach` (درس «متدهای آرایه») و `addEventListener` در فصل دوم.
+
+  ### `f` یا `f()`؟ ارجاع به تابع در برابر صدا زدن آن
+
+  | | `hello` | `hello()` |
+  |---|---|---|
+  | یعنی چه؟ | خودِ تابع (اشاره به دستگاه آب‌میوه‌گیری) | اجرای تابع و گرفتن مقدار بازگشتی‌اش (روشن کردن دستگاه) |
+  | `typeof` (برای `hello` بالا) | `"function"` | نوع خروجی؛ اینجا `"string"` |
+  | کاربرد | ذخیره در متغیر، پاس دادن به‌عنوان callback | گرفتن نتیجه |
+
+  اشتباه رایج: پاس دادن `f()` به‌جای `f`. با پرانتز، تابع **همین الان** اجرا می‌شود و به‌جای خودِ تابع، **نتیجه‌اش** پاس داده می‌شود:
+
+  ```js
+  function repeat(times, action) {
+    for (let i = 1; i <= times; i++) action(i);
+  }
+  function hi() {
+    console.log("hi");
+  }
+
+  repeat(2, hi);   // hi, hi (correct: repeat calls hi twice)
+  repeat(2, hi()); // hi, then TypeError: action is not a function
+  ```
+
+  در خط آخر، `hi()` اول اجرا می‌شود (یک `hi` چاپ می‌شود) و چون چیزی برنمی‌گرداند، `repeat` به‌جای تابع مقدار `undefined` می‌گیرد و صدا زدن `undefined` خطای `TypeError` (خطای نوع) می‌دهد.
+
+  ::: tip
+  - **پارامتر** = نام در تعریف؛ **آرگومان** = مقدار در فراخوانی.
+  - تابع بدون `return` (یا با `return;` خالی) مقدار `undefined` برمی‌گرداند و `return` تابع را همان لحظه تمام می‌کند.
+  - تابع یک مقدار است: می‌شود ذخیره‌اش کرد، پاسش داد و برش گرداند. `typeof` آن `"function"` است و ریختنش در متغیر دیگر **کپی** نمی‌سازد (`greetFn === hello` برابر `true` است).
+  - تابعی که تابع می‌گیرد یا برمی‌گرداند **higher-order** است و تابعی که پاس داده می‌شود **callback**.
+  :::
+
+  ::: trap
+  - چاپ کردن با `console.log` داخل تابع، `return` نیست. اگر تابع فقط چاپ کند، `console.log(f())` اول چاپِ داخل تابع و بعد `undefined` را نشان می‌دهد.
+  - `f` خودِ تابع است و `f()` نتیجه‌ی اجرای آن. `const x = f;` تابع را اجرا **نمی‌کند**.
+  - آرگومان جاافتاده `undefined` می‌شود (و در محاسبه `NaN` می‌سازد) و آرگومان اضافه بی‌صدا نادیده گرفته می‌شود. هیچ‌کدام خطا نیست.
+  - مقدار پیش‌فرض فقط جای `undefined` را می‌گیرد؛ با `null` یا `0` استفاده نمی‌شود.
+  - کلمه‌هایی مثل `def`، `func` و `fn` در JavaScript وجود ندارند (`SyntaxError`).
+  - مقدار `return` را در **همان خط** بنویس. اگر بلافاصله بعد از `return` به خط بعد بروی، JavaScript خودش آنجا یک `;` می‌گذارد (automatic semicolon insertion، یعنی درج خودکار نقطه‌ویرگول) و تابع `undefined` برمی‌گرداند.
+  :::
+
+  ```js
+  function getScore() {
+    return      // JavaScript reads this line as "return;"
+      100;      // never reached
+  }
+  console.log(getScore()); // undefined
+  ```
+
+  ::: summary
+  - تابع = بلوک کد قابل‌استفاده‌ی دوباره: یک بار تعریف، بارها صدا زدن با `name(args)`.
+  - `return` مقدار را برمی‌گرداند و تابع را تمام می‌کند؛ بدون آن، نتیجه `undefined` است.
+  - آرگومان جاافتاده `undefined` است و آرگومان اضافه نادیده گرفته می‌شود؛ مقدار پیش‌فرض فقط به‌جای `undefined` می‌نشیند.
+  - توابع first-class هستند: ذخیره، پاس دادن (callback) و برگرداندن (higher-order)؛ می‌توانند متد object یا مستقل باشند.
+  - کلمه‌ی تعریف تابع: JavaScript `function`، Go `func`، Kotlin `fun`، Rust `fn`، Python `def`؛ Java امضای کامل متد (modifier، return-type، نام، پارامترها و بدنه) را دارد.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۳۳، کدام جمله درباره‌ی توابع **نادرست** است؟
+    options:
+      - 'تابع یک بلوک کدِ قابل‌استفاده‌ی دوباره (reusable) است.'
+      - 'تابع می‌تواند پارامتر (ورودی) بگیرد و یک مقدار (خروجی) برگرداند.'
+      - 'تابع به جلوگیری از تکرار و منظم ماندن کد کمک می‌کند.'
+      - 'برای هر بار استفاده از تابع، باید آن را دوباره تعریف کرد.'
+    answer: 4
+    explain: |
+      اسلاید ۳۳ می‌گوید تابع «Defined once, used many times» است: **یک بار** تعریف می‌شود و بارها صدا زده می‌شود؛ پس گزینه‌ی ۴ نادرست است. گزینه‌های ۱، ۲ و ۳ دقیقاً جمله‌های همان اسلاید هستند (reusable، پارامتر و مقدار بازگشتی، جلوگیری از تکرار و organized بودن کد).
+
+  - level: easy
+    stem: |
+      در میم اسلاید ۳۳، هر زبان کنار کلمه‌ی کلیدی‌ای آمده که با آن تابع تعریف می‌کند. کدام جفت درست است؟
+    options:
+      - 'Go — `fn`'
+      - 'Rust — `fun`'
+      - 'Python — `def`'
+      - 'Kotlin — `func`'
+    answer: 3
+    explain: |
+      در Python تابع با `def` تعریف می‌شود. بقیه‌ی جفت‌ها جابه‌جا شده‌اند: Go از `func`، Kotlin از `fun` و Rust از `fn` استفاده می‌کند. JavaScript هم کلمه‌ی کامل `function` را دارد که در میم «ساده‌ترین» پو را گرفته است.
+
+  - level: easy
+    stem: |
+      کدام خط در JavaScript یک تابع را **درست** تعریف می‌کند و بدون خطا اجرا می‌شود؟
+    check: option-throws
+    want: ok
+    options:
+      - code: 'def greet() { return "hi"; }'
+      - code: 'function greet() { return "hi"; }'
+      - code: 'func greet() { return "hi"; }'
+      - code: 'fn greet() { return "hi"; }'
+    answer: 2
+    explain: |
+      در JavaScript تابع با کلمه‌ی کلیدی `function` تعریف می‌شود. `def` (Python)، `func` (Go) و `fn` (Rust) کلمه‌های زبان‌های دیگرند و JavaScript آن‌ها را نمی‌شناسد؛ هر سه خطای `SyntaxError` می‌دهند و حتی یک خط از برنامه اجرا نمی‌شود.
+
+  - level: easy
+    stem: |
+      در تعریف `function add(a, b) { return a + b; }` و فراخوانی `add(2, 3)`، کدام گزینه درست است؟
+    options:
+      - '`a` و `b` آرگومان هستند و `2` و `3` پارامتر.'
+      - '`a` و `b` پارامتر هستند و `2` و `3` آرگومان.'
+      - 'هر چهار مورد پارامترند؛ آرگومان یعنی مقدار بازگشتی تابع.'
+      - '`add` پارامتر است و `a`، `b`، `2` و `3` همگی آرگومان‌اند.'
+    answer: 2
+    explain: |
+      **پارامتر** نامی است که در **تعریف** تابع می‌آید (`a` و `b`) و **آرگومان** مقدار واقعی است که هنگام **صدا زدن** فرستاده می‌شود (`2` و `3`). گزینه‌ی ۱ دقیقاً برعکس است. مقدار بازگشتی (اینجا `5`) نه پارامتر است نه آرگومان (رد گزینه‌ی ۳) و `add` نام تابع است، نه پارامتر (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function greet(name) {
+        return "Hello, " + name + "!";
+      }
+      console.log(greet("Sara"));
+      console.log(greet("Ali"));
+    options:
+      - out: ["Hello, Sara!", "Hello, Ali!"]
+      - out: ["Hello, name!", "Hello, name!"]
+      - out: ["Hello, Sara!", "Hello, Sara!"]
+      - out: ["Hello, Sara!", "!! TypeError"]
+    answer: 1
+    explain: |
+      تابع یک بار تعریف شده و دو بار با آرگومان‌های مختلف صدا زده می‌شود؛ هر فراخوانی پارامتر `name` را با آرگومان خودش پر می‌کند. گزینه‌ی ۲ فکر کرده `name` متن ثابت است، در حالی که بیرون از کوتیشن یک متغیر است. گزینه‌ی ۳ تصور کرده تابع اولین ورودی را «یادش می‌ماند» و گزینه‌ی ۴ فکر کرده یک تابع را فقط یک بار می‌شود صدا زد.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function square(x) {
+        x * x;
+      }
+      console.log(square(4));
+    options:
+      - out: "16"
+      - out: "NaN"
+      - out: "!! SyntaxError"
+      - out: "undefined"
+    answer: 4
+    explain: |
+      `x * x` حساب می‌شود ولی چون `return` ندارد، نتیجه دور ریخته می‌شود. تابعی که `return` ندارد مقدار `undefined` برمی‌گرداند. گزینه‌ی ۱ فرض کرده آخرین عبارت خودکار برگردانده می‌شود (چنین چیزی در تابع معمولی وجود ندارد). کد از نظر نحوی کاملاً درست است (رد گزینه‌ی ۳) و محاسبه‌ای روی `undefined` هم انجام نشده که `NaN` بسازد (رد گزینه‌ی ۲).
+
+  - level: easy
+    stem: |
+      فرض کن `hello` تابعی است که رشته‌ی `"hi"` را برمی‌گرداند. تفاوت `hello` و `hello()` چیست؟
+    options:
+      - 'هر دو تابع را اجرا می‌کنند؛ پرانتز اختیاری است.'
+      - '`hello` تابع را اجرا می‌کند و `hello()` یک کپی از آن می‌سازد.'
+      - '`hello` به خودِ تابع اشاره می‌کند (بدون اجرا) و `hello()` تابع را اجرا می‌کند و مقدار بازگشتی‌اش را می‌دهد.'
+      - '`hello()` یک تابع جدید به نام `hello` تعریف می‌کند.'
+    answer: 3
+    explain: |
+      نام تابع بدون پرانتز یعنی **خودِ تابع** به‌عنوان یک مقدار (مثلاً برای ذخیره یا پاس دادن به‌عنوان callback) و با پرانتز یعنی **صدا زدن** آن؛ پس `hello()` برابر `"hi"` است. پرانتز اختیاری نیست (رد گزینه‌ی ۱)، نوشتن نام تابع چیزی اجرا یا کپی نمی‌کند (رد گزینه‌ی ۲) و تعریف تابع با کلمه‌ی `function` انجام می‌شود، نه با پرانتز (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      به تابعی که یک تابع دیگر را **به‌عنوان آرگومان می‌گیرد** یا یک تابع را **برمی‌گرداند**، چه می‌گویند؟
+    options:
+      - 'callback'
+      - 'higher-order function'
+      - 'method'
+      - 'default parameter'
+    answer: 2
+    explain: |
+      تابعی که با توابع دیگر مثل داده رفتار می‌کند (تابع می‌گیرد یا برمی‌گرداند) **higher-order function** (تابع مرتبه‌بالا) است. گزینه‌ی ۱ وسوسه‌انگیز است، ولی callback تابعی است که **پاس داده می‌شود**، نه تابعی که آن را می‌گیرد. method تابعی است که داخل یک object قرار دارد و default parameter مقدار پیش‌فرض یک پارامتر است.
+
+  - level: medium
+    stem: |
+      در میم اسلاید ۳۳، بخش‌های متد Java زیر برچسب‌گذاری شده‌اند. کدام گزینه درست است؟
+
+      `public int max(int x, int y) { ... }`
+    options:
+      - '`public` همان return-type (نوع مقدار بازگشتی) است و در JavaScript هم نوشته می‌شود.'
+      - '`max` همان modifier است.'
+      - '`int` اول (قبل از `max`) نوع مقدار بازگشتی است و در تعریف تابع JavaScript نوع بازگشتی نوشته نمی‌شود.'
+      - 'در JavaScript هم مثل Java نوع پارامترها نوشته می‌شود: `function max(int x, int y)`.'
+    answer: 3
+    explain: |
+      برچسب‌های میم: `public` = modifier، `int` اول = return-type، `max` = method-name، `(int x, int y)` = parameter-list و `{ ... }` = بدنه. JavaScript نه modifier دارد و نه نوع؛ معادلش `function max(x, y) { ... }` است. گزینه‌ی ۱ modifier را با return-type قاطی کرده، گزینه‌ی ۲ نام متد را modifier دانسته و گزینه‌ی ۴ در JavaScript خطای `SyntaxError` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function check(n) {
+        if (n > 0) {
+          return "positive";
+          console.log("after return");
+        }
+        return "not positive";
+      }
+      console.log(check(5));
+      console.log(check(-2));
+    options:
+      - out: ["after return", "positive", "not positive"]
+      - out: ["positive", "not positive"]
+      - out: ["not positive", "not positive"]
+      - out: ["!! SyntaxError"]
+    answer: 2
+    explain: |
+      `return` تابع را **همان لحظه** تمام می‌کند؛ پس برای `5` مقدار `"positive"` برمی‌گردد و خط `console.log("after return")` هرگز اجرا نمی‌شود (رد گزینه‌ی ۱). برای `-2` شرط برقرار نیست و `"not positive"` برمی‌گردد. گزینه‌ی ۳ فکر کرده اجرا بعد از اولین `return` ادامه پیدا می‌کند. گزینه‌ی ۴ از Java آمده که کد غیرقابل‌دسترس را خطا می‌داند؛ JavaScript چنین خطایی ندارد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function double(x) {
+        console.log(x * 2);
+      }
+      const result = double(5);
+      console.log(result);
+    options:
+      - out: ["10", "10"]
+      - out: ["10"]
+      - out: ["undefined", "10"]
+      - out: ["10", "undefined"]
+    answer: 4
+    explain: |
+      `double(5)` در خط ۴ اجرا می‌شود و `10` را **چاپ** می‌کند، ولی چیزی `return` نمی‌کند؛ پس `result` برابر `undefined` است و خط ۵ آن را چاپ می‌کند. گزینه‌ی ۱ چاپ کردن را با برگرداندن یکی گرفته است. گزینه‌ی ۲ خط آخر را فراموش کرده و گزینه‌ی ۳ ترتیب را برعکس فرض کرده است.
+
+  - level: medium
+    stem: |
+      در جای خالی بدنه‌ی تابع زیر کدام گزینه قرار بگیرد تا خروجی برنامه **فقط** `12` باشد؟
+    check: option-output
+    expect: "12"
+    code: |
+      function area(w, h) {
+        ______
+      }
+      const result = area(3, 4);
+      console.log(result);
+    options:
+      - text: '`console.log(w * h);`'
+        code: 'function area(w, h) { console.log(w * h); } const result = area(3, 4); console.log(result);'
+      - text: '`let result = w * h;`'
+        code: 'function area(w, h) { let result = w * h; } const result = area(3, 4); console.log(result);'
+      - text: '`w * h;`'
+        code: 'function area(w, h) { w * h; } const result = area(3, 4); console.log(result);'
+      - text: '`return w * h;`'
+        code: 'function area(w, h) { return w * h; } const result = area(3, 4); console.log(result);'
+    answer: 4
+    explain: |
+      فقط `return` حاصل را به بیرون تحویل می‌دهد تا در `result` ذخیره و یک بار چاپ شود. با گزینه‌ی ۱، `12` داخل تابع چاپ می‌شود ولی `result` برابر `undefined` است؛ پس خروجی دو خط `12` و `undefined` است. در گزینه‌ی ۲، `result` داخل تابع یک متغیر محلی جداست و به `result` بیرونی ربطی ندارد؛ خروجی `undefined` است. گزینه‌ی ۳ هم حاصل را دور می‌ریزد و `undefined` چاپ می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function add(a, b) {
+        return a + b;
+      }
+      console.log(add(2));
+      console.log(add(2, 3, 4));
+    options:
+      - out: ["2undefined", "5"]
+      - out: ["2", "9"]
+      - out: ["NaN", "5"]
+      - out: ["!! TypeError"]
+    answer: 3
+    explain: |
+      در `add(2)` پارامتر `b` آرگومانی نگرفته و `undefined` است؛ `2 + undefined` جمع عددی است و `NaN` می‌شود (الحاق رشته‌ای فقط وقتی رخ می‌دهد که یک طرف رشته باشد؛ رد گزینه‌ی ۱). در `add(2, 3, 4)` آرگومان اضافه‌ی `4` بی‌صدا نادیده گرفته می‌شود و حاصل `5` است (رد گزینه‌ی ۲). JavaScript برای تعداد نادرست آرگومان‌ها خطا نمی‌دهد (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      کدام جمله درباره‌ی پارامترها و آرگومان‌ها **درست** است؟
+    options:
+      - 'اگر تابعی با آرگومان‌های کمتر از تعداد پارامترهایش صدا زده شود، JavaScript خطا می‌دهد.'
+      - 'پارامتری که آرگومانی برایش فرستاده نشده (و مقدار پیش‌فرض ندارد)، مقدار `undefined` می‌گیرد.'
+      - 'فرستادن آرگومان اضافه خطای `TypeError` می‌دهد.'
+      - 'هر تابع باید دست‌کم یک پارامتر داشته باشد.'
+    answer: 2
+    explain: |
+      پارامتر جاافتاده بی‌صدا `undefined` می‌شود؛ پس گزینه‌ی ۲ درست است. JavaScript نه برای آرگومان کمتر خطا می‌دهد (رد گزینه‌ی ۱) و نه برای آرگومان اضافه که فقط نادیده گرفته می‌شود (رد گزینه‌ی ۳). تابع بدون پارامتر هم کاملاً مجاز است، مثل `function hello() { ... }` (رد گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function greet(name = "Guest") {
+        return "Hi " + name;
+      }
+      console.log(greet());
+      console.log(greet("Reza"));
+      console.log(greet(undefined));
+    options:
+      - out: ["Hi Guest", "Hi Reza", "Hi Guest"]
+      - out: ["Hi Guest", "Hi Reza", "Hi undefined"]
+      - out: ["Hi undefined", "Hi Reza", "Hi undefined"]
+      - out: ["Hi Guest", "Hi Guest", "Hi Guest"]
+    answer: 1
+    explain: |
+      مقدار پیش‌فرض وقتی به کار می‌رود که آرگومان آن جایگاه `undefined` باشد؛ چه آرگومانی نفرستیم (خط ۴) و چه خودمان صریحاً `undefined` بفرستیم (خط ۶). گزینه‌ی ۲ فکر کرده `undefined` صریح جلوی مقدار پیش‌فرض را می‌گیرد. گزینه‌ی ۳ مقدار پیش‌فرض را کلاً نادیده گرفته و گزینه‌ی ۴ فکر کرده پیش‌فرض حتی آرگومان واقعی `"Reza"` را هم کنار می‌زند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function add(a, b) {
+        return a + b;
+      }
+      function sub(a, b) {
+        return a - b;
+      }
+      const ops = { plus: add, minus: sub };
+      console.log(ops.minus(10, 4));
+      console.log(ops.plus === add);
+    options:
+      - out: ["6", "true"]
+      - out: ["14", "true"]
+      - out: ["6", "false"]
+      - out: ["!! TypeError"]
+    answer: 1
+    explain: |
+      توابع first-class هستند و می‌شود آن‌ها را در یک object ذخیره کرد؛ `ops.minus` همان `sub` است و `10 - 4` برابر `6`. ذخیره کردن تابع کپی نمی‌سازد؛ `ops.plus` و `add` **همان یک** تابع‌اند، پس `===` برابر `true` است (رد گزینه‌ی ۳). گزینه‌ی ۲ تابع‌ها را جابه‌جا گرفته و گزینه‌ی ۴ فکر کرده تابعِ ذخیره‌شده در object را نمی‌شود صدا زد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const calculator = {
+        brand: "Casio",
+        add: function (a, b) {
+          return a + b;
+        },
+      };
+      const plus = calculator.add;
+      console.log(calculator.add(2, 3));
+      console.log(plus(10, 20));
+      console.log(typeof calculator.add);
+    options:
+      - out: ["5", "30", "function"]
+      - out: ["5", "!! TypeError"]
+      - out: ["5", "30", "object"]
+      - out: ["5", "undefined", "function"]
+    answer: 1
+    explain: |
+      طبق اسلاید ۱۷ تابع می‌تواند متد یک object باشد یا مستقل استفاده شود. `calculator.add` یک متد است و `plus` همان تابع را در یک متغیر جدا نگه می‌دارد؛ چون بدنه‌ی تابع به object وابسته نیست (از `this` استفاده نمی‌کند)، `plus(10, 20)` هم درست `30` می‌دهد (رد گزینه‌های ۲ و ۴). تابع نوعی object است ولی `typeof` برایش `"function"` برمی‌گرداند (رد گزینه‌ی ۳).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function processOrder(item, onDone) {
+        console.log("Preparing " + item);
+        onDone(item);
+        console.log("Finished");
+      }
+      processOrder("pizza", function (x) {
+        console.log(x + " is ready");
+      });
+    options:
+      - out: ["Preparing pizza", "Finished", "pizza is ready"]
+      - out: ["pizza is ready", "Preparing pizza", "Finished"]
+      - out: ["Preparing pizza", "pizza is ready", "Finished"]
+      - out: ["Preparing pizza", "Finished"]
+    answer: 3
+    explain: |
+      تابع بی‌نام به‌عنوان callback به پارامتر `onDone` پاس داده شده است. callback دقیقاً همان لحظه‌ای اجرا می‌شود که `processOrder` آن را با `onDone(item)` صدا می‌زند، یعنی بین دو `console.log`. گزینه‌ی ۱ تصور کرده callback همیشه «آخر کار» اجرا می‌شود. گزینه‌ی ۲ فکر کرده تابع هنگام پاس داده شدن اجرا می‌شود و گزینه‌ی ۴ فراموش کرده که callback واقعاً صدا زده می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function price(amount, tax = 10) {
+        return amount + tax;
+      }
+      console.log(price(100));
+      console.log(price(100, 0));
+      console.log(price(100, null));
+      console.log(price(100, undefined));
+    options:
+      - out: ["110", "110", "110", "110"]
+      - out: ["110", "100", "110", "110"]
+      - out: ["110", "100", "100", "NaN"]
+      - out: ["110", "100", "100", "110"]
+    answer: 4
+    explain: |
+      مقدار پیش‌فرض **فقط** جای `undefined` را می‌گیرد. پس `price(100)` و `price(100, undefined)` هر دو از `tax = 10` استفاده می‌کنند و `110` می‌دهند (رد گزینه‌ی ۳). `0` یک مقدار واقعی است و حاصل `100` است (رد گزینه‌ی ۱). `null` هم مقدار واقعی است و پیش‌فرض را کنار می‌زند؛ در جمع عددی `null` به `0` تبدیل می‌شود و `100 + null` برابر `100` است (رد گزینه‌ی ۲).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function makeMultiplier(k) {
+        return function (x) {
+          return x * k;
+        };
+      }
+      const triple = makeMultiplier(3);
+      console.log(triple(5));
+      console.log(makeMultiplier(2)(7));
+    options:
+      - out: ["15", "14"]
+      - out: ["NaN", "NaN"]
+      - out: ["15", "!! TypeError"]
+      - out: ["!! SyntaxError"]
+    answer: 1
+    explain: |
+      `makeMultiplier(3)` یک **تابع** برمی‌گرداند که `k = 3` را به خاطر دارد؛ پس `triple(5)` برابر `15` است. در `makeMultiplier(2)(7)` پرانتز اول تابع را می‌سازد و پرانتز دوم بلافاصله همان تابع برگشتی را با `7` صدا می‌زند: `14`. دو پرانتز پشت سر هم نحو کاملاً درستی است (رد گزینه‌های ۳ و ۴). گزینه‌ی ۲ فکر کرده `k` بعد از تمام شدن `makeMultiplier` از بین می‌رود، در حالی که تابع برگشتی آن را نگه می‌دارد (closure).
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      function getName() {
+        return "Mina";
+      }
+      const userName = getName();
+      console.log(userName);
+      console.log(userName());
+    options:
+      - line: 4
+      - line: 5
+      - line: 6
+      - line: 0
+    answer: 3
+    explain: |
+      در خط ۴ تابع **صدا زده شده** و `userName` مقدار برگشتی یعنی رشته‌ی `"Mina"` را دارد، نه خودِ تابع را. خط ۵ همین رشته را چاپ می‌کند. در خط ۶ می‌خواهیم یک رشته را مثل تابع صدا بزنیم و خطای `TypeError: userName is not a function` می‌گیریم. گزینه‌ی ۱ فکر کرده صدا زدن تابع هنگام ریختن در `const` مشکل دارد و گزینه‌ی ۴ `userName` را با خودِ تابع `getName` اشتباه گرفته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function run(task) {
+        console.log("running...");
+        return task();
+      }
+      function hello() {
+        console.log("hello");
+        return "done";
+      }
+      console.log(run(hello));
+      console.log(run(hello()));
+    options:
+      - out: ["running...", "hello", "done", "running...", "hello", "done"]
+      - out: ["running...", "hello", "done", "running...", "hello", "!! TypeError"]
+      - out: ["running...", "hello", "done", "hello", "running...", "done"]
+      - out: ["running...", "hello", "done", "hello", "running...", "!! TypeError"]
+    answer: 4
+    explain: |
+      `run(hello)` خودِ تابع را می‌فرستد: اول `running...`، بعد `run` آن را صدا می‌زند (`hello`) و `"done"` برمی‌گردد و چاپ می‌شود. اما در `run(hello())` آرگومان **قبل از** ورود به `run` حساب می‌شود: `hello()` همین الان اجرا می‌شود (`hello`) و رشته‌ی `"done"` را می‌دهد. سپس `run` چاپ می‌کند `running...` و می‌خواهد رشته‌ی `"done"` را صدا بزند: `TypeError`. گزینه‌ی ۱ فرقی بین `hello` و `hello()` قائل نشده، گزینه‌ی ۲ ترتیب ارزیابی آرگومان را اشتباه گرفته و گزینه‌ی ۳ فکر کرده رشته را می‌شود مثل تابع صدا زد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let calls = 0;
+      function hello() {
+        calls++;
+        return "hi";
+      }
+      const a = hello;
+      const b = hello();
+      const c = a();
+      console.log(calls);
+    options:
+      - out: "1"
+      - out: "2"
+      - out: "3"
+      - out: "0"
+    answer: 2
+    explain: |
+      `const a = hello` فقط **خودِ تابع** را در `a` می‌ریزد و آن را اجرا نمی‌کند. `hello()` یک بار تابع را اجرا می‌کند و `a()` هم همان تابع را (با نام دیگر) یک بار دیگر اجرا می‌کند؛ پس `calls` برابر `2` است. گزینه‌ی ۳ فکر کرده `const a = hello` هم تابع را صدا می‌زند. گزینه‌ی ۱ تصور کرده `a` یک کپی جداست که شمارنده‌ی اصلی را عوض نمی‌کند و گزینه‌ی ۴ اثر فراخوانی‌ها روی متغیر بیرونی را ندیده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function getScore() {
+        return
+          100;
+      }
+      console.log(getScore());
+    options:
+      - out: "undefined"
+      - out: "100"
+      - out: "!! SyntaxError"
+      - out: "null"
+    answer: 1
+    explain: |
+      وقتی بلافاصله بعد از `return` به خط بعد می‌رویم، JavaScript همان‌جا یک `;` خودکار می‌گذارد (automatic semicolon insertion)؛ پس کد مثل `return;` خوانده می‌شود و تابع `undefined` برمی‌گرداند. خط `100;` هرگز اجرا نمی‌شود (رد گزینه‌ی ۲). این کد از نظر نحوی مجاز است و خطا نمی‌دهد (رد گزینه‌ی ۳) و `return;` خالی همیشه `undefined` می‌دهد، نه `null` (رد گزینه‌ی ۴).
