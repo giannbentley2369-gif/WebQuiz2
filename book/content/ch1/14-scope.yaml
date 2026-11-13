@@ -1,0 +1,769 @@
+id: ch1-scope
+title: "Block، Scope و Global scope"
+slides: "Introduction to JS، اسلایدهای ۲۵ و ۲۶"
+lesson: |
+  یک ساختمان با شیشه‌های **دودی یک‌طرفه** را تصور کن: از داخل هر اتاق می‌توانی بیرون را ببینی، ولی از بیرون نمی‌شود داخل اتاق را دید. متغیرها در JavaScript دقیقاً همین‌طور «دیده می‌شوند»: کدی که داخل یک بلوک است متغیرهای بیرون را می‌بیند، ولی کد بیرونی متغیرهای داخل بلوک را نمی‌بیند.
+
+  به محدوده‌ای از کد که یک متغیر در آن **قابل دسترسی** است، **scope** (محدوده یا حوزه‌ی دیدِ متغیر) می‌گوییم.
+
+  ### بلوک (Block): اسلاید ۲۵
+
+  - **بلوک** یعنی کدی که داخل آکولاد `{ ... }` است.
+  - متغیرهایی که با `let` یا `const` داخل یک بلوک تعریف شوند **فقط داخل همان بلوک** وجود دارند.
+  - **بیرون از بلوک** به آن‌ها **دسترسی نداریم**.
+
+  کد اسلاید ۲۵:
+
+  ```js title=scopes.js
+  {
+    let x = 10;
+    console.log(x); // works
+  }
+  console.log(x);   // error: x is not defined
+  ```
+
+  خروجی در Node.js:
+
+  ```text
+  10
+  ReferenceError: x is not defined
+  ```
+
+  خط سوم داخل بلوک است و `10` را چاپ می‌کند. بلوک که تمام شد، `x` هم از بین رفت؛ پس خط آخر خطای **`ReferenceError`** (خطای ارجاع؛ یعنی «چنین نامی پیدا نشد») می‌دهد. این خطا در **زمان اجرا** رخ می‌دهد؛ برای همین `10` قبل از آن چاپ شده است.
+
+  به این رفتار **block scope** (محدوده‌ی بلوکی) می‌گوییم و `let` و `const` را **block-scoped** می‌نامیم. بلوک‌ها همه‌جا هستند: بدنه‌ی `if` و `else`، بدنه‌ی حلقه‌ها، بدنه‌ی `switch`، بدنه‌ی توابع یا حتی یک جفت آکولادِ تنها مثل همین مثال. (آکولادهای یک شیء مثل `{ name: "Ali" }` بلوک نیستند؛ آن‌ها یک شیء می‌سازند که در درس «اشیاء» با آن آشنا می‌شویم.)
+
+  ```js
+  const age = 20;
+  if (age >= 18) {
+    const message = "Adult";   // lives only inside this if-block
+    console.log(message);      // Adult
+  }
+  console.log(typeof message); // undefined (message does not exist out here)
+
+  for (let i = 0; i < 2; i++) {
+    const square = i * i;      // a fresh `square` in every iteration
+  }
+  console.log(typeof i, typeof square); // undefined undefined
+  ```
+
+  (عملگر `typeof` نوع یک مقدار را به‌صورت رشته برمی‌گرداند و روی نامی که پیدا نشود، به جای خطا `"undefined"` می‌دهد؛ پایین‌تر دوباره به آن می‌رسیم.)
+
+  جمله‌ی پایانی اسلاید ۲۵ می‌گوید: «بلوک‌ها فقط یک قاعده‌ی نوشتاری (syntax) نیستند؛ ابزاری برای **سازمان‌دهی** و **محافظت** از متغیرها هستند.» یعنی:
+
+  - **سازمان‌دهی**: متغیرهای موقت (مثل `square` بالا) فقط همان‌جایی هستند که لازم‌اند و بقیه‌ی کد شلوغ نمی‌شود.
+  - **محافظت**: کدِ بیرون از بلوک نمی‌تواند به‌اشتباه متغیرهای داخل آن را بخواند یا خراب کند، و نام‌های داخل بلوک با نام‌های بیرون **تداخل** پیدا نمی‌کنند.
+
+  ### Global scope (محدوده‌ی سراسری): اسلاید ۲۶
+
+  - متغیری که **بیرون از هر بلوکی** (و بیرون از هر تابعی) تعریف شود **global** (سراسری) است.
+  - به متغیرهای سراسری **از هر جای کد** می‌شود دسترسی داشت.
+  - تا وقتی برنامه اجرا می‌شود **زنده می‌مانند** (برخلاف متغیرهای یک بلوک که با تمام شدن بلوک از بین می‌روند).
+  - در مرورگرها، متغیرهای سراسری به property (ویژگی)های شیء `window` تبدیل می‌شوند (جزئیات دقیقش را پایین‌تر می‌بینیم).
+
+  کد اسلاید ۲۶:
+
+  ```js title=global.js
+  let message = "Hello";  // global
+
+  function greet() {
+    console.log(message); // accessible here
+  }
+
+  greet();
+  console.log(message);   // accessible here too
+  // Hello
+  // Hello
+  ```
+
+  `function greet() { ... }` یک **تابع (function)** تعریف می‌کند: یک تکه کدِ نام‌دار که هر بار `greet()` را بنویسیم اجرا می‌شود (توابع را در درس «توابع» کامل می‌خوانیم). `message` بیرون از همه‌ی بلوک‌ها تعریف شده، پس هم داخل تابع و هم بیرون از آن در دسترس است.
+
+  ### Function scope (محدوده‌ی تابع)
+
+  بدنه‌ی هر تابع هم یک محدوده است: هر متغیری که داخل تابع تعریف شود (با `let`، `const` و حتی `var`) فقط داخل همان تابع وجود دارد. این محدوده با **هر بار صدا زدنِ** تابع از نو ساخته می‌شود.
+
+  ```js
+  function makeTea() {
+    const sugar = 2;            // local to makeTea
+    console.log("Sugar:", sugar);
+  }
+  makeTea();                    // Sugar: 2
+  console.log(typeof sugar);    // undefined (sugar does not exist out here)
+  ```
+
+  تفاوت مهم `var`: `var` فقط به **تابع** اهمیت می‌دهد، نه به بلوک (**function-scoped**). `var`ی که داخل یک `if` یا حلقه تعریف شود، در کل تابعِ دربرگیرنده (یا اگر داخل هیچ تابعی نباشد، در کل برنامه) دیده می‌شود. جزئیات بیشتر در درس «مشکلات var».
+
+  ```js
+  function test() {
+    if (true) {
+      var a = "var";   // function-scoped: visible in the whole function
+      let b = "let";   // block-scoped: visible only in this if-block
+    }
+    console.log(a);    // var
+    console.log(b);    // ReferenceError: b is not defined
+  }
+  test();
+  ```
+
+  | | `let` | `const` | `var` |
+  |---|---|---|---|
+  | محدوده | بلوک `{ }` | بلوک `{ }` | کل تابع |
+  | دیده شدن بعد از بلوکِ `if`/حلقه | خیر | خیر | بله |
+  | دیده شدن بیرون از تابع | خیر | خیر | خیر |
+
+  ### محدوده‌های تودرتو و زنجیره‌ی scope (Scope chain)
+
+  محدوده‌ها مثل عروسک‌های روسی داخل هم قرار می‌گیرند. وقتی کد از یک نام استفاده می‌کند، JavaScript آن را این‌طور جست‌وجو می‌کند:
+
+  1. اول در **همان محدوده‌ی فعلی**؛
+  2. اگر نبود، در **محدوده‌ی بیرونیِ** آن؛
+  3. و همین‌طور بیرون‌تر، تا **global scope**؛
+  4. اگر آن‌جا هم نبود: `ReferenceError`.
+
+  به این مسیر جست‌وجو **scope chain** (زنجیره‌ی محدوده‌ها) می‌گوییم. جست‌وجو **فقط رو به بیرون** است: محدوده‌ی درونی محدوده‌های بیرونی را می‌بیند، ولی محدوده‌ی بیرونی هیچ‌وقت داخل محدوده‌های درونی را نمی‌بیند.
+
+  ```js
+  const city = "Tehran";                 // global scope
+
+  function outer() {
+    const street = "Azadi";              // outer's scope
+    function inner() {
+      const house = 12;                  // inner's scope
+      console.log(city, street, house);  // inner sees all three
+    }
+    inner();
+    console.log(typeof house);           // outer cannot see inside inner
+  }
+
+  outer();
+  // Tehran Azadi 12
+  // undefined
+  ```
+
+  ### Shadowing (سایه انداختن)
+
+  اگر در یک محدوده‌ی درونی متغیری با **همان نامِ** یک متغیر بیرونی تعریف کنی، متغیر درونی **روی** بیرونی سایه می‌اندازد (**shadowing**): داخل آن محدوده هر جا آن نام را بنویسی به متغیر درونی می‌رسی و متغیر بیرونی **دست‌نخورده** می‌ماند. دلیلش این است که جست‌وجو از محدوده‌ی فعلی شروع می‌شود و با **اولین** پیدا شدن متوقف می‌شود.
+
+  ```js
+  let color = "blue";
+
+  {
+    let color = "red";     // a NEW variable that shadows the outer one
+    console.log(color);    // red
+  }
+
+  console.log(color);      // blue (the outer variable was never touched)
+  ```
+
+  این **تعریف دوباره** حساب نمی‌شود (چون دو متغیر در دو محدوده‌ی جدا هستند) و خطا نمی‌دهد. اما مراقب باش: اگر داخل بلوک `let` را **ننویسی**، متغیر جدیدی نساخته‌ای و داری **همان متغیر بیرونی** را تغییر می‌دهی:
+
+  ```js
+  let count = 1;
+  {
+    count = 2;             // no let: this changes the OUTER count
+  }
+  console.log(count);      // 2
+  ```
+
+  پارامترهای تابع (ورودی‌هایی که داخل پرانتزِ تعریف تابع می‌آیند) هم متغیرهای محلیِ همان تابع‌اند و می‌توانند روی یک متغیر بیرونیِ هم‌نام سایه بیندازند (`return` مقدار را به جایی که تابع صدا زده شده برمی‌گرداند):
+
+  ```js
+  let x = 10;
+  function double(x) {     // this x is a parameter, local to double
+    x = x * 2;
+    return x;
+  }
+  console.log(double(3));  // 6
+  console.log(x);          // 10
+  ```
+
+  (اما داخل **خودِ** بدنه‌ی تابع نمی‌توانی با `let` متغیری هم‌نامِ یکی از پارامترها تعریف کنی: `function f(x) { let x = 1; }` تعریف دوباره است و `SyntaxError` می‌دهد، چون پارامتر و آن `let` در یک محدوده‌اند.)
+
+  ### متغیرهای سراسری و شیء `window` (در مرورگر)
+
+  اسلاید ۲۶ می‌گوید در مرورگر، متغیرهای سراسری property شیء `window` (شیء سراسری مرورگر که پنجره‌ی فعلی را نشان می‌دهد) می‌شوند. دقیق‌ترش این است:
+
+  | تعریف در سطح بالای یک اسکریپت مرورگر | سراسری است؟ | property شیء `window` می‌شود؟ |
+  |---|---|---|
+  | `var a = 1;` | بله | **بله** (`window.a` برابر `1`) |
+  | `function f() {}` | بله | **بله** (`typeof window.f` برابر `"function"`) |
+  | `let b = 2;` | بله | **خیر** (`window.b` برابر `undefined`) |
+  | `const c = 3;` | بله | **خیر** (`window.c` برابر `undefined`) |
+
+  ```js
+  // in a browser (a classic <script>)
+  var version = "1.0";
+  let appName = "Quiz";
+  console.log(window.version); // 1.0
+  console.log(window.appName); // undefined
+  console.log(appName);        // Quiz (still global and usable everywhere)
+  ```
+
+  پس `let` و `const`ِ سطح بالا هم **سراسری‌اند** (از همه‌جا در دسترس‌اند)، فقط روی `window` نمی‌نشینند. این‌که `var` روی `window` می‌نشیند یکی از مشکلات `var` است (آلوده کردن محدوده‌ی سراسری) که در درس «مشکلات var» می‌بینیم.
+
+  در **Node.js** اصلاً `window` نداریم (`typeof window` برابر `"undefined"` است) و شیء سراسری با نام `globalThis` (یا `global`) در دسترس است. سطح بالای یک فایل Node.js هم محدوده‌ی **همان فایل** (module) است، نه محدوده‌ی سراسری واقعی؛ پس آن‌جا حتی `var`ِ سطح بالا هم property شیء سراسری نمی‌شود.
+
+  ### چرا متغیرهای سراسریِ زیاد بد است؟
+
+  جمله‌ی پایانی اسلاید ۲۶: «متغیرهای سراسریِ زیاد می‌توانند باعث **تداخل نام‌ها (naming conflicts)** و **باگ** شوند و **نگه‌داری و دیباگِ** کد را سخت‌تر می‌کنند.» چرا؟
+
+  - همه‌ی اسکریپت‌های معمولیِ یک صفحه **یک global scope مشترک** دارند. اگر دو فایل (مثلاً کد خودت و یک کتابخانه) هر دو `var count` یا `function init()` داشته باشند، دومی **بی‌صدا** اولی را بازنویسی می‌کند:
+
+    ```html
+    <script>
+      // menu.js
+      var count = 0;
+      function init() { console.log("menu init"); }
+    </script>
+    <script>
+      // cart.js (written by someone else)
+      var count = 5;
+      function init() { console.log("cart init"); }
+    </script>
+    <script>
+      init();             // cart init (menu's init was silently replaced!)
+      console.log(count); // 5
+    </script>
+    ```
+
+  - اگر همان نام‌ها در هر دو فایل با `let` تعریف شده باشند، اسکریپت دوم با `SyntaxError: Identifier 'count' has already been declared` **اصلاً اجرا نمی‌شود**.
+  - هر تابعی در هر جای برنامه می‌تواند یک متغیر سراسری را عوض کند؛ وقتی مقدارش غلط شد، پیدا کردن مقصر سخت است.
+  - متغیرهای سراسری تا آخر برنامه در حافظه می‌مانند.
+
+  **بهترین روش:** هر متغیر را در **کوچک‌ترین محدوده‌ای** که لازم دارد تعریف کن (داخل همان تابع یا بلوک).
+
+  ### دام: متغیر سراسریِ ناخواسته (Implicit global)
+
+  اگر به نامی که **هیچ‌جا تعریف نشده** مقدار بدهی (بدون `let`، `const` یا `var`):
+
+  - در **حالت عادی (sloppy mode)** (حالت پیش‌فرض و سهل‌گیر JavaScript) بی‌صدا یک متغیر **سراسری** ساخته می‌شود (در مرورگر، `window.total`)، حتی اگر این کار داخل یک تابع باشد!
+  - در **حالت strict** (با نوشتن `"use strict";` در ابتدای فایل یا تابع؛ حالتی سخت‌گیرتر که جلوی خطاهای بی‌صدا را می‌گیرد) همان خط خطای `ReferenceError` می‌دهد.
+
+  ```js
+  function init() {
+    total = 100;          // no let/const/var: an accidental global!
+  }
+  init();
+  console.log(total);     // 100 (sloppy mode)
+  ```
+
+  ```js
+  "use strict";
+  function init() {
+    total = 100;          // ReferenceError: total is not defined
+  }
+  init();
+  ```
+
+  ### `typeof` روی متغیری که در دسترس نیست
+
+  خواندن مستقیمِ متغیری که در محدوده‌ی فعلی وجود ندارد `ReferenceError` می‌دهد، ولی `typeof` روی نامی که اصلاً پیدا نمی‌شود **خطا نمی‌دهد** و رشته‌ی `"undefined"` برمی‌گرداند:
+
+  ```js
+  {
+    const secret = 42;
+  }
+  console.log(typeof secret); // undefined (no error)
+  console.log(secret);        // ReferenceError: secret is not defined
+  ```
+
+  (یک استثنا هست: `typeof` روی یک `let`/`const` **در همان محدوده ولی قبل از خطِ تعریفش** خطا می‌دهد. این را در درس «Hoisting و TDZ» می‌بینیم.)
+
+  ::: tip
+  - بلوک یعنی `{ ... }`. `let` و `const` block-scoped هستند و `var` function-scoped است.
+  - جست‌وجوی نام‌ها از داخل به بیرون است (scope chain): محدوده‌ی درونی بیرونی را می‌بیند، نه برعکس.
+  - shadowing: متغیر درونیِ هم‌نام، بیرونی را **می‌پوشاند** ولی **تغییر نمی‌دهد**. بدون `let` داخل بلوک، همان متغیر بیرونی (نزدیک‌ترین متغیر هم‌نام) تغییر می‌کند.
+  - در مرورگر فقط `var` و اعلان تابعِ سطح بالا property شیء `window` می‌شوند؛ `let` و `const` سراسری‌اند ولی روی `window` نیستند. در Node.js اصلاً `window` نداریم.
+  - متغیر را در کوچک‌ترین محدوده‌ی لازم تعریف کن تا تداخل نام و باگ کمتر شود.
+  :::
+
+  ::: trap
+  - خطای «استفاده بیرون از بلوک» از نوع `ReferenceError` است و در زمان اجرا رخ می‌دهد؛ پس خروجی خط‌های قبل از آن چاپ شده است.
+  - `typeof` روی متغیری که بیرون از بلوکش است `"undefined"` می‌دهد، نه خطا؛ ولی خواندن مستقیمش خطا می‌دهد.
+  - انتساب به نامِ تعریف‌نشده در حالت sloppy یک global ناخواسته می‌سازد و در حالت strict خطای `ReferenceError` می‌دهد.
+  - جمله‌ی «همه‌ی متغیرهای سراسری property شیء `window` می‌شوند» دقیق نیست: `let` و `const` نمی‌شوند.
+  - `let x` داخل یک بلوک تازه، تعریف دوباره نیست و خطا نمی‌دهد (shadowing است). اما اگر `var x` را داخل یک بلوک بنویسی و یکی از محدوده‌های **دربرگیرنده‌ی** آن بلوک (داخل همان تابع، یا سطح بالای برنامه) `let x` داشته باشد، این تعریف دوباره است و `SyntaxError` می‌دهد؛ چون `var` از بلوک بیرون می‌زند.
+  :::
+
+  ::: summary
+  - scope یعنی محدوده‌ای که یک متغیر در آن قابل دسترسی است. بلوک = `{ ... }`؛ `let`/`const` فقط داخل بلوک خودشان وجود دارند (اسلاید ۲۵).
+  - global: بیرون از هر بلوک تعریف می‌شود، از همه‌جا در دسترس است و تا پایان برنامه زنده است (اسلاید ۲۶). globalهای زیاد یعنی تداخل نام، باگ و دیباگ سخت.
+  - توابع محدوده‌ی خودشان را دارند؛ `var` function-scoped است.
+  - scope chain: جست‌وجو از داخل به بیرون؛ shadowing: نام درونی، بیرونی را می‌پوشاند.
+  - در مرورگر فقط `var` و تابع‌های سطح بالا روی `window` می‌نشینند؛ انتساب به نام تعریف‌نشده: global ناخواسته (sloppy) یا `ReferenceError` (strict).
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۵، **بلوک (block)** در JavaScript چیست؟
+    options:
+      - 'هر خطی از کد که با `;` تمام شود.'
+      - 'کدی که داخل آکولاد `{ ... }` قرار دارد.'
+      - 'کدی که داخل پرانتز `( ... )` قرار دارد.'
+      - 'فقط بدنه‌ی یک تابع؛ بدنه‌ی `if` و حلقه‌ها بلوک حساب نمی‌شوند.'
+    answer: 2
+    explain: |
+      اسلاید ۲۵: «A block is code inside { ... }». بدنه‌ی `if` و `else`، حلقه‌ها، توابع و حتی یک جفت آکولادِ تنها همه بلوک‌اند (رد گزینه‌ی ۴). `;` پایان یک دستور است، نه مرز یک بلوک (گزینه‌ی ۱) و پرانتز برای شرط‌ها، فراخوانی تابع و گروه‌بندی عبارت‌ها به کار می‌رود (گزینه‌ی ۳).
+
+  - level: easy
+    stem: |
+      خروجی کد اسلاید ۲۵ (فایل `scopes.js`) در Node.js چیست؟
+    check: output
+    code: |
+      {
+        let x = 10;
+        console.log(x); // works
+      }
+      console.log(x);   // error: x is not defined
+    options:
+      - out: ["10", "10"]
+      - out: "!! ReferenceError"
+      - out: ["10", "!! ReferenceError"]
+      - out: ["10", "undefined"]
+    answer: 3
+    explain: |
+      داخل بلوک `x` وجود دارد و `10` چاپ می‌شود. بعد از بسته شدن آکولاد، `x` (که با `let` تعریف شده) دیگر وجود ندارد و خط آخر `ReferenceError: x is not defined` می‌دهد. این خطا در زمان اجرا رخ می‌دهد، پس `10` قبل از آن چاپ شده است (رد گزینه‌ی ۲). گزینه‌ی ۱ رفتار `var` را در نظر گرفته که از بلوک بیرون می‌زند و گزینه‌ی ۴ فکر کرده متغیرِ ناموجود `undefined` می‌دهد؛ اما خواندن نامی که اصلاً پیدا نمی‌شود خطاست.
+
+  - level: easy
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      function calculateTotal() {
+        const tax = 9;
+        console.log("Tax:", tax);
+      }
+      calculateTotal();
+      console.log("Done");
+      console.log(tax);
+    options:
+      - line: 3
+      - line: 5
+      - line: 0
+      - line: 7
+    answer: 4
+    explain: |
+      `tax` داخل تابع تعریف شده و فقط داخل همان تابع وجود دارد (function scope). خط ۳ داخل تابع است و بی‌مشکل `Tax: 9` را چاپ می‌کند و فراخوانی تابع در خط ۵ هم خطایی ندارد. بعد از چاپ `Done`، خط ۷ از بیرونِ تابع سراغ `tax` می‌رود و `ReferenceError: tax is not defined` می‌گیرد؛ پس گزینه‌ی ۳ («هیچ خطایی رخ نمی‌دهد») هم غلط است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      {
+        const token = "abc123";
+      }
+      console.log(typeof token);
+      console.log(token);
+    options:
+      - out: ["undefined", "!! ReferenceError"]
+      - out: ["string", "abc123"]
+      - out: "!! ReferenceError"
+      - out: ["undefined", "undefined"]
+    answer: 1
+    explain: |
+      `token` فقط داخل بلوک وجود دارد. `typeof` روی نامی که پیدا نمی‌شود خطا نمی‌دهد و رشته‌ی `"undefined"` را برمی‌گرداند؛ ولی خواندن مستقیم `token` در خط آخر `ReferenceError` می‌دهد. گزینه‌ی ۲ فرض کرده `const` از بلوک بیرون می‌زند، گزینه‌ی ۳ فکر کرده `typeof` هم خطا می‌دهد و گزینه‌ی ۴ فکر کرده خواندن مستقیم یک متغیرِ ناموجود هم `undefined` می‌دهد.
+
+  - level: easy
+    stem: |
+      خروجی کد اسلاید ۲۶ (فایل `global.js`) چیست؟
+    check: output
+    code: |
+      let message = "Hello";  // global
+
+      function greet() {
+        console.log(message); // accessible here
+      }
+
+      greet();
+      console.log(message);   // accessible here too
+    options:
+      - out: ["Hello", "Hello"]
+      - out: ["undefined", "Hello"]
+      - out: "!! ReferenceError"
+      - out: ["Hello", "!! ReferenceError"]
+    answer: 1
+    explain: |
+      `message` بیرون از هر بلوکی تعریف شده، پس سراسری (global) است و «از هر جای کد» در دسترس است: هم داخل تابع `greet` و هم در سطح بالای برنامه. گزینه‌های ۲ و ۳ فکر کرده‌اند تابع به متغیرهای بیرون از خودش دسترسی ندارد و گزینه‌ی ۴ فکر کرده بعد از اجرای تابع، متغیر از بین می‌رود؛ در حالی که متغیر سراسری تا پایان برنامه زنده است.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۶، کدام جمله درباره‌ی متغیرهای **سراسری (global)** درست است؟
+    options:
+      - 'فقط داخل تابعی که از آن‌ها استفاده می‌کند قابل دسترسی‌اند.'
+      - 'بیرون از هر بلوکی تعریف می‌شوند، از هر جای کد قابل دسترسی‌اند و تا وقتی برنامه اجرا می‌شود زنده می‌مانند.'
+      - 'بعد از اولین استفاده، به‌طور خودکار از حافظه پاک می‌شوند.'
+      - 'فقط با کلمه‌ی کلیدی `var` می‌توان متغیر سراسری ساخت.'
+    answer: 2
+    explain: |
+      اسلاید ۲۶ سه ویژگی می‌گوید: متغیری که **بیرون** از هر بلوکی تعریف شود سراسری است، **از هر جای کد** قابل دسترسی است و **تا وقتی برنامه اجرا می‌شود** زنده می‌ماند. گزینه‌ی ۱ برعکسِ «از هر جا» است و گزینه‌ی ۳ با «زنده ماندن تا پایان برنامه» تضاد دارد. گزینه‌ی ۴ هم غلط است: در خودِ مثال اسلاید ۲۶، `let message` سراسری است.
+
+  - level: easy
+    stem: |
+      جمله‌ی پایانی اسلاید ۲۶ درباره‌ی متغیرهای سراسریِ **زیاد** چه هشداری می‌دهد؟
+    options:
+      - 'JavaScript حداکثر ۱۰ متغیر سراسری را مجاز می‌داند و بعد از آن خطا می‌دهد.'
+      - 'متغیرهای سراسری داخل تابع‌ها خوانده نمی‌شوند و باید دوباره تعریف شوند.'
+      - 'متغیرهای سراسری فقط در Node.js کار می‌کنند و در مرورگر خطا می‌دهند.'
+      - 'می‌توانند باعث تداخل نام‌ها (naming conflicts) و باگ شوند و نگه‌داری و دیباگ کد را سخت‌تر می‌کنند.'
+    answer: 4
+    explain: |
+      متن اسلاید ۲۶: «Too many globals can cause naming conflicts and bugs. They make code harder to maintain and debug.» همه‌ی اسکریپت‌ها و توابع به globalها دسترسی دارند، پس نام‌ها ممکن است با هم تداخل کنند و هر جای برنامه ممکن است مقدارشان را عوض کند. محدودیت عددی (گزینه‌ی ۱) وجود ندارد، globalها داخل توابع قابل خواندن‌اند (رد گزینه‌ی ۲) و در هر دو محیط مرورگر و Node.js کار می‌کنند (رد گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let score = 0;
+      function addPoint() {
+        score++;
+      }
+      addPoint();
+      addPoint();
+      console.log(score);
+    options:
+      - out: "0"
+      - out: "1"
+      - out: "2"
+      - out: "!! ReferenceError"
+    answer: 3
+    explain: |
+      `score` سراسری است و تابع `addPoint` نه‌تنها آن را می‌خواند بلکه **تغییر** هم می‌دهد (چون داخل تابع هیچ `let score` جدیدی تعریف نشده). دو بار فراخوانی، `score` را از ۰ به ۲ می‌رساند. گزینه‌ی ۱ فکر کرده تغییرِ داخل تابع روی متغیر بیرونی اثری ندارد، گزینه‌ی ۲ فقط یکی از دو فراخوانی را حساب کرده و گزینه‌ی ۴ فکر کرده تابع به متغیر سراسری دسترسی ندارد. همین که «هر تابعی می‌تواند متغیر سراسری را عوض کند» یکی از دلیل‌های سخت شدن دیباگ با globalهای زیاد است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = "A";
+      function outer() {
+        const b = "B";
+        function inner() {
+          const c = "C";
+          console.log(a + b + c);
+        }
+        inner();
+      }
+      outer();
+    options:
+      - out: "ABC"
+      - out: "C"
+      - out: "!! ReferenceError"
+      - out: "undefinedundefinedC"
+    answer: 1
+    explain: |
+      `inner` اول `c` را در محدوده‌ی خودش پیدا می‌کند، `b` را در محدوده‌ی بیرونی‌اش (`outer`) و `a` را در global scope. این جست‌وجوی رو به بیرون همان scope chain است. گزینه‌های ۲ و ۴ فکر کرده‌اند تابع درونی فقط متغیرهای خودش را می‌بیند (یکی با نادیده گرفتن بقیه و دیگری با `undefined`) و گزینه‌ی ۳ فکر کرده دسترسی به متغیرهای بیرونی خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      function outer() {
+        const x = 1;
+        function inner() {
+          const y = 2;
+          console.log(x + y);
+        }
+        inner();
+        console.log(y);
+      }
+      outer();
+    options:
+      - line: 5
+      - line: 8
+      - line: 10
+      - line: 0
+    answer: 2
+    explain: |
+      `inner` به `x` از محدوده‌ی بیرونی دسترسی دارد، پس خط ۵ عدد `3` را چاپ می‌کند (رد گزینه‌ی ۱). اما جست‌وجو فقط رو به **بیرون** است و `outer` نمی‌تواند داخل `inner` را ببیند؛ پس `y` در خط ۸ پیدا نمی‌شود و `ReferenceError: y is not defined` رخ می‌دهد. خط ۱۰ فقط تابع را صدا می‌زند و دستورِ خطادار، خط ۸ داخل تابع است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const level = "global";
+      function outer() {
+        const level = "outer";
+        function inner() {
+          console.log(level);
+        }
+        inner();
+      }
+      outer();
+      console.log(level);
+    options:
+      - out: ["global", "global"]
+      - out: ["outer", "outer"]
+      - out: "!! SyntaxError"
+      - out: ["outer", "global"]
+    answer: 4
+    explain: |
+      `inner` متغیری به نام `level` ندارد، پس جست‌وجو یک قدم بیرون می‌رود، در `outer` به `level = "outer"` می‌رسد و همان‌جا **متوقف** می‌شود؛ به global نمی‌رسد (رد گزینه‌ی ۱). `level`ِ داخل `outer` یک متغیر جدید در محدوده‌ای دیگر است که روی متغیر سراسری سایه انداخته (shadowing)، نه تعریف دوباره در همان محدوده؛ پس `SyntaxError` رخ نمی‌دهد (رد گزینه‌ی ۳). متغیر سراسری هم دست‌نخورده می‌ماند و خط آخر `global` را چاپ می‌کند (رد گزینه‌ی ۲).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let total = 10;
+      function reset() {
+        let total = 0;
+      }
+      function clear() {
+        total = 0;
+      }
+      reset();
+      console.log(total);
+      clear();
+      console.log(total);
+    options:
+      - out: ["0", "0"]
+      - out: ["10", "10"]
+      - out: ["10", "0"]
+      - out: ["0", "10"]
+    answer: 3
+    explain: |
+      `reset` داخل خودش یک `let total` **جدید** تعریف می‌کند که فقط در همان تابع زندگی می‌کند (shadowing)؛ پس `total` سراسری دست‌نخورده می‌ماند و `10` چاپ می‌شود. `clear` اما `let` ندارد و با `total = 0` همان متغیر سراسری را تغییر می‌دهد؛ پس بعد از آن `0` چاپ می‌شود. گزینه‌ی ۱ فکر کرده `let total = 0` هم متغیر سراسری را عوض می‌کند، گزینه‌ی ۲ فکر کرده هیچ تابعی نمی‌تواند متغیر سراسری را تغییر دهد و گزینه‌ی ۴ نقش دو تابع را جابه‌جا گرفته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let x = 1;
+      {
+        let x = 2;
+        {
+          x = 3;
+          console.log(x);
+        }
+        console.log(x);
+      }
+      console.log(x);
+    options:
+      - out: ["3", "2", "1"]
+      - out: ["3", "3", "1"]
+      - out: ["3", "3", "3"]
+      - out: ["3", "2", "3"]
+    answer: 2
+    explain: |
+      `x = 3` (بدون `let`) متغیر جدیدی نمی‌سازد؛ JavaScript **نزدیک‌ترین** `x` را در scope chain پیدا می‌کند، یعنی `x`ِ بلوکِ میانی (که ۲ بود)، و همان را ۳ می‌کند. پس داخلی‌ترین بلوک و بلوک میانی هر دو `3` چاپ می‌کنند. `x`ِ بیرونی (سطح بالا) که `let x = 2` رویش سایه انداخته بود دست‌نخورده می‌ماند و `1` چاپ می‌شود. گزینه‌ی ۱ فکر کرده `x = 3` در داخلی‌ترین بلوک یک متغیر محلیِ تازه ساخته، گزینه‌ی ۳ فکر کرده `let x = 2` متغیر جدیدی نمی‌سازد و در کل کد فقط یک `x` داریم، و گزینه‌ی ۴ فکر کرده انتسابِ بدون `let` همیشه به متغیرِ سطح بالا می‌رسد و `x`ِ نزدیک‌تر را نادیده می‌گیرد.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار بگیرد تا خروجی کد زیر `inner` و سپس **دوباره** `inner` باشد؟
+    check: option-output
+    expect: |
+      inner
+      inner
+    code: |
+      let label = "outer";
+      {
+        ___ label = "inner";
+        console.log(label);
+      }
+      console.log(label);
+    options:
+      - text: '`let`'
+        code: 'let label = "outer"; { let label = "inner"; console.log(label); } console.log(label);'
+      - text: '`const`'
+        code: 'let label = "outer"; { const label = "inner"; console.log(label); } console.log(label);'
+      - text: '`var`'
+        code: 'let label = "outer"; { var label = "inner"; console.log(label); } console.log(label);'
+      - text: 'هیچ کلمه‌ای (فقط `label = "inner";`)'
+        code: 'let label = "outer"; { label = "inner"; console.log(label); } console.log(label);'
+    answer: 4
+    explain: |
+      برای این‌که بیرون از بلوک هم `inner` چاپ شود، باید **همان** متغیر بیرونی را تغییر دهیم؛ یعنی یک انتساب ساده بدون کلمه‌ی کلیدی. `let` و `const` (گزینه‌های ۱ و ۲) یک متغیر **جدید** در بلوک می‌سازند که روی بیرونی سایه می‌اندازد؛ پس بیرون از بلوک همان `outer` چاپ می‌شود. `var` (گزینه‌ی ۳) به بلوک اهمیت نمی‌دهد و در عمل در همان محدوده‌ی `let label` تعریف می‌شود؛ این تعریف دوباره است و `SyntaxError: Identifier 'label' has already been declared` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let price = 100;
+      function applyDiscount(price) {
+        price = price - 20;
+        return price;
+      }
+      console.log(applyDiscount(50));
+      console.log(price);
+    options:
+      - out: ["30", "100"]
+      - out: ["30", "30"]
+      - out: ["80", "80"]
+      - out: ["80", "100"]
+    answer: 1
+    explain: |
+      پارامتر `price` یک متغیر محلیِ تابع است که روی `price` سراسری سایه می‌اندازد. داخل تابع، `price` همان ۵۰ ورودی است و `50 - 20 = 30` برگردانده می‌شود. `price` سراسری اصلاً دیده یا تغییر داده نمی‌شود و `100` می‌ماند. گزینه‌ی ۲ فکر کرده تغییر پارامتر به متغیر سراسریِ هم‌نام می‌رسد و گزینه‌های ۳ و ۴ فکر کرده‌اند داخل تابع، `price` سراسری (۱۰۰) خوانده می‌شود.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      function report() {
+        for (var i = 0; i < 2; i++) {
+          let doubled = i * 2;
+        }
+        console.log(i);
+        console.log(doubled);
+      }
+      report();
+      console.log(i);
+    options:
+      - line: 5
+      - line: 9
+      - line: 6
+      - line: 0
+    answer: 3
+    explain: |
+      `var i` function-scoped است و بعد از حلقه هم در کل تابع `report` دیده می‌شود؛ پس خط ۵ عدد `2` را چاپ می‌کند (رد گزینه‌ی ۱). `doubled` با `let` داخل بلوک حلقه تعریف شده و بیرون از آن وجود ندارد؛ پس خط ۶ `ReferenceError: doubled is not defined` می‌دهد. خط ۹ هم اگر اجرا می‌شد خطا می‌داد (چون `var i` فقط داخل `report` است، نه سراسری)، ولی برنامه قبل از رسیدن به آن، روی خط ۶ متوقف شده است.
+
+  - level: hard
+    stem: |
+      کد زیر در **مرورگر** (یک اسکریپت معمولی) اجرا می‌شود. خروجی کدام است؟
+    check: dom-output
+    code: |
+      let message = "Hello";
+      var counter = 1;
+      function greet() {
+        console.log(message);
+      }
+      greet();
+      console.log(window.message);
+      console.log(window.counter);
+    options:
+      - out: ["Hello", "Hello", "1"]
+      - out: ["Hello", "undefined", "1"]
+      - out: ["Hello", "undefined", "undefined"]
+      - out: ["Hello", "Hello", "undefined"]
+    answer: 2
+    explain: |
+      `message` سراسری است و داخل `greet` هم دیده می‌شود، پس `Hello` چاپ می‌شود. اما جمله‌ی اسلاید ۲۶ («globalها property شیء `window` می‌شوند») فقط برای `var` و اعلان تابع درست است: `let` و `const` سراسری‌اند ولی روی `window` نمی‌نشینند. پس `window.message` برابر `undefined` و `window.counter` برابر `1` است. گزینه‌ی ۱ جمله‌ی اسلاید را برای همه‌ی متغیرها تعمیم داده، گزینه‌ی ۳ فکر کرده هیچ متغیری روی `window` نمی‌نشیند و گزینه‌ی ۴ نقش `let` و `var` را برعکس گرفته است.
+
+  - level: easy
+    stem: |
+      در **Node.js** حاصل `typeof window` چیست؟
+    check: value
+    expr: 'typeof window'
+    options:
+      - '`"object"`'
+      - '`"global"`'
+      - '`"function"`'
+      - '`"undefined"`'
+    answer: 4
+    explain: |
+      `window` شیء سراسریِ **مرورگر** است و در Node.js وجود ندارد. `typeof` روی نامی که پیدا نمی‌شود خطا نمی‌دهد و `"undefined"` برمی‌گرداند. در مرورگر جواب `"object"` بود (گزینه‌ی ۱). شیء سراسری Node.js با نام `globalThis` (یا `global`) در دسترس است، ولی `typeof` هیچ‌وقت نام یک متغیر را برنمی‌گرداند (رد گزینه‌ی ۲) و `"function"` (گزینه‌ی ۳) هم مخصوص توابع است.
+
+  - level: hard
+    stem: |
+      در یک صفحه‌ی وب، دو اسکریپت (`menu.js` و `cart.js`) پشت سر هم بارگذاری شده‌اند و بعد از آن‌ها کدِ پایین اجرا می‌شود. خروجی در مرورگر کدام است؟
+    check: dom-output
+    html: |
+      <script>
+        // menu.js
+        var count = 0;
+        function init() { console.log("menu init"); }
+      </script>
+      <script>
+        // cart.js
+        var count = 5;
+        function init() { console.log("cart init"); }
+      </script>
+    code: |
+      init();
+      console.log(count);
+    options:
+      - out: ["cart init", "5"]
+      - out: ["menu init", "0"]
+      - out: ["menu init", "cart init", "5"]
+      - out: ["cart init", "0"]
+    answer: 1
+    explain: |
+      همه‌ی اسکریپت‌های معمولیِ یک صفحه **یک global scope مشترک** دارند. `var count` و `function init` در `cart.js` بی‌صدا (و بدون هیچ خطایی) همان نام‌های `menu.js` را بازنویسی می‌کنند؛ پس `init()` نسخه‌ی `cart` را اجرا می‌کند و `count` برابر ۵ است. این دقیقاً همان «تداخل نام‌ها» است که اسلاید ۲۶ درباره‌اش هشدار می‌دهد. گزینه‌ی ۲ فکر کرده اولین تعریف می‌ماند، گزینه‌ی ۳ فکر کرده هر دو تابع اجرا می‌شوند و گزینه‌ی ۴ فقط تابع را بازنویسی‌شده دانسته است.
+
+  - level: hard
+    stem: |
+      دو اسکریپت زیر پشت سر هم در یک صفحه اجرا می‌شوند و بعد از آن‌ها کدِ پایین (اسکریپت سوم) اجرا می‌شود. خروجی کنسول مرورگر کدام است؟ (سطر `Uncaught ...` یعنی خطایی که در کنسول نمایش داده می‌شود.)
+    check: dom-output
+    html: |
+      <script>
+        let count = 0;
+        console.log("menu loaded");
+      </script>
+      <script>
+        console.log("cart loading");
+        let count = 5;
+        console.log("cart loaded");
+      </script>
+    code: |
+      console.log(count);
+    options:
+      - out: ["menu loaded", "cart loading", "cart loaded", "5"]
+      - out: ["menu loaded", "cart loading", "!! SyntaxError", "0"]
+      - out: ["menu loaded", "!! SyntaxError", "0"]
+      - out: ["menu loaded", "cart loading", "cart loaded", "0"]
+    answer: 3
+    explain: |
+      `let`ِ سطح بالا هم سراسری است، پس اسکریپت دوم می‌خواهد `count` را در **همان** global scope دوباره تعریف کند. نتیجه `SyntaxError: Identifier 'count' has already been declared` است و این خطا **قبل از اجرای اولین خطِ** اسکریپت دوم رخ می‌دهد؛ پس هیچ خطی از آن (حتی `cart loading`) اجرا نمی‌شود (رد گزینه‌ی ۲). اسکریپت‌ها مستقل‌اند و اسکریپت سوم اجرا می‌شود و `count`ِ اسکریپت اول یعنی `0` را چاپ می‌کند. گزینه‌های ۱ و ۴ فکر کرده‌اند `let` هم مثل `var` تعریف دوباره را بی‌صدا قبول می‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر در Node.js (حالت عادی، بدون `"use strict"`) چیست؟
+    check: output
+    code: |
+      function setup() {
+        counter = 5;
+        let local = 10;
+      }
+      setup();
+      console.log(counter);
+      console.log(typeof local);
+    options:
+      - out: ["5", "number"]
+      - out: ["5", "undefined"]
+      - out: "!! ReferenceError"
+      - out: ["undefined", "undefined"]
+    answer: 2
+    explain: |
+      `counter` هیچ‌جا با `let`، `const` یا `var` تعریف نشده؛ در حالت عادی (sloppy) انتساب به چنین نامی بی‌صدا یک متغیر **سراسری** می‌سازد، حتی از داخل تابع. پس بیرون از تابع `5` چاپ می‌شود. اما `local` با `let` تعریف شده و فقط داخل تابع وجود دارد؛ `typeof` روی آن بیرون از تابع `"undefined"` می‌دهد (بدون خطا). گزینه‌ی ۱ فکر کرده `local` هم بیرون می‌آید، گزینه‌ی ۳ رفتار حالت strict را در نظر گرفته و گزینه‌ی ۴ فکر کرده متغیری که داخل تابع ساخته شده بیرون دیده نمی‌شود.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      "use strict";
+      function init() {
+        total = 100;
+      }
+      init();
+      console.log(total);
+    options:
+      - line: 3
+      - line: 6
+      - line: 5
+      - line: 0
+    answer: 1
+    explain: |
+      در حالت strict، انتساب به نامی که تعریف نشده دیگر متغیر سراسری نمی‌سازد و همان لحظه `ReferenceError: total is not defined` می‌دهد؛ دستورِ خطادار خط ۳ (داخل تابع) است. خط ۵ فقط تابع را صدا می‌زند (رد گزینه‌ی ۳) و خط ۶ هرگز اجرا نمی‌شود، چون برنامه روی خط ۳ متوقف شده است (رد گزینه‌ی ۲). گزینه‌ی ۴ («هیچ خطایی رخ نمی‌دهد») رفتار حالت عادی (sloppy) است که بی‌صدا یک global می‌سازد.
+
+  - level: medium
+    stem: |
+      کدام گزینه **نادرست** است؟
+    options:
+      - 'کد داخل یک تابع می‌تواند متغیرهای محدوده‌های بیرونی (مثلاً متغیرهای سراسری) را بخواند.'
+      - 'متغیری که با `let` داخل یک بلوک تعریف شده، بیرون از آن بلوک در دسترس نیست.'
+      - 'کد بیرون از یک تابع می‌تواند متغیرهای `let` تعریف‌شده داخل آن تابع را بخواند، به شرط این‌که تابع قبلاً صدا زده شده باشد.'
+      - 'اگر بیرون از یک بلوک `let x` داشته باشیم، تعریف `let x` دیگری داخل آن بلوک خطا نمی‌دهد و فقط روی متغیر بیرونی سایه می‌اندازد.'
+    answer: 3
+    explain: |
+      جست‌وجوی نام‌ها (scope chain) فقط از داخل به بیرون است و محدوده‌ی بیرونی هیچ‌وقت متغیرهای داخل یک تابع را نمی‌بیند. صدا زدن تابع هم چیزی را عوض نمی‌کند؛ متغیرهای محلیِ هر فراخوانی فقط برای کدِ داخل همان تابع قابل دسترسی‌اند. پس گزینه‌ی ۳ نادرست است. گزینه‌ی ۱ همان دسترسی رو به بیرون است، گزینه‌ی ۲ تعریف block scope است و گزینه‌ی ۴ همان shadowing است که تعریف دوباره حساب نمی‌شود.
