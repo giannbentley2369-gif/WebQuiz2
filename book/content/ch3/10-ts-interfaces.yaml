@@ -1,0 +1,701 @@
+id: ch3-ts-interfaces
+title: "Interface در TypeScript"
+slides: "NodeJS & TS، اسلاید ۱۹"
+lesson: |
+  تا اینجا برای متغیرهای ساده (عدد، رشته و …) نوع نوشتیم. اما در برنامه‌های واقعی بیشتر با **object** (شیء) کار می‌کنیم: کاربر، محصول، سفارش. اسلاید ۱۹ ابزار اصلی TypeScript برای توصیف شیءها را معرفی می‌کند: **interface** (رابط؛ قراردادی که شکل یک شیء را مشخص می‌کند).
+
+  ::: analogy
+  interface مثل یک **فرم استخدام** است: بعضی خانه‌ها اجباری‌اند (نام، کد ملی)، بعضی اختیاری (ایمیل) و برای هر خانه نوع جواب مشخص است (عدد یا متن). هر شیئی که این فرم را درست پر کند، با آن interface «جور» است. خود فرم هیچ کاری انجام نمی‌دهد؛ فقط مشخص می‌کند جواب‌ها چه شکلی باید باشند.
+  :::
+
+  ### ۱. تعریف شکل یک شیء (اسلاید ۱۹)
+  بولت اول اسلاید: interface **شکل یک شیء** (shape of an object) را تعریف می‌کند؛ یعنی شیء چه **property**هایی (ویژگی‌ها) با چه **type**هایی باید داشته باشد. کد خود اسلاید (فایل `weee.ts`):
+
+  ```ts title=weee.ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  ```
+
+  خط به خط:
+  - `interface User { … }` یک نوع جدید به نام `User` تعریف می‌کند (نام interfaceها را معمولاً با حرف بزرگ شروع می‌کنیم).
+  - `id: number;` یعنی هر `User` **باید** ویژگی `id` از نوع عدد داشته باشد.
+  - `name: string;` یعنی ویژگی اجباری `name` از نوع رشته.
+  - `email?: string;` علامت `?` یعنی این ویژگی **اختیاری** است: ممکن است نباشد، ولی اگر بود باید رشته باشد.
+
+  tsc برای کد اسلاید هیچ خطایی گزارش نمی‌کند و چون این کد فقط یک تعریف نوع است، با اجرا هیچ خروجی‌ای هم چاپ نمی‌شود. حالا از آن استفاده کنیم:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  const u1: User = { id: 1, name: "Ali" };                             // OK: email is optional
+  const u2: User = { id: 2, name: "Sara", email: "sara@example.com" }; // OK
+  const u3: User = { name: "Reza" };                                   // Error TS2741: Property 'id' is missing
+  const u4: User = { id: "5", name: "Navid" };                         // Error TS2322: Type 'string' is not assignable to type 'number'.
+  const u5: User = { id: 4, name: "Mina", age: 20 };                   // Error TS2353: 'age' does not exist in type 'User'
+  ```
+
+  سه خطای مهم:
+
+  | پیام خطا | چه زمانی؟ |
+  |---|---|
+  | `Property 'id' is missing …` | یک ویژگی **اجباری** جا افتاده باشد (TS2741) |
+  | `Type 'string' is not assignable to type 'number'` | نوع یک ویژگی اشتباه باشد (TS2322) |
+  | `Object literal may only specify known properties …` | یک **object literal** (شیئی که همان‌جا با `{ … }` نوشته شده) ویژگی اضافه داشته باشد (TS2353) |
+
+  interface را می‌شود مثل هر نوع دیگری برای پارامتر تابع هم به کار برد:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  function printUser(user: User): void {
+    console.log(`${user.id}: ${user.name}`);
+  }
+  printUser({ id: 7, name: "Ali" }); // 7: Ali
+  ```
+
+  ### ۲. ویژگی اختیاری (optional property)
+  ویژگی‌ای که با `?` تعریف شود، نوعش در عمل `string | undefined` است، چون ممکن است اصلاً وجود نداشته باشد. پس TypeScript اجازه نمی‌دهد بدون بررسی از آن استفاده کنی:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  const u: User = { id: 1, name: "Ali" };
+  console.log(u.email);          // undefined (just reading it is fine)
+  console.log(u.email.length);   // Error TS18048: 'u.email' is possibly 'undefined'.
+  if (u.email !== undefined) {
+    console.log(u.email.length); // OK: inside this block email is a string
+  }
+  console.log(u.email?.length);  // OK: "?." gives undefined when email is missing
+  ```
+
+  عملگر `?.` (optional chaining، زنجیره‌ی اختیاری) یعنی «اگر سمت چپ `undefined` یا `null` بود، ادامه نده و `undefined` برگردان».
+
+  ### ۳. ویژگی فقط‌خواندنی (readonly)
+  با کلمه‌ی `readonly` ویژگی‌ای می‌سازیم که فقط **هنگام ساختن شیء** مقدار می‌گیرد و بعد قابل تغییر نیست:
+
+  ```ts
+  interface Point {
+    readonly x: number;
+    y: number;
+  }
+  const p: Point = { x: 1, y: 2 };
+  p.y = 20; // OK
+  p.x = 10; // Error TS2540: Cannot assign to 'x' because it is a read-only property.
+  ```
+
+  اسلاید ۱۹ می‌گوید ویژگی‌های optional و readonly به ترتیب برای **انعطاف** (flexibility) و **ایمنی** (safety) هستند. `readonly` هم مثل بقیه‌ی نوع‌ها فقط در زمان کامپایل بررسی می‌شود.
+
+  فرق `readonly` با `const`: `const` خودِ **متغیر** را قفل می‌کند (نمی‌شود شیء دیگری به آن داد)، اما `readonly` یک **ویژگی** از شیء را قفل می‌کند. حتی اگر شیء در یک متغیر `let` باشد، ویژگی readonly آن قابل تغییر نیست.
+
+  ### ۴. متد در interface
+  interface علاوه بر داده می‌تواند **متدها** را هم توصیف کند؛ یعنی بگوید شیء چه تابعی با چه پارامترها و چه خروجی‌ای دارد:
+
+  ```ts
+  interface Greeter {
+    greet(name: string): string;        // method signature
+    farewell: (name: string) => string; // a property that holds a function
+  }
+  const g: Greeter = {
+    greet(name) {
+      return `Hi ${name}`;
+    },
+    farewell: (name) => `Bye ${name}`,
+  };
+  console.log(g.greet("Ali"));    // Hi Ali
+  console.log(g.farewell("Ali")); // Bye Ali
+  ```
+
+  اینجا لازم نیست نوع `name` را دوباره بنویسیم؛ TypeScript آن را از روی interface می‌فهمد.
+
+  ### ۵. گسترش interface با extends
+  بولت آخر اسلاید ۱۹: interface را می‌شود **extend** (گسترش) داد تا از نوع‌های ساده‌تر، نوع‌های پیچیده‌تر ساخته شود:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  interface Admin extends User {
+    role: string; // Admin = everything in User + role
+  }
+  const a1: Admin = { id: 6, name: "Neda", role: "owner" }; // OK
+  const a2: Admin = { id: 7, name: "Omid" };                // Error TS2741: Property 'role' is missing
+  ```
+
+  - یک interface می‌تواند چند interface را با هم گسترش دهد: `interface Person extends HasId, HasName { … }`.
+  - چون `Admin` همه‌ی ویژگی‌های `User` را دارد، هر جا `User` لازم باشد می‌شود یک `Admin` داد؛ اما برعکسش نه، چون `User` ویژگی `role` را ندارد.
+
+  ### ۶. پیاده‌سازی interface در کلاس (implements)
+  بولت دوم اسلاید ۱۹: کلاس‌ها می‌توانند interface را **implement** (پیاده‌سازی) کنند تا ساختارشان تضمین شود. با کلمه‌ی `implements` کلاس قول می‌دهد همه‌ی اعضای اجباری interface را داشته باشد (جزئیات خودِ کلاس‌ها در درس کلاس‌ها می‌آید):
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  class Customer implements User { // OK: email is optional, so it may be left out
+    id = 8;
+    name = "Hamed";
+  }
+  class Broken implements User {   // Error TS2420: Class 'Broken' incorrectly implements interface 'User'.
+    id = 9;
+  }
+  ```
+
+  - کلاس می‌تواند **عضو اضافه** هم داشته باشد (مثلاً `phone`)؛ مهم این است که چیزی از interface کم نباشد.
+  - نوع اعضا هم باید درست باشد؛ اگر در کلاس `id = "x"` بنویسی، خطای TS2416 می‌گیری.
+  - یک کلاس می‌تواند چند interface را با هم پیاده‌سازی کند: `class Admin implements HasId, HasName { … }`.
+  - کلاس نمی‌تواند interface را `extends` کند؛ tsc می‌گوید: `Cannot extend an interface 'User'. Did you mean 'implements'?`
+
+  ### ۷. structural typing: شکل مهم است، نه نام
+  TypeScript نوع‌ها را با **شکلشان** مقایسه می‌کند، نه با نامشان؛ به این روش **structural typing** (نوع‌دهی ساختاری) می‌گویند. هر شیئی که ویژگی‌های لازم را با نوع درست داشته باشد، `User` حساب می‌شود؛ حتی اگر هیچ‌جا اسمی از `User` نیاورده باشد.
+
+  اما یک استثنا هست: **excess property check** (بررسی ویژگی اضافه). اگر یک object literal را **مستقیم** به نوع `User` بدهی و ویژگی اضافه داشته باشد، TypeScript احتمال می‌دهد غلط تایپی کرده‌ای و خطا می‌دهد. ولی اگر همان شیء اول در یک متغیر جدا گذاشته شده باشد، فقط ویژگی‌های لازم بررسی می‌شوند:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+    email?: string;
+  }
+  const extra = { id: 10, name: "Leila", age: 30 };
+  const u6: User = extra;                             // OK: extra has id and name
+  const u7: User = { id: 11, name: "Omid", age: 25 }; // Error TS2353: 'age' does not exist in type 'User'
+  ```
+
+  نوع‌ها چیزی را از شیء **حذف نمی‌کنند**: در زمان اجرا `age` هنوز در شیء هست؛ فقط TypeScript اجازه نمی‌دهد از طریق متغیر `User` به آن دسترسی داشته باشی:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+  }
+  const data = { id: 10, name: "Leila", age: 30 };
+  const u: User = data;
+  console.log(u); // { id: 10, name: 'Leila', age: 30 }
+  ```
+
+  (اگر در همین کد بنویسی `u.age`، خطای `Property 'age' does not exist on type 'User'` می‌گیری.)
+
+  ### ۸. interface در زمان اجرا وجود ندارد
+  interface فقط برای کامپایلر است و در JavaScript خروجی **هیچ اثری** از آن نمی‌ماند. اگر فایل `weee.ts` اسلاید را با tsc کامپایل کنی، کل خروجی همین است:
+
+  ```js title=weee.js
+  "use strict";
+  ```
+
+  به همین دلیل نمی‌شود interface را مثل یک مقدار به کار برد:
+
+  ```ts
+  interface User {
+    id: number;
+    name: string;
+  }
+  const u: User = { id: 1, name: "Ali" };
+  console.log(typeof u);          // OK: at runtime this prints "object"
+  console.log(u instanceof User); // Error TS2693: 'User' only refers to a type, but is being used as a value here.
+  ```
+
+  ### ۹. type alias در برابر interface
+  راه دیگرِ نام‌گذاری یک نوع، **type alias** (نام مستعار نوع) با کلمه‌ی `type` است:
+
+  ```ts
+  type Point = { x: number; y: number };           // an object shape, like an interface
+  type ID = number | string;                       // a union: impossible with an interface
+  type Admin = { name: string } & { role: string }; // "&" combines two types
+  ```
+
+  | | `interface` | `type` |
+  |---|---|---|
+  | توصیف شکل شیء | بله | بله |
+  | نام دادن به union یا نوع ساده (`number \| string`) | خیر | بله |
+  | گسترش | با `extends` | با `&` (intersection، ترکیب نوع‌ها) |
+  | دو تعریف هم‌نام | با هم ادغام می‌شوند (declaration merging) | خطای `Duplicate identifier` |
+
+  قاعده‌ی ساده: برای توصیف شکل شیءها و قرارداد کلاس‌ها از `interface` استفاده کن و برای union و ترکیب نوع‌ها از `type`.
+
+  ::: tip
+  - interface یک **قرارداد** است، نه کد اجرایی: فقط در زمان کامپایل بررسی می‌شود و در JavaScript خروجی اثری از آن نیست.
+  - پیش از استفاده از یک ویژگی اختیاری، `undefined` نبودنش را بررسی کن (با `if`) یا از `?.` استفاده کن.
+  - `extends` برای گسترش interface از interface است؛ `implements` برای وقتی است که یک **کلاس** قرارداد یک interface را رعایت می‌کند.
+  :::
+
+  ::: trap
+  - object literal با ویژگی اضافه خطای TS2353 می‌گیرد، اما **همان شیء از طریق یک متغیر** بدون خطا پذیرفته می‌شود (structural typing).
+  - `readonly` با `const` فرق دارد: اولی یک ویژگی را قفل می‌کند و دومی خودِ متغیر را.
+  - در `implements` ویژگی **اختیاری** را می‌شود حذف کرد، اما ویژگی اجباری را نه.
+  - `typeof User` یا `x instanceof User` برای یک interface خطای TS2693 دارد، چون interface در زمان اجرا وجود ندارد.
+  :::
+
+  ::: summary
+  interface شکل یک شیء را تعریف می‌کند: ویژگی‌های اجباری، اختیاری (`?`) و فقط‌خواندنی (`readonly`) و نوع هر کدام، و حتی متدها. interface را می‌شود با `extends` گسترش داد و کلاس‌ها با `implements` آن را پیاده‌سازی می‌کنند. TypeScript نوع‌ها را با شکلشان مقایسه می‌کند (structural typing)، ولی برای object literal ویژگی اضافه را خطا می‌داند. interface در JavaScript خروجی هیچ اثری ندارد و برای union و ترکیب نوع‌ها از `type` استفاده می‌کنیم.
+  :::
+questions:
+  - level: easy
+    stem: کاربرد اصلی interface در TypeScript چیست؟
+    options:
+      - تعریف شکل یک شیء؛ یعنی شیء چه ویژگی‌هایی با چه نوع‌هایی باید داشته باشد.
+      - ساختن شیء جدید در زمان اجرا، مثل یک کلاس.
+      - تبدیل کد TypeScript به JavaScript.
+      - بررسی نوع داده‌ها در زمان اجرا داخل مرورگر.
+    answer: 1
+    explain: |
+      طبق بولت اول اسلاید ۱۹، interface شکل یک شیء (shape of an object) را تعریف می‌کند: چه propertyهایی با چه typeهایی. interface هیچ شیئی نمی‌سازد و در JavaScript خروجی اصلاً وجود ندارد (گزینه‌ی ۲). تبدیل به JavaScript کار tsc است (گزینه‌ی ۳). بررسی‌های TypeScript هم فقط در زمان کامپایل انجام می‌شوند، نه در زمان اجرا (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      در interface اسلاید ۱۹، معنای علامت `?` در `email?: string;` چیست؟
+    options:
+      - '`email` فقط می‌تواند مقدار `null` بگیرد.'
+      - '`email` فقط‌خواندنی است و بعد از ساخت شیء تغییر نمی‌کند.'
+      - ویژگی `email` اختیاری است؛ ممکن است وجود نداشته باشد، اما اگر وجود داشت باید رشته باشد.
+      - نوع `email` می‌تواند هر چیزی باشد (مثل `any`).
+    answer: 3
+    explain: |
+      `?` یعنی optional property: شیء `User` می‌تواند `email` نداشته باشد و در آن صورت مقدارش `undefined` است؛ ولی اگر داشته باشد، باید `string` باشد. فقط‌خواندنی بودن با کلمه‌ی `readonly` مشخص می‌شود (گزینه‌ی ۲). `?` ربطی به `null` ندارد (گزینه‌ی ۱) و نوع را هم آزاد نمی‌کند (گزینه‌ی ۴).
+
+  - level: easy
+    stem: با فرض interface اسلاید ۱۹ (کد زیر)، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &user |
+      interface User {
+        id: number;
+        name: string;
+        email?: string;
+      }
+    code: *user
+    options:
+      - code: 'const a: User = { id: 1, name: "Ali" };'
+      - code: 'const b: User = { id: 2, name: "Sara", email: "sara@example.com" };'
+      - code: 'const d: User = { id: 4, name: "" };'
+      - code: 'const c: User = { name: "Reza" };'
+    answer: 4
+    explain: |
+      `id` ویژگی اجباری است و در گزینه‌ی ۴ جا افتاده؛ پس خطای TS2741 می‌گیرد: `Property 'id' is missing in type '{ name: string; }' but required in type 'User'`. در گزینه‌ی ۱ فقط `email` نیامده که اختیاری است. گزینه‌ی ۲ همه‌ی ویژگی‌ها را با نوع درست دارد. در گزینه‌ی ۳ هم رشته‌ی خالی یک `string` معتبر است.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface User {
+        id: number;
+        name: string;
+        email?: string;
+      }
+      const a: User = { id: 1, name: "Ali" };
+      const b: User = { id: 2, name: "Sara", age: 20 };
+      const c: User = { id: 3, name: "Reza", email: "reza@example.com" };
+    options:
+      - { line: 6 }
+      - { line: 7 }
+      - { line: 8 }
+      - { line: 0 }
+    answer: 2
+    explain: |
+      در خط ۷ یک object literal مستقیماً به نوع `User` داده شده و ویژگی `age` را دارد که در `User` تعریف نشده؛ پس خطای TS2353 می‌گیرد: `Object literal may only specify known properties, and 'age' does not exist in type 'User'`. خط ۶ مجاز است چون `email` اختیاری است و خط ۸ هم همه‌ی ویژگی‌ها را با نوع درست دارد.
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface Point {
+        x: number;
+        y: number;
+      }
+      function print(p: Point): void {
+        console.log(p.x, p.y);
+      }
+      const p3 = { x: 1, y: 2, z: 3 };
+      print(p3);
+      print({ x: 1, y: 2, z: 3 });
+    options:
+      - { line: 8 }
+      - { line: 9 }
+      - { line: 0 }
+      - { line: 10 }
+    answer: 4
+    explain: |
+      TypeScript نوع‌ها را با شکلشان مقایسه می‌کند (structural typing): `p3` ویژگی‌های `x` و `y` را با نوع عددی دارد، پس فرستادنش به `print` در خط ۹ مجاز است و ویژگی اضافه‌ی `z` مشکلی ایجاد نمی‌کند. اما در خط ۱۰ همان شیء به شکل object literal **مستقیم** فرستاده شده و excess property check خطای TS2353 می‌دهد. خط ۸ هم فقط یک شیء معمولی می‌سازد که هنوز نوع `Point` به آن داده نشده است.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface User {
+        id: number;
+        name: string;
+        email?: string;
+      }
+      const u: User = { id: 1, name: "Ali" };
+      console.log(u.name.length);
+      console.log(u.email?.length);
+      console.log(u.email.length);
+    options:
+      - { line: 9 }
+      - { line: 7 }
+      - { line: 8 }
+      - { line: 0 }
+    answer: 1
+    explain: |
+      `email` اختیاری است، پس نوعش `string | undefined` است. در خط ۹ بدون هیچ بررسی‌ای `length` آن خوانده شده و tsc خطای TS18048 می‌دهد: `'u.email' is possibly 'undefined'`. خط ۸ مجاز است چون `?.` در صورت نبودن `email` به‌جای خطا `undefined` برمی‌گرداند. خط ۷ هم مشکلی ندارد، چون `name` اجباری و از نوع `string` است.
+
+  - level: medium
+    stem: خروجی کد TypeScript زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      interface User {
+        id: number;
+        name: string;
+        email?: string;
+      }
+      const u: User = { id: 1, name: "Ali" };
+      console.log(u.email);
+      console.log(u.email === undefined);
+      console.log(Object.keys(u).length);
+    options:
+      - out: ["undefined", "true", "3"]
+      - out: ["undefined", "true", "2"]
+      - out: ["null", "false", "2"]
+      - out: ["undefined", "false", "3"]
+    answer: 2
+    explain: |
+      شیء `u` فقط دو ویژگی `id` و `name` دارد. خواندن ویژگی‌ای که وجود ندارد در زمان اجرا `undefined` می‌دهد (نه `null`) و مقایسه‌ی آن با `undefined` هم `true` است. `Object.keys(u)` فقط کلیدهای موجود یعنی `["id", "name"]` را برمی‌گرداند، پس طولش ۲ است. گزینه‌های ۱ و ۴ فکر کرده‌اند تعریف `email?` در interface یک کلید واقعی به شیء اضافه می‌کند؛ در حالی که interface در زمان اجرا اصلاً وجود ندارد.
+
+  - level: easy
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface Point {
+        readonly x: number;
+        y: number;
+      }
+      const p: Point = { x: 1, y: 2 };
+      p.y = 20;
+      p.x = 10;
+    options:
+      - { line: 5 }
+      - { line: 6 }
+      - { line: 0 }
+      - { line: 7 }
+    answer: 4
+    explain: |
+      ویژگی `readonly` فقط هنگام ساختن شیء (خط ۵) مقدار می‌گیرد؛ تغییر بعدی آن در خط ۷ خطای TS2540 دارد: `Cannot assign to 'x' because it is a read-only property`. `y` معمولی است و خط ۶ مجاز است. با اینکه `p` با `const` تعریف شده، تغییر ویژگی‌های غیر readonly آن ممنوع نیست.
+
+  - level: hard
+    stem: با فرض تعریف زیر، کدام گزینه خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &config |
+      interface Config {
+        readonly url: string;
+        retries: number;
+      }
+    code: *config
+    options:
+      - code: 'const c: Config = { url: "a.com", retries: 3 }; c.retries = 5;'
+      - code: 'let c: Config = { url: "a.com", retries: 3 }; c = { url: "b.com", retries: 1 };'
+      - code: 'let c: Config = { url: "a.com", retries: 3 }; c.url = "b.com";'
+      - code: 'const c: Config = { url: "a.com", retries: 3 }; console.log(c.url);'
+    answer: 3
+    explain: |
+      `readonly` روی **ویژگی** `url` است؛ پس تغییر `c.url` حتی وقتی `c` با `let` تعریف شده خطای TS2540 دارد (گزینه‌ی ۳). در گزینه‌ی ۱ ویژگی غیر readonly تغییر کرده که مجاز است، حتی با `const`. در گزینه‌ی ۲ کل متغیر `let` به یک شیء کاملاً جدید اشاره داده شده؛ این انتساب دوباره‌ی متغیر است، نه تغییر ویژگی readonly. گزینه‌ی ۴ هم فقط مقدار را می‌خواند.
+
+  - level: medium
+    stem: با فرض تعریف‌های زیر، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &admin |
+      interface User {
+        id: number;
+        name: string;
+        email?: string;
+      }
+      interface Admin extends User {
+        role: string;
+      }
+    code: *admin
+    options:
+      - code: 'const a: Admin = { id: 1, name: "Neda", role: "owner" };'
+      - code: 'const b: Admin = { id: 2, name: "Omid" };'
+      - code: 'const c: User = { id: 3, name: "Sara" };'
+      - code: 'const d: Admin = { id: 4, name: "Mina", role: "editor", email: "mina@example.com" };'
+    answer: 2
+    explain: |
+      `Admin` با `extends` همه‌ی ویژگی‌های `User` را به‌علاوه‌ی `role` دارد و `role` اجباری است؛ پس گزینه‌ی ۲ خطای TS2741 می‌گیرد: `Property 'role' is missing …`. گزینه‌ی ۱ همه‌ی ویژگی‌های اجباری را دارد. گزینه‌ی ۳ یک `User` معمولی است که به `role` نیازی ندارد. در گزینه‌ی ۴ هم `email` از `User` به ارث رسیده و استفاده از آن مجاز است.
+
+  - level: medium
+    stem: با فرض تعریف‌های زیر، کدام دستور **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    prelude: &person |
+      interface HasId {
+        id: number;
+      }
+      interface HasName {
+        name: string;
+      }
+      interface Person extends HasId, HasName {
+        age: number;
+      }
+    code: *person
+    options:
+      - code: 'const p: Person = { id: 1, name: "Ali", age: 20 };'
+      - code: 'const p: Person = { id: 1, name: "Ali" };'
+      - code: 'const p: Person = { id: 1, age: 20 };'
+      - code: 'const p: Person = { name: "Ali", age: 20 };'
+    answer: 1
+    explain: |
+      `Person` هم‌زمان دو interface را گسترش داده است، پس ویژگی‌های **هر دو** (`id` و `name`) به‌علاوه‌ی ویژگی خودش (`age`) را دارد و هر سه اجباری‌اند. فقط گزینه‌ی ۱ هر سه را دارد. در گزینه‌ی ۲ `age`، در گزینه‌ی ۳ `name` (از `HasName`) و در گزینه‌ی ۴ `id` (از `HasId`) جا افتاده و هر کدام خطای TS2741 دارند.
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface User {
+        id: number;
+        name: string;
+      }
+      interface Admin extends User {
+        role: string;
+      }
+      function greet(u: User): string {
+        return `Hello, ${u.name}`;
+      }
+      const admin: Admin = { id: 1, name: "Neda", role: "owner" };
+      const user: User = { id: 2, name: "Omid" };
+      greet(admin);
+      greet(user);
+      const boss: Admin = user;
+    options:
+      - { line: 15 }
+      - { line: 13 }
+      - { line: 14 }
+      - { line: 0 }
+    answer: 1
+    explain: |
+      `Admin` همه‌ی ویژگی‌های `User` را دارد، پس هر جا `User` لازم باشد می‌شود `Admin` داد و خط ۱۳ مجاز است (خط ۱۴ هم که خودِ `User` را می‌دهد). اما برعکسش ممکن نیست: `user` ویژگی `role` را ندارد، پس نسبت دادنش به متغیری از نوع `Admin` در خط ۱۵ خطای TS2741 دارد. قاعده: نوعِ «کامل‌تر» به‌جای نوعِ «ساده‌تر» می‌نشیند، نه برعکس.
+
+  - level: easy
+    stem: کدام گزینه درباره‌ی کلمه‌های `extends` و `implements` درست است؟
+    options:
+      - کلاس با `extends` یک interface را پیاده‌سازی می‌کند و interface با `implements` از interface دیگر گسترش می‌یابد.
+      - interface با `extends` از interface دیگر گسترش می‌یابد و کلاس با `implements` قرارداد یک interface را پیاده‌سازی می‌کند.
+      - این دو کلمه دقیقاً یک معنی دارند و می‌شود هر کدام را به‌جای دیگری نوشت.
+      - '`implements` فقط در JavaScript وجود دارد و `extends` فقط در TypeScript.'
+    answer: 2
+    explain: |
+      طبق اسلاید ۱۹، interface را می‌شود extend کرد (`interface Admin extends User`) و کلاس‌ها interface را implement می‌کنند (`class Customer implements User`). گزینه‌ی ۱ برعکس است؛ اگر کلاسی بخواهد interface را extend کند، tsc می‌گوید: `Cannot extend an interface 'User'. Did you mean 'implements'?`. پس این دو کلمه جایگزین هم نیستند (گزینه‌ی ۳). گزینه‌ی ۴ هم غلط است: `extends` برای ارث‌بری کلاس‌ها در خود JavaScript هم هست، اما `implements` فقط در TypeScript وجود دارد.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface User {
+        id: number;
+        name: string;
+        email?: string;
+      }
+      class Customer implements User {
+        id = 8;
+        name = "Hamed";
+      }
+      class Broken implements User {
+        id = 9;
+      }
+    options:
+      - { line: 10 }
+      - { line: 6 }
+      - { line: 11 }
+      - { line: 0 }
+    answer: 1
+    explain: |
+      کلاسی که `implements User` می‌نویسد باید همه‌ی اعضای **اجباری** `User` را داشته باشد. `Broken` عضو `name` را ندارد، پس tsc روی خط ۱۰ (نام کلاس) خطای TS2420 می‌دهد: `Class 'Broken' incorrectly implements interface 'User'`. `Customer` هر دو عضو اجباری را دارد و نبودن `email` اختیاری مشکلی ندارد (خط ۶). خط ۱۱ هم به‌تنهایی درست است؛ مشکل کمبود عضو است که روی کل کلاس گزارش می‌شود.
+
+  - level: hard
+    stem: با فرض interface زیر، کدام کلاس **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    prelude: &shape |
+      interface Shape {
+        name: string;
+        area(): number;
+      }
+    code: *shape
+    options:
+      - code: |
+          class Square implements Shape {
+            name = "square";
+          }
+      - code: |
+          class Square implements Shape {
+            name = "square";
+            area() {
+              return "4";
+            }
+          }
+      - code: |
+          class Square implements Shape {
+            name = "square";
+            side = 2;
+            area() {
+              return this.side * this.side;
+            }
+          }
+      - code: |
+          class Square implements Shape {
+            name = 4;
+            area() {
+              return 4;
+            }
+          }
+    answer: 3
+    explain: |
+      گزینه‌ی ۳ هر دو عضو `Shape` را با نوع درست دارد (`area` عدد برمی‌گرداند) و عضو اضافه‌ی `side` هم مشکلی ایجاد نمی‌کند، چون کلاس می‌تواند بیشتر از interface داشته باشد. گزینه‌ی ۱ متد `area` را ندارد (TS2420). در گزینه‌ی ۲ متد `area` رشته برمی‌گرداند و در گزینه‌ی ۴ نوع `name` عدد است؛ هر دو با interface ناسازگارند (TS2416).
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface User {
+        id: number;
+        name: string;
+      }
+      const u: User = { id: 1, name: "Ali" };
+      console.log(typeof u);
+      console.log(u instanceof User);
+    options:
+      - { line: 7 }
+      - { line: 5 }
+      - { line: 6 }
+      - { line: 0 }
+    answer: 1
+    explain: |
+      interface فقط در زمان کامپایل وجود دارد و در JavaScript خروجی پاک می‌شود؛ پس نمی‌شود آن را مثل یک مقدار (مثلاً سمت راست `instanceof`) به کار برد و خط ۷ خطای TS2693 دارد: `'User' only refers to a type, but is being used as a value here`. خط ۶ مجاز است، چون `typeof u` نوعِ زمان اجرای **مقدار** `u` را می‌دهد (یعنی `"object"`). خط ۵ هم یک تعریف درست است.
+
+  - level: medium
+    stem: |
+      فایلی که فقط شامل interface اسلاید ۱۹ (یعنی `interface User { id: number; name: string; email?: string; }`) است با tsc کامپایل می‌شود. در فایل JavaScript خروجی چه می‌بینیم؟
+    options:
+      - یک کلاس به نام `User` با یک constructor
+      - یک شیء به نام `User` که نوع هر ویژگی را نگه می‌دارد
+      - تابعی که نوع شیءها را در زمان اجرا بررسی می‌کند
+      - هیچ اثری از interface؛ فقط خطی مثل `"use strict";`
+    answer: 4
+    explain: |
+      interfaceها فقط برای کامپایلرند و در خروجی کاملاً پاک می‌شوند (type erasure)؛ خروجی کامپایل فایل اسلاید فقط `"use strict";` است. TypeScript نه کلاسی می‌سازد (گزینه‌ی ۱)، نه شیئی برای نگه داشتن نوع‌ها (گزینه‌ی ۲) و نه کدی برای بررسی در زمان اجرا (گزینه‌ی ۳).
+
+  - level: hard
+    stem: کد TypeScript زیر بدون خطا کامپایل می‌شود. خروجی اجرای آن چیست؟
+    check: ts-output
+    code: |
+      interface User {
+        id: number;
+        name: string;
+      }
+      const data = { id: 1, name: "Ali", age: 30 };
+      const u: User = data;
+      console.log(u);
+    options:
+      - out: "{ id: 1, name: 'Ali' }"
+      - out: "User { id: 1, name: 'Ali' }"
+      - out: "{ id: 1, name: 'Ali', age: 30 }"
+      - out: "!! TypeError"
+    answer: 3
+    explain: |
+      نسبت دادن `data` به `User` مجاز است، چون `data` یک متغیر است (نه object literal مستقیم) و ویژگی‌های لازم را دارد. اما نوع‌ها در زمان اجرا وجود ندارند و چیزی را از شیء حذف نمی‌کنند؛ `u` و `data` به یک شیء اشاره می‌کنند که هنوز `age` را دارد. گزینه‌ی ۱ فکر کرده interface ویژگی‌های اضافه را پاک می‌کند. گزینه‌ی ۲ فکر کرده interface مثل کلاس نامی روی شیء می‌گذارد. گزینه‌ی ۴ هم غلط است، چون هیچ بررسی‌ای در زمان اجرا انجام نمی‌شود.
+
+  - level: hard
+    stem: با فرض interface زیر، کدام گزینه خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &greeter |
+      interface Greeter {
+        greet(name: string): string;
+      }
+    code: *greeter
+    options:
+      - code: 'const g: Greeter = { greet: (n) => "Hi " + n };'
+      - code: 'const g: Greeter = { greet(n: string) { return "Hi " + n; } };'
+      - code: 'const g: Greeter = { greet: () => "Hi" };'
+      - code: 'const g: Greeter = { greet: (n: string) => n.length };'
+    answer: 4
+    explain: |
+      متد `greet` طبق interface باید رشته برگرداند، اما در گزینه‌ی ۴ عدد (`n.length`) برمی‌گرداند؛ پس خطای TS2322 دارد. در گزینه‌ی ۱ نوع `n` از روی interface فهمیده می‌شود و لازم نیست نوشته شود. گزینه‌ی ۲ همان امضا را صریح نوشته است. گزینه‌ی ۳ هم مجاز است: تابعی که پارامتر کمتری می‌گیرد (و آن را نادیده می‌گیرد) جای تابعی با پارامتر بیشتر می‌نشیند، چون فقط خروجی رشته‌ای لازم است.
+
+  - level: medium
+    stem: کدام گزینه درباره‌ی `type` و `interface` **نادرست** است؟
+    options:
+      - هر دو می‌توانند شکل یک شیء را توصیف کنند.
+      - با `type` می‌شود به یک union نام داد؛ مثل `type ID = number | string;`.
+      - با interface هم می‌شود مستقیماً یک union از نوع‌های ساده مثل `number | string` تعریف کرد.
+      - یک interface می‌تواند با `extends` از interface دیگری گسترش پیدا کند.
+    answer: 3
+    explain: |
+      interface فقط برای توصیف شکل شیء (و متدهایش) است و نمی‌شود با آن به `number | string` نام داد؛ برای این کار باید از `type` استفاده کرد. پس گزینه‌ی ۳ نادرست است. گزینه‌ی ۱ درست است (`type Point = { x: number; y: number }` هم شکل شیء است)، گزینه‌ی ۲ مثال درست type alias است و گزینه‌ی ۴ همان بولت آخر اسلاید ۱۹.
+
+  - level: hard
+    stem: کدام گزینه **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    options:
+      - code: 'type A = { x: number }; type A = { y: number };'
+      - code: 'type C = { x: number }; const c: C = { x: 1, y: 2 };'
+      - code: 'interface D { x: number } const d: D = { y: 2 };'
+      - code: 'interface B { x: number } interface B { y: number } const b: B = { x: 1, y: 2 };'
+    answer: 4
+    explain: |
+      دو interface هم‌نام با هم **ادغام** می‌شوند (declaration merging)، پس `B` هم `x` دارد و هم `y` و گزینه‌ی ۴ بی‌خطاست. اما type alias را نمی‌شود دو بار تعریف کرد و گزینه‌ی ۱ خطای `Duplicate identifier 'A'` دارد. در گزینه‌ی ۲ بررسی ویژگی اضافه برای type alias هم انجام می‌شود (`y` در `C` نیست). در گزینه‌ی ۳ هم ویژگی اجباری `x` جا افتاده و `y` اضافه است.
+
+  - level: easy
+    stem: در جای خالی کد زیر کدام گزینه قرار گیرد تا کد **بدون خطا** کامپایل شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      interface Product {
+        title: string;
+        price______ number;
+      }
+      const p: Product = { title: "Book" };
+    options:
+      - text: '`:`'
+        code: |
+          interface Product {
+            title: string;
+            price: number;
+          }
+          const p: Product = { title: "Book" };
+      - text: '`?:`'
+        code: |
+          interface Product {
+            title: string;
+            price?: number;
+          }
+          const p: Product = { title: "Book" };
+      - text: '`!:`'
+        code: |
+          interface Product {
+            title: string;
+            price!: number;
+          }
+          const p: Product = { title: "Book" };
+      - text: '`=`'
+        code: |
+          interface Product {
+            title: string;
+            price = number;
+          }
+          const p: Product = { title: "Book" };
+    answer: 2
+    explain: |
+      شیء `p` ویژگی `price` را ندارد، پس `price` باید **اختیاری** باشد: `price?: number;`. با `:` ساده، `price` اجباری است و خطای TS2741 (جا افتادن ویژگی) رخ می‌دهد. `!:` و `=` در interface اصلاً نوشتن مجازی نیستند و خطای نحوی (syntax error) دارند؛ interface فقط نوع را می‌گوید و مقدار پیش‌فرض نمی‌گیرد.
