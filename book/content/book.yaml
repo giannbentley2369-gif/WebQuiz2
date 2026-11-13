@@ -1,0 +1,39 @@
+title: کتاب جامع درسنامه و تست برنامه‌نویسی وب
+pdfTitle: کتاب درسنامه و تست برنامه‌نویسی وب (CE 40419)
+kicker: ویژه‌ی آمادگی کوییز
+subtitle: "JavaScript، کار با DOM در صفحه‌ی وب، Node.js و TypeScript — از صفر تا تسلط، با درسنامه‌ی ساده، تست‌های چهارگزینه‌ای سطح‌بندی‌شده و پاسخنامه‌ی تشریحی"
+course: Web Programming · CE 40419
+university: دانشگاه صنعتی شریف
+coverCode: |
+  console.log("5" + 1);       // ?
+  console.log("5" - 1);       // ?
+  console.log([] == false);   // ?
+  setTimeout(() => console.log("timeout"), 0);
+  Promise.resolve().then(() => console.log("promise"));
+coverNote: "مطابق سه مجموعه اسلاید درس: «Introduction to JS»، «JS in HTML» و «NodeJS & TS». پاسخ همه‌ی تست‌های کدنویسی با اجرای واقعی کد در Node.js، jsdom و کامپایلر TypeScript (tsc) بررسی شده است."
+guide: guide.md
+chapters:
+  - id: ch1
+    dir: ch1
+    number: 1
+    title: مقدمه‌ای بر JavaScript
+    header: مقدمه‌ای بر JavaScript
+    source: 3- Introduction to JS.pdf
+    intro: |
+      در این فصل از صفر شروع می‌کنیم: JavaScript چیست، از کجا آمده و چطور اجرا می‌شود. بعد سراغ داده‌ها، تبدیل نوع‌ها و دام‌های معروفش، متغیرها و scope، توابع و hoisting، closure، اشیاء و `this`، آرایه‌ها و متدهایشان، مدیریت خطا و JSON می‌رویم و فصل را با برنامه‌نویسی ناهمگام (callback، Promise، `async/await` و event loop) تمام می‌کنیم. بیشترِ تست‌های «خروجی کد» کوییز از همین فصل طرح می‌شوند.
+  - id: ch2
+    dir: ch2
+    number: 2
+    title: JavaScript در HTML (کار با DOM)
+    header: JavaScript در HTML (DOM)
+    source: 4 - JS in HTML.pdf
+    intro: |
+      حالا JavaScript را به صفحه‌ی وب وصل می‌کنیم. می‌بینیم مرورگر چطور HTML را به درخت DOM تبدیل می‌کند، چطور عنصرها را پیدا، اضافه، حذف و ویرایش کنیم، به رویدادها (event) واکنش نشان دهیم، با فرم‌ها کار کنیم و از امکانات شیء `window` و حافظه‌های `localStorage` و `sessionStorage` استفاده کنیم.
+  - id: ch3
+    dir: ch3
+    number: 3
+    title: Node.js و TypeScript
+    header: Node.js و TypeScript
+    source: 5- NodeJS & TS.pdf
+    intro: |
+      در این فصل از مرورگر بیرون می‌آییم: Node.js چرا و چطور به وجود آمد، npm و `package.json` و اسکریپت‌ها چه هستند، bundler به چه دردی می‌خورد و پکیج‌های معروف کدام‌اند. نیمه‌ی دوم فصل TypeScript است: نوع‌ها، interface، توابع، کلاس‌ها، generic، ماژول‌ها و بهترین شیوه‌ها.
