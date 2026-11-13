@@ -507,7 +507,11 @@ questions:
     stem: خروجی کد زیر کدام است؟
     check: dom-output
     html: |
-      <!DOCTYPE html><html><head><title>Shop</title></head><body><h1>Home</h1></body></html>
+      <!DOCTYPE html>
+      <html>
+      <head><title>Shop</title></head>
+      <body><h1>Home</h1></body>
+      </html>
     code: |
       console.log(document.title);
       document.title = "Cart (2)";
@@ -541,7 +545,9 @@ questions:
     html: |
       <h1 id="a">A</h1>
       <script>
-        console.log(document.getElementById("a") !== null, document.getElementById("b") !== null);
+        const a = document.getElementById("a");
+        const b = document.getElementById("b");
+        console.log(a !== null, b !== null);
       </script>
       <h2 id="b">B</h2>
     code: |
