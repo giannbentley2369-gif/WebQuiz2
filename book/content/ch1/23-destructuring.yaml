@@ -1,0 +1,778 @@
+id: ch1-destructuring
+title: "Destructuring (تجزیه‌ی ساختار) و Spread"
+slides: "Introduction to JS، اسلاید ۴۲"
+lesson: |
+  فرض کن از خرید برگشته‌ای و یک کیسه‌ی پر از خوراکی در دست داری. به‌جای این‌که هر بار دست در کیسه کنی و دنبال شیر بگردی، کیسه را **باز می‌کنی** و هر چیز را سر جای خودش می‌گذاری: شیر در یخچال، نان در سبد نان. **destructuring** (تجزیه‌ی ساختار؛ یعنی باز کردن یک شیء یا آرایه و ریختن تکه‌هایش در متغیرهای جداگانه) دقیقاً همین کار را با داده‌ها می‌کند.
+
+  ::: note درباره‌ی عنوان اسلاید ۴۲
+  عنوان اسلاید ۴۲ «Destructing» نوشته شده که یک غلط تایپی است؛ اصطلاح درست **destructuring** است (از structure به معنای «ساختار»). این کار هیچ ربطی به «نابود کردن» (destroy) ندارد: شیء یا آرایه‌ی اصلی **دست‌نخورده** باقی می‌ماند و فقط مقدارهایش در متغیرهای تازه ریخته می‌شوند.
+  :::
+
+  ### چرا destructuring؟
+
+  بیا اول ببینیم بدون آن چه کار می‌کردیم:
+
+  ```js
+  const person = { first: "Alice", last: "Doe", age: 30 };
+
+  // Without destructuring: one line for each property
+  const first = person.first;
+  const age = person.age;
+  console.log(first, age); // Alice 30
+  ```
+
+  با destructuring همان دو خط در **یک خط** خلاصه می‌شود:
+
+  ```js
+  const person = { first: "Alice", last: "Doe", age: 30 };
+
+  // With destructuring: one line for all of them
+  const { first, age } = person;
+  console.log(first, age); // Alice 30
+  ```
+
+  اسلاید ۴۲ ویژگی‌های destructuring را این‌طور خلاصه کرده است:
+
+  - مقدارها را **به‌راحتی** از آرایه‌ها یا اشیاء بیرون می‌کشد (Extract values from arrays or objects easily).
+  - برای اشیاء از `{}` و برای آرایه‌ها از `[]` استفاده می‌کند.
+  - می‌توان هنگام destructuring نام متغیرها را **عوض کرد** (rename).
+  - اگر خاصیتی وجود نداشته باشد، می‌توان **مقدار پیش‌فرض** (default value) تعیین کرد.
+  - کد را **خواناتر** می‌کند (Makes code clearer).
+
+  ### کد اسلاید ۴۲
+
+  ```js title=destructing.js
+  const person = {
+    first: "Alice",
+    last: "Doe",
+    age: 30 };
+  const { first, age } = person;
+
+  const colors = ["red", "green", "blue"];
+  const [primary, secondary] = colors;
+
+  console.log(first, age);         // Alice 30
+  console.log(primary, secondary); // red green
+  ```
+
+  - خط `const { first, age } = person;` دو متغیر جدید به نام‌های `first` و `age` می‌سازد و مقدار خاصیت‌های (property) هم‌نامشان را از `person` در آن‌ها می‌ریزد. خاصیت `last` را نخواسته‌ایم، پس متغیری برایش ساخته نمی‌شود.
+  - خط `const [primary, secondary] = colors;` اولین عضو آرایه را در `primary` و دومی را در `secondary` می‌ریزد. عضو سوم (`"blue"`) را نخواسته‌ایم، پس نادیده گرفته می‌شود.
+
+  ::: note سمت چپ یا سمت راست مساوی؟
+  آکولاد `{}` و کروشه `[]` وقتی **سمت راست** `=` باشند، شیء یا آرایه **می‌سازند** (literal). وقتی **سمت چپ** `=` (یا جای پارامترهای تابع) بیایند، شیء یا آرایه را **باز می‌کنند** (destructuring). به این شکلِ سمت چپ، **الگو** (pattern) می‌گویند.
+  :::
+
+  ### destructuring شیء: بر اساس «نام»
+
+  در destructuring شیء، JavaScript برای هر نامی که داخل `{ }` نوشته‌ای، دنبال **خاصیتی با همان نام** می‌گردد. پس:
+
+  1. **ترتیب مهم نیست.** `const { age, first } = person;` دقیقاً همان نتیجه را می‌دهد.
+  2. **نام مهم است.** اگر خاصیتی با آن نام وجود نداشته باشد، متغیر ساخته می‌شود ولی مقدارش `undefined` است (خطایی رخ نمی‌دهد).
+
+  ```js
+  const person = { first: "Alice", last: "Doe", age: 30 };
+  const { age, first, nickname } = person;
+  console.log(first, age); // Alice 30
+  console.log(nickname);   // undefined (person has no "nickname")
+  ```
+
+  ### destructuring آرایه: بر اساس «جایگاه»
+
+  اعضای آرایه نام ندارند؛ با **جایگاه** یا **index** (شماره‌ی خانه، از ۰) شناخته می‌شوند. پس متغیر اول عضو اول را می‌گیرد، متغیر دوم عضو دوم را و به همین ترتیب. نام متغیرها هر چیزی می‌تواند باشد.
+
+  ```js
+  const colors = ["red", "green", "blue"];
+  const [a, b] = colors;       // a = "red", b = "green"
+  const [, , third] = colors;  // skip two items with empty slots: third = "blue"
+  const [x, y, z, w] = colors; // w = undefined (there is no 4th item)
+  console.log(a, b, third, w); // red green blue undefined
+  console.log(colors);         // [ 'red', 'green', 'blue' ] (the array is unchanged)
+  ```
+
+  برای **رد شدن** (skip) از یک عضو، جای آن را خالی بگذار و فقط کاما بنویس: `[, second]` یعنی «اولی را نمی‌خواهم، دومی را در `second` بریز».
+
+  | | destructuring شیء | destructuring آرایه |
+  |---|---|---|
+  | علامت | `{ }` | `[ ]` |
+  | تطبیق بر اساس | **نام** خاصیت | **جایگاه** (index) |
+  | نام متغیرها | همان نام خاصیت (مگر با تغییر نام) | دلخواه |
+  | ترتیب نوشتن | مهم نیست | مهم است |
+  | خاصیت یا عضوِ ناموجود | `undefined` | `undefined` |
+
+  ### تغییر نام متغیر (rename)
+
+  گاهی نام خاصیت به کارمان نمی‌آید؛ مثلاً از قبل متغیری با همان نام داریم یا نام گویاتری می‌خواهیم. با `:` می‌شود نام متغیر را عوض کرد:
+
+  ```js
+  const person = { first: "Alice", last: "Doe", age: 30 };
+  const { first: firstName } = person;
+  console.log(firstName); // Alice
+  console.log(first);     // ReferenceError: first is not defined
+  ```
+
+  `{ first: firstName }` را این‌طور بخوان: «خاصیت `first` را بردار و در متغیر **جدیدی** به نام `firstName` بریز». سمت چپ `:` **نام خاصیت** (مبدأ) است و سمت راست آن **نام متغیر** (مقصد). مهم‌ترین نکته این است که بعد از تغییر نام، **فقط** `firstName` ساخته می‌شود و متغیری به نام `first` وجود ندارد؛ برای همین خط آخر خطای `ReferenceError` (خطای ارجاع به نامی که تعریف نشده) می‌دهد.
+
+  ::: analogy
+  در object literal، `{ first: "Alice" }` یعنی «کلید ← مقدار». در الگوی destructuring، `{ first: firstName }` یعنی «کلید ← متغیر مقصد». شکل هر دو یکی است، ولی جهت حرکت داده برعکس است: اولی داده را **در** شیء می‌گذارد و دومی داده را **از** شیء بیرون می‌آورد.
+  :::
+
+  ### مقدار پیش‌فرض (default value)
+
+  اگر خاصیتی وجود نداشته باشد، می‌توانیم با `=` یک مقدار پیش‌فرض بدهیم. این مثال (که با اجرا بررسی شده) تغییر نام و مقدار پیش‌فرض را با هم نشان می‌دهد؛ همان دو قابلیتی که اسلاید ۴۲ نام برده ولی در کدش نیامده است:
+
+  ```js
+  const person = { first: "Alice", last: "Doe", age: 30 };
+  const { first: firstName, middle = "N/A" } = person;
+  console.log(firstName, middle); // Alice N/A
+  ```
+
+  `person` خاصیتی به نام `middle` ندارد، پس مقدار پیش‌فرض `"N/A"` (مخفف Not Available یعنی «موجود نیست») به کار می‌رود. تغییر نام و پیش‌فرض را می‌توان با هم نوشت: `const { middle: m = "-" } = person;` یعنی «`middle` را در `m` بریز و اگر نبود، `"-"`». آرایه‌ها هم پیش‌فرض دارند: `const [p = "none", q = "none"] = ["tea"];` به `p` مقدار `"tea"` و به `q` مقدار `"none"` می‌دهد.
+
+  قانون طلایی: مقدار پیش‌فرض **فقط وقتی** به کار می‌رود که مقدار برابر `undefined` باشد؛ یعنی خاصیت یا عضو وجود نداشته باشد یا صریحاً `undefined` باشد. `null`، `0`، `""` و `false` مقدارهای واقعی‌اند و پیش‌فرض را فعال **نمی‌کنند**:
+
+  ```js
+  const { a = 1, b = 2, c = 3 } = { a: undefined, b: null };
+  console.log(a, b, c); // 1 null 3
+
+  const [x = 5, y = 5, z = 5] = [0, "", false];
+  console.log([x, y, z]); // [ 0, '', false ]
+  ```
+
+  ### rest در destructuring: «بقیه‌اش مال تو»
+
+  سه نقطه‌ی `...` در الگوی destructuring یعنی **rest** (باقی‌مانده): «هر چه ماند را جمع کن و در این متغیر بریز».
+
+  ```js
+  const [head, ...tail] = [1, 2, 3, 4];
+  console.log(head, tail); // 1 [ 2, 3, 4 ]
+
+  const { id, ...info } = { id: 7, name: "Ali", age: 20 };
+  console.log(id, info); // 7 { name: 'Ali', age: 20 }
+  ```
+
+  - rest در آرایه همیشه یک **آرایه** می‌سازد (اگر چیزی نمانده باشد، آرایه‌ی خالی `[]`) و در شیء همیشه یک **شیء**.
+  - rest باید **آخرین** مورد الگو باشد. `const [...rest, last] = arr;` خطای `SyntaxError: Rest element must be last element` می‌دهد. چون `SyntaxError` (خطای نحوی) قبل از اجرا و هنگام خواندن فایل پیدا می‌شود، **هیچ خطی** از آن فایل اجرا نمی‌شود، حتی خط‌های قبل از آن.
+
+  rest در **پارامترهای تابع** هم به کار می‌رود: `...` قبل از آخرین پارامتر یعنی «همه‌ی آرگومان‌های باقی‌مانده را در یک آرایه جمع کن». به این پارامتر **rest parameter** می‌گویند و آن هم باید آخرین پارامتر باشد:
+
+  ```js
+  function show(first, ...others) {
+    console.log(first, others);
+  }
+  show(1, 2, 3); // 1 [ 2, 3 ]
+  show(1);       // 1 [] (nothing left: an empty array)
+  ```
+
+  ### جابه‌جا کردن دو متغیر (swap)
+
+  یکی از زیباترین کاربردهای destructuring، جابه‌جا کردن مقدار دو متغیر بدون متغیر کمکی است:
+
+  ```js
+  let a = 1;
+  let b = 2;
+  [a, b] = [b, a];
+  console.log(a, b); // 2 1
+  ```
+
+  اول سمت راست ساخته می‌شود: آرایه‌ی موقت `[2, 1]`. بعد این آرایه در `a` و `b` باز می‌شود. چون متغیرها از قبل وجود دارند، در خط سوم `let` یا `const` نمی‌نویسیم (فقط انتساب است). متغیرها هم باید `let` باشند، چون به `const` نمی‌شود دوباره مقدار داد.
+
+  ### destructuring تودرتو (nested)
+
+  اگر داخل شیء، شیء یا آرایه‌ی دیگری باشد، الگو را هم تودرتو می‌نویسیم:
+
+  ```js
+  const user = {
+    name: "Sara",
+    address: { city: "Tehran", zip: "12345" },
+    skills: ["js", "css"],
+  };
+  const { address: { city }, skills: [firstSkill] } = user;
+  console.log(city, firstSkill); // Tehran js
+  ```
+
+  این‌جا `address:` و `skills:` فقط «مسیر» را نشان می‌دهند و **متغیر نمی‌سازند**؛ تنها متغیرهای ساخته‌شده `city` و `firstSkill` هستند و استفاده از `address` خطای `ReferenceError` می‌دهد. اگر خود شیء والد وجود نداشته باشد، مثلاً `const { profile: { bio } } = {};`، خطای `TypeError` (خطای نوع) می‌گیریم، چون نمی‌شود چیزی را از `undefined` بیرون کشید.
+
+  ### destructuring در پارامترهای تابع
+
+  می‌توان الگو را مستقیم جای پارامتر نوشت. این‌طوری تابع یک شیء می‌گیرد و همان اول، خاصیت‌های لازم را بیرون می‌کشد (حتی با مقدار پیش‌فرض):
+
+  ```js
+  function printUser({ name, age = 18 }) {
+    console.log(name + " is " + age);
+  }
+  printUser({ name: "Ali", age: 25 }); // Ali is 25
+  printUser({ name: "Sara" });         // Sara is 18
+  printUser(); // TypeError: Cannot destructure property 'name' of 'undefined' as it is undefined.
+  ```
+
+  در فراخوانی آخر هیچ آرگومانی نداده‌ایم، پس پارامتر `undefined` است و باز کردن `undefined` ممکن نیست. راه‌حل رایج، دادن پیش‌فرضِ `{}` به **کل پارامتر** است:
+
+  ```js
+  function createUser({ name = "Guest", role = "user" } = {}) {
+    return `${name} (${role})`;
+  }
+  console.log(createUser({ name: "Sara" })); // Sara (user)
+  console.log(createUser());                 // Guest (user)
+  ```
+
+  ### destructuring مقدار `null` یا `undefined`
+
+  `null` و `undefined` هیچ خاصیتی ندارند، پس باز کردن آن‌ها **همیشه** خطای `TypeError` می‌دهد:
+
+  ```js
+  const settings = { theme: null };
+  const { color } = settings.theme;
+  // TypeError: Cannot destructure property 'color' of 'settings.theme' as it is null.
+  ```
+
+  در مقابل، رشته‌ها مشکلی ندارند: `const [first] = "hi";` مقدار `"h"` را در `first` می‌ریزد، چون رشته مثل آرایه **iterable** (پیمایش‌پذیر؛ یعنی می‌شود اعضایش را یکی‌یکی گرفت) است. ولی الگوی آرایه روی یک شیء معمولی، مثل `const [a] = { a: 1 };`، خطای `TypeError: ... is not iterable` می‌دهد.
+
+  ### spread: همان سه نقطه، کار برعکس
+
+  **spread** (پخش کردن) همان `...` است ولی کارش برعکس rest است: rest چند چیز را **جمع** می‌کند و spread اعضای یک آرایه یا شیء را **بیرون می‌ریزد** و پخش می‌کند. spread را در سه جا می‌بینی:
+
+  **۱. داخل آرایه (کپی و ادغام):**
+
+  ```js
+  const a = [1, 2];
+  const b = [...a, 3];         // [ 1, 2, 3 ]
+  const merged = [...a, ...b]; // [ 1, 2, 1, 2, 3 ]
+  const copy = [...a];         // a NEW array with the same items
+  console.log(copy === a);     // false
+  console.log([..."hi"]);      // [ 'h', 'i' ] (a string is iterable)
+  ```
+
+  **۲. داخل شیء (کپی، افزودن و بازنویسی):**
+
+  ```js
+  const base = { a: 1, b: 2 };
+  const x = { ...base, b: 3 }; // { a: 1, b: 3 } (the b written later wins)
+  const y = { b: 3, ...base }; // { b: 2, a: 1 } (base's b overwrites the earlier 3)
+  console.log(x, y);
+  ```
+
+  وقتی یک کلید دو بار بیاید، **آخری برنده است**.
+
+  **۳. در صدا زدن تابع (پخش آرگومان‌ها):**
+
+  ```js
+  const nums = [5, 1, 9];
+  console.log(Math.max(...nums)); // 9   (same as Math.max(5, 1, 9))
+  console.log(Math.max(nums));    // NaN (one argument: the whole array)
+  ```
+
+  #### spread در اسلاید ۴۸
+
+  در مثال اسلاید ۴۸ (درس متدهای آرایه) این بخش را دیدیم:
+
+  ```js
+  const students = [{ name: "Alice", score: 85 }, { name: "Bob", score: 72 }];
+  const results = students.map(s => ({
+    ...s,
+    passed: s.score >= 70
+  }));
+  console.log(results[0]);  // { name: 'Alice', score: 85, passed: true }
+  console.log(students[0]); // { name: 'Alice', score: 85 } (the original is unchanged)
+  ```
+
+  `{ ...s, passed: ... }` یعنی «یک شیء **جدید** بساز، همه‌ی خاصیت‌های `s` را در آن کپی کن و خاصیت `passed` را هم اضافه کن». شیء اصلی دانشجو تغییری نمی‌کند. پرانتز دور `{ }` هم لازم است تا arrow function آکولاد را «شیء» بفهمد، نه بدنه‌ی تابع.
+
+  #### کپی با spread «سطحی» (shallow) است
+
+  spread فقط **یک لایه** کپی می‌کند. اگر داخل شیء، آرایه یا شیء دیگری باشد، کپی و اصلی هر دو به **همان** آرایه یا شیء درونی اشاره می‌کنند:
+
+  ```js
+  const original = { name: "Ali", tags: ["x"] };
+  const clone = { ...original };
+  clone.name = "Sara";  // only the clone changes
+  clone.tags.push("y"); // the SAME inner array is shared
+  console.log(original.name, original.tags); // Ali [ 'x', 'y' ]
+  ```
+
+  همین‌طور `const b = a;` برای آرایه **کپی نمی‌سازد** و فقط نام دومی برای همان آرایه است، اما `[...a]` یک آرایه‌ی جدید می‌سازد.
+
+  #### rest یا spread؟
+
+  | | spread (پخش کردن) | rest (جمع کردن) |
+  |---|---|---|
+  | کار | اعضا را **بیرون می‌ریزد** | باقی‌مانده را **جمع می‌کند** |
+  | کجا؟ | داخل `[ ]` یا `{ }` سمت راست `=`، و در آرگومان‌های فراخوانی تابع | در الگوی destructuring (سمت چپ `=`) و در پارامترهای تابع |
+  | مثال | `[...a, 4]`، `{ ...obj }`، `f(...args)` | `const [x, ...others] = a`، `function f(...args) {}` |
+
+  ::: tip نکته
+  - شیء ← بر اساس **نام**؛ آرایه ← بر اساس **جایگاه**.
+  - در `{ first: firstName }` جهت را از چپ به راست بخوان: خاصیتِ `first` ← متغیرِ `firstName`.
+  - پیش‌فرض فقط برای `undefined` (خاصیت یا عضوِ ناموجود) فعال می‌شود.
+  - rest همیشه آخرین مورد الگوست؛ در آرایه، آرایه می‌سازد و در شیء، شیء.
+  - برای پیدا کردن حاصل `{ ...a, ...b }` از چپ به راست جلو برو؛ کلید تکراری را آخرین مقدار تعیین می‌کند.
+  :::
+
+  ::: trap دام تستی
+  - بعد از `const { first: firstName } = person;` متغیری به نام `first` **وجود ندارد** و استفاده از آن `ReferenceError` است.
+  - `const { a = 5 } = { a: null };` مقدار `null` می‌دهد، نه `5`.
+  - باز کردن `null` یا `undefined` خطای `TypeError` می‌دهد؛ مثلاً تابعی با پارامتر `{ title }` که بدون آرگومان صدا زده شود. پیش‌فرض `= {}` برای کل پارامتر این مشکل را حل می‌کند.
+  - `[...rest, last]` خطای `SyntaxError` است و هیچ خطی از فایل اجرا نمی‌شود.
+  - `Math.max(nums)` برابر `NaN` است؛ باید بنویسی `Math.max(...nums)`.
+  - کپی با spread سطحی است: آرایه‌ها و اشیای درونی بین کپی و اصلی **مشترک** می‌مانند.
+  - destructuring چیزی را «نابود» نمی‌کند؛ آرایه یا شیء اصلی دست‌نخورده می‌ماند.
+  :::
+
+  ::: summary
+  - destructuring یعنی بیرون کشیدن مقدارها از شیء (`{}`، بر اساس نام) یا آرایه (`[]`، بر اساس جایگاه) و ریختن آن‌ها در متغیرهای جدا.
+  - تغییر نام: `{ prop: newName }`؛ پیش‌فرض: `{ prop = value }`؛ هر دو با هم: `{ prop: newName = value }`؛ رد شدن از عضو: `[, second]`.
+  - rest (`...` در الگو) باقی‌مانده را جمع می‌کند؛ spread (`...` داخل literal یا آرگومان‌ها) اعضا را پخش می‌کند.
+  - swap با `[a, b] = [b, a]`؛ الگوها می‌توانند تودرتو باشند یا جای پارامتر تابع بنشینند.
+  :::
+questions:
+  - level: easy
+    stem: |
+      destructuring در JavaScript چه کاری انجام می‌دهد؟
+    options:
+      - 'شیء یا آرایه را از حافظه پاک (نابود) می‌کند.'
+      - 'مقدارهای یک آرایه یا شیء را بیرون می‌کشد و در متغیرهای جداگانه می‌ریزد.'
+      - 'یک شیء را به رشته‌ی JSON تبدیل می‌کند.'
+      - 'از یک شیء، کپی عمیق (deep copy) کامل می‌سازد.'
+    answer: 2
+    explain: |
+      اسلاید ۴۲ می‌گوید destructuring «Extract values from arrays or objects easily»؛ یعنی مقدارها را از آرایه یا شیء بیرون می‌کشد و در متغیرهای جدا قرار می‌دهد. گزینه‌ی ۱ از غلط تایپی عنوان اسلاید («Destructing») و شباهتش به destroy آمده، در حالی که شیء اصلی دست‌نخورده می‌ماند. تبدیل به JSON کار `JSON.stringify` است (رد گزینه‌ی ۳) و destructuring اصلاً شیء جدیدی نمی‌سازد، چه برسد به کپی عمیق (رد گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۴۲، در destructuring برای **اشیاء** از ...... و برای **آرایه‌ها** از ...... استفاده می‌شود. کدام گزینه جاهای خالی را به ترتیب درست پر می‌کند؟
+    options:
+      - '`[]` و `{}`'
+      - '`()` و `[]`'
+      - '`{}` و `[]`'
+      - '`{}` و `()`'
+    answer: 3
+    explain: |
+      اسلاید ۴۲: «Uses {} for objects, [] for arrays». درست مثل literalها: شیء با آکولاد ساخته و با آکولاد هم باز می‌شود (`const { first, age } = person`) و آرایه با کروشه (`const [primary, secondary] = colors`). گزینه‌ی ۱ جای این دو را برعکس کرده و پرانتز `()` (گزینه‌های ۲ و ۴) اصلاً الگوی destructuring نمی‌سازد.
+
+  - level: easy
+    stem: |
+      کدام جمله درباره‌ی تفاوت destructuring شیء و آرایه **درست** است؟
+    options:
+      - 'هر دو بر اساس جایگاه (index) پر می‌شوند و نام متغیرها اهمیتی ندارد.'
+      - 'در شیء ترتیب نوشتن نام‌ها مهم است، ولی در آرایه نه.'
+      - 'در آرایه، نام متغیرها باید با مقدارهای داخل آرایه یکی باشد.'
+      - 'در شیء متغیرها بر اساس **نام** خاصیت پر می‌شوند و در آرایه بر اساس **جایگاه**.'
+    answer: 4
+    explain: |
+      شیء خاصیت‌های نام‌دار دارد، پس JavaScript برای هر متغیر دنبال خاصیتِ هم‌نامش می‌گردد و ترتیب نوشتن مهم نیست. اعضای آرایه نام ندارند، پس متغیر اول عضو اول را می‌گیرد، دومی عضو دوم را و الی آخر. گزینه‌ی ۱ فقط درباره‌ی آرایه درست است، گزینه‌ی ۲ دقیقاً برعکسِ واقعیت است و در گزینه‌ی ۳، نام متغیرهای آرایه کاملاً دلخواه است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const person = { first: "Alice", last: "Doe", age: 30 };
+      const { age, first } = person;
+      console.log(first, age);
+    options:
+      - out: "Alice 30"
+      - out: "30 Alice"
+      - out: "undefined undefined"
+      - out: "Doe Alice"
+    answer: 1
+    explain: |
+      در destructuring شیء تطبیق بر اساس **نام** است، نه ترتیب: `age` مقدار `person.age` (یعنی `30`) و `first` مقدار `person.first` (یعنی `"Alice"`) را می‌گیرد و چاپ به ترتیب `first, age` انجام می‌شود. گزینه‌ی ۲ ترتیب چاپ را با ترتیب الگو اشتباه گرفته، گزینه‌ی ۳ فکر کرده جابه‌جا نوشتن نام‌ها تطبیق را خراب می‌کند و گزینه‌ی ۴ مثل آرایه بر اساس جایگاه فکر کرده است (`age` اولین مقدار و `first` دومین مقدار را بگیرد).
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const colors = ["red", "green", "blue"];
+      const [primary, secondary] = colors;
+      console.log(primary, secondary);
+      console.log(colors.length);
+    options:
+      - out: ["green blue", "3"]
+      - out: ["red green", "3"]
+      - out: ["red green", "1"]
+      - out: ["red blue", "3"]
+    answer: 2
+    explain: |
+      این همان کد اسلاید ۴۲ است: در destructuring آرایه، متغیر اول عضو اول (`"red"`) و متغیر دوم عضو دوم (`"green"`) را می‌گیرد. destructuring فقط مقدارها را در متغیرها می‌ریزد و آرایه را تغییر نمی‌دهد، پس طول آن همچنان `3` است. گزینه‌ی ۳ فکر کرده اعضای برداشته‌شده از آرایه حذف می‌شوند، گزینه‌ی ۱ شمارش را از index ۱ شروع کرده و گزینه‌ی ۴ تصور کرده متغیر دوم آخرین عضو را می‌گیرد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const scores = [10, 20, 30];
+      const [, second, , fourth] = scores;
+      console.log(second, fourth);
+    options:
+      - out: "20 30"
+      - out: "10 30"
+      - out: "!! TypeError"
+      - out: "20 undefined"
+    answer: 4
+    explain: |
+      هر جای خالیِ بین کاماها یعنی «از این جایگاه رد شو». جایگاه ۰ (`10`) رد می‌شود، `second` جایگاه ۱ یعنی `20` را می‌گیرد، جایگاه ۲ (`30`) هم رد می‌شود و `fourth` باید جایگاه ۳ را بگیرد که وجود ندارد؛ پس `undefined` می‌شود، بدون هیچ خطایی. گزینه‌ی ۱ جای خالی دوم را نادیده گرفته، گزینه‌ی ۲ جای خالی اول را نشمرده و گزینه‌ی ۳ فکر کرده عضوِ ناموجود خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const person = { first: "Alice", last: "Doe", age: 30 };
+      const { first: firstName, middle = "N/A" } = person;
+      console.log(firstName, middle);
+    options:
+      - out: "Alice N/A"
+      - out: "Alice undefined"
+      - out: "first N/A"
+      - out: "!! ReferenceError"
+    answer: 1
+    explain: |
+      `first: firstName` یعنی «خاصیت `first` را در متغیر جدید `firstName` بریز»، پس `firstName` برابر `"Alice"` است. `person` خاصیتی به نام `middle` ندارد، پس مقدار پیش‌فرض `"N/A"` به کار می‌رود. گزینه‌ی ۲ مقدار پیش‌فرض را نادیده گرفته، گزینه‌ی ۳ فکر کرده نام خاصیت (نه مقدارش) در متغیر ریخته می‌شود و گزینه‌ی ۴ تصور کرده خاصیتِ ناموجود خطا می‌دهد؛ در حالی که فقط `undefined` است و پیش‌فرض جایش را می‌گیرد.
+
+  - level: medium
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      const person = { first: "Alice", age: 30 };
+      const { first: firstName, age } = person;
+      console.log(firstName, age);
+      console.log(first);
+    options:
+      - line: 2
+      - line: 3
+      - line: 4
+      - line: 0
+    answer: 3
+    explain: |
+      خط ۲ کاملاً معتبر است: خاصیت `first` در متغیر **جدید** `firstName` و خاصیت `age` در متغیر `age` ریخته می‌شود؛ خط ۳ هم `Alice 30` را چاپ می‌کند. اما بعد از تغییر نام، متغیری به نام `first` ساخته نشده، پس خط ۴ خطای `ReferenceError: first is not defined` می‌دهد. گزینه‌ی «خط ۲» فکر کرده ترکیب تغییر نام با یک نام معمولی مجاز نیست و گزینه‌ی «هیچ خطایی رخ نمی‌دهد» تصور کرده هر دو نامِ `first` و `firstName` ساخته می‌شوند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const { a = 1, b = 2, c = 3 } = { a: undefined, b: null };
+      console.log(a, b, c);
+    options:
+      - out: "1 2 3"
+      - out: "1 null 3"
+      - out: "undefined null 3"
+      - out: "undefined null undefined"
+    answer: 2
+    explain: |
+      مقدار پیش‌فرض فقط وقتی به کار می‌رود که مقدار برابر `undefined` باشد. `a` صریحاً `undefined` است، پس `1` می‌گیرد؛ `c` اصلاً وجود ندارد (یعنی `undefined`)، پس `3` می‌گیرد؛ ولی `b` برابر `null` است که یک مقدار واقعی است و پیش‌فرض را فعال نمی‌کند. گزینه‌ی ۱ با `null` مثل `undefined` رفتار کرده، گزینه‌ی ۳ فکر کرده `undefined` صریح جلوی پیش‌فرض را می‌گیرد و گزینه‌ی ۴ همه‌ی پیش‌فرض‌ها را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const [x = 5, y = 5, z = 5, w = 5] = [0, "", false];
+      console.log([x, y, z, w]);
+    options:
+      - out: "[5, 5, 5, 5]"
+      - out: "[0, '', false, undefined]"
+      - out: "[5, 5, 5, undefined]"
+      - out: "[0, '', false, 5]"
+    answer: 4
+    explain: |
+      `0`، `""` و `false` مقدارهای falsy هستند (در شرط مثل `false` رفتار می‌کنند)، ولی **`undefined` نیستند**؛ پس پیش‌فرض برای آن‌ها به کار نمی‌رود. عضو چهارم وجود ندارد (`undefined`)، پس فقط `w` مقدار `5` می‌گیرد. گزینه‌های ۱ و ۳ پیش‌فرض را با رفتار عملگر `||` اشتباه گرفته‌اند (که هر مقدار falsy را جایگزین می‌کند) و گزینه‌ی ۲ پیش‌فرضِ `w` را فراموش کرده است.
+
+  - level: medium
+    stem: |
+      کدام گزاره **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: 'بعد از `const { x = 10 } = { x: null };` مقدار `x` برابر `10` است.'
+        expr: '(() => { const { x = 10 } = { x: null }; return x; })()'
+        equals: '10'
+      - text: 'بعد از `const [a, , b] = [1, 2, 3];` مقدار `b` برابر `3` است.'
+        expr: '(() => { const [a, , b] = [1, 2, 3]; return b; })()'
+        equals: '3'
+      - text: 'بعد از `const [first] = "hi";` مقدار `first` برابر `"h"` است.'
+        expr: '(() => { const [first] = "hi"; return first; })()'
+        equals: '"h"'
+      - text: 'بعد از `const { a, ...rest } = { a: 1, b: 2, c: 3 };` شیء `rest` دو کلید دارد.'
+        expr: '(() => { const { a, ...rest } = { a: 1, b: 2, c: 3 }; return Object.keys(rest).length; })()'
+        equals: '2'
+    answer: 1
+    explain: |
+      `null` یک مقدار واقعی است و پیش‌فرض را فعال نمی‌کند؛ پس `x` برابر `null` می‌شود، نه `10`، و گزاره‌ی ۱ نادرست است. گزاره‌ی ۲ درست است، چون جای خالی بین دو کاما عضو `2` را رد می‌کند و `b` عضو سوم را می‌گیرد. گزاره‌ی ۳ درست است، چون رشته iterable است و حرف اولش در `first` می‌نشیند. گزاره‌ی ۴ هم درست است: `a` جدا شده و `rest` شامل `b` و `c` است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const [head, ...tail] = [1, 2, 3, 4];
+      console.log(head, tail);
+    options:
+      - out: "1 [2, 3, 4]"
+      - out: "1 2"
+      - out: "[1] [2, 3, 4]"
+      - out: "1 4"
+    answer: 1
+    explain: |
+      `head` عضو اول (`1`) را می‌گیرد و `...tail` (rest) **همه‌ی** اعضای باقی‌مانده را در یک **آرایه‌ی جدید** جمع می‌کند: `[ 2, 3, 4 ]`. گزینه‌ی ۲ فکر کرده rest فقط عضو بعدی را می‌گیرد، گزینه‌ی ۴ تصور کرده rest آخرین عضو را برمی‌دارد و گزینه‌ی ۳ متغیر اول را هم آرایه فرض کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const product = { id: 7, title: "Pen", price: 20 };
+      const { id, ...details } = product;
+      console.log(id, details);
+    options:
+      - out: "7 { id: 7, title: 'Pen', price: 20 }"
+      - out: "7 { title: 'Pen', price: 20 }"
+      - out: "7 ['Pen', 20]"
+      - out: "7 undefined"
+    answer: 2
+    explain: |
+      `id` جدا بیرون کشیده می‌شود و rest در الگوی شیء، **بقیه‌ی** خاصیت‌ها را در یک **شیء جدید** جمع می‌کند؛ پس `details` فقط `title` و `price` را دارد. گزینه‌ی ۱ فکر کرده rest کل شیء را کپی می‌کند (اما `id` قبلاً برداشته شده)، گزینه‌ی ۳ تصور کرده rest همیشه آرایه می‌سازد (فقط در الگوی آرایه این‌طور است) و گزینه‌ی ۴ فکر کرده خاصیتی به نام `details` جست‌وجو می‌شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      console.log("start");
+      const [...rest, last] = [1, 2, 3];
+      console.log(rest, last);
+    options:
+      - out: ["start", "[1, 2] 3"]
+      - out: ["start", "!! SyntaxError"]
+      - out: "!! SyntaxError"
+      - out: ["start", "[1, 2, 3] undefined"]
+    answer: 3
+    explain: |
+      rest باید **آخرین** مورد الگو باشد؛ `[...rest, last]` خطای `SyntaxError: Rest element must be last element` است. خطای نحوی هنگام خواندن (parse) کل فایل و **قبل از اجرای اولین خط** پیدا می‌شود، پس حتی `start` هم چاپ نمی‌شود. گزینه‌ی ۲ آن را با یک خطای زمان اجرا (runtime) اشتباه گرفته که خط‌های قبلش اجرا می‌شوند. گزینه‌های ۱ و ۴ فکر کرده‌اند JavaScript چنین الگویی را می‌پذیرد.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      let a = 1;
+      let b = 2;
+      [a, b] = [b, a];
+      console.log(a, b);
+    options:
+      - out: "2 1"
+      - out: "1 2"
+      - out: "2 2"
+      - out: "!! SyntaxError"
+    answer: 1
+    explain: |
+      سمت راست اول ارزیابی می‌شود و آرایه‌ی موقت `[2, 1]` ساخته می‌شود؛ بعد این آرایه در `a` و `b` باز می‌شود. نتیجه جابه‌جایی (swap) مقدارهاست: `2 1`. گزینه‌ی ۳ فکر کرده انتساب‌ها یکی‌یکی انجام می‌شوند (اول `a = b` و بعد `b = a`) که فقط در جابه‌جاییِ اشتباهِ بدون متغیر کمکی پیش می‌آید. destructuring در انتساب به متغیرهای موجود (بدون `let`) کاملاً مجاز است، پس گزینه‌ی ۴ غلط است؛ گزینه‌ی ۲ هم اثر خط سوم را نادیده گرفته است.
+
+  - level: medium
+    stem: |
+      با توجه به شیء زیر، کدام دستور مقدار `"Tehran"` را در متغیری به نام `city` می‌ریزد، به‌طوری که `console.log(city)` عبارت `Tehran` را چاپ کند؟
+    check: option-output
+    expect: "Tehran"
+    code: |
+      const user = { name: "Sara", address: { city: "Tehran" } };
+    prelude: |
+      const user = { name: "Sara", address: { city: "Tehran" } };
+    options:
+      - text: '`const { city } = user;`'
+        code: 'const { city } = user; console.log(city);'
+      - text: '`const { address.city } = user;`'
+        code: 'const { address.city } = user; console.log(city);'
+      - text: '`const [address, city] = user;`'
+        code: 'const [address, city] = user; console.log(city);'
+      - text: '`const { address: { city } } = user;`'
+        code: 'const { address: { city } } = user; console.log(city);'
+    answer: 4
+    explain: |
+      `city` داخل `user.address` است، پس الگو هم باید تودرتو باشد: `{ address: { city } }` یعنی «برو داخل `address` و `city` را بیرون بیاور». گزینه‌ی ۱ دنبال `user.city` می‌گردد که وجود ندارد و `undefined` چاپ می‌کند. نقطه داخل الگو مجاز نیست، پس گزینه‌ی ۲ خطای `SyntaxError` می‌دهد. گزینه‌ی ۳ الگوی آرایه را روی یک شیء معمولی به کار برده که iterable نیست و خطای `TypeError` می‌دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const user = { id: 1, profile: { name: "Reza" } };
+      const {
+        profile: { name: userName, city = "Tehran" },
+        id: userId,
+      } = user;
+      console.log(userName, city, userId);
+    options:
+      - out: "Reza undefined 1"
+      - out: "undefined Tehran 1"
+      - out: "Reza Tehran 1"
+      - out: "!! ReferenceError"
+    answer: 3
+    explain: |
+      `profile: { ... }` یعنی «داخل `user.profile` برو». آنجا `name` در متغیر جدید `userName` (یعنی `"Reza"`) ریخته می‌شود و چون `city` وجود ندارد، پیش‌فرض `"Tehran"` را می‌گیرد. `id: userId` هم `1` را در `userId` می‌ریزد. گزینه‌ی ۱ پیش‌فرض را نادیده گرفته، گزینه‌ی ۲ فکر کرده `name` باید در سطح اول `user` باشد و گزینه‌ی ۴ تصور کرده چون `profile` و `id` متغیر نشده‌اند خطا رخ می‌دهد، در حالی که در کد اصلاً از آن دو نام استفاده نشده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function createUser({ name = "Guest", role = "user" } = {}) {
+        return `${name} (${role})`;
+      }
+      console.log(createUser({ name: "Sara" }));
+      console.log(createUser());
+      console.log(createUser({ role: null }));
+    options:
+      - out: ["Sara (user)", "Guest (user)", "Guest (null)"]
+      - out: ["Sara (user)", "Guest (user)", "Guest (user)"]
+      - out: ["Sara (user)", "!! TypeError"]
+      - out: ["Sara (undefined)", "Guest (user)", "Guest (null)"]
+    answer: 1
+    explain: |
+      در فراخوانی اول `name` داده شده و `role` پیش‌فرض `"user"` را می‌گیرد. فراخوانی دوم آرگومانی ندارد، پس کل پارامتر پیش‌فرض `{}` را می‌گیرد و هر دو خاصیت پیش‌فرض می‌شوند؛ به همین دلیل `TypeError` رخ نمی‌دهد (رد گزینه‌ی ۳). در فراخوانی سوم `role` برابر `null` است که پیش‌فرض را فعال نمی‌کند (رد گزینه‌ی ۲). گزینه‌ی ۴ فکر کرده پیش‌فرض خاصیت‌ها فقط وقتی کار می‌کند که اصلاً آرگومانی داده نشود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      function show({ title }) {
+        console.log(title);
+      }
+      show({ title: "Book" });
+      show({});
+      show();
+    options:
+      - out: ["Book", "undefined", "undefined"]
+      - out: ["Book", "!! TypeError"]
+      - out: ["Book", "undefined", "!! TypeError"]
+      - out: ["Book", "!! ReferenceError"]
+    answer: 3
+    explain: |
+      فراخوانی اول `Book` را چاپ می‌کند. در فراخوانی دوم شیء خالی است؛ باز کردن آن مشکلی ندارد و فقط `title` برابر `undefined` می‌شود (رد گزینه‌ی ۲). در فراخوانی سوم پارامتر `undefined` است و باز کردن `undefined` ممکن نیست: `TypeError: Cannot destructure property 'title' of 'undefined'`. گزینه‌ی ۱ این خطا را ندیده (برای جلوگیری از آن باید می‌نوشتیم `{ title } = {}`) و گزینه‌ی ۴ نوع خطا را اشتباه گفته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const settings = { theme: null };
+      const { theme = "light" } = settings;
+      console.log(theme);
+      const { color } = settings.theme;
+      console.log(color);
+    options:
+      - out: ["light", "undefined"]
+      - out: ["null", "!! TypeError"]
+      - out: ["light", "!! TypeError"]
+      - out: ["null", "undefined"]
+    answer: 2
+    explain: |
+      `theme` وجود دارد و مقدارش `null` است؛ پیش‌فرض فقط برای `undefined` به کار می‌رود، پس `null` چاپ می‌شود (رد گزینه‌های ۱ و ۳). در خط چهارم می‌خواهیم `null` را باز کنیم؛ `null` هیچ خاصیتی ندارد و این کار خطای `TypeError: Cannot destructure property 'color' of 'settings.theme' as it is null` می‌دهد. گزینه‌ی ۴ فکر کرده باز کردن `null` هم مثل یک شیء خالی، فقط `undefined` می‌دهد.
+
+  - level: easy
+    stem: |
+      در کدام گزینه `...` نقش **rest** (جمع کردن باقی‌مانده) را دارد، نه spread (پخش کردن)؟
+    options:
+      - '`const copy = [...list];`'
+      - '`const [first, ...others] = list;`'
+      - '`Math.max(...list)`'
+      - '`const user2 = { ...user, age: 30 };`'
+    answer: 2
+    explain: |
+      rest در **الگوی destructuring** (سمت چپ `=`) یا در پارامترهای تابع می‌آید و باقی‌مانده را جمع می‌کند؛ در گزینه‌ی ۲، `others` همه‌ی اعضا به‌جز اولی را در یک آرایه جمع می‌کند. در گزینه‌های ۱ و ۴، `...` داخل یک آرایه یا شیء جدید (سمت راست `=`) آمده و اعضا را پخش می‌کند و در گزینه‌ی ۳ اعضای آرایه را به شکل آرگومان‌های جدا به تابع می‌دهد؛ هر سه spread هستند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const nums = [5, 1, 9];
+      console.log(Math.max(...nums));
+      console.log(Math.max(nums));
+    options:
+      - out: ["9", "NaN"]
+      - out: ["9", "9"]
+      - out: ["NaN", "9"]
+      - out: ["9", "!! TypeError"]
+    answer: 1
+    explain: |
+      `Math.max(...nums)` با spread همان `Math.max(5, 1, 9)` است و `9` می‌دهد. اما `Math.max(nums)` فقط **یک** آرگومان دارد که خودِ آرایه است؛ `Math.max` آن را به عدد تبدیل می‌کند و آرایه‌ی سه‌عضوی عدد معتبری نمی‌شود، پس حاصل `NaN` است. گزینه‌ی ۲ فکر کرده `Math.max` خودش آرایه را باز می‌کند، گزینه‌ی ۳ نقش spread را برعکس فهمیده و گزینه‌ی ۴ تصور کرده دادن آرایه خطا می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const base = { a: 1, b: 2 };
+      const x = { ...base, b: 3 };
+      const y = { b: 3, ...base };
+      console.log(x.b, y.b);
+    options:
+      - out: "3 3"
+      - out: "2 2"
+      - out: "2 3"
+      - out: "3 2"
+    answer: 4
+    explain: |
+      در object literal اگر یک کلید دو بار مقدار بگیرد، **آخرین** مقدار برنده است. در `x` اول `b: 2` از `base` کپی می‌شود و بعد `b: 3` آن را بازنویسی می‌کند، پس `3`. در `y` اول `b: 3` نوشته می‌شود و بعد spread، مقدار `2` را از `base` روی آن می‌ریزد، پس `2`. گزینه‌ی ۱ فکر کرده مقدار صریح همیشه برنده است، گزینه‌ی ۲ تصور کرده مقدار `base` همیشه برنده است و گزینه‌ی ۳ ترتیب را برعکس خوانده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const a = [1, 2];
+      const b = a;
+      const c = [...a];
+      a.push(3);
+      console.log(b.length, c.length);
+    options:
+      - out: "2 2"
+      - out: "3 3"
+      - out: "3 2"
+      - out: "2 3"
+    answer: 3
+    explain: |
+      `const b = a;` آرایه‌ی جدیدی نمی‌سازد؛ `b` فقط نام دیگری برای **همان** آرایه است، پس `push` روی `a` در `b` هم دیده می‌شود و طولش `3` است. `[...a]` با spread یک آرایه‌ی **جدید** با اعضای آن لحظه (`1` و `2`) می‌سازد که به `a` وابسته نیست، پس طولش `2` می‌ماند. گزینه‌ی ۱ فکر کرده `b` هم کپی است، گزینه‌ی ۲ فکر کرده spread هم فقط ارجاع را کپی می‌کند و گزینه‌ی ۴ این دو را برعکس کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر چیست؟
+    check: output
+    code: |
+      const original = { name: "Ali", tags: ["x"] };
+      const clone = { ...original };
+      clone.name = "Sara";
+      clone.tags.push("y");
+      console.log(original.name, original.tags.length);
+    options:
+      - out: "Ali 1"
+      - out: "Sara 2"
+      - out: "Sara 1"
+      - out: "Ali 2"
+    answer: 4
+    explain: |
+      spread یک کپی **سطحی** (shallow) می‌سازد: `clone` شیء جدیدی است، پس تغییر `clone.name` روی `original` اثری ندارد و نام همان `Ali` می‌ماند. اما خاصیت `tags` در هر دو شیء به **همان** آرایه اشاره می‌کند؛ `push` روی آرایه‌ی مشترک انجام می‌شود و طول آن در `original` هم `2` است. گزینه‌ی ۱ کپی را عمیق فرض کرده و گزینه‌های ۲ و ۳ فکر کرده‌اند `clone` اصلاً شیء جدیدی نیست.
+
+  - level: hard
+    stem: |
+      کد زیر نسخه‌ی تغییریافته‌ی مثال اسلاید ۴۸ است. خروجی آن چیست؟
+    check: output
+    code: |
+      const students = [
+        { name: "Alice", score: 85 },
+        { name: "Bob", score: 62 },
+      ];
+      const results = students.map((s) => ({ ...s, passed: s.score >= 70 }));
+      console.log(results[1].passed, students[1].passed);
+      console.log(results[0] === students[0]);
+    options:
+      - out: ["false false", "true"]
+      - out: ["false undefined", "false"]
+      - out: ["true undefined", "false"]
+      - out: ["false false", "false"]
+    answer: 2
+    explain: |
+      `{ ...s, passed: ... }` برای هر دانشجو یک شیء **جدید** می‌سازد که خاصیت‌های `s` به‌علاوه‌ی `passed` را دارد. نمره‌ی Bob برابر `62` است، پس `passed` برابر `false` است؛ ولی شیء اصلی Bob تغییری نکرده و خاصیت `passed` ندارد، پس `undefined`. چون شیء‌ها جدیدند، `results[0] === students[0]` برابر `false` است. گزینه‌های ۱ و ۴ فکر کرده‌اند spread شیء اصلی را تغییر می‌دهد و گزینه‌ی ۳ نتیجه‌ی مقایسه‌ی `62 >= 70` را اشتباه حساب کرده است.

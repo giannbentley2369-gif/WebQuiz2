@@ -1,0 +1,762 @@
+id: ch2-querying
+title: "پیدا کردن عناصر (Querying the DOM)"
+slides: "JS in HTML، اسلایدهای ۱۶ و ۱۷"
+lesson: |
+  قبل از اینکه بتوانیم متن یک عنصر را عوض کنیم یا به آن listener بدهیم، باید آن را **پیدا کنیم**. اسلاید ۱۶
+  می‌گوید: «با JavaScript عنصرهای صفحه را پیدا کن» و پنج متد اصلی را معرفی می‌کند. به این کار
+  **querying** (پرس‌وجو، یعنی جست‌وجوی عنصر در درخت DOM) می‌گویند.
+
+  ::: analogy
+  فرض کن در یک مدرسه دنبال دانش‌آموزها می‌گردی:
+  - با **شماره‌ی دانش‌آموزی** که برای هر نفر یکتاست، دقیقاً یک نفر پیدا می‌کنی: `getElementById`.
+  - با **نام کلاس** («همه‌ی دانش‌آموزان کلاس دهم ب») یک فهرست می‌گیری: `getElementsByClassName`.
+  - با **نقش** («همه‌ی معلم‌ها») هم یک فهرست می‌گیری: `getElementsByTagName`.
+  - با یک **توصیف دقیق و انعطاف‌پذیر** («اولین دانش‌آموزِ کلاس دهم ب که عینک دارد»):
+    `querySelector` و `querySelectorAll` با CSS selector.
+  :::
+
+  ### پنج متد اسلاید ۱۶ در یک نگاه
+
+  | متد | ورودی | خروجی | اگر چیزی پیدا نشود |
+  |---|---|---|---|
+  | `getElementById("id")` | نام id، **بدون** `#` | **یک** عنصر | `null` |
+  | `getElementsByClassName("class")` | نام کلاس، **بدون** `.` | **همه**: یک HTMLCollection زنده | مجموعه‌ی خالی (`length` برابر `0`) |
+  | `getElementsByTagName("tag")` | نام تگ، مثل `"p"` | **همه**: یک HTMLCollection زنده | مجموعه‌ی خالی |
+  | `querySelector("selector")` | یک **CSS selector** | **اولین** عنصر منطبق | `null` |
+  | `querySelectorAll("selector")` | یک **CSS selector** | **همه**: یک NodeList ایستا | NodeList خالی |
+
+  به نام‌ها دقت کن: `getElementById` مفرد است (Element، چون id یکتاست) ولی `getElementsByClassName` و
+  `getElementsByTagName` جمع‌اند (Elements). همه‌ی نام‌ها camelCase هستند؛ مثلاً `getElementByID` (با D
+  بزرگ) وجود ندارد و صدا زدنش `TypeError` می‌دهد.
+
+  ### ۱) `getElementById`
+
+  - ورودی، **خودِ نام id** است، بدون `#`.
+  - خروجی یک عنصر است، یا `null` اگر عنصری با آن id نباشد.
+  - id باید در صفحه **یکتا** باشد؛ اگر به‌اشتباه تکراری باشد، این متد اولین عنصر را برمی‌گرداند.
+  - این متد فقط روی `document` وجود دارد، نه روی عنصرها.
+
+  ```js
+  const title = document.getElementById("title"); // <h1 id="title">
+  console.log(document.getElementById("#title")); // null   (no # here!)
+  console.log(document.getElementById("nope"));   // null
+  ```
+
+  ### ۲) `getElementsByClassName` و `getElementsByTagName`
+
+  این دو متد یک **HTMLCollection** برمی‌گردانند: مجموعه‌ای **شبه‌آرایه (array-like)** که با اندیس (`[0]`) یا
+  `.item(1)` به اعضایش می‌رسی و `.length` دارد، ولی **آرایه نیست** و متدهایی مثل `forEach` و `map` را
+  ندارد.
+
+  ```html
+  <button class="btn primary">A</button>
+  <button class="btn">B</button>
+  <script>
+    const buttons = document.getElementsByClassName("btn");
+    console.log(buttons.length);                                        // 2
+    console.log(buttons[0].textContent, buttons.item(1).textContent);   // A B
+    console.log(document.getElementsByClassName("btn primary").length); // 1
+    console.log(Array.from(buttons).map((b) => b.textContent));         // ["A", "B"]
+    for (const b of buttons) console.log(b.textContent);                // A, then B
+    buttons.forEach((b) => console.log(b)); // TypeError: not a function
+  </script>
+  ```
+
+  - نام کلاس را **بدون نقطه** می‌نویسیم. عنصری با `class="btn primary"` هم کلاس `btn` را دارد و پیدا
+    می‌شود.
+  - اگر چند کلاس با فاصله بدهی (`"btn primary"`)، فقط عنصرهایی پیدا می‌شوند که **همه‌ی** آن کلاس‌ها را
+    داشته باشند؛ ترتیب کلاس‌ها مهم نیست.
+  - این متدها هیچ‌وقت `null` برنمی‌گردانند؛ اگر چیزی پیدا نشود، مجموعه‌ای خالی با `length` برابر `0` می‌دهند.
+  - برای استفاده از متدهای آرایه، مجموعه را با `Array.from(...)` یا `[...collection]` به آرایه تبدیل کن؛
+    حلقه‌ی `for...of` هم مستقیم روی HTMLCollection کار می‌کند.
+  - `getElementsByTagName("*")` همه‌ی عنصرها را برمی‌گرداند.
+
+  ### ۳) `querySelector` و `querySelectorAll` با CSS selector
+
+  این دو متد یک **CSS selector** (همان الگوهایی که در CSS برای انتخاب عنصر می‌نویسی) می‌گیرند و برای همین
+  از همه انعطاف‌پذیرترند:
+
+  | selector | معنی | مثال |
+  |---|---|---|
+  | `#id` | عنصری با این id | `#title` |
+  | `.class` | عنصرهایی با این کلاس | `.btn` |
+  | `tag` | عنصرهایی با این تگ | `button` |
+  | `tag.class` | تگ مشخص با کلاس مشخص | `a.nav-link` |
+  | `.a.b` (بدون فاصله) | عنصری که **هر دو** کلاس را دارد | `.btn.primary` |
+  | `[attr]` | عنصرهایی که این attribute را دارند | `[href]` |
+  | `[attr='value']` | attribute با مقدار مشخص | `input[type='text']` |
+  | `A B` (با فاصله) | Bهایی که **هر جایی داخل** A هستند (نواده) | `div p` |
+  | `A > B` | Bهایی که **فرزند مستقیم** A هستند | `div > p` |
+  | `A, B` | گروه: هر عنصری که A **یا** B باشد | `h1, .note` |
+
+  - `querySelector` **اولین** عنصر منطبق را به ترتیب سند (از بالا به پایین) برمی‌گرداند، یا `null`.
+  - `querySelectorAll` **همه‌ی** عنصرهای منطبق را در یک **NodeList** برمی‌گرداند. NodeList هم شبه‌آرایه است،
+    ولی برخلاف HTMLCollection متد `forEach` **دارد** (هنوز `map` و `filter` ندارد).
+  - نتیجه‌ها همیشه به **ترتیب سند** هستند، نه به ترتیب نوشتن selectorها در یک گروه.
+
+  ```html
+  <h1 id="title">Shop</h1>
+  <div id="menu">
+    <a class="nav-link" href="#home">Home</a>
+    <a class="nav-link active" href="#shop">Shop</a>
+    <a class="btn" href="#buy">Buy</a>
+  </div>
+  <p class="note">First</p>
+  <input type="checkbox" id="agree">
+  <input type="text" id="user">
+  <script>
+    console.log(document.querySelector("#title").textContent);         // "Shop"
+    console.log(document.querySelector(".nav-link").textContent);      // "Home" (first)
+    console.log(document.querySelectorAll("a.nav-link").length);       // 2
+    console.log(document.querySelectorAll(".nav-link.active").length); // 1
+    console.log(document.querySelector("input[type='text']").id);      // "user"
+    console.log(document.querySelectorAll("#menu > a").length);        // 3
+    console.log(document.querySelectorAll("h1, .note").length);        // 2
+    console.log(document.querySelector(".nope"));                      // null
+  </script>
+  ```
+
+  ::: tip `#` بگذارم یا نه؟
+  متدهای `getElement...` **نام خالی** می‌گیرند (`getElementById("title")`، `getElementsByClassName("btn")`)،
+  ولی `querySelector` و `querySelectorAll` **CSS selector** می‌گیرند و علامت لازم را می‌خواهند
+  (`querySelector("#title")`، `querySelector(".btn")`). `querySelector("title")` دنبال **تگ** `<title>`
+  می‌گردد، نه عنصری با id برابر `title`.
+  :::
+
+  ### فعالیت کلاسی اسلاید ۱۷: هر خط چه می‌کند؟
+
+  ```js title=sample.js
+  const title = document.getElementById("title");
+  const buttons = document.getElementsByClassName("btn");
+  const paragraphs = document.getElementsByTagName("p");
+  const firstInput = document.querySelector("input[type='text']");
+  const allLinks = document.querySelectorAll("a.nav-link");
+  ```
+
+  | خط | چه می‌کند | نتیجه |
+  |---|---|---|
+  | ۱ | عنصری که id آن `title` است (نام بدون `#`) | یک عنصر، یا `null` |
+  | ۲ | همه‌ی عنصرهایی که کلاس `btn` دارند، حتی اگر کلاس دیگری هم داشته باشند (`class="btn primary"`) | HTMLCollection زنده |
+  | ۳ | همه‌ی تگ‌های `<p>` صفحه | HTMLCollection زنده |
+  | ۴ | **اولین** `<input>`ی که attribute `type` آن `text` است (attribute selector)؛ چک‌باکس‌ها و inputهای دیگر رد می‌شوند | یک عنصر، یا `null` |
+  | ۵ | همه‌ی `<a>`هایی که کلاس `nav-link` دارند (selector از نوع `tag.class`) | NodeList ایستا |
+
+  در خط ۴، رشته با `"` باز شده و مقدار attribute داخلش با `'` آمده (`"input[type='text']"`) تا دو نوع
+  کوتیشن قاطی نشوند. نتیجه‌ها هم با `const` نگه داشته شده‌اند. اگر این کد را روی صفحه‌ی آزمایشی زیر اجرا
+  کنیم:
+
+  ```html
+  <h1 id="title">Welcome</h1>
+  <button class="btn primary">A</button>
+  <button class="btn">B</button>
+  <p>First paragraph</p>
+  <p>Second paragraph</p>
+  <input type="checkbox" id="remember">
+  <input type="text" id="username">
+  <a class="nav-link" href="#home">Home</a>
+  <a class="nav-link" href="#about">About</a>
+  <a href="#help">Help</a>
+  ```
+
+  نتیجه این است: `title` همان `<h1>` است، `buttons.length` برابر `2`، `paragraphs.length` برابر `2`،
+  `firstInput.id` برابر `"username"` (چک‌باکس رد شد) و `allLinks.length` برابر `2` (لینک Help کلاس
+  `nav-link` ندارد).
+
+  ### مجموعه‌ی زنده (live) در برابر ایستا (static)
+
+  HTMLCollectionی که `getElementsBy...` برمی‌گرداند **زنده (live)** است: اگر بعداً DOM تغییر کند، خودش
+  به‌روز می‌شود. ولی NodeList `querySelectorAll` **ایستا (static)** است: یک عکس فوری (snapshot) از لحظه‌ی
+  جست‌وجو.
+
+  ```html
+  <ul id="list"><li class="item">a</li><li class="item">b</li></ul>
+  <script>
+    const live = document.getElementsByClassName("item"); // HTMLCollection (live)
+    const fixed = document.querySelectorAll(".item");     // NodeList (static)
+
+    const li = document.createElement("li");              // a brand-new <li>
+    li.className = "item";
+    document.getElementById("list").appendChild(li);
+
+    console.log(live.length, fixed.length);               // 3 2
+  </script>
+  ```
+
+  همین زنده بودن یک دام معروف دارد: اگر در حلقه‌ای روی مجموعه‌ی زنده، کلاسی را که با آن جست‌وجو کرده‌ای
+  حذف کنی، عنصرها از زیر دستت از مجموعه بیرون می‌روند و حلقه بعضی‌ها را جا می‌اندازد:
+
+  ```js
+  // 4 paragraphs: <p class="red">1</p> ... <p class="red">4</p>
+  const reds = document.getElementsByClassName("red");
+  for (let i = 0; i < reds.length; i++) {
+    reds[i].classList.remove("red"); // the element leaves the live collection immediately!
+  }
+  console.log(document.getElementsByClassName("red").length); // 2 (items 2, 4 skipped)
+  ```
+
+  راه‌حل: روی یک کپی ثابت حلقه بزن (`for (const p of Array.from(reds))`) یا از `querySelectorAll` استفاده کن
+  که ایستاست.
+
+  ### جست‌وجو داخل یک عنصر
+
+  `querySelector`، `querySelectorAll`، `getElementsByClassName` و `getElementsByTagName` روی هر **عنصری**
+  هم صدا زده می‌شوند و آن وقت فقط **داخل همان عنصر** (بین نوادگانش) می‌گردند. ولی `getElementById` فقط روی
+  `document` وجود دارد:
+
+  ```html
+  <p class="note">First</p>
+  <div class="box">
+    <p>Inside box</p>
+    <section><p class="note">Deep</p></section>
+  </div>
+  <script>
+    const box = document.querySelector(".box");
+    console.log(box.querySelector("p").textContent);   // "Inside box"
+    console.log(box.querySelectorAll(".note").length); // 1 (in the whole page: 2)
+    console.log(typeof box.getElementById);            // "undefined"
+  </script>
+  ```
+
+  چون `box.getElementById` وجود ندارد (`undefined` است)، صدا زدن `box.getElementById("x")` خطای `TypeError`
+  می‌دهد.
+
+  ### idی که با رقم شروع می‌شود (`id="2223"` در اسلاید ۱۰)
+
+  در CSS، شناسه‌ها (id و نام کلاس داخل selector) نمی‌توانند با رقم شروع شوند. برای همین
+  `document.querySelector("#2223")` یک selector **نامعتبر** است و خطای `SyntaxError` (با پیامی شبیه
+  `'#2223' is not a valid selector`) می‌دهد. ولی `getElementById` اصلاً CSS نمی‌فهمد و فقط id را مقایسه
+  می‌کند:
+
+  ```js
+  document.getElementById("2223");            // works: <h3 id="2223">
+  document.querySelector('[id="2223"]');      // works: attribute selector
+  document.querySelector("#" + CSS.escape("2223")); // works: escaped selector
+  document.querySelector("#2223");            // SyntaxError: not a valid selector
+  ```
+
+  ::: trap
+  - `getElementById("#title")` همیشه `null` می‌دهد (چون `#` جزو نام id نیست) و استفاده از آن نتیجه
+    (`.textContent`) خطای `TypeError` می‌دهد.
+  - HTMLCollection متد `forEach` ندارد (`TypeError`)، ولی NodeList دارد. هیچ‌کدام `map` ندارند.
+  - متدهای جمع (`getElementsBy...` و `querySelectorAll`) وقتی چیزی پیدا نکنند `null` نمی‌دهند، مجموعه‌ی خالی
+    می‌دهند؛ متدهای مفرد (`getElementById` و `querySelector`) `null` می‌دهند.
+  - `querySelector` فقط **اولین** مورد را برمی‌گرداند؛ برای همه، `querySelectorAll` لازم است.
+  - `"div p"` (با فاصله: همه‌ی نوادگان) با `"div > p"` (فقط فرزند مستقیم) و `".a.b"` (هر دو کلاس) با
+    `".a .b"` (عنصر `.b` داخل `.a`) فرق دارد.
+  :::
+
+  ::: summary
+  - یکی با id: `getElementById("id")` (بدون `#`، عنصر یا `null`).
+  - همه با کلاس یا تگ: `getElementsByClassName` / `getElementsByTagName` (HTMLCollection زنده، بدون `forEach`).
+  - با CSS selector: `querySelector` (اولین مورد یا `null`) و `querySelectorAll` (NodeList ایستا با `forEach`).
+  - جست‌وجو داخل یک عنصر: `el.querySelector(...)`؛ `getElementById` فقط روی `document`.
+  - id با رقم اول: `querySelector("#2223")` خطای `SyntaxError` می‌دهد ولی `getElementById("2223")` کار می‌کند.
+  :::
+questions:
+  - level: easy
+    stem: '`document.getElementById("main")` چه چیزی برمی‌گرداند؟'
+    options:
+      - 'یک HTMLCollection از عنصرهایی که id آن‌ها `main` است'
+      - 'یک NodeList'
+      - 'یک عنصر، یا `null` اگر عنصری با این id نباشد'
+      - 'آرایه‌ای از عنصرها'
+    answer: 3
+    explain: |
+      طبق اسلاید ۱۶، `getElementById` «finds one element by its ID»؛ چون id باید یکتا باشد، خروجی یک عنصر است
+      (نام متد هم مفرد است: Element). اگر عنصری پیدا نشود `null` برمی‌گرداند. HTMLCollection خروجی
+      `getElementsBy...` است (گزینه‌ی ۱) و NodeList خروجی `querySelectorAll` (گزینه‌ی ۲)؛ هیچ‌کدام از این
+      متدها آرایه‌ی واقعی برنمی‌گردانند (گزینه‌ی ۴).
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Shop</h1>
+    code: |
+      console.log(document.getElementById("#title"));
+      console.log(document.querySelector("#title").textContent);
+    options:
+      - out: ["Shop", "Shop"]
+      - out: ["null", "Shop"]
+      - out: ["null", "null"]
+      - out: ["!! SyntaxError"]
+    answer: 2
+    explain: |
+      `getElementById` نام خالی id را می‌گیرد و `#` را جزو نام حساب می‌کند؛ عنصری با id برابر `#title` نداریم،
+      پس `null` چاپ می‌شود (رد گزینه‌ی ۱). `querySelector` یک CSS selector می‌گیرد و `#title` یعنی «عنصر با
+      id برابر title»، پس متن `Shop` چاپ می‌شود (رد گزینه‌ی ۳). `getElementById` هرگز به‌خاطر رشته‌ی
+      ورودی‌اش خطای نحوی نمی‌دهد (رد گزینه‌ی ۴).
+  - level: easy
+    stem: کدام متد عنصر را با یک **CSS selector** پیدا می‌کند؟
+    options:
+      - '`getElementById`'
+      - '`getElementsByClassName`'
+      - '`getElementsByTagName`'
+      - '`querySelector`'
+    answer: 4
+    explain: |
+      طبق اسلاید ۱۶، `querySelector` اولین تطابق را «using CSS selectors» پیدا می‌کند (و `querySelectorAll`
+      همه‌ی تطابق‌ها را). سه متد دیگر فقط یک **نام** ساده می‌گیرند: نام id، نام کلاس یا نام تگ؛ به همین دلیل
+      `getElementById("#x")` یا `getElementsByClassName(".x")` چیزی پیدا نمی‌کنند.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="note">First</p>
+      <div class="box">
+        <p>Inside box</p>
+        <section><p class="note">Deep</p></section>
+      </div>
+    code: |
+      console.log(
+        document.querySelectorAll("div p").length,
+        document.querySelectorAll("div > p").length,
+        document.getElementsByTagName("p").length
+      );
+    options:
+      - out: "2 1 3"
+      - out: "2 2 3"
+      - out: "1 1 3"
+      - out: "3 1 3"
+    answer: 1
+    explain: |
+      `div p` (با فاصله) یعنی هر `<p>`ی که **هر جایی داخل** یک `div` باشد: `Inside box` و `Deep`، پس `2`
+      (پاراگراف `First` بیرون `div` است؛ رد گزینه‌ی ۴). `div > p` فقط **فرزند مستقیم** را می‌گیرد؛ `Deep`
+      داخل `<section>` است و فرزند مستقیم `div` نیست، پس `1` (رد گزینه‌ی ۲). `getElementsByTagName("p")`
+      همه‌ی `<p>`های صفحه را می‌شمارد: `3`. گزینه‌ی ۳ فرق «نواده» و «فرزند مستقیم» را نمی‌داند.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div class="card big">1</div>
+      <div class="big card">2</div>
+      <div class="card">3</div>
+    code: |
+      console.log(
+        document.getElementsByClassName("card big").length,
+        document.querySelectorAll(".card.big").length,
+        document.querySelectorAll(".card .big").length
+      );
+    options:
+      - out: "1 1 0"
+      - out: "2 2 0"
+      - out: "2 2 2"
+      - out: "3 2 0"
+    answer: 2
+    explain: |
+      `getElementsByClassName("card big")` عنصرهایی را می‌دهد که **هر دو** کلاس را داشته باشند و ترتیب نوشتن
+      کلاس‌ها مهم نیست؛ پس `div`های ۱ و ۲ (`2`؛ رد گزینه‌ی ۱ که فکر کرده ترتیب مهم است، و گزینه‌ی ۴ که فکر
+      کرده یکی از کلاس‌ها کافی است). `.card.big` (بدون فاصله) هم همین معنا را دارد: `2`. اما `.card .big` (با
+      فاصله) یعنی «عنصر `.big` **داخل** یک `.card`» که اینجا وجود ندارد: `0` (رد گزینه‌ی ۳).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <button class="btn">A</button>
+      <button class="btn">B</button>
+    code: |
+      const a = document.getElementsByClassName("btn");
+      const b = document.querySelectorAll(".btn");
+      console.log(a.constructor.name, b.constructor.name);
+      console.log(typeof a.forEach, typeof b.forEach);
+    options:
+      - out: ["NodeList HTMLCollection", "function undefined"]
+      - out: ["Array Array", "function function"]
+      - out: ["HTMLCollection NodeList", "function function"]
+      - out: ["HTMLCollection NodeList", "undefined function"]
+    answer: 4
+    explain: |
+      `getElementsByClassName` یک `HTMLCollection` و `querySelectorAll` یک `NodeList` برمی‌گرداند (رد گزینه‌ی
+      ۱ که جایشان را عوض کرده). هیچ‌کدام آرایه‌ی واقعی نیستند (رد گزینه‌ی ۲). HTMLCollection متد `forEach`
+      ندارد، پس `typeof` آن `undefined` است، ولی NodeList متد `forEach` دارد (رد گزینه‌ی ۳).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <button class="btn">A</button>
+      <button class="btn">B</button>
+      <button class="btn">C</button>
+    code: |
+      const buttons = document.getElementsByClassName("btn");
+      console.log(buttons.length);
+      buttons.forEach((b) => console.log(b.textContent));
+      console.log("done");
+    options:
+      - out: ["3", "A", "B", "C", "done"]
+      - out: ["3", "done"]
+      - out: ["3", "!! TypeError"]
+      - out: ["!! TypeError"]
+    answer: 3
+    explain: |
+      `buttons` یک HTMLCollection است: `length` دارد (پس `3` چاپ می‌شود و گزینه‌ی ۴ غلط است) ولی متد `forEach`
+      ندارد. `buttons.forEach` برابر `undefined` است و صدا زدن آن خطای `TypeError: buttons.forEach is not a
+      function` می‌دهد؛ اجرای اسکریپت همان‌جا متوقف می‌شود و `done` چاپ نمی‌شود (رد گزینه‌های ۱ و ۲). راه‌حل:
+      `Array.from(buttons).forEach(...)` یا `querySelectorAll(".btn").forEach(...)`.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="item">A</p>
+      <p class="item">B</p>
+    code: |
+      const items = document.getElementsByClassName("item");
+      function test(label, fn) {
+        try {
+          fn();
+          console.log(label, "ok");
+        } catch (err) {
+          console.log(label, err.name);
+        }
+      }
+      test("forEach", () => items.forEach((el) => el.textContent));
+      test("Array.from", () => Array.from(items).forEach((el) => el.textContent));
+      test("spread", () => [...items].forEach((el) => el.textContent));
+      test("for...of", () => { for (const el of items) el.textContent; });
+    options:
+      - out: ["forEach ok", "Array.from ok", "spread ok", "for...of ok"]
+      - out: ["forEach TypeError", "Array.from ok", "spread ok", "for...of ok"]
+      - out: ["forEach TypeError", "Array.from ok", "spread TypeError", "for...of TypeError"]
+      - out: ["forEach TypeError", "Array.from TypeError", "spread TypeError", "for...of ok"]
+    answer: 2
+    explain: |
+      فقط `items.forEach` خطا می‌دهد، چون HTMLCollection متد `forEach` ندارد (رد گزینه‌ی ۱). `Array.from(items)`
+      و `[...items]` مجموعه را به آرایه‌ی واقعی تبدیل می‌کنند که `forEach` دارد، و HTMLCollection قابل پیمایش
+      (iterable) است؛ پس هم spread و هم `for...of` روی آن کار می‌کنند (رد گزینه‌های ۳ و ۴).
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li class="item">a</li><li class="item">b</li></ul>
+    code: |
+      const live = document.getElementsByClassName("item");
+      const fixed = document.querySelectorAll(".item");
+      const li = document.createElement("li");
+      li.className = "item";
+      document.getElementById("list").appendChild(li);
+      console.log(live.length, fixed.length);
+    options:
+      - out: "3 3"
+      - out: "2 2"
+      - out: "3 2"
+      - out: "2 3"
+    answer: 3
+    explain: |
+      HTMLCollection `getElementsByClassName` **زنده** است و `li` جدید (که کلاس `item` دارد) خودبه‌خود به آن
+      اضافه می‌شود: `3` (رد گزینه‌ی ۲). NodeList `querySelectorAll` **ایستا** است، یعنی عکسی فوری از لحظه‌ی
+      جست‌وجو، و همان `2` عضو را نگه می‌دارد (رد گزینه‌ی ۱). گزینه‌ی ۴ زنده و ایستا را برعکس گرفته است.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="red">1</p>
+      <p class="red">2</p>
+      <p class="red">3</p>
+      <p class="red">4</p>
+    code: |
+      const reds = document.getElementsByClassName("red");
+      for (let i = 0; i < reds.length; i++) {
+        reds[i].classList.remove("red");
+      }
+      console.log(document.getElementsByClassName("red").length);
+    options:
+      - out: "0"
+      - out: "2"
+      - out: "1"
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      `reds` زنده است و هر عنصری که کلاس `red` را از دست بدهد فوراً از آن بیرون می‌رود. وقتی `i = 0` است،
+      پاراگراف ۱ حذف می‌شود و مجموعه `[2, 3, 4]` می‌شود؛ وقتی `i = 1`، پاراگراف ۳ حذف می‌شود و مجموعه `[2, 4]`
+      می‌شود؛ حالا `i = 2` دیگر کمتر از `length` (یعنی `2`) نیست و حلقه تمام می‌شود. پس پاراگراف‌های ۲ و ۴ هنوز
+      `red` هستند: `2` (رد گزینه‌ی ۱). خطایی هم رخ نمی‌دهد، چون همیشه `i < reds.length` بررسی می‌شود (رد
+      گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <input type="checkbox" id="agree">
+      <input type="text" id="user">
+      <input type="text" id="city">
+    code: |
+      console.log(
+        document.querySelector("input").id,
+        document.querySelector("input[type='text']").id
+      );
+    options:
+      - out: "agree user"
+      - out: "user user"
+      - out: "agree agree"
+      - out: "user city"
+    answer: 1
+    explain: |
+      `querySelector` **اولین** عنصر منطبق را به ترتیب سند برمی‌گرداند. selector `input` همه‌ی inputها را
+      قبول می‌کند و اولینشان چک‌باکس `agree` است (رد گزینه‌ی ۲). `input[type='text']` (attribute selector)
+      فقط inputهایی را قبول می‌کند که `type` آن‌ها `text` است؛ اولینشان `user` است (رد گزینه‌ی ۳). گزینه‌ی ۴
+      فکر کرده هر دو selector فقط متنی‌ها را می‌گیرند، یا اینکه `querySelector` آخرین مورد را می‌دهد.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <h1>Shop</h1>
+      <p class="note">First</p>
+      <p class="note">Second</p>
+    code: |
+      const list = document.querySelectorAll(".note, h1");
+      console.log(list.length, list[0].tagName);
+    options:
+      - out: "3 P"
+      - out: "2 P"
+      - out: "3 H1"
+      - out: "1 P"
+    answer: 3
+    explain: |
+      selector گروهی `.note, h1` یعنی «هر عنصری که `.note` **یا** `h1` باشد»؛ پس دو پاراگراف و یک `h1`، یعنی
+      `3` عنصر (رد گزینه‌های ۲ و ۴). `querySelectorAll` نتیجه را همیشه به **ترتیب سند** برمی‌گرداند، نه به
+      ترتیب نوشتن selectorها؛ `h1` در صفحه اول آمده، پس `list[0]` همان `H1` است (رد گزینه‌ی ۱).
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="x">Hi</p>
+    code: |
+      console.log(
+        document.getElementById("nope"),
+        document.querySelector(".nope"),
+        document.querySelectorAll(".nope").length,
+        document.getElementsByClassName("nope").length
+      );
+    options:
+      - out: "null null null null"
+      - out: "undefined undefined 0 0"
+      - out: "null null 0 null"
+      - out: "null null 0 0"
+    answer: 4
+    explain: |
+      متدهای «یکی» (`getElementById` و `querySelector`) وقتی چیزی پیدا نکنند `null` برمی‌گردانند، نه
+      `undefined` (رد گزینه‌ی ۲). متدهای «همه» (`querySelectorAll` و `getElementsByClassName`) هیچ‌وقت `null`
+      نمی‌دهند؛ یک مجموعه‌ی خالی برمی‌گردانند که `length` آن `0` است (رد گزینه‌های ۱ و ۳). به همین دلیل
+      `.length` گرفتن از نتیجه‌ی آن‌ها همیشه امن است.
+  - level: hard
+    stem: |
+      در فعالیت کلاسی اسلاید ۱۰، عنصر `<h3>` مقدار `id="2223"` دارد. خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <h3 id="2223">wait wha-?</h3>
+    code: |
+      console.log(document.getElementById("2223").textContent);
+      console.log(document.querySelector("#2223").textContent);
+      console.log("end");
+    options:
+      - out: ["wait wha-?", "wait wha-?", "end"]
+      - out: ["wait wha-?", "!! TypeError"]
+      - out: ["!! SyntaxError"]
+      - out: ["wait wha-?", "!! SyntaxError"]
+    answer: 4
+    explain: |
+      `getElementById` فقط id را مقایسه می‌کند و با رقم اول مشکلی ندارد، پس خط اول درست کار می‌کند (رد گزینه‌ی
+      ۳). اما در CSS، id داخل selector نمی‌تواند با رقم شروع شود؛ `"#2223"` یک selector **نامعتبر** است و
+      `querySelector` به‌جای برگرداندن `null`، خطای `SyntaxError` پرتاب می‌کند (رد گزینه‌ی ۲ که فکر کرده
+      `null` برگشته و `.textContent` خطا داده است). اجرا متوقف می‌شود و `end` چاپ نمی‌شود (رد گزینه‌ی ۱).
+      راه درست: `querySelector('[id="2223"]')` یا `getElementById("2223")`.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="note">First</p>
+      <div class="box">
+        <p>Inside box</p>
+        <section><p class="note">Deep</p></section>
+      </div>
+    code: |
+      const box = document.querySelector(".box");
+      console.log(box.querySelector("p").textContent, box.querySelectorAll(".note").length);
+      console.log(document.querySelector(".note").textContent);
+    options:
+      - out: ["Inside box 1", "First"]
+      - out: ["First 2", "First"]
+      - out: ["Inside box 2", "First"]
+      - out: ["Inside box 1", "Deep"]
+    answer: 1
+    explain: |
+      وقتی `querySelector` روی یک عنصر صدا زده شود، فقط **داخل همان عنصر** می‌گردد؛ اولین `<p>` داخل `.box`
+      همان `Inside box` است (رد گزینه‌ی ۲) و داخل آن فقط یک `.note` (یعنی `Deep`) وجود دارد (رد گزینه‌ی ۳).
+      ولی `document.querySelector(".note")` کل صفحه را می‌گردد و اولین `.note` به ترتیب سند `First` است (رد
+      گزینه‌ی ۴).
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="menu"><a id="home" href="#">Home</a></div>
+    code: |
+      const menu = document.getElementById("menu");
+      console.log(menu.querySelector("#home").textContent);
+      console.log(menu.getElementById("home").textContent);
+    options:
+      - out: ["Home", "Home"]
+      - out: ["Home", "!! TypeError"]
+      - out: ["Home", "null"]
+      - out: ["!! TypeError"]
+    answer: 2
+    explain: |
+      `querySelector` روی عنصرها هم وجود دارد و داخل `menu` لینک `Home` را پیدا می‌کند، پس خط اول درست است
+      (رد گزینه‌ی ۴). اما `getElementById` فقط متد `document` است و روی عنصرها تعریف نشده؛ `menu.getElementById`
+      برابر `undefined` است و صدا زدنش `TypeError: menu.getElementById is not a function` می‌دهد (رد گزینه‌ی ۱).
+      گزینه‌ی ۳ هم غلط است، چون حتی اگر `null` برمی‌گشت، `.textContent` روی آن باز خطا می‌داد.
+  - level: easy
+    stem: 'selector `input[type=''text'']` کدام عنصرها را توصیف می‌کند؟'
+    options:
+      - 'عنصرهای `<input>`ی که attribute `type` آن‌ها برابر `text` است'
+      - 'عنصرهایی که کلاس `text` دارند'
+      - 'عنصری که id آن برابر `text` است'
+      - 'همه‌ی `<input>`ها، به‌همراه همه‌ی عنصرهایی که متن دارند'
+    answer: 1
+    explain: |
+      `[attr='value']` یک attribute selector است: `input[type='text']` یعنی «تگ `input` که attribute
+      `type` آن دقیقاً `text` باشد»، مثل خط ۴ فعالیت اسلاید ۱۷. کلاس با نقطه (`.text`) و id با `#` (`#text`)
+      انتخاب می‌شوند (رد گزینه‌های ۲ و ۳). گزینه‌ی ۴ هم معنای گروه (`,`) را دارد که اینجا به کار نرفته است.
+  - level: medium
+    stem: درباره‌ی کد فعالیت کلاسی اسلاید ۱۷، کدام عبارت نادرست است؟
+    manual: "Concept question about what each line of the slide-17 snippet returns (verified on a test page in the lesson)."
+    code: |
+      const title = document.getElementById("title");
+      const buttons = document.getElementsByClassName("btn");
+      const paragraphs = document.getElementsByTagName("p");
+      const firstInput = document.querySelector("input[type='text']");
+      const allLinks = document.querySelectorAll("a.nav-link");
+    options:
+      - '`title` یک عنصر است، یا `null` اگر عنصری با id برابر `title` وجود نداشته باشد.'
+      - '`buttons` یک HTMLCollection زنده است که عنصرهای دارای کلاس `btn` را، حتی با `class="btn primary"`، شامل می‌شود.'
+      - '`firstInput` همه‌ی inputهای متنی صفحه را به‌صورت یک NodeList برمی‌گرداند.'
+      - '`allLinks` یک NodeList ایستا از همه‌ی `<a>`هایی است که کلاس `nav-link` دارند.'
+    answer: 3
+    explain: |
+      `querySelector` فقط **اولین** عنصر منطبق را برمی‌گرداند (یا `null`)، نه یک NodeList؛ برای همه‌ی inputهای
+      متنی باید `querySelectorAll` می‌نوشتیم. پس گزینه‌ی ۳ نادرست است. بقیه درست‌اند: `getElementById` یک عنصر
+      یا `null` می‌دهد، `getElementsByClassName` مجموعه‌ای زنده است که عنصرهای چندکلاسه را هم شامل می‌شود، و
+      `querySelectorAll("a.nav-link")` یک NodeList ایستا از لینک‌های دارای کلاس `nav-link` است.
+  - level: medium
+    stem: |
+      در صفحه‌ی زیر، به‌اشتباه دو عنصر id یکسان دارند. خروجی کد کدام است؟
+    check: dom-output
+    html: |
+      <p id="x">first</p>
+      <p id="x">second</p>
+    code: |
+      const first = document.getElementById("x");
+      console.log(first.textContent, document.querySelectorAll("#x").length);
+    options:
+      - out: "second 2"
+      - out: "first 1"
+      - out: "first 2"
+      - out: "second 1"
+    answer: 3
+    explain: |
+      id باید یکتا باشد، ولی مرورگر برای HTML نادرست خطا نمی‌دهد. `getElementById` همیشه **اولین** عنصر با آن
+      id را به ترتیب سند برمی‌گرداند، یعنی `first` (رد گزینه‌های ۱ و ۴). `querySelectorAll("#x")` هر عنصری را
+      که با selector جور باشد برمی‌گرداند، پس هر دو را پیدا می‌کند: `2` (رد گزینه‌ی ۲). نتیجه: id تکراری
+      باعث رفتار گیج‌کننده می‌شود؛ برای گروه‌ها از کلاس استفاده کن.
+  - level: medium
+    stem: |
+      می‌خواهیم فقط `<li>`هایی را انتخاب کنیم که **فرزند مستقیمِ** `<ul id="menu">` هستند (نه `<li>`های
+      زیرمنوهای تو در تو). در جای خالی `document.querySelectorAll("______")` کدام گزینه قرار می‌گیرد؟
+    options:
+      - '`.menu > li`'
+      - '`menu > li`'
+      - '`#menu, li`'
+      - '`#menu > li`'
+    answer: 4
+    explain: |
+      `#menu` عنصری با id برابر `menu` را انتخاب می‌کند و `>` یعنی «فرزند مستقیم»؛ پس `#menu > li` دقیقاً
+      `li`های سطح اول همان لیست را می‌دهد. `.menu` دنبال **کلاس** `menu` می‌گردد (گزینه‌ی ۱) و `menu` بدون
+      علامت دنبال **تگی** به نام `<menu>` (گزینه‌ی ۲). ویرگول در گزینه‌ی ۳ یعنی گروه: «عنصر `#menu` و همه‌ی
+      `li`های صفحه».
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p class="red">1</p>
+      <p class="red">2</p>
+      <p class="red">3</p>
+      <p class="red">4</p>
+    code: |
+      const reds = document.querySelectorAll(".red");
+      reds.forEach((p) => p.classList.remove("red"));
+      console.log(document.querySelectorAll(".red").length, reds.length);
+    options:
+      - out: "0 4"
+      - out: "2 4"
+      - out: "0 0"
+      - out: "2 2"
+    answer: 1
+    explain: |
+      NodeList `querySelectorAll` **ایستا** است: با حذف کلاس، عنصرها از `reds` بیرون نمی‌روند و `forEach`
+      روی هر ۴ پاراگراف اجرا می‌شود؛ پس جست‌وجوی تازه‌ی `.red` چیزی پیدا نمی‌کند: `0` (رد گزینه‌های ۲ و ۴ که
+      دام حلقه روی مجموعه‌ی **زنده** را اینجا اشتباهی به کار برده‌اند). خودِ `reds` هنوز همان ۴ عنصر را نگه
+      داشته است: `4` (رد گزینه‌ی ۳).
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <button class="btn">A</button>
+      <button class="btn">B</button>
+    code: |
+      const buttons = document.getElementsByClassName("btn");
+      console.log(buttons.length, buttons[0].textContent);
+      console.log(buttons.item(1).textContent, buttons[5]);
+    options:
+      - out: ["2 A", "B null"]
+      - out: ["2 A", "B undefined"]
+      - out: ["2 B", "A undefined"]
+      - out: ["3 A", "B undefined"]
+    answer: 2
+    explain: |
+      HTMLCollection شبه‌آرایه است: `length` برابر `2`، `buttons[0]` اولین دکمه (`A`) و `item(1)` دومین دکمه
+      (`B`) است (رد گزینه‌ی ۳). خواندن اندیسی که وجود ندارد (`buttons[5]`) مثل آرایه `undefined` می‌دهد (رد
+      گزینه‌ی ۱؛ فقط `buttons.item(5)` مقدار `null` برمی‌گرداند). گزینه‌ی ۴ هم تعداد دکمه‌ها را اشتباه شمرده است.
+  - level: hard
+    stem: |
+      صفحه‌ای فقط HTML زیر را دارد:
+
+      ```html
+      <a class="nav-link" href="#home">Home</a>
+      <a class="nav-link" href="#shop">Shop</a>
+      ```
+
+      کد JavaScript زیر در انتهای صفحه اجرا می‌شود. اجرای آن در کدام خط با خطا متوقف می‌شود؟
+
+      ```js lines
+      const links = document.getElementsByClassName("nav-link");
+      console.log(links.length);
+      const active = document.querySelector(".nav-link.active");
+      const firstLink = links[0];
+      console.log(firstLink.textContent);
+      console.log(active.textContent);
+      ```
+    check: dom-output
+    showHtml: false
+    showCode: false
+    html: |
+      <a class="nav-link" href="#home">Home</a>
+      <a class="nav-link" href="#shop">Shop</a>
+    code: |
+      const links = document.getElementsByClassName("nav-link"); console.log("~1");
+      console.log(links.length); console.log("~2");
+      const active = document.querySelector(".nav-link.active"); console.log("~3");
+      const firstLink = links[0]; console.log("~4");
+      console.log(firstLink.textContent); console.log("~5");
+      console.log(active.textContent); console.log("~6");
+    options:
+      - text: 'خط ۳'
+        out: ["~1", "2", "~2", "!! TypeError"]
+      - text: 'خط ۴'
+        out: ["~1", "2", "~2", "~3", "!! TypeError"]
+      - text: 'خط ۵'
+        out: ["~1", "2", "~2", "~3", "~4", "!! TypeError"]
+      - text: 'خط ۶'
+        out: ["~1", "2", "~2", "~3", "~4", "Home", "~5", "!! TypeError"]
+    answer: 4
+    explain: |
+      هیچ لینکی هر دو کلاس `nav-link` و `active` را ندارد، پس `querySelector` در خط ۳ مقدار `null` برمی‌گرداند؛
+      پیدا نکردن عنصر خطا **نیست** (رد گزینه‌ی ۱). خواندن `links[0]` از یک HTMLCollection مثل آرایه کار می‌کند و
+      اولین لینک را می‌دهد (رد گزینه‌ی ۲)، و خط ۵ متن `Home` را چاپ می‌کند (رد گزینه‌ی ۳). اما در خط ۶ برنامه
+      می‌خواهد `textContent` را از `null` بخواند و خطای `TypeError: Cannot read properties of null` می‌گیرد. درس
+      این تست: نتیجه‌ی `querySelector` و `getElementById` را قبل از استفاده بررسی کن (`if (active) ...`).

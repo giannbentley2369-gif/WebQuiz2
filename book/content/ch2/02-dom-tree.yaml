@@ -1,0 +1,791 @@
+id: ch2-dom-tree
+title: "زبان‌های نشانه‌گذاری و درخت DOM"
+slides: "JS in HTML، اسلایدهای ۷ تا ۱۱"
+lesson: |
+  تا اینجا HTML را فقط به چشم «متنی پر از تگ» دیده‌ایم. اما مرورگر وقتی صفحه را باز می‌کند، این متن را
+  به یک **درخت از اشیاء** تبدیل می‌کند که JavaScript می‌تواند آن را بخواند و تغییر دهد. این درخت همان
+  **DOM** است و پایه‌ی کل این فصل.
+
+  ### زبان نشانه‌گذاری (Markup language) چیست؟ (اسلاید ۷)
+
+  **زبان نشانه‌گذاری (markup language)** زبانی است که با **تگ‌ها (tags)** یا نشانه‌ها، **ساختار** یک سند
+  را توصیف می‌کند: کدام بخش عنوان است، کدام بخش پاراگراف است و چه چیزی داخل چه چیزی قرار دارد. اسلاید ۷
+  سه نمونه نام می‌برد: HTML، XML و Markdown.
+
+  ```html
+  <!-- HTML: the structure of a web page -->
+  <h1>Shop</h1>
+  <p>Welcome to <b>our</b> shop!</p>
+  ```
+
+  ```xml title=XML
+  <!-- XML: the structure of any data, with our own tag names -->
+  <student>
+    <name>Ali</name>
+    <age>20</age>
+  </student>
+  ```
+
+  ```text title=Markdown
+  # Shop
+  Welcome to **our** shop!
+  ```
+
+  (Markdown به‌جای تگ‌های `<...>` از نشانه‌هایی مثل `#` برای عنوان و `**` برای متن پررنگ استفاده می‌کند،
+  ولی کارش همان است: توصیف ساختار.) زبان نشانه‌گذاری، زبان برنامه‌نویسی **نیست**؛ شرط، حلقه و محاسبه
+  ندارد و فقط می‌گوید هر بخش «چیست». منطق و رفتار کار JavaScript است.
+
+  #### سند، یک درخت سلسله‌مراتبی است
+
+  چون تگ‌ها **تو در تو (nested)** نوشته می‌شوند، سند به شکل یک **درخت سلسله‌مراتبی (hierarchical tree)**
+  درمی‌آید: هر تگی که داخل تگ دیگری باشد **فرزند (child)** آن است و تگ بیرونی **والد (parent)** آن. به
+  گفته‌ی اسلاید ۷، رابطه‌ی والد و فرزند نشان می‌دهد محتوا چطور تو در تو شده است، و همین مدل درختی
+  **پایه‌ی DOM** است.
+
+  ::: analogy
+  شجره‌نامه‌ی یک خانواده یا ساختار پوشه‌های کامپیوترت را در نظر بگیر: داخل پوشه‌ی `Documents` پوشه‌ی
+  `University` است و داخل آن چند فایل. هر پوشه (به‌جز پوشه‌ی ریشه) دقیقاً یک والد دارد و ممکن است چند
+  فرزند داشته باشد. درخت یک سند HTML هم دقیقاً همین‌طور است.
+  :::
+
+  نمودار اسلاید ۷ یک درخت عمومی است (A به B و C و D فلش دارد، B به E و F، و E و F هر کدام یک فرزند دارند):
+
+  ```text
+          A
+       /  |  \
+      B   C   D
+     / \
+    E   F
+    |   |
+    G   H
+  ```
+
+  | واژه | معنی | در نمودار بالا |
+  |---|---|---|
+  | ریشه (root) | تنها گره‌ای که والد ندارد | `A` |
+  | والد (parent) | گره‌ی بلافاصله بالای یک گره | والدِ `E` گره‌ی `B` است |
+  | فرزند (child) | گره‌ی بلافاصله پایین یک گره | فرزندان `A`: `B`، `C` و `D` |
+  | هم‌نیا (sibling) | گره‌هایی که والد مشترک دارند | `B`، `C` و `D`؛ همچنین `E` و `F` |
+  | جد (ancestor) | والد، والدِ والد و ... تا ریشه | اجداد `G`: `E`، `B` و `A` |
+  | نواده (descendant) | فرزند، فرزندِ فرزند و ... | نوادگان `B`: `E`، `F`، `G` و `H` |
+  | برگ (leaf) | گره‌ای که هیچ فرزندی ندارد | `C`، `D`، `G` و `H` |
+
+  ### از نشانه‌گذاری تا DOM (اسلاید ۸)
+
+  مرورگر متن HTML را **parse** می‌کند (یعنی می‌خواند و تجزیه می‌کند) و از آن یک **درخت از گره‌ها
+  (nodes)** می‌سازد. قوانین اسلاید ۸:
+
+  - هر **تگ** به یک **گره‌ی عنصر (element node)** در درخت تبدیل می‌شود.
+  - **متنِ داخل تگ‌ها** به **گره‌ی متنی (text node)** تبدیل می‌شود.
+  - **attributeها** (ویژگی‌های داخل تگ، مثل `href` و `id`) به **propertyهای گره** تبدیل می‌شوند؛ یعنی به
+    خودِ عنصر چسبیده‌اند و **فرزند آن نیستند**.
+  - همین درخت DOM است که JavaScript می‌تواند به آن دسترسی پیدا کند و تغییرش دهد.
+
+  برای HTML زیر:
+
+  ```html
+  <html>
+    <head>
+      <title>My title</title>
+    </head>
+    <body>
+      <a href="#">My link</a>
+      <h1>My header</h1>
+    </body>
+  </html>
+  ```
+
+  نمودار W3Schools در اسلاید ۸ این درخت را نشان می‌دهد (اینجا به شکل متنی بازکشیده شده است):
+
+  ```text
+  Document
+  `-- Root element: <html>
+      |-- Element: <head>
+      |   `-- Element: <title>
+      |       `-- Text: "My title"
+      `-- Element: <body>
+          |-- Element: <a>   ---- Attribute: "href"
+          |   `-- Text: "My link"
+          `-- Element: <h1>
+              `-- Text: "My header"
+  ```
+
+  دقت کن که در نمودار، جعبه‌ی `Attribute: "href"` **کنار** `<a>` و با یک خط افقی به آن وصل شده، نه زیر
+  آن؛ چون attribute فرزند نیست، ویژگیِ خودِ عنصر است. جمله‌ی کنار نمودار هم همین را می‌گوید: «ببین درخت DOM
+  عنصرها را چطور مرتب می‌کند».
+
+  ### DOM چیست؟ (اسلاید ۹)
+
+  **DOM** مخفف **Document Object Model** (مدل شیءِ سند) است. هر کلمه‌اش معنایی دارد:
+
+  - **Document**: سند، یعنی همان صفحه‌ی وب.
+  - **Object**: هر بخش صفحه (هر عنصر، متن و ...) به یک **شیء** JavaScript تبدیل می‌شود که property و method
+    دارد.
+  - **Model**: این اشیاء با هم یک **مدل** (نمایش ساختاریافته) از صفحه می‌سازند که شکلش درخت است.
+
+  طبق اسلاید ۹، DOM:
+
+  - یک **نمایش درختی (tree-based representation)** از صفحه‌ی وب است؛
+  - **ساختار HTML را به JavaScript وصل می‌کند**؛
+  - به برنامه‌ها اجازه می‌دهد عنصرها را **بخوانند، تغییر دهند، اضافه یا حذف کنند**؛
+  - مثل یک **پل** بین محتوا و تعامل‌پذیری (interactivity) عمل می‌کند.
+
+  نمودار Milne Publishing در اسلاید ۹ همان ایده را با رنگ‌بندی نشان می‌دهد. این بار `<h1>` قبل از `<a>`
+  آمده و ریشه با حروف کوچک `document` نوشته شده، درست مثل نام شیء در JavaScript:
+
+  ```text
+  document
+  `-- Root element: <html>
+      |-- Element: <head>
+      |   `-- Element: <title>
+      |       `-- Text: "My title"
+      `-- Element: <body>
+          |-- Element: <h1>
+          |   `-- Text: "A heading"
+          `-- Element: <a>   ---- Attribute: href
+              `-- Text: "Link text"
+  ```
+
+  ::: note DOM همان فایل HTML نیست
+  فایل `.html` فقط **دستور ساخت** است. مرورگر از روی آن، درخت DOM را **در حافظه** می‌سازد. وقتی JavaScript
+  عنصری را تغییر می‌دهد، فقط DOM (همان درختِ داخل حافظه) عوض می‌شود و فایل روی دیسک یا سرور دست نمی‌خورد؛
+  با refresh صفحه همه‌چیز از روی فایل اصلی دوباره ساخته می‌شود. در DevTools، زبانه‌ی Elements (یا
+  Inspector) همین DOM زنده را نشان می‌دهد.
+  :::
+
+  ### فعالیت کلاسی اسلاید ۱۰: درخت DOM این HTML را رسم کن
+
+  کد اسلاید ۱۰ (فایل `sample.html`) دقیقاً این است:
+
+  ```html lines
+  <html>
+      <head>
+          <title>sample page here :)</sample>
+          <link rel="stylesheet" href="./style.css">
+      </head>
+      <body>
+          <h1>SAMPLE PAGE!</h1>
+          <div class="sampleclass">
+              <p>sample paragraph in sample class in sample page!</p>
+              <h3 id="2223">wait wha-?</h3>
+          </div>
+      </body>
+  </html>
+  ```
+
+  **پاسخ مورد انتظار** (با فرض اینکه خط ۳ با `</title>` بسته شده باشد؛ گره‌های متنیِ فقط‌فاصله را نشان
+  نداده‌ایم و attributeها داخل `{ }` کنار عنصرشان آمده‌اند، چون فرزند نیستند):
+
+  ```text
+  #document
+  `-- html
+      |-- head
+      |   |-- title
+      |   |   `-- #text "sample page here :)"
+      |   `-- link   {rel="stylesheet", href="./style.css"}
+      `-- body
+          |-- h1
+          |   `-- #text "SAMPLE PAGE!"
+          `-- div   {class="sampleclass"}
+              |-- p
+              |   `-- #text "sample paragraph in sample class in sample page!"
+              `-- h3   {id="2223"}
+                  `-- #text "wait wha-?"
+  ```
+
+  چند نکته درباره‌ی این درخت:
+
+  - `head` و `body` هم‌نیا هستند و هر دو فرزند `html`اند؛ `p` و `h3` هم‌نیا و فرزند `div`اند؛ `div` والد
+    `p` و جدِ متن `"wait wha-?"` است.
+  - `link` فرزندی ندارد (تگ خالی است) و `rel` و `href` ویژگی‌های آن هستند.
+  - در درخت واقعی، بین تگ‌ها گره‌های متنی‌ای هم هست که فقط شامل «خط جدید و فاصله» (whitespace) است. مثلاً
+    `head` در واقع ۵ گره‌ی فرزند دارد: فاصله، `title`، فاصله، `link`، فاصله.
+
+  ::: warning دامِ تایپیِ اسلاید: `</sample>` به‌جای `</title>`
+  روی اسلاید، `<title>` با `</sample>` بسته شده که تگی بی‌معنی است. تگ `<title>` در HTML حالت خاصی دارد:
+  parser همه‌ی محتوای آن را تا رسیدن به یک `</title>` واقعی **متن خام** حساب می‌کند و تگ‌های داخلش را
+  تشخیص نمی‌دهد. چون در این فایل هیچ `</title>`ی وجود ندارد، **کل باقی فایل** (از `</sample>` تا `</html>`)
+  به متن عنوان تبدیل می‌شود و `<body>` **خالی** می‌ماند: صفحه سفید دیده می‌شود و یک عنوان خیلی طولانی در
+  زبانه‌ی مرورگر می‌نشیند. نکته‌ی مهم‌تر: **parser هیچ‌وقت به‌خاطر HTML نادرست خطا (exception) نمی‌دهد**؛
+  همیشه سعی می‌کند سند را «تعمیر» کند، حتی اگر نتیجه آن چیزی نباشد که انتظار داشتی.
+  :::
+
+  دو نکته‌ی دیگر درباره‌ی این فایل: اول اینکه `<!DOCTYPE html>` ندارد، پس مرورگر صفحه را در «حالت
+  سازگاری» (quirks mode) نشان می‌دهد؛ همیشه سند را با `<!DOCTYPE html>` شروع کن. دوم اینکه id عنصر `h3`
+  با رقم شروع شده (`2223`)؛ در درس «پیدا کردن عناصر» می‌بینیم این موضوع برای `querySelector` دردسر می‌سازد.
+
+  ### ساختار DOM (اسلاید ۱۱)
+
+  خلاصه‌ی اسلاید ۱۱:
+
+  - **ریشه‌ی درخت (root node)، `document` است.**
+  - **عنصرها (elements)**: همان تگ‌ها، مثل `<div>` و `<p>`.
+  - **attributeها**: propertyهای عنصر، مثل `id` و `class`.
+  - **متن**: گره‌های متنی (text nodes).
+  - همه در یک درخت سلسله‌مراتبی به هم وصل‌اند.
+
+  دقت کن: `document` **گره‌ی ریشه** است، ولی **عنصر ریشه (root element)** تگ `<html>` است که فرزند
+  `document` است و در JavaScript با `document.documentElement` به آن می‌رسیم.
+
+  #### سلسله‌مراتب کلاس‌ها (نمودار StackOverflow در اسلاید ۱۱)
+
+  هر گره در DOM نمونه‌ای از یک **کلاس** است و این کلاس‌ها از هم ارث می‌برند. نمودار اسلاید ۱۱ (از چپ به
+  راست کشیده شده) را اینجا از بالا به پایین می‌بینی؛ `EventTarget` در نمودار اسلاید نیست ولی بالای همه قرار
+  دارد:
+
+  ```text
+  EventTarget                  (not on the slide: the top of every chain)
+  `-- Node
+      |-- Document
+      |   `-- HTMLDocument
+      |-- CharacterData
+      |   |-- Text
+      |   `-- Comment
+      |-- Element
+      |   `-- HTMLElement
+      |       |-- HTMLHeadElement
+      |       |-- HTMLBodyElement
+      |       |-- HTMLTitleElement
+      |       |-- HTMLParagraphElement
+      |       |-- HTMLInputElement
+      |       |-- HTMLTableElement
+      |       `-- ... etc.  (many more element types)
+      `-- Attr
+  ```
+
+  رابطه‌ی ارث‌بری یعنی رابطه‌ی «**هست یک**»: یک `<p>` یک `HTMLParagraphElement` است، پس یک `HTMLElement`،
+  یک `Element`، یک `Node` (و یک `EventTarget`) هم هست و همه‌ی propertyها و متدهای آن‌ها را دارد: از
+  `Node` چیزهایی مثل `parentNode` و `childNodes`، از `Element` چیزهایی مثل `id` و `children`، از
+  `HTMLElement` چیزهایی مثل `style`، و از `EventTarget` متد `addEventListener`. به همین دلیل روی هر گره‌ای
+  می‌توان listener گذاشت.
+
+  ```html
+  <p id="p">Hi<!-- note --></p>
+  <script>
+    const p = document.getElementById("p");
+    console.log(p instanceof HTMLParagraphElement, p instanceof Element); // true true
+    console.log(p instanceof Node, p.firstChild instanceof Text);         // true true
+    console.log(p.firstChild instanceof CharacterData);                   // true
+    console.log(p.firstChild instanceof Element);                         // false
+    console.log(p.lastChild instanceof Comment);                          // true
+    console.log(document instanceof HTMLDocument);                        // true
+  </script>
+  ```
+
+  - `Text` و `Comment` (گره‌ی توضیح `<!-- ... -->`) هر دو زیرکلاس `CharacterData` هستند، **نه** `Element`.
+  - `Attr` (کلاس attributeها) مستقیماً از `Node` ارث می‌برد، ولی در `childNodes` هیچ عنصری ظاهر نمی‌شود.
+  - `document` نمونه‌ای از `HTMLDocument` است که از `Document` و آن هم از `Node` ارث می‌برد.
+
+  ### پیمایش درخت با JavaScript (پیش‌زمینه‌ی لازم)
+
+  هر گره دو property شناسایی دارد: `nodeType` (یک عدد) و `nodeName` (یک رشته):
+
+  | گره | `nodeType` | `nodeName` |
+  |---|---|---|
+  | عنصر (مثلاً `<p>`) | `1` | نام تگ با حروف بزرگ، مثلاً `"P"` |
+  | attribute | `2` | نام attribute، مثلاً `"href"` |
+  | متن | `3` | `"#text"` |
+  | comment | `8` | `"#comment"` |
+  | `document` | `9` | `"#document"` |
+
+  برای حرکت در درخت این propertyها را داریم:
+
+  | property | چه برمی‌گرداند | گره‌های متنی و comment را هم حساب می‌کند؟ |
+  |---|---|---|
+  | `parentNode` | گره‌ی والد | — |
+  | `childNodes` | **همه‌ی** گره‌های فرزند | بله |
+  | `children` | فقط **عنصرهای** فرزند | خیر |
+  | `firstChild` / `lastChild` | اولین / آخرین گره‌ی فرزند | بله |
+  | `firstElementChild` / `lastElementChild` | اولین / آخرین عنصر فرزند | خیر |
+  | `nextSibling` / `previousSibling` | گره‌ی هم‌نیای بعدی / قبلی | بله |
+  | `nextElementSibling` / `previousElementSibling` | عنصر هم‌نیای بعدی / قبلی | خیر |
+
+  مهم‌ترین دام اینجاست: **خط جدید و فاصله‌هایی که برای مرتب نوشتن HTML می‌گذاریم، گره‌ی متنی می‌سازند.**
+
+  ```html
+  <ul id="list">
+    <li>A</li>
+    <li>B</li>
+  </ul>
+  <script>
+    const ul = document.getElementById("list");
+    console.log(ul.childNodes.length, ul.children.length);              // 5 2
+    console.log(ul.firstChild.nodeName, ul.firstElementChild.nodeName); // #text LI
+    console.log(ul.parentNode.nodeName);                                // BODY
+    console.log(ul.children[1].previousElementSibling.textContent);     // A
+  </script>
+  ```
+
+  چرا ۵؟ چون فرزندان `ul` این‌ها هستند: متنِ فاصله، `li`، متنِ فاصله، `li`، متنِ فاصله. اگر همین لیست را
+  در یک خط و بدون فاصله بنویسیم (`<ul><li>A</li><li>B</li></ul>`)، `childNodes.length` هم `2` می‌شود.
+
+  ::: tip
+  اگر فقط با تگ‌ها کار داری، از نسخه‌های «Element» استفاده کن: `children`، `firstElementChild`،
+  `nextElementSibling`. نسخه‌های بدون Element (`childNodes`، `firstChild`، `nextSibling`) گره‌های متنی،
+  حتی فاصله‌ها، و commentها را هم می‌شمارند.
+  :::
+
+  ::: trap
+  - attributeها فرزند نیستند: برای `<a href="#">Link</a>` مقدار `a.childNodes.length` برابر `1` است (فقط
+    گره‌ی متنی)، نه `2`.
+  - گره‌ی ریشه `document` است ولی عنصر ریشه `<html>` (`document.documentElement`)؛ `document` خودش عنصر
+    نیست (`nodeType` آن `9` است، نه `1`).
+  - `nodeName` عنصرها با حروف بزرگ است (`"LI"`)، و `nodeName` گره‌ی متنی `"#text"` است، نه `"text"`.
+  - `Text` زیرکلاس `CharacterData` است، نه `Element`؛ پس `instanceof Element` برای گره‌ی متنی `false` است.
+  :::
+
+  ::: summary
+  - زبان نشانه‌گذاری (HTML، XML، Markdown) ساختار را با تگ یا نشانه توصیف می‌کند؛ سند یک درخت است.
+  - تگ ← گره‌ی عنصر، متن ← گره‌ی متنی، attribute ← property عنصر (فرزند نیست).
+  - DOM = Document Object Model: نمایش درختیِ صفحه در حافظه، پل بین HTML و JavaScript.
+  - ریشه `document` است؛ کلاس‌ها: Node ← Document/CharacterData/Element/Attr و Element ← HTMLElement ← HTMLParagraphElement و ...
+  - `children` فقط عنصرها، `childNodes` همه‌ی گره‌ها (از جمله فاصله‌ها).
+  :::
+questions:
+  - level: easy
+    stem: کدام گزینه یک زبان نشانه‌گذاری (markup language) نیست؟
+    options:
+      - 'HTML'
+      - 'XML'
+      - 'Markdown'
+      - 'JavaScript'
+    answer: 4
+    explain: |
+      اسلاید ۷ HTML، XML و Markdown را نمونه‌های زبان نشانه‌گذاری می‌آورد؛ این زبان‌ها فقط ساختار سند را با تگ
+      یا نشانه توصیف می‌کنند. JavaScript یک زبان **برنامه‌نویسی** است که شرط، حلقه و منطق دارد و لایه‌ی رفتار
+      صفحه را می‌سازد. Markdown با اینکه به‌جای `<...>` از نشانه‌هایی مثل `#` استفاده می‌کند، باز هم زبان
+      نشانه‌گذاری است.
+  - level: easy
+    stem: DOM مخفف چیست؟
+    options:
+      - 'Data Object Model'
+      - 'Document Object Model'
+      - 'Document Oriented Markup'
+      - 'Dynamic Object Method'
+    answer: 2
+    explain: |
+      طبق اسلاید ۹، DOM مخفف **Document Object Model** است: «Document» یعنی صفحه‌ی وب، «Object» یعنی هر بخش
+      صفحه به یک شیء تبدیل می‌شود و «Model» یعنی این اشیاء با هم یک مدل درختی از صفحه می‌سازند. بقیه‌ی
+      گزینه‌ها ساختگی‌اند؛ DOM نه درباره‌ی «Data» است، نه یک زبان نشانه‌گذاری (Markup) و نه یک «Method».
+  - level: easy
+    stem: |
+      در درخت زیر (نمودار اسلاید ۷)، کدام گره‌ها برگ (leaf) هستند؟
+    manual: "Concept question on the tree diagram of slide 7; nothing is executed."
+    lang: text
+    code: |2
+              A
+           /  |  \
+          B   C   D
+         / \
+        E   F
+        |   |
+        G   H
+    options:
+      - 'فقط `G` و `H`'
+      - '`E`، `F`، `G` و `H`'
+      - '`C`، `D`، `G` و `H`'
+      - '`A` و `B`'
+    answer: 3
+    explain: |
+      برگ گره‌ای است که **هیچ فرزندی ندارد**. `C` و `D` با اینکه در ردیف دوم هستند، فرزندی ندارند، پس برگ‌اند؛
+      `G` و `H` هم پایین‌ترین گره‌ها و بدون فرزند هستند. گزینه‌ی ۱ فقط ردیف آخر را دیده و `C` و `D` را جا
+      انداخته است. `E` و `F` هر کدام یک فرزند دارند (رد گزینه‌ی ۲)، و `A` ریشه است و `B` دو فرزند دارد (رد
+      گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      در همان درخت اسلاید ۷، کدام عبارت نادرست است؟
+    manual: "Concept question on the tree diagram of slide 7; nothing is executed."
+    lang: text
+    code: |2
+              A
+           /  |  \
+          B   C   D
+         / \
+        E   F
+        |   |
+        G   H
+    options:
+      - '`B`، `C` و `D` هم‌نیا (sibling) هستند.'
+      - '`A` جدِ (ancestor) `H` است.'
+      - '`E` فرزند `B` و والد `G` است.'
+      - '`F` و `G` هم‌نیا هستند.'
+    answer: 4
+    explain: |
+      هم‌نیاها باید **والد مشترک** داشته باشند. والد `F` گره‌ی `B` است ولی والد `G` گره‌ی `E`؛ پس آن‌ها هم‌نیا
+      نیستند (هم‌نیای `F` فقط `E` است). گزینه‌ی ۱ درست است چون هر سه فرزند `A`اند؛ گزینه‌ی ۲ درست است چون مسیر
+      `A` به `B` به `F` به `H` نشان می‌دهد `A` جدِ `H` است؛ و گزینه‌ی ۳ هم دقیقاً رابطه‌ی نمودار است.
+  - level: easy
+    stem: |
+      طبق اسلاید ۸، وقتی مرورگر HTML را به DOM تبدیل می‌کند، attributeهای یک تگ (مثل `href` در `<a>`) به چه
+      چیزی تبدیل می‌شوند؟
+    options:
+      - 'به یک گره‌ی متنی (text node) که فرزند همان عنصر است'
+      - 'به propertyهای همان گره‌ی عنصر'
+      - 'به یک گره‌ی عنصر جداگانه که هم‌نیای همان عنصر است'
+      - 'دور ریخته می‌شوند و در DOM باقی نمی‌مانند'
+    answer: 2
+    explain: |
+      اسلاید ۸ می‌گوید «Attributes become node properties»: attribute به خودِ عنصر چسبیده است و با `a.href` یا
+      `a.getAttribute("href")` خوانده می‌شود. در نمودار W3Schools هم جعبه‌ی `href` کنار `<a>` آمده، نه زیر آن؛
+      یعنی فرزند نیست (رد گزینه‌ی ۱). attribute عنصر جداگانه هم نیست (رد گزینه‌ی ۳)، و حذف هم نمی‌شود؛ اگر حذف
+      می‌شد لینک‌ها کار نمی‌کردند (رد گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر در مرورگر کدام است؟
+    check: dom-output
+    html: |
+      <a id="home" href="/">Home page</a>
+    code: |
+      const a = document.getElementById("home");
+      console.log(a.childNodes.length, a.firstChild.nodeName, a.attributes.length);
+    options:
+      - out: "1 #text 2"
+      - out: "2 #text 2"
+      - out: "3 A 2"
+      - out: "1 HREF 1"
+    answer: 1
+    explain: |
+      تنها فرزند `<a>` گره‌ی متنی `"Home page"` است، پس `childNodes.length` برابر `1` و `nodeName` آن `#text`
+      است. attributeها (`id` و `href`) فرزند نیستند و در مجموعه‌ی جداگانه‌ی `attributes` قرار دارند که طولش
+      `2` است. گزینه‌ی ۲ و ۳ attributeها را فرزند حساب کرده‌اند، و گزینه‌ی ۴ هم attribute را اولین فرزند فرض
+      کرده و `id` را جا انداخته است.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hello <b>big</b> world</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(p.childNodes.length, p.children.length);
+    options:
+      - out: "1 1"
+      - out: "2 1"
+      - out: "3 3"
+      - out: "3 1"
+    answer: 4
+    explain: |
+      `<p>` سه فرزند دارد: گره‌ی متنی `"Hello "`، عنصر `<b>` و گره‌ی متنی `" world"`؛ پس `childNodes.length`
+      برابر `3` است. `children` فقط عنصرها را می‌شمارد که فقط `<b>` است، پس `1`. گزینه‌ی ۱ متن‌ها را گره حساب
+      نکرده، گزینه‌ی ۲ متن قبل و بعد از `<b>` را یکی گرفته، و گزینه‌ی ۳ فکر کرده `children` هم گره‌های متنی را
+      می‌شمارد.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list">
+        <li>A</li>
+        <li>B</li>
+      </ul>
+    code: |
+      const ul = document.getElementById("list");
+      console.log(ul.childNodes.length, ul.children.length);
+    options:
+      - out: "2 2"
+      - out: "5 2"
+      - out: "3 2"
+      - out: "5 5"
+    answer: 2
+    explain: |
+      خط جدید و فاصله‌های بین تگ‌ها گره‌ی متنی می‌سازند؛ پس فرزندان `ul` این‌ها هستند: فاصله، `li`، فاصله، `li`،
+      فاصله، یعنی `5` گره. `children` فقط عنصرها را می‌شمارد: `2`. گزینه‌ی ۱ فاصله‌ها را نادیده گرفته، گزینه‌ی ۳
+      فقط فاصله‌ی بین دو `li` را دیده، و گزینه‌ی ۴ فکر کرده `children` هم گره‌های متنی را شامل می‌شود.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list">
+        <li>A</li>
+        <li>B</li>
+      </ul>
+    code: |
+      const ul = document.getElementById("list");
+      console.log(
+        ul.firstChild.nodeName,
+        ul.firstElementChild.nodeName,
+        ul.lastElementChild.textContent
+      );
+    options:
+      - out: "LI LI B"
+      - out: "#text LI A"
+      - out: "#text LI B"
+      - out: "LI #text B"
+    answer: 3
+    explain: |
+      اولین گره‌ی فرزند `ul` متنِ فاصله (خط جدید و دو فاصله) قبل از اولین `li` است؛ پس `firstChild.nodeName`
+      برابر `#text` است (رد گزینه‌ی ۱). `firstElementChild` گره‌های متنی را رد می‌کند و به `LI` می‌رسد.
+      `lastElementChild` آخرین `li` است که متنش `B` است (رد گزینه‌ی ۲). گزینه‌ی ۴ جای دو property را برعکس
+      گرفته است.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(document.nodeType, document.body.nodeType, p.firstChild.nodeType);
+    options:
+      - out: "9 1 3"
+      - out: "1 1 3"
+      - out: "0 1 2"
+      - out: "9 1 1"
+    answer: 1
+    explain: |
+      `nodeType` برای `document` برابر `9`، برای هر عنصر (مثل `body`) برابر `1` و برای گره‌ی متنی برابر `3` است.
+      `p.firstChild` متن `"Hi"` است، نه یک عنصر (رد گزینه‌ی ۴). `document` عنصر نیست، پس `1` نیست (رد گزینه‌ی
+      ۲)، و `2` کد attributeهاست، نه متن (رد گزینه‌ی ۳).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(
+        document.nodeName,
+        document.documentElement.nodeName,
+        p.firstChild.nodeName
+      );
+    options:
+      - out: "document html text"
+      - out: "#document BODY #text"
+      - out: "DOCUMENT HTML TEXT"
+      - out: "#document HTML #text"
+    answer: 4
+    explain: |
+      `nodeName` سند `#document` و گره‌ی متنی `#text` است (با علامت `#`). برای عنصرها `nodeName` نام تگ با
+      حروف بزرگ است و `document.documentElement` همان عنصر ریشه، یعنی `<html>` است؛ پس `HTML`. گزینه‌ی ۲
+      `documentElement` را با `body` اشتباه گرفته و گزینه‌های ۱ و ۳ قالب `nodeName` را درست نمی‌دانند.
+  - level: easy
+    stem: طبق اسلاید ۱۱، ریشه‌ی درخت DOM (root node) کدام است؟
+    options:
+      - '`window`'
+      - 'عنصر `<html>`'
+      - '`document`'
+      - 'عنصر `<body>`'
+    answer: 3
+    explain: |
+      اسلاید ۱۱ صریحاً می‌گوید «Root node is `document`». عنصر `<html>` **عنصر ریشه** (root element) است که
+      فرزند `document` است، نه گره‌ی ریشه (رد گزینه‌ی ۲). `window` اصلاً جزو درخت DOM نیست؛ شیء پنجره است که
+      `document` یکی از propertyهای آن است (رد گزینه‌ی ۱). `<body>` هم فرزند `<html>` است.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <!DOCTYPE html>
+      <html>
+      <head><title>Root</title></head>
+      <body><p>Hi</p></body>
+      </html>
+    code: |
+      const root = document.documentElement;
+      console.log(root.tagName, root.parentNode === document, document.childNodes.length);
+    options:
+      - out: "HTML true 1"
+      - out: "HTML true 2"
+      - out: "HTML false 2"
+      - out: "BODY true 2"
+    answer: 2
+    explain: |
+      `document.documentElement` عنصر ریشه، یعنی `<html>` است و والدش خودِ `document` است؛ پس `HTML true`
+      (رد گزینه‌های ۳ و ۴). `document` دو گره‌ی فرزند دارد: گره‌ی `<!DOCTYPE html>` (که خودش یک گره از نوع
+      DocumentType است) و عنصر `<html>`؛ پس `2`. گزینه‌ی ۱ گره‌ی DOCTYPE را فراموش کرده است.
+  - level: hard
+    stem: |
+      HTML فعالیت کلاسی اسلاید ۱۰ را با یک اصلاح (بستن `<title>` با `</title>`) در مرورگر باز می‌کنیم و کد زیر
+      در انتهای `<body>` اجرا می‌شود. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <html>
+          <head>
+              <title>sample page here :)</title>
+              <link rel="stylesheet" href="./style.css">
+          </head>
+          <body>
+              <h1>SAMPLE PAGE!</h1>
+              <div class="sampleclass">
+                  <p>sample paragraph in sample class in sample page!</p>
+                  <h3 id="2223">wait wha-?</h3>
+              </div>
+          </body>
+      </html>
+    code: |
+      const div = document.querySelector(".sampleclass");
+      const h3 = document.getElementById("2223");
+      console.log(div.children.length, div.parentNode.tagName);
+      console.log(h3.previousElementSibling.tagName, document.head.children.length);
+    options:
+      - out: ["2 BODY", "P 2"]
+      - out: ["2 HTML", "P 2"]
+      - out: ["3 BODY", "H1 2"]
+      - out: ["2 BODY", "P 1"]
+    answer: 1
+    explain: |
+      `div.sampleclass` دو عنصر فرزند دارد (`p` و `h3`) و والدش `body` است (رد گزینه‌ی ۲ که والد را `html`
+      گرفته). عنصر هم‌نیای قبلی `h3` همان `p` است، نه `h1` که بیرون `div` قرار دارد (رد گزینه‌ی ۳).
+      `head` دو عنصر فرزند دارد: `title` و `link` (رد گزینه‌ی ۴). attributeهایی مثل `class` و `id` هم در
+      `children` شمرده نمی‌شوند.
+  - level: hard
+    stem: |
+      HTML اسلاید ۱۰ را **دقیقاً همان‌طور که روی اسلاید است** (با `</sample>` به‌جای `</title>`) در مرورگر باز
+      می‌کنیم:
+
+      ```html
+      <html>
+          <head>
+              <title>sample page here :)</sample>
+              <link rel="stylesheet" href="./style.css">
+          </head>
+          <body>
+              <h1>SAMPLE PAGE!</h1>
+              <div class="sampleclass">
+                  <p>sample paragraph in sample class in sample page!</p>
+                  <h3 id="2223">wait wha-?</h3>
+              </div>
+          </body>
+      </html>
+      ```
+
+      سپس در Console این دستورها را اجرا می‌کنیم. خروجی کدام است؟
+
+      ```js
+      console.log(document.body.children.length);
+      console.log(document.getElementById("2223") === null);
+      console.log(document.title.includes("SAMPLE PAGE!"));
+      ```
+    check: dom-output
+    showHtml: false
+    html: |
+      <html>
+          <head>
+              <title>sample page here :)</sample>
+              <link rel="stylesheet" href="./style.css">
+          </head>
+          <body>
+              <h1>SAMPLE PAGE!</h1>
+              <div class="sampleclass">
+                  <p>sample paragraph in sample class in sample page!</p>
+                  <h3 id="2223">wait wha-?</h3>
+              </div>
+          </body>
+      </html>
+    after: |
+      console.log(document.body.children.length);
+      console.log(document.getElementById("2223") === null);
+      console.log(document.title.includes("SAMPLE PAGE!"));
+    options:
+      - out: ["2", "false", "false"]
+      - out: ["0", "true", "true"]
+      - out: ["!! SyntaxError"]
+      - out: ["2", "false", "true"]
+    answer: 2
+    explain: |
+      محتوای `<title>` تا رسیدن به یک `</title>` واقعی متن خام حساب می‌شود و تگ‌های داخلش تشخیص داده نمی‌شوند.
+      چون `</title>`ی وجود ندارد، کل باقی فایل (از جمله `<h1>`، `<div>` و `<h3>`) متنِ عنوان می‌شود؛ پس `body`
+      خالی است (`0`)، عنصری با id برابر `2223` وجود ندارد (`true`) و متن `SAMPLE PAGE!` داخل `document.title`
+      است (`true`). parser برای HTML نادرست هیچ‌وقت خطا نمی‌دهد (رد گزینه‌ی ۳)، و گزینه‌های ۱ و ۴ فرض کرده‌اند
+      مرورگر تگ اشتباه را نادیده می‌گیرد و بقیه‌ی صفحه را عادی می‌سازد.
+  - level: medium
+    stem: طبق نمودار سلسله‌مراتب کلاس‌ها در اسلاید ۱۱، کدام رابطه‌ی ارث‌بری نادرست است؟
+    options:
+      - '`HTMLParagraphElement` از `HTMLElement`، آن از `Element` و آن از `Node` ارث می‌برد.'
+      - '`Text` و `Comment` هر دو زیرکلاس `CharacterData` هستند.'
+      - '`Text` زیرکلاس `Element` است، چون متن هم داخل تگ‌ها قرار دارد.'
+      - '`Attr` (کلاس attributeها) مستقیماً از `Node` ارث می‌برد.'
+    answer: 3
+    explain: |
+      در نمودار اسلاید ۱۱، `Text` زیر `CharacterData` قرار دارد، نه زیر `Element`؛ داخل تگ بودن متن یعنی «فرزند
+      یک عنصر در درخت DOM بودن»، نه «زیرکلاس Element بودن». این دو را قاطی نکن: درخت DOM نشان می‌دهد کدام گره
+      داخل کدام است، و نمودار کلاس‌ها نشان می‌دهد هر گره از چه نوعی است. سه گزینه‌ی دیگر دقیقاً روابط نمودار
+      هستند: زنجیره‌ی `HTMLParagraphElement` به `Node`، دو زیرکلاس `CharacterData`، و `Attr` زیر `Node`.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <p id="p">Hi</p>
+    code: |
+      const p = document.getElementById("p");
+      console.log(
+        p instanceof HTMLElement,
+        p.firstChild instanceof Element,
+        p.firstChild instanceof CharacterData,
+        document instanceof Element
+      );
+    options:
+      - out: "true true true false"
+      - out: "true false false true"
+      - out: "false false true false"
+      - out: "true false true false"
+    answer: 4
+    explain: |
+      `<p>` یک `HTMLParagraphElement` است که از `HTMLElement` ارث می‌برد، پس `true` (رد گزینه‌ی ۳).
+      `p.firstChild` گره‌ی متنی `"Hi"` است: زیرکلاس `CharacterData` هست (`true`) ولی زیرکلاس `Element` نیست
+      (`false`؛ رد گزینه‌های ۱ و ۲). `document` گره است ولی عنصر نیست (`nodeType` آن `9` است)، پس
+      `instanceof Element` برای آن `false` است.
+  - level: medium
+    stem: کدام عبارت درباره‌ی DOM درست است؟
+    options:
+      - 'DOM نمایش درختیِ صفحه در حافظه‌ی مرورگر است که JavaScript از طریق آن می‌تواند عنصرها را بخواند، تغییر دهد، اضافه یا حذف کند.'
+      - 'DOM یک زبان برنامه‌نویسی جدا از JavaScript است که برای ساخت صفحه به کار می‌رود.'
+      - 'DOM همان فایل `.html` روی دیسک است و تغییر DOM با JavaScript، فایل را هم تغییر می‌دهد.'
+      - 'DOM فقط برای خواندن صفحه است و نمی‌توان با آن عنصر جدیدی ساخت یا حذف کرد.'
+    answer: 1
+    explain: |
+      طبق اسلاید ۹، DOM یک نمایش درختی از صفحه است که HTML را به JavaScript وصل می‌کند و اجازه‌ی خواندن، تغییر،
+      اضافه و حذف عنصرها را می‌دهد. DOM زبان نیست، بلکه مدلی از اشیاء است (رد گزینه‌ی ۲). مرورگر DOM را از روی
+      فایل در حافظه می‌سازد و تغییر آن فایل را عوض نمی‌کند؛ با refresh همه‌چیز از نو ساخته می‌شود (رد گزینه‌ی
+      ۳). گزینه‌ی ۴ هم با «read, modify, add, or remove» اسلاید ۹ تناقض دارد.
+  - level: easy
+    stem: |
+      در نمودار W3Schools (اسلاید ۸)، والدِ گره‌ی متنی `"My title"` کدام است؟
+    options:
+      - 'عنصر `<title>`'
+      - 'عنصر `<head>`'
+      - 'عنصر `<html>`'
+      - '`Document`'
+    answer: 1
+    explain: |
+      متن داخل هر تگ، گره‌ی متنیِ **فرزندِ همان تگ** می‌شود؛ پس والد `"My title"` عنصر `<title>` است. `<head>`
+      والدِ `<title>` و در نتیجه **جدِ** این متن است، نه والدش (رد گزینه‌ی ۲). `<html>` و `Document` هم اجداد
+      بالاتر هستند.
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="box"><!-- note --><span>A</span>text</div>
+    code: |
+      const box = document.getElementById("box");
+      console.log(box.childNodes.length, box.children.length, box.firstChild.nodeType);
+    options:
+      - out: "2 1 8"
+      - out: "3 1 3"
+      - out: "3 1 8"
+      - out: "1 1 1"
+    answer: 3
+    explain: |
+      comment (`<!-- note -->`) هم یک گره در DOM است (از نوع `Comment` با `nodeType` برابر `8`). پس فرزندان
+      `div` سه گره‌اند: comment، عنصر `span` و گره‌ی متنی `"text"`؛ یعنی `childNodes.length` برابر `3` و
+      `children.length` برابر `1`. اولین فرزند همان comment است با `nodeType` برابر `8`. گزینه‌ی ۱ comment را
+      گره ندانسته ولی نوعش را درست گفته، گزینه‌ی ۲ comment را متن (`3`) فرض کرده، و گزینه‌ی ۴ فقط عنصرها را
+      دیده است.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="head">A heading</h1><a id="link" href="#">Link text</a>
+    code: |
+      const h1 = document.getElementById("head");
+      const a = document.getElementById("link");
+      console.log(
+        a.parentNode.tagName,
+        a.previousElementSibling.id,
+        h1.nextElementSibling.getAttribute("href")
+      );
+    options:
+      - out: "BODY head #"
+      - out: "H1 head #"
+      - out: "BODY link #"
+      - out: "BODY head null"
+    answer: 1
+    explain: |
+      این همان درخت نمودار Milne در اسلاید ۹ است: `<h1>` و `<a>` هم‌نیا هستند و والد هر دو `body` است (رد
+      گزینه‌ی ۲ که فکر کرده `<a>` فرزند `<h1>` است). عنصر هم‌نیای قبلی `<a>` همان `h1` با id برابر `head` است
+      (رد گزینه‌ی ۳)، و عنصر هم‌نیای بعدی `h1` همان `<a>` است که `href` آن `"#"` است، نه `null` (رد گزینه‌ی ۴).

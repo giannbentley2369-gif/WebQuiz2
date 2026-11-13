@@ -1,0 +1,723 @@
+id: ch3-review
+review: true
+title: "آزمون جامع فصل سوم"
+intro: |
+  این آزمون **۲۴ پرسش ترکیبی** دارد؛ هر پرسش دو یا چند درس این فصل (Node.js، npm، bundling و TypeScript) را با هم درگیر می‌کند و بیشترشان سطح «سخت» دارند. پیشنهاد می‌کنیم مثل یک آزمون واقعی، حدود **۴۰ دقیقه** وقت بگذاری و بدون نگاه کردن به درسنامه‌ها جواب بدهی؛ بعد پاسخ تشریحی هر پرسش را با دقت بخوان، به‌خصوص پرسش‌هایی را که اشتباه زدی.
+questions:
+  - level: hard
+    stem: |
+      خروجی کد زیر در Node.js کدام است؟
+    check: output
+    code: |
+      async function main() {
+        console.log("A");
+        setTimeout(() => console.log("T"), 0);
+        const text = await Promise.resolve("data");
+        console.log("B " + text);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        console.log("C");
+      }
+      main();
+      console.log("D");
+    options:
+      - out: ["A", "B data", "C", "D", "T"]
+      - out: ["A", "D", "T", "B data", "C"]
+      - out: ["A", "D", "B data", "T", "C"]
+      - out: ["A", "B data", "D", "T", "C"]
+    answer: 3
+    explain: |
+      Node.js کد JavaScript را در **یک thread** اجرا می‌کند و `await` این thread را مسدود (block) نمی‌کند؛ فقط ادامه‌ی تابع `async` را به بعد موکول می‌کند. پس اول `A` چاپ می‌شود، `main` در اولین `await` متوقف می‌شود و کنترل به کد بیرونی برمی‌گردد که `D` را چاپ می‌کند. ادامه‌ی تابع بعد از `await` روی یک Promise حل‌شده یک **microtask** است و پیش از callback تایمر (حتی تایمر `0`) اجرا می‌شود؛ پس `B data` و بعد `T` می‌آید و در آخر، پس از ۱۰ میلی‌ثانیه، `C`. گزینه‌های ۱ و ۴ فکر کرده‌اند `await` برنامه را نگه می‌دارد یا همگام ادامه می‌دهد، و گزینه‌ی ۲ تایمر صفر را از ادامه‌ی `await` جلوتر دانسته است.
+
+  - level: medium
+    stem: |
+      در شبکه‌ی ما registry اصلی npm در دسترس نیست و آدرس یک mirror به شکل `https://mirror.example.ir/npm/` داریم. می‌خواهیم `socket.io` را برای **اجرای سرور** و `jest` را برای **نوشتن تست** نصب کنیم، طوری که هر کدام در بخش درست `package.json` ثبت شود. کدام دنباله‌ی دستورها درست است؟
+    options:
+      - '`npm config set registry https://mirror.example.ir/npm/`، سپس `npm install socket.io` و `npm install -D jest`'
+      - '`npm config get registry https://mirror.example.ir/npm/`، سپس `npm install socket.io jest`'
+      - '`npm config set registry https://mirror.example.ir/npm/`، سپس `npm install -D socket.io jest`'
+      - '`npm config set registry https://mirror.example.ir/npm/`، سپس `npm install -g socket.io` و `npm install -D jest`'
+    answer: 1
+    explain: |
+      `npm config set registry <url>` آدرس registry را (در فایل `.npmrc` کاربر) عوض می‌کند تا دانلودها از mirror انجام شوند. `socket.io` هنگام **اجرای** سرور لازم است و باید با `npm install` در `dependencies` ثبت شود، ولی `jest` فقط در زمان توسعه برای اجرای تست‌ها لازم است و جایش `devDependencies` است (`-D`). گزینه‌ی ۲ با `config get` فقط آدرس فعلی را می‌خواند و چیزی را عوض نمی‌کند و هر دو پکیج را هم در `dependencies` می‌گذارد؛ گزینه‌ی ۳ `socket.io` را اشتباهاً وابستگی زمان توسعه کرده است؛ گزینه‌ی ۴ آن را با `-g` سراسری نصب می‌کند که نه در `package.json` ثبت می‌شود و نه در `node_modules` پروژه قرار می‌گیرد.
+
+  - level: medium
+    stem: |
+      پروژه‌ی زیر را تازه از git گرفته‌ایم. پوشه‌های `node_modules` و `dist` در git نیستند، در `tsconfig.json` تنظیم `"outDir": "dist"` آمده و هیچ پکیجی به‌صورت سراسری (global) نصب نیست. کدام دنباله‌ی دستورها سرور را **با موفقیت** اجرا می‌کند؟
+    lang: json
+    code: |
+      {
+        "scripts": {
+          "build": "tsc",
+          "start": "node dist/server.js"
+        },
+        "dependencies": { "express": "^4.19.2" },
+        "devDependencies": { "typescript": "^5.4.5" }
+      }
+    manual: npm commands cannot run in the automatic checker; the answer follows documented npm behaviour (scripts get node_modules/.bin on PATH, an interactive shell does not; tsc only writes dist when build runs).
+    options:
+      - '`npm run build`، سپس `npm start`'
+      - '`npm install`، سپس `tsc` و بعد `npm start`'
+      - '`npm install`، سپس `npm start`'
+      - '`npm install`، سپس `npm run build` و بعد `npm start`'
+    answer: 4
+    explain: |
+      در مخزن نه `node_modules` هست و نه پوشه‌ی خروجی `dist`. اول باید `npm install` همه‌ی وابستگی‌ها (از جمله `typescript` که در `devDependencies` است) را نصب کند، بعد `npm run build` با اجرای `tsc` فایل‌های JavaScript را در `dist` بسازد و در آخر `npm start` سرور را اجرا کند. گزینه‌ی ۱ بدون نصب، `tsc` را پیدا نمی‌کند. در گزینه‌ی ۲ تایپ مستقیم `tsc` در ترمینال کار نمی‌کند، چون فقط اسکریپت‌های npm (و `npx`) پوشه‌ی `node_modules/.bin` را در مسیر جست‌وجو می‌گذارند. در گزینه‌ی ۳ مرحله‌ی build جا افتاده و فایل `dist/server.js` اصلاً وجود ندارد.
+
+  - level: medium
+    stem: |
+      با `package.json` زیر، پس از `npm install` دستور `npm start` را اجرا می‌کنیم. دستورهای واقعی به چه ترتیبی اجرا می‌شوند؟
+    lang: json
+    code: |
+      {
+        "scripts": {
+          "prebuild": "echo cleaning",
+          "build": "tsc",
+          "prestart": "npm run build",
+          "start": "node dist/app.js"
+        },
+        "devDependencies": { "typescript": "^5.4.5" }
+      }
+    manual: npm scripts cannot run in the automatic checker; verified with npm in a scratch project (tsc and node replaced by echo), npm start ran echo cleaning, then the build command, then the start command.
+    options:
+      - 'فقط `node dist/app.js`؛ اسکریپت‌های `pre` فقط با `npm run` اجرا می‌شوند، نه با `npm start`.'
+      - '`tsc` و سپس `node dist/app.js`؛ `prebuild` اجرا نمی‌شود، چون `build` را اسکریپت دیگری صدا زده است، نه کاربر.'
+      - '`node dist/app.js`، سپس `echo cleaning` و در آخر `tsc`.'
+      - '`echo cleaning`، سپس `tsc` و در آخر `node dist/app.js`.'
+    answer: 4
+    explain: |
+      npm برای **هر** اسکریپت، از جمله `start`، اول `pre<name>` را اجرا می‌کند. پس `npm start` ابتدا `prestart` یعنی `npm run build` را اجرا می‌کند؛ این خودش یک `npm run` کامل است و اول `prebuild` (`echo cleaning`) و بعد `build` (`tsc`) را اجرا می‌کند. پس از پایان `prestart`، نوبت خودِ `start` یعنی `node dist/app.js` است. گزینه‌ی ۱ فکر کرده hookها با `npm start` کار نمی‌کنند، گزینه‌ی ۲ فکر کرده `npm run` تودرتو hookهای خودش را اجرا نمی‌کند و گزینه‌ی ۳ «pre» را «بعد» فهمیده است.
+
+  - level: hard
+    stem: |
+      سه فایل زیر در یک پوشه هستند. با اجرای `node app.js` چه چیزی چاپ می‌شود؟
+    check: output
+    files:
+      package.json: |
+        { "type": "module" }
+      math.js: |
+        export default function square(x) {
+          return x * x;
+        }
+        export const name = "math";
+      app.js: |
+        import sq, { name } from "./math.js";
+        import * as M from "./math.js";
+        console.log(sq(3), name);
+        console.log(typeof M.default, M.name === name, M.square);
+    entry: app.js
+    options:
+      - out: ["9 math", "undefined true function"]
+      - out: ["9 math", "function true undefined"]
+      - out: ["!! SyntaxError"]
+      - out: ["9 math", "function true function"]
+    answer: 2
+    explain: |
+      فیلد `"type": "module"` در `package.json` باعث می‌شود Node.js همه‌ی فایل‌های `.js` این پوشه را ES Module بداند؛ پس `import` خطای SyntaxError نمی‌دهد (رد گزینه‌ی ۳) و خط اول `9 math` است. در `import * as M` همه‌ی exportها در یک شیء جمع می‌شوند و export پیش‌فرض با کلید **`default`** در آن قرار می‌گیرد، نه با نام داخلی تابع؛ پس `typeof M.default` برابر `function` است، `M.name === name` درست است و `M.square` برابر `undefined` است. گزینه‌های ۱ و ۴ فکر کرده‌اند نام داخلی تابع (`square`) هم export شده است.
+
+  - level: hard
+    stem: |
+      یک پروژه‌ی front-end با TypeScript نوشته شده و با Webpack به یک فایل `bundle.js` تبدیل (bundle و minify) می‌شود. در این پروژه کلاس `Account` یک property به اسم `balance` با `private` دارد. کدام عبارت **نادرست** است؟
+    options:
+      - 'چون `balance` در TypeScript با `private` تعریف شده، در `bundle.js` نهایی هم پنهان است و کاربر از کنسول مرورگر نمی‌تواند آن را روی یک شیء `Account` ببیند.'
+      - '`typescript` و `webpack` را معمولاً با `npm install -D` نصب می‌کنیم، چون فقط هنگام ساختن (build) لازم‌اند و کدی که در مرورگر اجرا می‌شود به آن‌ها نیازی ندارد.'
+      - 'interfaceهای پروژه هیچ کدی در `bundle.js` تولید نمی‌کنند، چون tsc نوع‌ها را هنگام کامپایل کاملاً حذف می‌کند.'
+      - 'tree-shaking تابع‌هایی را که از یک ES Module، export شده‌اند ولی هیچ جای برنامه استفاده نشده‌اند، در زمان ساختن (build) حذف می‌کند، نه در زمان اجرا در مرورگر.'
+    answer: 1
+    explain: |
+      `private` فقط یک بررسی **زمان کامپایل** است؛ tsc آن را حذف می‌کند و در `bundle.js` نهایی `balance` یک property معمولی است که هر کسی در کنسول مرورگر می‌تواند ببیند و حتی تغییر دهد؛ minify کردن هم این را پنهان نمی‌کند (برای پنهان‌سازی واقعی باید از فیلد `#balance` خودِ JavaScript استفاده کرد). سه عبارت دیگر درست‌اند: ابزارهای ساخت مثل `typescript` و `webpack` وابستگی زمان توسعه‌اند، interfaceها پس از کامپایل هیچ اثری ندارند، و tree-shaking با تحلیل ایستای `import`/`export`ها در زمان build انجام می‌شود.
+
+  - level: hard
+    stem: |
+      این سه فایل را اول با tsc کامپایل می‌کنیم و بعد خروجی JavaScript را با یک bundler که ES Moduleها را tree-shake و minify می‌کند (مثل Rollup) در یک فایل bundle می‌کنیم؛ نقطه‌ی شروع `app.ts` است. کدام عبارت درباره‌ی bundle نهایی **درست** است؟
+    files:
+      types.ts: |
+        export interface User {
+          name: string;
+          age: number;
+        }
+      utils.ts: |
+        import { User } from "./types.js";
+        export function formatUser(u: User): string {
+          return `${u.name} (${u.age})`;
+        }
+        export function parseUser(text: string): User {
+          const parts = text.split(",");
+          return { name: parts[0], age: Number(parts[1]) };
+        }
+      app.ts: |
+        import { formatUser } from "./utils.js";
+        import { User } from "./types.js";
+        const u: User = { name: "Sara", age: 21 };
+        console.log(formatUser(u));
+    manual: Bundling cannot run in the automatic checker; tsc elides interfaces and type-only imports (types.ts compiles to an empty module), and Rollup/esbuild tree-shaking keeps only the used export formatUser.
+    options:
+      - '`formatUser` و `parseUser` هر دو در bundle می‌مانند، چون هر دو با `export` بیرون داده شده‌اند.'
+      - '`formatUser` می‌ماند، `parseUser` حذف می‌شود و از `User` هیچ اثری نیست، چون interface همان هنگام کامپایل حذف شده است.'
+      - '`parseUser` حذف می‌شود، ولی `User` به‌صورت یک شیء خالی در bundle می‌ماند، چون `app.ts` آن را import کرده است.'
+      - 'هیچ چیزی حذف نمی‌شود، چون tree-shaking فقط روی کد JavaScript کار می‌کند و این فایل‌ها TypeScript هستند.'
+    answer: 2
+    explain: |
+      tsc هنگام کامپایل، interface `User` و هر `import`ی را که فقط برای نوع استفاده شده کاملاً حذف می‌کند؛ پس از `User` هیچ کدی به bundler نمی‌رسد (رد گزینه‌ی ۳). bundler با تحلیل ایستای `import`/`export`ها می‌بیند که فقط `formatUser` استفاده شده و `parseUser` را با tree-shaking حذف می‌کند؛ `export` بودن به‌تنهایی دلیل ماندن نیست (رد گزینه‌ی ۱). bundler روی **خروجی JavaScript** کار می‌کند که همان `import`/`export` استاندارد را دارد، پس tree-shaking کاملاً ممکن است (رد گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      کد TypeScript زیر بدون خطا کامپایل می‌شود. خروجی اجرای آن چیست؟
+    check: ts-output
+    code: |
+      interface Product {
+        title: string;
+        price: number;
+      }
+      const raw = '{"title":"Pen","price":"20"}';
+      const p: Product = JSON.parse(raw);
+      const total = p.price + 5;
+      console.log(total);
+      console.log(typeof p.price, p.price * 2);
+    options:
+      - out: ["25", "number 40"]
+      - out: ["!! TypeError"]
+      - out: ["25", "string 40"]
+      - out: ["205", "string 40"]
+    answer: 4
+    explain: |
+      annotationها و interfaceها در زمان اجرا وجود ندارند و `JSON.parse` نوع `any` برمی‌گرداند؛ پس tsc به `p: Product` اعتماد می‌کند و هیچ تبدیلی هم انجام نمی‌شود. در واقعیت `p.price` رشته‌ی `"20"` است: `"20" + 5` الحاق رشته‌ای است و `"205"` می‌شود، `typeof p.price` برابر `string` است و `"20" * 2` با تبدیل ضمنی به عدد `40` می‌شود. گزینه‌های ۱ و ۳ فکر کرده‌اند TypeScript مقدار را به عدد تبدیل می‌کند و گزینه‌ی ۲ فکر کرده نوع‌ها در زمان اجرا بررسی می‌شوند و خطا می‌دهند.
+
+  - level: hard
+    stem: |
+      با تابع زیر، کدام گزینه **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      function parse(json: string): unknown {
+        return JSON.parse(json);
+      }
+    prelude: |
+      function parse(json: string): unknown {
+        return JSON.parse(json);
+      }
+    options:
+      - code: |
+          const v = parse("5");
+          if (typeof v === "number") console.log(v + 1);
+      - code: |
+          const v: any = parse("[1, 2]");
+          console.log(v.length);
+      - code: |
+          const v = parse("[1, 2]");
+          console.log(v.length);
+      - code: |
+          const v = parse('"hi"');
+          if (typeof v === "string") console.log(v.toUpperCase());
+    answer: 3
+    explain: |
+      مقدار `unknown` را تا وقتی نوعش را باریک (narrow) نکرده‌ایم نمی‌توان استفاده کرد؛ پس `v.length` در گزینه‌ی ۳ خطای TS18046 دارد. در گزینه‌های ۱ و ۴، شرط `typeof` نوع را به `number` یا `string` باریک کرده است. در گزینه‌ی ۲، مقدار `unknown` به متغیری از نوع `any` داده شده که مجاز است و از آن به بعد tsc هیچ بررسی‌ای روی `v` انجام نمی‌دهد. تفاوت مهم همین است: `any` بررسی را خاموش می‌کند، ولی `unknown` تا قبل از بررسی نوع اجازه‌ی هیچ استفاده‌ای نمی‌دهد.
+
+  - level: medium
+    stem: |
+      کدام بدنه را می‌توان در جای خالی نوشت تا تابع زیر **بدون خطا** کامپایل شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      function len(x: string | string[] | number): number {
+        ______
+      }
+    options:
+      - text: '`return x.length;`'
+        code: |
+          function len(x: string | string[] | number): number {
+            return x.length;
+          }
+      - text: '`if (typeof x === "number") return x; return x.length;`'
+        code: |
+          function len(x: string | string[] | number): number {
+            if (typeof x === "number") return x;
+            return x.length;
+          }
+      - text: '`if (typeof x === "string") return x.length; return x.length;`'
+        code: |
+          function len(x: string | string[] | number): number {
+            if (typeof x === "string") return x.length;
+            return x.length;
+          }
+      - text: '`if (typeof x !== "number") return x.length;`'
+        code: |
+          function len(x: string | string[] | number): number {
+            if (typeof x !== "number") return x.length;
+          }
+    answer: 2
+    explain: |
+      در union `string | string[] | number` فقط `string` و `string[]` ویژگی `length` دارند. گزینه‌ی ۲ اول حالت `number` را با `typeof` جدا و برمی‌گرداند؛ پس در خط بعد نوع `x` به `string | string[]` باریک شده و `x.length` مجاز است. گزینه‌ی ۱ روی کل union سراغ `length` رفته که برای `number` وجود ندارد؛ در گزینه‌ی ۳ بعد از جدا کردن `string` هنوز `number` در نوع باقی است؛ در گزینه‌ی ۴ وقتی `x` عدد باشد تابع به انتها می‌رسد و چیزی برنمی‌گرداند، در حالی که نوع خروجی `number` است (خطای TS2366).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function fmt(value: number | string, ...tags: string[]): string {
+        const base = typeof value === "number" ? value.toFixed(1) : value.toUpperCase();
+        return tags.length > 0 ? `${base} [${tags.join("|")}]` : base;
+      }
+      function show(label: string, sep = ": ", value?: number | string): void {
+        console.log(label + sep + (value || "none"));
+      }
+      console.log(fmt(3));
+      console.log(fmt("ok", "a", "b"));
+      show("x", undefined, 0);
+      show("y", "-");
+    options:
+      - out: ["3.0", "OK [a|b]", "xundefined0", "y-none"]
+      - out: ["3.0", "OK [a|b]", "x: 0", "y-none"]
+      - out: ["3.0 []", "OK [a|b]", "x: none", "y-none"]
+      - out: ["3.0", "OK [a|b]", "x: none", "y-none"]
+    answer: 4
+    explain: |
+      `fmt(3)`: مقدار عدد است و `toFixed(1)` رشته‌ی `3.0` را می‌دهد؛ rest parameter `tags` بدون آرگومان یک آرایه‌ی **خالی** است (نه `undefined`)، پس بخش کروشه اضافه نمی‌شود (رد گزینه‌ی ۳). در `fmt("ok", "a", "b")` رشته بزرگ می‌شود و `tags` برابر `["a", "b"]` است. در `show("x", undefined, 0)` فرستادن `undefined` مقدار پیش‌فرض `": "` را فعال می‌کند (رد گزینه‌ی ۱)، ولی `0` برای `||` مقداری falsy است و جایش `"none"` می‌نشیند (رد گزینه‌ی ۲). در `show("y", "-")` پارامتر اختیاری `value` برابر `undefined` است و `y-none` چاپ می‌شود.
+
+  - level: hard
+    stem: |
+      tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface Circle {
+        kind: "circle";
+        r: number;
+      }
+      interface Rect {
+        kind: "rect";
+        w: number;
+        h: number;
+      }
+      type Shape = Circle | Rect;
+      function area(s: Shape): number {
+        if (s.kind === "circle") {
+          return 3 * s.r * s.r;
+        }
+        return s.w * s.h;
+      }
+      const k1 = "rect";
+      let k2 = "rect";
+      const a: Shape = { kind: k1, w: 2, h: 3 };
+      const b: Shape = { kind: k2, w: 2, h: 3 };
+      console.log(area(a), area(b));
+    options:
+      - line: 13
+      - line: 15
+      - line: 19
+      - line: 20
+    answer: 4
+    explain: |
+      `const k1 = "rect"` نوع literal یعنی `"rect"` می‌گیرد، چون const هرگز عوض نمی‌شود؛ پس شیء خط ۱۹ یک `Rect` معتبر است. ولی نوع `let k2 = "rect"` به `string` گسترش (widen) پیدا می‌کند، چون بعداً می‌تواند هر رشته‌ای بگیرد؛ و `string` به `"circle" | "rect"` قابل انتساب نیست، پس خط ۲۰ خطا دارد. خطوط ۱۳ و ۱۵ مشکلی ندارند: شرط `s.kind === "circle"` نوع `s` را داخل `if` به `Circle` و بعد از `return` به `Rect` باریک می‌کند.
+
+  - level: hard
+    stem: |
+      با تعریف‌های زیر، کدام گزینه **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      interface Person {
+        name: string;
+        email?: string;
+      }
+      interface Employee extends Person {
+        readonly id: number;
+      }
+      function describe(p: Person): string {
+        return p.email ? `${p.name} <${p.email}>` : p.name;
+      }
+    prelude: |
+      interface Person {
+        name: string;
+        email?: string;
+      }
+      interface Employee extends Person {
+        readonly id: number;
+      }
+      function describe(p: Person): string {
+        return p.email ? `${p.name} <${p.email}>` : p.name;
+      }
+    options:
+      - code: |
+          describe({ name: "Ali", id: 1 });
+      - code: |
+          const e: Employee = { name: "Ali", id: 1 };
+          e.id = 2;
+      - code: |
+          const e: Employee = { name: "Ali", id: 1 };
+          console.log(describe(e));
+      - code: |
+          const e: Employee = { id: 1, email: "ali@site.com" };
+    answer: 3
+    explain: |
+      `Employee` با `extends` همه‌ی propertyهای `Person` را دارد، پس هر `Employee` یک `Person` هم هست و فرستادن متغیر `e` به `describe` مجاز است (گزینه‌ی ۳). در گزینه‌ی ۱ یک **object literal** مستقیماً به پارامتری از نوع `Person` داده شده و property اضافی `id` خطای excess property (ویژگی اضافه) می‌گیرد؛ این بررسی فقط برای literal مستقیم است، نه برای متغیری مثل `e`. در گزینه‌ی ۲، `id` با `readonly` تعریف شده و نمی‌توان مقدارش را عوض کرد (TS2540). در گزینه‌ی ۴، `name` که در `Person` اجباری است وجود ندارد؛ `email` اختیاری است و جای آن را پر نمی‌کند.
+
+  - level: hard
+    stem: |
+      tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface Shape {
+        readonly name: string;
+        area(): number;
+      }
+      class Square implements Shape {
+        name = "square";
+        constructor(private side: number) {}
+        area(): number {
+          return this.side * this.side;
+        }
+      }
+      const sq = new Square(2);
+      sq.name = "box";
+      const sh: Shape = sq;
+      sh.name = "big";
+      console.log(sh.area());
+    options:
+      - line: 6
+      - line: 13
+      - line: 15
+      - line: 0
+        text: 'هیچ خطی؛ کد بدون خطا کامپایل می‌شود.'
+    answer: 3
+    explain: |
+      `readonly` در interface فقط برای کسی است که شیء را **از دید آن interface** می‌بیند. کلاس `Square` اجازه دارد `name` را به‌صورت معمولی (قابل تغییر) تعریف کند، چون یک property قابل‌نوشتن قرارداد «قابل خواندن» را هم برآورده می‌کند؛ پس خط ۶ و `implements` خطا ندارند و خط ۱۳ (که `sq` از نوع `Square` است) هم مجاز است. ولی `sh` از نوع `Shape` است و از دید این نوع، `name` فقط‌خواندنی است؛ پس خط ۱۵ خطای TS2540 می‌دهد و گزینه‌ی ۴ هم غلط است.
+
+  - level: hard
+    stem: |
+      tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      interface Greeter {
+        greet(name: string, greeting?: string): string;
+      }
+      class Formal implements Greeter {
+        greet(name: string, greeting = "Dear"): string {
+          return `${greeting} ${name}`;
+        }
+      }
+      class Casual implements Greeter {
+        greet(name: string): string {
+          return `Hi ${name}`;
+        }
+      }
+      const g: Greeter = new Casual();
+      console.log(g.greet("Ali", "Hello"));
+      const c = new Casual();
+      console.log(c.greet("Sara", "Hello"));
+    options:
+      - line: 17
+      - line: 10
+      - line: 15
+      - line: 5
+    answer: 1
+    explain: |
+      در TypeScript تابعی که پارامترهای **کمتری** می‌گیرد می‌تواند جای تابعی با پارامترهای بیشتر بنشیند (پارامتر اضافه را نادیده می‌گیرد)؛ پس `Casual` با `greet(name)` قرارداد `Greeter` را برآورده می‌کند (رد خط ۱۰). `Formal` با مقدار پیش‌فرض، `greeting` را اختیاری کرده که دقیقاً با `?` در interface جور است (رد خط ۵). فراخوانی خط ۱۵ از دید نوع `Greeter` است که دو آرگومان را می‌پذیرد، پس مجاز است. ولی `c` از نوع `Casual` است و `greet` آن فقط یک پارامتر دارد؛ پس خط ۱۷ خطای «Expected 1 arguments, but got 2» می‌گیرد.
+
+  - level: hard
+    stem: |
+      کد TypeScript زیر بدون خطا کامپایل می‌شود (با target برابر ES2022). خروجی اجرای آن چیست؟
+    check: ts-output
+    code: |
+      class Wallet {
+        #pin = 1234;
+        private balance = 0;
+        readonly owner: string;
+        constructor(owner: string) {
+          this.owner = owner;
+        }
+        add(n: number): void {
+          this.balance += n;
+        }
+      }
+      const w = new Wallet("Sara");
+      w.add(20);
+      w.add(30);
+      console.log(Object.keys(w).join(","));
+      console.log(JSON.stringify(w));
+    options:
+      - out: ["owner", '{"owner":"Sara"}']
+      - out: ["balance,owner", '{"balance":50,"owner":"Sara"}']
+      - out: ["pin,balance,owner", '{"pin":1234,"balance":50,"owner":"Sara"}']
+      - out: ["pin,owner", '{"pin":1234,"owner":"Sara"}']
+    answer: 2
+    explain: |
+      `private` و `readonly` فقط در زمان کامپایل معنا دارند و tsc آن‌ها را حذف می‌کند؛ در JavaScript خروجی، `balance` و `owner` propertyهای معمولی‌اند و هم در `Object.keys` و هم در `JSON.stringify` دیده می‌شوند. ولی `#pin` یک فیلد خصوصی **واقعیِ JavaScript** است که در زمان اجرا هم پنهان می‌ماند و نه در `Object.keys` می‌آید نه در JSON. گزینه‌ی ۱ فکر کرده `private` در زمان اجرا هم چیزی را پنهان می‌کند، گزینه‌ی ۳ فکر کرده فیلد `#` مثل property معمولی دیده می‌شود و گزینه‌ی ۴ دقیقاً برعکس فکر کرده است.
+
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Base<T> {
+        protected items: T[] = [];
+        constructor(private readonly max: number) {}
+        add(item: T): boolean {
+          if (this.items.length >= this.max) return false;
+          this.items.push(item);
+          return true;
+        }
+      }
+      class NumberBag extends Base<number> {
+        sum(): number {
+          return this.items.reduce((a, b) => a + b, 0);
+        }
+        limit(): number {
+          return this.max;
+        }
+      }
+      const bag = new NumberBag(3);
+      bag.add(5);
+      console.log(bag.sum(), bag.limit());
+    options:
+      - line: 12
+      - line: 18
+      - line: 19
+      - line: 15
+    answer: 4
+    explain: |
+      `items` با `protected` تعریف شده و در کلاس فرزند (`NumberBag`) در دسترس است، پس خط ۱۲ درست است. ولی `max` یک parameter property با `private` است و `private` یعنی **فقط داخل خودِ کلاس `Base`**؛ حتی کلاس فرزند هم به آن دسترسی ندارد، پس خط ۱۵ خطا دارد. `NumberBag` constructor ندارد و constructor کلاس پدر را به ارث می‌برد، پس `new NumberBag(3)` در خط ۱۸ درست است؛ و `add` با `T = number` عدد `5` را می‌پذیرد (خط ۱۹).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      class Employee {
+        static count = 0;
+        constructor(protected readonly name: string, protected salary: number) {
+          Employee.count++;
+        }
+        pay(): number {
+          return this.salary;
+        }
+        describe(): string {
+          return `${this.name}: ${this.pay()}`;
+        }
+      }
+      class Manager extends Employee {
+        constructor(name: string, salary: number, private bonus = 10) {
+          super(name, salary);
+        }
+        pay(): number {
+          return super.pay() + this.bonus;
+        }
+      }
+      const staff: Employee[] = [new Employee("Ali", 100), new Manager("Sara", 100), new Manager("Reza", 50, 5)];
+      console.log(staff.map((e) => e.describe()).join(", "));
+      console.log(Employee.count, Manager.count);
+    options:
+      - out: ["Ali: 100, Sara: 110, Reza: 55", "3 3"]
+      - out: ["Ali: 100, Sara: 100, Reza: 50", "3 3"]
+      - out: ["Ali: 100, Sara: 110, Reza: 55", "1 2"]
+      - out: ["Ali: 100, Sara: 110, Reza: 60", "3 3"]
+    answer: 1
+    explain: |
+      نوع آرایه `Employee[]` است، ولی در زمان اجرا برای هر شیء متدِ **کلاس واقعی خودش** صدا زده می‌شود: `describe` در `Employee` تعریف شده، اما `this.pay()` درون آن برای مدیرها `pay` بازنویسی‌شده‌ی `Manager` را اجرا می‌کند؛ سارا `100 + 10` (پاداش پیش‌فرض) و رضا `50 + 5`. پس گزینه‌ی ۲ (اجرای `pay` کلاس پدر) و گزینه‌ی ۴ (نادیده گرفتن آرگومان `5`) غلط‌اند. `count` عضو `static` و مشترک است و هر سه `new` (برای مدیرها از راه `super`) آن را زیاد می‌کنند؛ `Manager.count` هم از راه وراثت به همان مقدار می‌رسد، پس `3 3` چاپ می‌شود (رد گزینه‌ی ۳).
+
+  - level: medium
+    stem: |
+      در جای خالی کدام نوع قرار گیرد تا کد زیر **بدون خطا** کامپایل شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      interface Box<T> {
+        value: T;
+        label?: string;
+      }
+      function makeBox<T>(value: T, label?: string): ____ {
+        return label ? { value, label } : { value };
+      }
+      const b = makeBox(42);
+      const doubled: number = b.value * 2;
+    prelude: |
+      interface Box<T> {
+        value: T;
+        label?: string;
+      }
+    options:
+      - text: '`Box`'
+        code: |
+          function makeBox<T>(value: T, label?: string): Box {
+            return label ? { value, label } : { value };
+          }
+          const b = makeBox(42);
+          const doubled: number = b.value * 2;
+      - text: '`T`'
+        code: |
+          function makeBox<T>(value: T, label?: string): T {
+            return label ? { value, label } : { value };
+          }
+          const b = makeBox(42);
+          const doubled: number = b.value * 2;
+      - text: '`Box<T>`'
+        code: |
+          function makeBox<T>(value: T, label?: string): Box<T> {
+            return label ? { value, label } : { value };
+          }
+          const b = makeBox(42);
+          const doubled: number = b.value * 2;
+      - text: '`Box<string>`'
+        code: |
+          function makeBox<T>(value: T, label?: string): Box<string> {
+            return label ? { value, label } : { value };
+          }
+          const b = makeBox(42);
+          const doubled: number = b.value * 2;
+    answer: 3
+    explain: |
+      `makeBox` باید جعبه‌ای برگرداند که نوع `value` آن همان `T` ورودی باشد؛ پس نوع خروجی `Box<T>` است و با `makeBox(42)`، `T` به‌طور خودکار `number` استنتاج می‌شود و `b.value * 2` مجاز است. `Box` بدون آرگومان نوع خطا دارد، چون interface generic است و `T` را لازم دارد؛ `T` غلط است، چون شیء `{ value }` از نوع `T` نیست؛ `Box<string>` هم غلط است، چون `value` از نوع `T` است نه `string` (و ضرب `b.value * 2` روی رشته هم مجاز نیست).
+
+  - level: hard
+    stem: |
+      با تعریف‌های زیر، کدام گزینه **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      interface HasId {
+        id: number;
+      }
+      class Repo<T extends HasId> {
+        private items: T[] = [];
+        add(item: T): void {
+          this.items.push(item);
+        }
+        find(id: number): T | undefined {
+          return this.items.find((x) => x.id === id);
+        }
+      }
+    prelude: |
+      interface HasId {
+        id: number;
+      }
+      class Repo<T extends HasId> {
+        private items: T[] = [];
+        add(item: T): void {
+          this.items.push(item);
+        }
+        find(id: number): T | undefined {
+          return this.items.find((x) => x.id === id);
+        }
+      }
+    options:
+      - code: |
+          const users = new Repo<{ id: number; name: string }>();
+          console.log(users.find(1).name);
+      - code: |
+          const users = new Repo<{ id: number; name: string }>();
+          users.add({ id: 1, name: "Ali" });
+          console.log(users.find(1)?.name);
+      - code: |
+          const repo = new Repo<HasId>();
+          repo.add({ id: 7 });
+          const found = repo.find(7);
+          if (found) console.log(found.id + 1);
+      - code: |
+          const users = new Repo<{ id: number; name: string }>();
+          const u = users.find(1);
+          console.log(u === undefined ? "none" : u.name.toUpperCase());
+    answer: 1
+    explain: |
+      `find` نوع `T | undefined` برمی‌گرداند (شاید عضوی با آن `id` نباشد). در حالت strict دسترسی مستقیم به `.name` روی مقداری که ممکن است `undefined` باشد خطای TS18048 دارد (گزینه‌ی ۱). گزینه‌ی ۲ با `?.` (optional chaining: «اگر undefined بود، جلوتر نرو») و گزینه‌های ۳ و ۴ با بررسی صریح (`if (found)` و `u === undefined`) این حالت را کنار گذاشته‌اند. نوع‌های `{ id: number; name: string }` و `HasId` هم هر دو قید `T extends HasId` را برآورده می‌کنند، پس ساختن `Repo` در هیچ گزینه‌ای خطا ندارد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      interface Named {
+        name: string;
+      }
+      class Registry<T extends Named> {
+        static created = 0;
+        private items: T[] = [];
+        constructor(readonly label: string = "default") {
+          Registry.created++;
+        }
+        add(...items: T[]): number {
+          this.items.push(...items);
+          return this.items.length;
+        }
+        names(): string {
+          return this.items.map((i) => i.name).join(",");
+        }
+      }
+      const people = new Registry<{ name: string; age: number }>();
+      const pets = new Registry<Named>("pets");
+      console.log(people.add({ name: "Ali", age: 20 }, { name: "Sara", age: 22 }));
+      console.log(pets.add({ name: "Rex" }), people.names());
+      console.log(people.label, pets.label, Registry.created);
+    options:
+      - out: ["2", "1 Ali,Sara", "default pets 1"]
+      - out: ["2", "1 Ali,Sara", "undefined pets 2"]
+      - out: ["2", "1 Ali,Sara", "default pets 2"]
+      - out: ["2", "3 Ali,Sara,Rex", "default pets 2"]
+    answer: 3
+    explain: |
+      `add` با rest parameter هر تعداد آیتم را در یک آرایه می‌گیرد، پس فراخوانی اول `2` برمی‌گرداند. هر شیء `Registry` آرایه‌ی `items` **مخصوص خودش** را دارد، پس `pets` فقط یک عضو دارد و `people.names()` فقط `Ali,Sara` است (رد گزینه‌ی ۴). `label` یک parameter property با مقدار پیش‌فرض است و برای `people` مقدار `"default"` می‌گیرد (رد گزینه‌ی ۲). `created` عضو `static` و بین همه‌ی شیءها مشترک است و دو بار `new` آن را `2` می‌کند (رد گزینه‌ی ۱).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر پس از کامپایل و اجرا در Node.js چیست؟
+    check: ts-output
+    code: |
+      function delay<T>(ms: number, value: T): Promise<T> {
+        return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+      }
+      async function main(): Promise<void> {
+        const fast = delay(10, "fast");
+        const slow = delay(30, 41);
+        console.log("start");
+        const n = await slow;
+        console.log(n + 1);
+        const s = await fast;
+        console.log(s.toUpperCase());
+      }
+      main();
+      console.log("sync");
+    options:
+      - out: ["start", "sync", "FAST", "42"]
+      - out: ["start", "sync", "42", "FAST"]
+      - out: ["sync", "start", "42", "FAST"]
+      - out: ["start", "42", "FAST", "sync"]
+    answer: 2
+    explain: |
+      هر دو Promise همان لحظه ساخته می‌شوند و تایمرهایشان با هم شروع به شمارش می‌کنند. `main` تا اولین `await` همگام اجرا می‌شود و `start` را چاپ می‌کند؛ سپس منتظر `slow` می‌ماند و چون Node.js مسدود نمی‌شود، کنترل برمی‌گردد و `sync` چاپ می‌شود (رد گزینه‌های ۳ و ۴). ترتیب چاپ را ترتیب **`await`ها** تعیین می‌کند، نه ترتیب حل شدن Promiseها: اول پس از ۳۰ میلی‌ثانیه `42` چاپ می‌شود و بعد `await fast` که از قبل حل شده، بلافاصله `FAST` را می‌دهد (رد گزینه‌ی ۱). generic بودن `delay` هم باعث می‌شود `n` از نوع `number` و `s` از نوع `string` استنتاج شود، پس `n + 1` و `toUpperCase()` بدون خطا کامپایل می‌شوند.
+
+  - level: hard
+    stem: |
+      این دو فایل با هم کامپایل می‌شوند. خطای کامپایل در کدام خط است؟
+    check: tsc-line
+    files:
+      shapes.ts: |
+        export interface Shape {
+          area(): number;
+        }
+        export default class Circle implements Shape {
+          constructor(public r: number) {}
+          area(): number {
+            return 3 * this.r * this.r;
+          }
+        }
+        export const UNIT = "cm";
+      main.ts: |
+        import Round, { UNIT, Shape } from "./shapes.js";
+        import { Circle } from "./shapes.js";
+        const c: Shape = new Round(2);
+        console.log(c.area(), UNIT);
+    options:
+      - line: "main.ts:1"
+      - line: "main.ts:2"
+      - line: "main.ts:3"
+      - line: "shapes.ts:4"
+    answer: 2
+    explain: |
+      `Circle` با `export default` بیرون داده شده است؛ export پیش‌فرض را باید **بدون آکولاد** و با هر نام دلخواهی import کرد (مثل `Round` در خط ۱). خط ۲ آن را به‌شکل export نام‌دار (`{ Circle }`) خواسته، در حالی که `shapes.ts` چنین export نام‌داری ندارد؛ پس خطای TS2614 می‌گیرد. ترکیب import پیش‌فرض و نام‌دار در یک دستور (خط ۱) مجاز است، نسبت دادن شیء کلاس به متغیری از نوع interface در خط ۳ درست است (کلاس `implements Shape` است)، و در `shapes.ts` هم export پیش‌فرضِ کلاسی که یک interface را پیاده می‌کند هیچ مشکلی ندارد.
+
+  - level: hard
+    stem: |
+      کدام عبارت **نادرست** است؟
+    options:
+      - 'چون TypeScript نوع‌ها را بررسی می‌کند، اگر در یک سرور Express پارامتر تابعی را `number` تعریف کنیم، دیگر ممکن نیست در زمان اجرا داده‌ای از نوع رشته (مثلاً از body یک درخواست) به آن برسد.'
+      - 'Node.js کد JavaScript را در یک thread اجرا می‌کند؛ پس یک حلقه‌ی محاسباتی سنگین و همگام (synchronous) در پاسخ به یک درخواست، پاسخ دادن به بقیه‌ی درخواست‌ها را هم تا پایانش متوقف می‌کند.'
+      - 'وقتی `typescript` با `npm install -D` در پروژه نصب شده باشد، دستور `npx tsc` همان نسخه‌ی محلی داخل `node_modules` را اجرا می‌کند.'
+      - 'فایل `package-lock.json` نسخه‌های دقیق نصب‌شده را ثبت می‌کند تا `npm install` روی سیستم هم‌تیمی‌ها همان نسخه‌ها را نصب کند.'
+    answer: 1
+    explain: |
+      بررسی نوع در TypeScript فقط در **زمان کامپایل** انجام می‌شود و در JavaScript خروجی هیچ اثری از نوع‌ها نمی‌ماند؛ داده‌ای که در زمان اجرا از بیرون می‌آید (مثلاً body یک درخواست HTTP) می‌تواند هر نوعی داشته باشد و باید جداگانه بررسی شود. پس عبارت ۱ نادرست است. سه عبارت دیگر درست‌اند: اجرای JavaScript در Node.js تک‌نخی است و یک حلقه‌ی همگام سنگین event loop را مسدود می‌کند؛ `npx tsc` اول در `node_modules/.bin` پروژه دنبال `tsc` می‌گردد؛ و `package-lock.json` نسخه‌های دقیق را قفل می‌کند.

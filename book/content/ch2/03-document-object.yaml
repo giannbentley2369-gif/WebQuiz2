@@ -1,0 +1,628 @@
+id: ch2-document
+title: "سلسله‌مراتب DOM در JavaScript و شیء document"
+slides: "JS in HTML، اسلایدهای ۱۲ تا ۱۵"
+lesson: |
+  در درس قبل دیدیم مرورگر از HTML یک درخت می‌سازد. حالا ببینیم این درخت در JavaScript از کجا شروع می‌شود و
+  چطور به آن دست پیدا می‌کنیم.
+
+  ::: analogy
+  مرورگر را یک **قاب عکس** فرض کن (`window`) که داخلش یک **نقاشی** قرار دارد (`document`)؛ هر جزء نقاشی
+  (درخت، خانه، آسمان) یک **عنصر** است. قاب چیزهای دیگری هم دارد که به خودِ نقاشی ربطی ندارند: مثلاً برچسب
+  آدرسِ پشت قاب (`location`) یا فهرست نقاشی‌هایی که قبلاً در این قاب بوده‌اند (`history`).
+  :::
+
+  ### سلسله‌مراتب DOM در JavaScript (اسلاید ۱۲)
+
+  | سطح | توضیح اسلاید ۱۲ | در کد |
+  |---|---|---|
+  | `window` | بالاترین شیء مرورگر؛ همان **global context** (بافت سراسری) که در فصل اول دیدیم | `window` |
+  | `document` | صفحه‌ی وبِ داخل پنجره | `window.document` یا فقط `document` |
+  | عنصرها | تگ‌ها (`<div>`، `<p>`، `<h1>`) به‌صورت شیء در درخت DOM | `document.getElementById("title")` |
+  | attributeها و متن | propertyهای گره‌های عنصر | `h1.id`، `h1.className`، `h1.textContent` |
+  | رویدادها (events) | متدها و listenerهایی که JavaScript را به کارهای کاربر وصل می‌کنند | `btn.addEventListener("click", ...)` |
+
+  `window` شیء سراسری (global object) مرورگر است؛ پس هر چیزی را که روی `window` باشد می‌توان بدون نوشتن
+  `window.` هم استفاده کرد: `document` همان `window.document` است و `alert` همان `window.alert`. (جزئیات
+  `window` را در درس «شیء window: پنجره‌ی مرورگر» می‌بینیم.)
+
+  ```html
+  <h1 id="title" class="big">Hello</h1>
+  <script>
+    console.log(window.document === document);                    // true
+    const h1 = document.querySelector("h1");
+    console.log(h1.id, h1.className, h1.textContent, h1.tagName); // title big Hello H1
+  </script>
+  ```
+
+  #### نمودار اسلاید ۱۲
+
+  نمودار اسلاید ۱۲ (از منبع CIS) را اینجا به شکل متنی می‌بینی. روی اسلاید، فرزندان `document` در دو ستون
+  دو طرف یک خط عمودی کشیده شده‌اند (anchors و links، applets و plugins، embeds و scripts، frames و
+  stylesheets، images و forms) و `forms` خودش به `elements` وصل است:
+
+  ```text
+  window
+  |-- document
+  |   |-- anchors
+  |   |-- links
+  |   |-- applets
+  |   |-- plugins
+  |   |-- embeds
+  |   |-- scripts
+  |   |-- frames
+  |   |-- stylesheets
+  |   |-- images
+  |   `-- forms
+  |       `-- elements
+  |-- event
+  |-- frames
+  |-- location
+  |-- history
+  |-- navigator
+  |   |-- plugins
+  |   `-- mimeTypes
+  `-- screen
+  ```
+
+  | فرزند `window` در نمودار | چیست؟ |
+  |---|---|
+  | `document` | خودِ صفحه، یعنی درخت DOM |
+  | `event` | رویدادی که همین حالا در حال پردازش است (قدیمی؛ امروز از پارامتر `event` در listener استفاده می‌کنیم) |
+  | `frames` | قاب‌های داخلی صفحه (`<iframe>`ها) |
+  | `location` | آدرس (URL) صفحه‌ی فعلی |
+  | `history` | تاریخچه‌ی صفحه‌های بازشده در این زبانه (برای back و forward) |
+  | `navigator` | اطلاعات خودِ مرورگر؛ در نمودار دو فرزند دارد: `plugins` (افزونه‌ها) و `mimeTypes` (نوع فایل‌هایی که مرورگر می‌شناسد) |
+  | `screen` | اطلاعات صفحه‌نمایش (مانیتور) کاربر |
+
+  فرزندان `document` در نمودار، **مجموعه‌هایی از عنصرهای خاص صفحه** هستند: `images` همه‌ی تصاویر،
+  `links` لینک‌ها، `forms` فرم‌ها (و `elements` هر فرم، کادرهای ورودیِ آن فرم)، `scripts` تگ‌های
+  `<script>`، `embeds` و `plugins` محتوای جاسازی‌شده، `anchors` لنگرها، و `stylesheets` شیوه‌نامه‌ها
+  (فایل‌های CSS).
+
+  ::: info بیشتر بدانیم: این نمودار قدیمی است
+  این نمودار مربوط به «مدل کلاسیک» مرورگرهاست و پیام اصلی‌اش این است: `window` در بالاترین سطح است،
+  `document` یکی از فرزندان آن است، و `window` فرزندان دیگری هم دارد. جزئیات نام‌ها را حفظ نکن: applet‌ها
+  سال‌هاست از مرورگرها حذف شده‌اند، نام property واقعی در مرورگرهای امروزی `document.styleSheets` (با S
+  بزرگ) است، `frames` در عمل property خودِ `window` است و `window.event` هم منسوخ (deprecated) شده است.
+  :::
+
+  ### شیء `document` (اسلاید ۱۳)
+
+  طبق اسلاید ۱۳، شیء `document`:
+
+  - نماینده‌ی **کل صفحه‌ی وب** در مرورگر است؛
+  - **نقطه‌ی ورود (entry point)** به درخت DOM است، یعنی تقریباً هر کاری با صفحه با `document.` شروع می‌شود؛
+  - متدهایی برای **پیدا کردن عنصرها** دارد، مثل `getElementById` و `querySelector` (درس بعد)؛
+  - به JavaScript اجازه می‌دهد گره‌ها را **بسازد، حذف کند یا به‌روزرسانی کند**.
+
+  چند property پرکاربرد آن:
+
+  | property | چه چیزی را برمی‌گرداند |
+  |---|---|
+  | `document.documentElement` | عنصر `<html>` (عنصر ریشه) |
+  | `document.head` | عنصر `<head>` |
+  | `document.body` | عنصر `<body>` |
+  | `document.title` | متن عنوان صفحه (همان متنِ زبانه‌ی مرورگر)؛ قابل خواندن و تغییر |
+
+  مثال اسلاید ۱۳ (فایل `doc.html`):
+
+  ```html title=doc.html
+  <!DOCTYPE html>
+  <html>
+    <body>
+      <h1 id="title">Hello World</h1>
+      <button id="btn">Change Text</button>
+
+      <script>
+        // Access an element
+        const heading = document.getElementById("title");
+
+        // Add event to button
+        document.getElementById("btn").addEventListener("click", () => {
+          heading.textContent = "Text Changed via document!";
+        });
+      </script>
+    </body>
+  </html>
+  ```
+
+  خط به خط:
+
+  1. `document.getElementById("title")` شیء عنصر `<h1>` را پیدا می‌کند و در `heading` نگه می‌دارد.
+  2. `document.getElementById("btn")` دکمه را پیدا می‌کند و `addEventListener("click", ...)` تابعی (اینجا یک
+     arrow function) ثبت می‌کند که با هر کلیک اجرا شود.
+  3. با کلیک، `heading.textContent = "..."` متن `<h1>` را عوض می‌کند و صفحه فوراً به‌روز می‌شود.
+  4. کلیک دوم همان متن را دوباره می‌نویسد، پس تغییر دیگری دیده نمی‌شود.
+
+  `<script>` در **انتهای `<body>`** و بعد از عنصرهایی که لازم دارد آمده است؛ برای همین `getElementById`
+  آن‌ها را پیدا می‌کند (پایین‌تر علتش را می‌بینیم). در ضمن تابعِ داخل listener متغیر `heading` را از بیرون
+  به خاطر سپرده است (همان closure فصل اول)، پس عنصر فقط یک بار جست‌وجو می‌شود.
+
+  ### پیش‌بینی خروجی Console (اسلاید ۱۴ و ۱۵)
+
+  اسلاید ۱۴ کد زیر را اجرا می‌کند؛ کدی که JavaScript را داخل HTML جاسازی کرده است، و می‌پرسد: «می‌توانی
+  حدس بزنی چه چیزی در Console چاپ می‌شود؟»
+
+  ```html lines title=doc.html
+  <!DOCTYPE html>
+  <html>
+    <body>
+      <h1 id="title">Hello World</h1>
+
+      <script>
+        const heading = document.getElementById("title");
+        console.log(heading)
+        </script>
+    </body>
+  </html>
+  ```
+
+  پاسخ اسلاید ۱۵: **خودِ عنصر** چاپ می‌شود، که منطقی است چون خودِ عنصر را به `console.log` داده‌ایم. در
+  Firefox، زبانه‌ی Console سطری مثل `▶ <h1 id="title">` نشان می‌دهد و سمت راستش لینک `doc.html:8:15`
+  آمده؛ یعنی «فایل `doc.html`، خط ۸، ستون ۱۵»، همان جایی که `console.log` نوشته شده است. با زدن مثلث
+  `▶` فرزندان عنصر باز می‌شوند و با بردن ماوس روی آن، عنصر در صفحه هایلایت می‌شود.
+
+  - چیزی که چاپ شده **شیء گره** است، نه رشته‌ی `"Hello World"`. برای متن باید `heading.textContent` و برای
+    نام تگ `heading.tagName` را چاپ کنیم.
+  - `null` هم چاپ نمی‌شود، چون اسکریپت بعد از `<h1>` آمده و عنصر از قبل در درخت وجود دارد.
+  - نبودن `;` بعد از `console.log(heading)` مشکلی ایجاد نمی‌کند؛ JavaScript خودش سمی‌کالن را درج می‌کند
+    (automatic semicolon insertion). فاصله‌ی اضافه‌ی قبل از `</script>` هم فقط ظاهری است.
+
+  اسلاید ۱۵ با این سؤال تمام می‌شود: «`document` چه کارهای جالب دیگری می‌تواند بکند؟!»؛ جواب، باقی همین
+  فصل است: پیدا کردن عنصرها، تغییر متن و استایل، رویدادها و ساختن و حذف عنصرها.
+
+  ### چرا جای تگ `<script>` مهم است؟ (پیش‌زمینه‌ی لازم)
+
+  مرورگر HTML را **از بالا به پایین** می‌خواند و درخت را کم‌کم می‌سازد. هر جا به یک `<script>` معمولی
+  برسد، ساختن درخت را متوقف می‌کند، اسکریپت را اجرا می‌کند و بعد ادامه می‌دهد. پس اسکریپت فقط عنصرهایی را
+  می‌بیند که **بالای آن** هستند:
+
+  ```html
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <script>
+      const heading = document.getElementById("title");
+      console.log(heading);            // null  (the <h1> is not parsed yet)
+      heading.textContent = "Changed"; // TypeError: Cannot set properties of null
+    </script>
+  </head>
+  <body>
+    <h1 id="title">Hello World</h1>
+  </body>
+  </html>
+  ```
+
+  `getElementById` وقتی عنصری پیدا نکند `null` برمی‌گرداند، و هر تلاشی برای خواندن یا نوشتن property روی
+  `null` خطای `TypeError` می‌دهد. سه راه‌حل:
+
+  | راه‌حل | توضیح |
+  |---|---|
+  | `<script>` در انتهای `<body>` | روشی که اسلایدها استفاده می‌کنند؛ وقتی اسکریپت اجرا می‌شود همه‌ی عنصرهای بالایی ساخته شده‌اند |
+  | رویداد `DOMContentLoaded` | `document.addEventListener("DOMContentLoaded", () => { ... })`؛ کد وقتی اجرا می‌شود که کل HTML خوانده شده و درخت DOM آماده است |
+  | ویژگی `defer` | `<script src="app.js" defer></script>`؛ فایل خارجی هم‌زمان دانلود می‌شود ولی **بعد از** پایان parse اجرا می‌شود. `defer` فقط روی اسکریپت‌های **خارجی (با `src`)** اثر دارد |
+
+  رویداد `load` روی `window` از این هم دیرتر است: منتظر می‌ماند تا **همه‌ی منابع** (تصاویر، فایل‌های CSS
+  و ...) هم بارگیری شوند. ترتیب واقعی در این مثال:
+
+  ```html
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <script>
+      console.log("head", document.getElementById("title"));
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOMContentLoaded", document.getElementById("title").textContent);
+      });
+      window.addEventListener("load", () => console.log("load"));
+    </script>
+  </head>
+  <body>
+    <h1 id="title">Hello World</h1>
+    <script>
+      console.log("end of body", document.getElementById("title").tagName);
+    </script>
+  </body>
+  </html>
+  ```
+
+  ```text
+  head null
+  end of body H1
+  DOMContentLoaded Hello World
+  load
+  ```
+
+  ::: tip
+  `console.log(element)` در مرورگر خودِ گره را (به‌صورت قابل باز شدن) نشان می‌دهد. اگر متن را می‌خواهی
+  `element.textContent` و اگر نوع عنصر را می‌خواهی `element.tagName` را چاپ کن. تبدیل عنصر به رشته
+  (`String(element)`) فقط چیزی مثل `"[object HTMLHeadingElement]"` می‌دهد.
+  :::
+
+  ::: trap
+  - اسکریپتِ داخل `<head>` (بدون `defer` یا `DOMContentLoaded`) عنصرهای `<body>` را نمی‌بیند:
+    `getElementById` مقدار `null` می‌دهد و استفاده از آن `TypeError` می‌دهد.
+  - گذاشتن `defer` روی یک اسکریپت **درون‌خطی** (بدون `src`) هیچ اثری ندارد.
+  - رابطه برعکس نیست: `document` یکی از propertyهای `window` است، نه اینکه `window` داخل `document` باشد.
+  - اگر عنصری را **بیرون** از `DOMContentLoaded` (زودتر از موعد) جست‌وجو کنی و فقط listener را داخل آن
+    بگذاری، باز هم `null` در دستت مانده است.
+  :::
+
+  ::: summary
+  - `window` (بالاترین شیء و global context) ← `document` (صفحه) ← عنصرها (اشیاء درخت)؛ attributeها و
+    متن، propertyهای عنصرها هستند و رویدادها JavaScript را به کاربر وصل می‌کنند.
+  - `document` نقطه‌ی ورود به DOM است: پیدا کردن، ساختن، حذف و به‌روزرسانی گره‌ها.
+  - `console.log(heading)` خودِ عنصر را چاپ می‌کند، نه متنش را.
+  - اسکریپت فقط عنصرهای بالای خودش را می‌بیند؛ راه‌حل‌ها: انتهای `<body>`، `DOMContentLoaded` یا `defer`
+    (فقط برای فایل خارجی). ترتیب: `DOMContentLoaded` قبل از `load`.
+  :::
+questions:
+  - level: easy
+    stem: طبق اسلاید ۱۲، بالاترین شیء (top-level object) مرورگر که همان global context است کدام است؟
+    options:
+      - '`document`'
+      - '`window`'
+      - 'عنصر `<html>`'
+      - 'عنصر `<body>`'
+    answer: 2
+    explain: |
+      اسلاید ۱۲ می‌گوید `window` بالاترین شیء مرورگر و همان global context است و `document` (صفحه‌ی داخل
+      پنجره) یکی از propertyهای آن است. `<html>` عنصر ریشه‌ی درخت DOM است که زیر `document` قرار دارد، و
+      `<body>` هم فرزند `<html>` است؛ هیچ‌کدام بالاترین شیء نیستند.
+  - level: easy
+    stem: طبق اسلاید ۱۳، شیء `document` نماینده‌ی چیست؟
+    options:
+      - 'پنجره‌ی مرورگر، همراه با تاریخچه و آدرس صفحه'
+      - 'فقط محتوای تگ `<body>`'
+      - 'کل صفحه‌ی وبِ بارگذاری‌شده در پنجره؛ نقطه‌ی ورود به درخت DOM'
+      - 'فایل HTML روی دیسک، که با تغییر DOM به‌روز می‌شود'
+    answer: 3
+    explain: |
+      اسلاید ۱۳: `document` «Represents the entire web page» و «Acts as the entry point to the DOM tree». پنجره،
+      تاریخچه و آدرس مربوط به `window` و فرزندانش (`history` و `location`) هستند (رد گزینه‌ی ۱). `document`
+      شامل `<head>` هم می‌شود، نه فقط `<body>` (رد گزینه‌ی ۲)، و DOM در حافظه است و تغییرش فایل روی دیسک را
+      عوض نمی‌کند (رد گزینه‌ی ۴).
+  - level: medium
+    stem: در نمودار اسلاید ۱۲، کدام مورد فرزند مستقیم `window` نیست؟
+    options:
+      - '`location`'
+      - '`history`'
+      - '`navigator`'
+      - '`forms`'
+    answer: 4
+    explain: |
+      در نمودار، `forms` (و زیرمجموعه‌اش `elements`) زیر `document` قرار دارد، چون فرم‌ها بخشی از خودِ صفحه
+      هستند. `location` (آدرس صفحه)، `history` (تاریخچه‌ی زبانه) و `navigator` (اطلاعات مرورگر) مستقیماً
+      زیر `window` کشیده شده‌اند؛ این‌ها به پنجره‌ی مرورگر مربوط‌اند، نه به محتوای صفحه.
+  - level: medium
+    stem: در نمودار اسلاید ۱۲، `mimeTypes` زیرمجموعه‌ی کدام شیء است؟
+    options:
+      - '`navigator`'
+      - '`document`'
+      - '`screen`'
+      - '`location`'
+    answer: 1
+    explain: |
+      در نمودار، `navigator` (اطلاعات خودِ مرورگر) دو فرزند دارد: `plugins` و `mimeTypes` (نوع فایل‌هایی که
+      مرورگر می‌شناسد). `document` هم یک `plugins` دارد ولی `mimeTypes` ندارد (رد گزینه‌ی ۲). `screen`
+      (اطلاعات مانیتور) و `location` (آدرس صفحه) در نمودار فرزندی ندارند.
+  - level: easy
+    stem: خروجی کد زیر در مرورگر کدام است؟
+    check: dom-output
+    html: |
+      <h1>Hi</h1>
+    code: |
+      console.log(
+        window.document === document,
+        document.documentElement.tagName,
+        document.body.tagName,
+        document.head.tagName
+      );
+    options:
+      - out: "false HTML BODY HEAD"
+      - out: "true BODY BODY HEAD"
+      - out: "true HTML BODY HEAD"
+      - out: "true DOCUMENT BODY HEAD"
+    answer: 3
+    explain: |
+      `document` یکی از propertyهای `window` است، پس `window.document === document` برابر `true` است (رد
+      گزینه‌ی ۱). `document.documentElement` عنصر ریشه، یعنی `<html>` است، نه `<body>` (رد گزینه‌ی ۲) و نه
+      خودِ `document` (رد گزینه‌ی ۴). `document.body` و `document.head` هم مستقیماً به `<body>` و `<head>`
+      اشاره می‌کنند.
+  - level: easy
+    stem: |
+      صفحه‌ی زیر همان مثال اسلاید ۱۳ است. کاربر **دو بار** روی دکمه کلیک می‌کند و سپس در Console دستور
+      `console.log(heading.textContent)` را اجرا می‌کنیم. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+      <button id="btn">Change Text</button>
+    code: |
+      // Access an element
+      const heading = document.getElementById("title");
+
+      // Add event to button
+      document.getElementById("btn").addEventListener("click", () => {
+        heading.textContent = "Text Changed via document!";
+      });
+    events:
+      - { type: click, target: "#btn", times: 2 }
+    after: |
+      console.log(heading.textContent);
+    options:
+      - out: "Hello World"
+      - out: "Text Changed via document!"
+      - out: "Text Changed via document!Text Changed via document!"
+      - out: "!! TypeError"
+    answer: 2
+    explain: |
+      با هر کلیک، listener مقدار `textContent` عنوان را **جایگزین** می‌کند (`=`، نه `+=`)؛ پس کلیک اول متن را
+      عوض می‌کند و کلیک دوم همان متن را دوباره می‌نویسد. نتیجه `Text Changed via document!` است، نه دو بار
+      تکرار آن (رد گزینه‌ی ۳). اسکریپت بعد از `<h1>` آمده، پس `heading` برابر `null` نیست و خطایی رخ نمی‌دهد
+      (رد گزینه‌ی ۴)، و متن هم تغییر کرده است (رد گزینه‌ی ۱).
+  - level: medium
+    stem: |
+      این کد اسلاید ۱۴ است. با باز کردن صفحه در Firefox، چه چیزی در Console نمایش داده می‌شود؟
+    manual: "Asks how the browser DevTools console displays a DOM node; jsdom and Node print nodes differently. The logged value is the HTMLHeadingElement itself (checked separately in jsdom)."
+    html: |
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <h1 id="title">Hello World</h1>
+
+          <script>
+            const heading = document.getElementById("title");
+            console.log(heading)
+            </script>
+        </body>
+      </html>
+    options:
+      - 'خودِ عنصر `<h1 id="title">`، به‌صورت یک گره‌ی قابل باز شدن'
+      - 'رشته‌ی `"Hello World"`'
+      - '`null`، چون `heading` هنوز ساخته نشده است'
+      - 'یک خطای نحوی (SyntaxError)، چون بعد از `console.log(heading)` سمی‌کالن نیامده است'
+    answer: 1
+    explain: |
+      همان‌طور که اسلاید ۱۵ نشان می‌دهد، **خودِ عنصر** چاپ می‌شود (`▶ <h1 id="title">` همراه با لینک
+      `doc.html:8:15`)، چون خودِ عنصر را به `console.log` داده‌ایم؛ برای دیدن متن باید `heading.textContent` را
+      چاپ کرد (رد گزینه‌ی ۲). اسکریپت بعد از `<h1>` قرار دارد، پس عنصر از قبل در درخت هست و `null` نمی‌گیریم
+      (رد گزینه‌ی ۳). نبودن `;` هم خطا نیست، چون JavaScript سمی‌کالن را خودکار درج می‌کند (رد گزینه‌ی ۴).
+  - level: hard
+    stem: خروجی Console برای صفحه‌ی زیر کدام است؟
+    check: dom-output
+    html: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <script>
+          const heading = document.getElementById("title");
+          console.log(heading);
+          heading.textContent = "Changed";
+          console.log("done");
+        </script>
+      </head>
+      <body>
+        <h1 id="title">Hello World</h1>
+      </body>
+      </html>
+    options:
+      - out: ["[object HTMLHeadingElement]", "done"]
+      - out: ["undefined", "done"]
+      - out: ["null", "!! TypeError"]
+      - out: ["!! ReferenceError"]
+    answer: 3
+    explain: |
+      اسکریپت داخل `<head>` است و وقتی اجرا می‌شود، مرورگر هنوز به `<h1>` نرسیده؛ پس `getElementById` چیزی
+      پیدا نمی‌کند و `null` برمی‌گرداند (نه `undefined`؛ رد گزینه‌ی ۲). خط بعد می‌خواهد روی `null` property
+      بنویسد و `TypeError` می‌دهد، پس `done` هرگز چاپ نمی‌شود. گزینه‌ی ۱ فرض کرده عنصر پیدا می‌شود، و
+      `ReferenceError` هم نیست چون متغیر `heading` تعریف شده است، فقط مقدارش `null` است (رد گزینه‌ی ۴).
+  - level: hard
+    stem: ترتیب خروجی‌های Console برای صفحه‌ی زیر کدام است؟
+    check: dom-output
+    html: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <script>
+          console.log("head", document.getElementById("title"));
+          document.addEventListener("DOMContentLoaded", () => {
+            console.log("DOMContentLoaded", document.getElementById("title").textContent);
+          });
+          window.addEventListener("load", () => console.log("load"));
+        </script>
+      </head>
+      <body>
+        <h1 id="title">Hello World</h1>
+        <script>
+          console.log("end of body", document.getElementById("title").tagName);
+        </script>
+      </body>
+      </html>
+    options:
+      - out: ["head null", "DOMContentLoaded Hello World", "end of body H1", "load"]
+      - out: ["head null", "end of body H1", "DOMContentLoaded Hello World", "load"]
+      - out: ["head H1", "end of body H1", "DOMContentLoaded Hello World", "load"]
+      - out: ["head null", "end of body H1", "load", "DOMContentLoaded Hello World"]
+    answer: 2
+    explain: |
+      اسکریپت `<head>` قبل از ساخته شدن `<h1>` اجرا می‌شود، پس `null` می‌بیند (رد گزینه‌ی ۳). اسکریپت انتهای
+      `<body>` هنگام parse اجرا می‌شود، یعنی قبل از اینکه parse کل سند تمام شود؛ پس پیش از `DOMContentLoaded`
+      می‌آید (رد گزینه‌ی ۱). `DOMContentLoaded` به محض آماده شدن درخت DOM رخ می‌دهد، ولی `load` منتظر همه‌ی
+      منابع می‌ماند و همیشه بعد از آن است (رد گزینه‌ی ۴).
+  - level: medium
+    stem: |
+      یک اسکریپت درون‌خطی (بدون `src`) داخل `<head>` قرار دارد و با `getElementById` دنبال عنصری در `<body>`
+      می‌گردد، ولی `null` می‌گیرد. کدام تغییر به‌تنهایی مشکل را حل می‌کند؟
+    options:
+      - 'اضافه کردن ویژگی `defer` به همان تگ `<script>` درون‌خطی'
+      - 'تبدیل `const` به `var` در تعریف متغیر'
+      - 'قرار دادن کد داخل `document.addEventListener("DOMContentLoaded", () => { ... })`'
+      - 'نوشتن `getElementById("#title")` به‌جای `getElementById("title")`'
+    answer: 3
+    explain: |
+      مشکل، زمان اجراست: کد قبل از ساخته شدن `<body>` اجرا می‌شود. `DOMContentLoaded` اجرای کد را تا آماده
+      شدن کامل درخت DOM عقب می‌اندازد، پس عنصر پیدا می‌شود. `defer` فقط روی اسکریپت‌های خارجی (با `src`)
+      اثر دارد و روی اسکریپت درون‌خطی نادیده گرفته می‌شود (رد گزینه‌ی ۱). نوع تعریف متغیر ربطی به وجود
+      عنصر ندارد (رد گزینه‌ی ۲)، و `getElementById` نام id را **بدون** `#` می‌گیرد؛ با `#` حتماً `null`
+      برمی‌گرداند (رد گزینه‌ی ۴).
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+    code: |
+      const heading = document.getElementById("title");
+      console.log(String(heading), typeof heading, heading.textContent);
+    options:
+      - out: "Hello World string Hello World"
+      - out: '<h1 id="title">Hello World</h1> string Hello World'
+      - out: "[object HTMLHeadingElement] object Hello World"
+      - out: "[object HTMLHeadingElement] element Hello World"
+    answer: 3
+    explain: |
+      `heading` یک شیء از کلاس `HTMLHeadingElement` است؛ پس `typeof` آن `"object"` است (`typeof` هیچ‌وقت
+      `"element"` برنمی‌گرداند؛ رد گزینه‌ی ۴). تبدیل یک شیء DOM به رشته با `String(...)` فقط
+      `[object HTMLHeadingElement]` می‌دهد، نه متن یا کد HTML آن (رد گزینه‌های ۱ و ۲). متن داخل عنصر را باید
+      از `textContent` خواند که `Hello World` است.
+  - level: easy
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title" class="big">Hello</h1>
+    code: |
+      const h = document.getElementById("title");
+      console.log(h.id, h.className, h.textContent, h.tagName);
+    options:
+      - out: "#title .big Hello h1"
+      - out: "title undefined Hello H1"
+      - out: 'title big <h1 id="title" class="big">Hello</h1> H1'
+      - out: "title big Hello H1"
+    answer: 4
+    explain: |
+      طبق اسلاید ۱۲، attributeها و متن propertyهای عنصر هستند: `id` مقدار `title` را بدون `#` می‌دهد و
+      `className` مقدار attribute `class` را بدون نقطه (رد گزینه‌ی ۱). property کلاس در DOM `className` نام
+      دارد و وجود دارد، پس `undefined` نمی‌دهد (رد گزینه‌ی ۲). `textContent` فقط متن را می‌دهد، نه کد HTML عنصر
+      (رد گزینه‌ی ۳)، و `tagName` نام تگ را با حروف بزرگ (`H1`) برمی‌گرداند.
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <!DOCTYPE html>
+      <html>
+      <head><title>Shop</title></head>
+      <body><h1>Home</h1></body>
+      </html>
+    code: |
+      console.log(document.title);
+      document.title = "Cart (2)";
+      console.log(document.title, document.querySelector("title").textContent);
+    options:
+      - out: ["Shop", "Cart (2) Cart (2)"]
+      - out: ["Home", "Cart (2) Shop"]
+      - out: ["Shop", "Cart (2) Shop"]
+      - out: ["undefined", "Cart (2) Cart (2)"]
+    answer: 1
+    explain: |
+      `document.title` متن عنصر `<title>` (عنوان زبانه‌ی مرورگر) را می‌دهد، نه متن `<h1>`؛ پس اول `Shop` چاپ
+      می‌شود (رد گزینه‌های ۲ و ۴). نوشتن در `document.title` خودِ عنصر `<title>` را به‌روز می‌کند؛ بنابراین
+      `textContent` آن هم `Cart (2)` می‌شود (رد گزینه‌ی ۳). سایت‌ها از همین ترفند برای نشان دادن تعداد پیام یا
+      سبد خرید در عنوان زبانه استفاده می‌کنند.
+  - level: easy
+    stem: کدام عبارت درباره‌ی شیء `document` نادرست است؟
+    options:
+      - 'نقطه‌ی ورود (entry point) برای دسترسی به درخت DOM است.'
+      - 'متدهایی مثل `getElementById` و `querySelector` برای پیدا کردن عنصرها دارد.'
+      - 'با آن می‌توان گره‌ها را ساخت، حذف یا به‌روزرسانی کرد.'
+      - 'بالاترین شیء مرورگر است و `window` یکی از propertyهای آن است.'
+    answer: 4
+    explain: |
+      رابطه برعکس است: طبق اسلاید ۱۲، `window` بالاترین شیء است و `document` یکی از فرزندان (propertyهای)
+      آن؛ یعنی `window.document` درست است، نه `document.window`. سه گزینه‌ی دیگر عیناً بندهای اسلاید ۱۳
+      هستند: نقطه‌ی ورود به DOM، متدهای پیدا کردن عنصر، و امکان ساختن، حذف و به‌روزرسانی گره‌ها.
+  - level: hard
+    stem: خروجی Console برای صفحه‌ی زیر کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="a">A</h1>
+      <script>
+        const a = document.getElementById("a");
+        const b = document.getElementById("b");
+        console.log(a !== null, b !== null);
+      </script>
+      <h2 id="b">B</h2>
+    code: |
+      console.log(document.getElementById("b").textContent);
+    options:
+      - out: ["true false", "B"]
+      - out: ["true true", "B"]
+      - out: ["false false", "B"]
+      - out: ["true false", "!! TypeError"]
+    answer: 1
+    explain: |
+      اسکریپت وسط صفحه وقتی اجرا می‌شود که `<h1>` ساخته شده ولی مرورگر هنوز به `<h2>` نرسیده؛ پس `a` پیدا
+      می‌شود و `b` نه (`true false`؛ رد گزینه‌های ۲ و ۳). اسکریپت دوم در انتهای `<body>` است و آن موقع `<h2>`
+      هم ساخته شده، پس متنش `B` چاپ می‌شود و خطایی رخ نمی‌دهد (رد گزینه‌ی ۴). هر اسکریپت فقط عنصرهای بالای
+      خودش را می‌بیند.
+  - level: medium
+    stem: کدام عبارت درباره‌ی رویدادهای `DOMContentLoaded` و `load` درست است؟
+    options:
+      - '`load` زودتر از `DOMContentLoaded` رخ می‌دهد، چون فقط منتظر HTML است.'
+      - '`DOMContentLoaded` وقتی رخ می‌دهد که HTML کامل parse شده و درخت DOM آماده است؛ `load` علاوه بر آن منتظر بارگیری منابعی مثل تصاویر و stylesheetها هم می‌ماند.'
+      - 'هر دو دقیقاً هم‌زمان رخ می‌دهند و فقط نامشان فرق دارد.'
+      - '`DOMContentLoaded` قبل از اجرای هر اسکریپتی در صفحه رخ می‌دهد.'
+    answer: 2
+    explain: |
+      `DOMContentLoaded` روی `document` به محض کامل شدن درخت DOM رخ می‌دهد و منتظر تصاویر نمی‌ماند؛ `load`
+      روی `window` تا بارگیری همه‌ی منابع صبر می‌کند، پس همیشه دیرتر است (رد گزینه‌های ۱ و ۳). اسکریپت‌های
+      معمولی صفحه هنگام parse اجرا می‌شوند، یعنی **قبل** از `DOMContentLoaded`، نه بعد از آن (رد گزینه‌ی ۴).
+  - level: hard
+    stem: |
+      کاربر بعد از بارگذاری صفحه‌ی زیر روی دکمه‌ی Change Text کلیک می‌کند. خروجی Console کدام است؟
+    check: dom-output
+    html: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <script>
+          const heading = document.getElementById("title");
+          document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("btn").addEventListener("click", () => {
+              heading.textContent = "Changed";
+              console.log("changed");
+            });
+          });
+        </script>
+      </head>
+      <body>
+        <h1 id="title">Hello World</h1>
+        <button id="btn">Change Text</button>
+      </body>
+      </html>
+    events:
+      - { type: click, target: "#btn" }
+    options:
+      - out: "changed"
+      - out: ""
+      - out: ["null", "changed"]
+      - out: "!! TypeError"
+    answer: 4
+    explain: |
+      دکمه داخل `DOMContentLoaded` جست‌وجو شده و پیدا می‌شود، پس listener ثبت می‌شود و کلیک بی‌اثر نیست (رد
+      گزینه‌ی ۲). اما `heading` **بیرون** از `DOMContentLoaded` و زمانی جست‌وجو شده که `<h1>` هنوز ساخته نشده
+      بود؛ پس مقدارش برای همیشه `null` مانده است. با کلیک، `heading.textContent = ...` روی `null` اجرا می‌شود
+      و `TypeError` می‌دهد، پس `changed` چاپ نمی‌شود (رد گزینه‌های ۱ و ۳).
+  - level: medium
+    stem: |
+      کدام تگ، یک فایل JavaScript **خارجی** را در `<head>` طوری بارگذاری می‌کند که اجرای آن تا پایان parse
+      شدن کل HTML عقب بیفتد؟
+    options:
+      - '`<script defer>console.log("hi")</script>`'
+      - '`<script src="app.js"></script>`'
+      - '`<script src="app.js" delay></script>`'
+      - '`<script src="app.js" defer></script>`'
+    answer: 4
+    explain: |
+      ویژگی `defer` روی اسکریپت خارجی (دارای `src`) باعث می‌شود فایل هم‌زمان با parse دانلود شود ولی بعد از
+      پایان parse (و قبل از `DOMContentLoaded`) اجرا شود. روی اسکریپت درون‌خطی، `defer` نادیده گرفته می‌شود
+      (رد گزینه‌ی ۱). `<script src>` معمولی parse را متوقف می‌کند و همان لحظه اجرا می‌شود (رد گزینه‌ی ۲)، و
+      ویژگی‌ای به نام `delay` در HTML وجود ندارد (رد گزینه‌ی ۳).

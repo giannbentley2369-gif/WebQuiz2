@@ -1,0 +1,1062 @@
+id: ch1-async-await
+title: "async/await و مقایسه‌ی روش‌های ناهمگام"
+slides: "Introduction to JS، اسلایدهای ۵۶ تا ۵۸"
+lesson: |
+  ### async/await چیست؟
+  Promiseها مشکل callback hell را حل کردند، اما زنجیره‌های طولانیِ `.then()` هنوز با کدِ «معمولی» فرق دارند: هر مرحله داخل یک تابعِ جداست و برای رساندن یک مقدار به مرحله‌ی بعد باید آن را `return` کنیم. استاندارد ES2017 (همان **ES8**) دو کلمه‌ی کلیدی **`async`** و **`await`** را اضافه کرد. اسلاید ۵۶ این‌ها را می‌گوید:
+
+  - **Built on top of Promises (ES8+)**: async/await روی همان Promiseها ساخته شده است؛ چیزی جای Promise نمی‌نشیند، فقط **syntax** (نحوِ نوشتن) تمیزتر می‌شود.
+  - **Lets you write async code that looks like sync code**: کدِ ناهمگام را طوری می‌نویسیم که **ظاهرش** شبیه کد همگام باشد (خط به خط، از بالا به پایین).
+  - **Use `async` before a function to return a Promise**: با گذاشتن `async` قبل از یک تابع، آن تابع یک Promise برمی‌گرداند.
+  - **Use `await` to pause until a Promise resolves**: با `await` اجرا را تا settled شدنِ یک Promise متوقف می‌کنیم.
+  - **Must be inside an `async` function**: `await` باید داخل یک تابع `async` باشد.
+
+  ::: analogy
+  در یک کافه قهوه سفارش داده‌ای و می‌گویی: «همین‌جا می‌ایستم تا قهوه‌ام آماده شود». این یعنی `await`. اما کافه به خاطر تو تعطیل نمی‌شود: باریستا به بقیه‌ی مشتری‌ها می‌رسد و صف جلو می‌رود. وقتی قهوه آماده شد، تو دقیقاً از همان جایی که ایستاده بودی ادامه می‌دهی. `await` فقط **تابعِ خودش** را متوقف می‌کند، نه کل برنامه را.
+  :::
+
+  ### کلمه‌ی کلیدی `async`
+  اگر قبل از تعریف یک تابع بنویسی `async`، صدا زدنِ آن تابع **همیشه یک Promise برمی‌گرداند**:
+  - اگر تابع مقداری را `return` کند، Promise با همان مقدار **fulfilled** می‌شود.
+  - اگر تابع خطا `throw` کند، Promise با همان خطا **rejected** می‌شود (برنامه crash نمی‌کند).
+  - اگر تابع خودش یک Promise برگرداند، Promiseِ تابع از آن **پیروی** می‌کند (Promise داخل Promise نمی‌شود).
+
+  ```js
+  async function greet() {
+    return "hi";
+  }
+
+  const result = greet();
+  console.log(result);                // Promise { 'hi' }
+  result.then((v) => console.log(v)); // hi
+  ```
+
+  Node.js یک Promiseِ fulfilled را به شکل `Promise { 'hi' }` چاپ می‌کند؛ کنسول مرورگر همین را به شکل `Promise {<fulfilled>: 'hi'}` نشان می‌دهد.
+
+  ```js
+  async function fail() {
+    throw new Error("oops");
+  }
+
+  fail().catch((err) => console.log("caught:", err.message)); // caught: oops
+  ```
+
+  `async` را می‌توان روی همه‌ی شکل‌های تابع گذاشت؛ از جمله **async arrow function** (تابع پیکانیِ ناهمگام). دقت کن که در arrow function، کلمه‌ی `async` **قبل از پرانتزِ پارامترها** می‌آید:
+
+  ```js
+  async function a() {}            // function declaration
+  const b = async function () {};  // function expression
+  const c = async () => {};        // arrow function
+  const d = async (x) => x * 2;    // arrow function with implicit return: d(4) gives a Promise of 8
+  const obj = { async load() {} }; // object method
+  class Api { async get() {} }     // class method
+  ```
+
+  ### کلمه‌ی کلیدی `await`
+  `await` را قبل از یک Promise می‌نویسیم، یعنی «همین‌جا صبر کن تا این Promise settled شود»:
+  - اگر Promise **fulfilled** شود، `await` **مقدارِ** آن را برمی‌گرداند (Promise را «باز» می‌کند).
+  - اگر Promise **rejected** شود، `await` همان‌جا خطا را **throw** می‌کند؛ برای همین `try...catch` با آن کار می‌کند.
+  - اگر بعد از `await` مقداری بیاید که Promise نیست (مثل `await 5`)، همان مقدار را برمی‌گرداند؛ ولی باز هم تابع لحظه‌ای مکث می‌کند و ادامه‌اش ناهمگام اجرا می‌شود.
+
+  ```js
+  function wait(ms, value) {
+    return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+  }
+
+  async function main() {
+    console.log("start");
+    const a = await wait(1000, 10); // main() pauses here for 1 second
+    console.log("a =", a);          // a = 10
+    const b = await 5;              // not a Promise: b is just 5
+    console.log("b =", b);          // b = 5
+    return a + b;
+  }
+
+  main().then((sum) => console.log("sum =", sum)); // sum = 15
+  ```
+
+  همین تابع را فقط با Promise و `then` هم می‌شد نوشت (خروجی دقیقاً همان است). async/await همین کار را تمیزتر و «خطی» می‌نویسد:
+
+  ```js
+  function main() {
+    console.log("start");
+    return wait(1000, 10).then((a) => {
+      console.log("a =", a);
+      const b = 5;
+      console.log("b =", b);
+      return a + b;
+    });
+  }
+  ```
+
+  ### `await` فقط داخل تابع `async`
+  اگر `await` را داخل یک تابع **معمولی** بنویسی، خطای **SyntaxError** (خطای نحوی) می‌گیری:
+
+  ```js
+  function load() {
+    const data = await fetchData();
+    // SyntaxError: await is only valid in async functions and the top level bodies of modules
+  }
+  ```
+
+  SyntaxError هنگام خواندنِ کد و **قبل از اجرای برنامه** پیدا می‌شود؛ پس در این حالت **هیچ خطی** از آن فایل اجرا نمی‌شود، حتی خط‌های قبل از این تابع. راه حل: `async function load() { ... }`.
+
+  ::: info بیشتر بدانیم: top-level await
+  همان‌طور که پیام خطا می‌گوید، `await` در **سطح بالای** (top level؛ یعنی بیرون از هر تابعی) یک **ES module** هم مجاز است: در مرورگر داخل `<script type="module">` و در Node.js در فایل‌های `.mjs` (یا پروژه‌ای که در `package.json` مقدار `"type": "module"` دارد). در یک `<script>` معمولیِ مرورگر، `await` بیرون از تابع async خطای SyntaxError می‌دهد. (نسخه‌های جدید Node.js فایل `.js`ی را که top-level await دارد، اگر نوعش در `package.json` مشخص نشده باشد، خودکار ES module فرض می‌کنند.)
+
+  ```js title=main.mjs
+  const value = await Promise.resolve(42); // allowed: top level of an ES module
+  console.log(value); // 42
+  ```
+  :::
+
+  ### `await` فقط همان تابع را متوقف می‌کند
+  این مهم‌ترین نکته‌ی async/await است:
+
+  ```js
+  function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function job() {
+    console.log("2: job started");
+    await wait(500);
+    console.log("4: job finished");
+  }
+
+  console.log("1: before");
+  job();
+  console.log("3: after calling job()");
+  // 1: before
+  // 2: job started
+  // 3: after calling job()
+  // 4: job finished
+  ```
+
+  1. کدِ تابع async تا **اولین `await`** مثل یک تابع معمولی، همگام اجرا می‌شود (`2`).
+  2. به `await` که رسید، `job` متوقف می‌شود و همان لحظه یک Promiseِ pending به صدازننده برمی‌گرداند.
+  3. صدازننده (اینجا کد اصلی) **منتظر نمی‌ماند** و ادامه می‌دهد (`3`).
+  4. نیم ثانیه بعد، `job` دقیقاً از همان خط ادامه پیدا می‌کند (`4`).
+
+  اگر بخواهی صدازننده هم صبر کند، باید خودش بنویسد `await job()` (پس خودش هم باید async باشد) یا از `job().then(...)` استفاده کند.
+
+  ### کد اسلاید ۵۶ و دو مشکلش
+  ```js title=asyncawait.js
+  async function getData() {
+    try {
+      const result = await fetchData();
+      console.log(result);
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  }
+  ```
+
+  این کد ساختارِ درستِ async/await را نشان می‌دهد: `await` داخل تابع `async` و داخل `try...catch`. ولی اگر همین را به‌تنهایی اجرا کنی، **هیچ خروجی‌ای ندارد**:
+  1. `getData` فقط **تعریف** شده و هیچ‌جا صدا زده نشده است؛ تعریف کردنِ یک تابع، آن را اجرا نمی‌کند.
+  2. `fetchData` در این تکه کد تعریف نشده است. اگر `getData()` را صدا بزنیم، `fetchData()` خطای `ReferenceError` می‌دهد که داخل `try` رخ داده و `catch` آن را می‌گیرد؛ پس چاپ می‌شود `Error: ReferenceError: fetchData is not defined`. اگر هم `fetchData` اسلاید ۵۵ را (که یک **شیء** Promise است، نه تابع) بالای آن بگذاریم، `fetchData()` خطای `TypeError: fetchData is not a function` می‌دهد که باز هم `catch` آن را چاپ می‌کند.
+
+  نسخه‌ی درست و قابل اجرا: `fetchData` را **تابعی که Promise برمی‌گرداند** تعریف می‌کنیم و `getData()` را صدا می‌زنیم:
+
+  ```js
+  function fetchData() {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve("Data received!");
+        // reject("Error occurred!");
+      }, 1000);
+    });
+  }
+
+  async function getData() {
+    try {
+      const result = await fetchData();
+      console.log(result);          // "Data received!" (after 1 sec)
+    } catch (err) {
+      console.error("Error:", err); // runs only if fetchData rejects
+    }
+  }
+
+  getData();
+  ```
+
+  راه دیگر این است که `fetchData` اسلاید ۵۵ را نگه داریم و بنویسیم `await fetchData` (**بدون پرانتز**)؛ چون `await` را می‌توان مستقیم روی خودِ شیء Promise نوشت. اگر در `fetchData` به جای `resolve` خطِ `reject("Error occurred!")` اجرا شود، `await` خطا را throw می‌کند، اجرا به `catch` می‌پرد و چاپ می‌شود: `Error: Error occurred!`.
+
+  ::: note `console.error` چیست؟
+  `console.error` مثل `console.log` چاپ می‌کند، ولی در «جریان خطا» (stderr)؛ کنسول مرورگر آن را قرمز نشان می‌دهد. در تست‌های این کتاب، برای سادگی داخل `catch` از `console.log` استفاده می‌کنیم.
+  :::
+
+  ### BEST PRACTICE: `await` را داخل `try...catch` بگذار
+  اسلاید ۵۶: «Always wrap `await` calls in `try...catch` to handle errors gracefully». چون Promiseِ rejected در خطِ `await` مثل یک `throw` عمل می‌کند، اگر `try...catch` نباشد خطا از تابع بیرون می‌رود، Promiseِ تابعِ async rejected می‌شود و اگر کسی آن را catch نکند، همان **unhandled rejection** درس Promise رخ می‌دهد. با `finally` هم می‌توان کارِ «جمع‌وجور کردن» را انجام داد:
+
+  ```js
+  function loadUser(ok) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (ok) resolve({ name: "Sara" });
+        else reject(new Error("User not found"));
+      }, 500);
+    });
+  }
+
+  async function showUser() {
+    console.log("Loading...");
+    try {
+      const user = await loadUser(false);  // this Promise rejects
+      console.log("Hello,", user.name);    // skipped
+    } catch (err) {
+      console.log("Failed:", err.message); // Failed: User not found
+    } finally {
+      console.log("Hide spinner");         // always runs
+    }
+  }
+
+  showUser();
+  ```
+
+  راه دیگر این است که خطا را بیرونِ تابع بگیریم: `showUser().catch(...)`؛ چون تابع async یک Promise برمی‌گرداند.
+
+  ### `return` یا `return await`؟
+  ```js
+  function failLater() {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error("late")), 100);
+    });
+  }
+
+  async function a() {
+    try {
+      return failLater();       // returns the Promise: this try...catch never sees its rejection
+    } catch (err) {
+      return "caught in a";
+    }
+  }
+
+  async function b() {
+    try {
+      return await failLater(); // waits here, so the rejection is thrown inside try
+    } catch (err) {
+      return "caught in b";
+    }
+  }
+
+  a().then((v) => console.log("a:", v)).catch((err) => console.log("a rejected:", err.message));
+  b().then((v) => console.log("b:", v)).catch((err) => console.log("b rejected:", err.message));
+  // a rejected: late
+  // b: caught in b
+  ```
+
+  در `a`، تابع **قبل از** rejected شدنِ Promise تمام شده و از بلوک `try` بیرون رفته است؛ پس `catch` آن هرگز اجرا نمی‌شود و Promiseِ `a()` همراه با Promiseِ برگردانده‌شده rejected می‌شود. در `b`، `await` تابع را داخل `try` نگه می‌دارد تا Promise تمام شود؛ rejection همان‌جا throw می‌شود و `catch` آن را می‌گیرد. خلاصه: اگر می‌خواهی خطای یک Promise را با `try...catch` همان تابع بگیری، باید آن را `await` کنی.
+
+  ### مقایسه‌ی سه روش (اسلاید ۵۷)
+  | | Callbacks | Promises | async/await |
+  |---|---|---|---|
+  | چیست؟ | تابعی را پاس می‌دهیم تا بعداً اجرا شود (Pass a function to run later) | نماینده‌ی یک مقدار آینده با وضعیت‌هایش (Represent a future value with states) | روی Promiseها ساخته شده، با syntax تمیزتر (Built on Promises, but cleaner syntax) |
+  | شکل کد | تودرتو؛ خطر «callback hell» | زنجیره با `.then()` / `.catch()` | شبیه کد همگام؛ خواندنش آسان‌تر (looks synchronous, easier to read) |
+  | مدیریت خطا | **دستی** (manual): در هر سطح خودمان خطا را بررسی می‌کنیم | `.catch()` | `try...catch` |
+
+  یک کار (گرفتن کاربر و بعد سفارش‌هایش) به سه روش. در روش callback، قرارداد رایج Node.js این است که اولین پارامترِ callback خطا باشد (**error-first callback**) و خودمان در هر سطح آن را بررسی کنیم؛ این همان مدیریت خطای «دستی» است:
+
+  ```js
+  // 1) Callbacks: errors are checked by hand at every level
+  function getUserCb(id, callback) {
+    setTimeout(() => callback(null, { id: id, name: "Sara" }), 300);
+  }
+  function getOrdersCb(user, callback) {
+    setTimeout(() => callback(null, ["book", "pen"]), 300);
+  }
+
+  getUserCb(1, (err, user) => {
+    if (err) return console.log("Error:", err);
+    getOrdersCb(user, (err, orders) => {
+      if (err) return console.log("Error:", err);
+      console.log(orders); // [ 'book', 'pen' ]
+    });
+  });
+  ```
+
+  در دو روش بعدی، `getUser` و `getOrders` همان توابعِ Promise‌برگردانِ درس «Promise» هستند:
+
+  ```js
+  // 2) Promises: a flat chain and a single .catch()
+  getUser(1)
+    .then((user) => getOrders(user))
+    .then((orders) => console.log(orders)) // [ 'book', 'pen' ]
+    .catch((err) => console.log("Error:", err));
+
+  // 3) async/await: looks like synchronous code, errors with try...catch
+  async function showOrders() {
+    try {
+      const user = await getUser(1);
+      const orders = await getOrders(user);
+      console.log(orders); // [ 'book', 'pen' ]
+    } catch (err) {
+      console.log("Error:", err);
+    }
+  }
+  showOrders();
+  ```
+
+  ### مشکلات و دام‌های رایج (اسلاید ۵۸)
+
+  #### ۱. Callback hell
+  «Callback hell: deeply nested, hard-to-read code»؛ callbackهای تودرتوی عمیق که خواندن، تغییر دادن و مدیریت خطایشان سخت است (نمونه‌ی هرمی‌اش را در درس‌های قبل دیدیم). راه حل: Promise یا async/await، یا شکستن منطق به توابع کوچک‌تر.
+
+  #### ۲. فراموش کردن `await`
+  «Forgetting `await`: unexpected Promises instead of values»:
+
+  ```js
+  function getUser() {
+    return new Promise((resolve) => setTimeout(() => resolve({ name: "Ali" }), 500));
+  }
+
+  async function main() {
+    const user = getUser();        // forgot await!
+    console.log(user);             // Promise { <pending> }
+    console.log(user.name);        // undefined (a Promise has no "name" property)
+    const realUser = await getUser();
+    console.log(realUser.name);    // Ali
+  }
+
+  main();
+  ```
+
+  #### ۳. rejectionهای catch‌نشده (Uncaught rejections)
+  «Uncaught rejections: crashes if `.catch()` or `try...catch` missing»:
+
+  ```js
+  async function load() {
+    throw new Error("Network down");
+  }
+
+  load(); // no try...catch and no .catch(): Node.js crashes, the browser logs "Uncaught (in promise)"
+  // fix: load().catch((err) => console.log("Failed:", err.message));
+  ```
+
+  #### ۴. Race condition (شرایط مسابقه)
+  «Race conditions: multiple async tasks finish in the wrong order». وقتی چند کار async هم‌زمان در جریان‌اند، ترتیبِ **تمام شدنشان** به سرعتِ هر کدام بستگی دارد، نه به ترتیبِ شروعشان. اگر این کارها روی یک متغیرِ مشترک بنویسند، نتیجه به این بستگی پیدا می‌کند که «چه کسی آخر رسید»:
+
+  ```js
+  let shown = "";
+
+  function search(query, ms) {
+    return new Promise((resolve) => setTimeout(() => resolve("results for " + query), ms));
+  }
+
+  async function onType(query, ms) {
+    const results = await search(query, ms);
+    shown = results; // whoever finishes LAST wins
+  }
+
+  onType("ab", 300);  // older request, slow answer
+  onType("abc", 100); // newer request, fast answer
+  setTimeout(() => console.log(shown), 500); // results for ab  (a stale result!)
+  ```
+
+  کاربر «abc» را تایپ کرده، ولی نتیجه‌ی کهنه‌ی «ab» روی صفحه مانده است. نمونه‌ی دیگری را در فعالیت کلاسی اسلاید ۶۰ (درس بعد) می‌بینیم. راه‌حل‌های رایج: برای هر درخواست یک شماره نگه داریم و نتیجه‌ی درخواست‌های قدیمی را نادیده بگیریم، یا کارها را پشت سر هم `await` کنیم.
+
+  #### ۵. `await`های پشت سر هم در حلقه (Blocking awaits in loops)
+  «Blocking awaits in loops: slow performance vs running in parallel»:
+
+  ```js
+  function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function sequential() {
+    const start = Date.now();
+    for (const ms of [300, 300, 300]) {
+      await wait(ms); // each wait starts only after the previous one has finished
+    }
+    console.log("sequential:", Date.now() - start, "ms"); // about 900 ms
+  }
+
+  async function parallel() {
+    const start = Date.now();
+    await Promise.all([wait(300), wait(300), wait(300)]); // all three start together
+    console.log("parallel:", Date.now() - start, "ms");   // about 300 ms
+  }
+
+  sequential().then(parallel);
+  ```
+
+  وقتی کارها **به هم وابسته‌اند** (هر مرحله به نتیجه‌ی مرحله‌ی قبل نیاز دارد)، `await` کردنِ پشت سر هم لازم است. ولی وقتی **مستقل‌اند**، همه را با هم شروع کن و با `await Promise.all([...])` منتظر همه بمان.
+
+  ::: warning `forEach` منتظر نمی‌ماند
+  ```js
+  async function main() {
+    [1, 2, 3].forEach(async (n) => {
+      await wait(100);
+      console.log(n);
+    });
+    console.log("done"); // printed FIRST: forEach does not wait for async callbacks
+  }
+  main();
+  // done
+  // 1
+  // 2
+  // 3
+  ```
+  `forEach` Promiseهایی را که callbackهای async برمی‌گردانند نادیده می‌گیرد. برای صبر کردنِ پشت سر هم از `for...of` و برای اجرای هم‌زمان از `Promise.all` همراه با `map` استفاده کن.
+  :::
+
+  #### ۶. قاطی کردن کد همگام و ناهمگام (Mixing sync & async code)
+  «Mixing sync & async code: bugs from assumptions about timing»؛ یعنی باگ‌هایی که از فرضِ اشتباه درباره‌ی «زمان» می‌آیند:
+
+  ```js
+  let user;
+  setTimeout(() => {
+    user = { name: "Sara" };
+  }, 100);
+
+  console.log(user);      // undefined: the timer has not run yet
+  console.log(user.name); // TypeError: Cannot read properties of undefined (reading 'name')
+  ```
+
+  کدِ همگام منتظر کارهای ناهمگام نمی‌ماند؛ هر چیزی که به نتیجه‌ی یک کار ناهمگام نیاز دارد باید **بعد از آن** اجرا شود: داخل `then`، داخل callback، یا بعد از `await`.
+
+  ::: tip نکته
+  - `async` یعنی «این تابع همیشه Promise برمی‌گرداند»؛ `await` یعنی «اینجا صبر کن تا Promise settled شود و مقدارش را بده».
+  - کدِ قبل از اولین `await` در تابع async همگام اجرا می‌شود؛ از `await` به بعد، بقیه‌ی تابع بعداً ادامه می‌یابد.
+  - چند کار مستقل داری؟ اول همه را شروع کن، بعد `await Promise.all([...])`.
+  - هر جا `await` نوشتی، یا داخل `try...catch` باشد، یا Promiseِ تابع را بیرون با `.catch()` بگیر.
+  :::
+
+  ::: trap دام تستی
+  - فراموش کردن `await`: به جای مقدار، `Promise { <pending> }` می‌گیری.
+  - `await` در تابع معمولی (غیر async): `SyntaxError`؛ و چون این خطا قبل از اجرا پیدا می‌شود، **هیچ** خطی از فایل اجرا نمی‌شود.
+  - `try...catch` فقط خطای Promiseهایی را می‌گیرد که داخل همان `try`، `await` شده‌اند. `return promise` (بدون `await`) و `Promise.reject(...)` بدون `await` از دستِ `catch` در می‌روند.
+  - `await` کل برنامه را متوقف نمی‌کند، فقط همان تابع async را؛ کدِ بعد از صدا زدنِ تابع زودتر اجرا می‌شود.
+  - تعریف کردنِ یک تابع async آن را اجرا نمی‌کند (کد اسلاید ۵۶ به‌تنهایی خروجی ندارد).
+  - `forEach` با callbackِ async منتظر نمی‌ماند.
+  :::
+
+  ::: summary
+  - async/await (ES2017 = ES8) روی Promiseها ساخته شده و کدِ ناهمگام را شبیه کد همگام می‌کند.
+  - تابع `async` همیشه Promise برمی‌گرداند: `return` یعنی fulfilled و `throw` یعنی rejected.
+  - `await` فقط داخل تابع `async` (یا سطح بالای ES module)؛ مقدارِ Promise را می‌دهد و اگر Promise rejected شود، throw می‌کند.
+  - مقایسه‌ی اسلاید ۵۷: callbacks (تودرتو، خطای دستی)، Promises (زنجیره، `.catch()`)، async/await (خوانا، `try...catch`).
+  - دام‌های اسلاید ۵۸: callback hell، فراموش کردن `await`، rejectionِ catch‌نشده، race condition، `await` پشت سر هم در حلقه (حدود ۹۰۰ میلی‌ثانیه در برابر ۳۰۰ با `Promise.all`)، و قاطی کردن کد همگام و ناهمگام.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۶، کدام جمله درباره‌ی `async`/`await` درست است؟
+    options:
+      - 'روی Promiseها ساخته شده (ES8+) و اجازه می‌دهد کد ناهمگام را شبیه کد همگام بنویسیم'
+      - 'جایگزین کامل Promiseهاست و در پشت صحنه هیچ Promiseی نمی‌سازد'
+      - 'کد را در یک thread جداگانه اجرا می‌کند تا برنامه‌ی اصلی متوقف نشود'
+      - 'فقط در Node.js کار می‌کند و مرورگرها از آن پشتیبانی نمی‌کنند'
+    answer: 1
+    explain: |
+      اسلاید ۵۶: «Built on top of Promises (ES8+)» و «Lets you write async code that looks like sync code». گزینه‌ی ۲ برعکس است: تابع async خودش Promise برمی‌گرداند و `await` روی Promise کار می‌کند. گزینه‌ی ۳ غلط است، چون JavaScript تک‌رشته‌ای است و async/await هیچ thread جدیدی نمی‌سازد. گزینه‌ی ۴ هم غلط است؛ async/await بخشی از خودِ زبان (ES2017) است و در همه‌ی مرورگرهای امروزی کار می‌کند.
+
+  - level: easy
+    stem: |
+      صدا زدنِ یک تابعِ `async` همیشه چه چیزی برمی‌گرداند؟
+    options:
+      - 'همان مقداری که با `return` برگردانده شده، بدون هیچ تغییری'
+      - 'یک Promise'
+      - '`undefined`، مگر اینکه داخل تابع `await` نوشته شده باشد'
+      - 'یک تابع callback که باید آن را صدا بزنیم'
+    answer: 2
+    explain: |
+      اسلاید ۵۶: «Use async before a function to return a Promise». مقدارِ return‌شده داخل Promise قرار می‌گیرد (Promise با آن fulfilled می‌شود) و برای رسیدن به آن باید `await` یا `.then()` بنویسیم؛ پس گزینه‌ی ۱ غلط است. گزینه‌ی ۳ غلط است، چون تابع async حتی بدون `await` هم Promise برمی‌گرداند. گزینه‌ی ۴ هم ربطی به async ندارد.
+
+  - level: easy
+    stem: |
+      کلمه‌ی `await` را کجا می‌توان نوشت؟
+    options:
+      - 'هر جای برنامه؛ هیچ محدودیتی ندارد'
+      - 'فقط داخل callbackِ متد `.then()`'
+      - 'داخل تابع `async`، یا در سطح بالای (top level) یک ES module'
+      - 'فقط داخل بلوک `try`'
+    answer: 3
+    explain: |
+      اسلاید ۵۶: «Must be inside an async function». تنها استثنا top-level await در ES moduleهاست (مثلاً `<script type="module">` یا فایل `.mjs`). گزینه‌ی ۱ غلط است؛ `await` در تابع معمولی SyntaxError می‌دهد. گزینه‌ی ۲ غلط است؛ callbackِ `.then()` اگر async نباشد اجازه‌ی `await` ندارد. گزینه‌ی ۴ هم غلط است؛ `try...catch` فقط یک **توصیه** است (BEST PRACTICE)، نه شرطِ نوشتنِ `await`.
+
+  - level: easy
+    stem: |
+      توصیه‌ی BEST PRACTICE اسلاید ۵۶ کدام است؟
+    options:
+      - 'بعد از هر `await` یک `setTimeout` بگذار تا برنامه قفل نشود'
+      - 'هیچ‌وقت `await` را در فایلی که `.then()` دارد به کار نبر'
+      - 'به جای `await` از callback استفاده کن تا کد سریع‌تر شود'
+      - 'فراخوانی‌های `await` را همیشه داخل `try...catch` قرار بده تا خطاها به‌خوبی مدیریت شوند'
+    answer: 4
+    explain: |
+      اسلاید ۵۶: «Always wrap await calls in try...catch to handle errors gracefully»؛ چون اگر Promiseِ await‌شده rejected شود، `await` خطا را throw می‌کند و بدون `try...catch` تابع async با خطا تمام می‌شود. گزینه‌های ۱ تا ۳ پایه‌ای در اسلایدها ندارند: `setTimeout` ربطی به قفل شدن ندارد، استفاده‌ی هم‌زمان از `await` و `.then()` مجاز است و callback هم سریع‌تر از `await` نیست.
+
+  - level: easy
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «طبق اسلاید ۵۷، مدیریت خطا در callbackها ......، در Promiseها با ...... و در async/await با ...... انجام می‌شود.»
+    options:
+      - '`try...catch` / دستی (manual) / `.catch()`'
+      - 'دستی (manual) / `.catch()` / `try...catch`'
+      - '`.catch()` / `try...catch` / دستی (manual)'
+      - 'دستی (manual) / `try...catch` / `.catch()`'
+    answer: 2
+    explain: |
+      اسلاید ۵۷: «Error handling: callbacks → manual, promises → .catch(), async → try...catch». در callbackها سازوکار آماده‌ای نیست و باید در هر سطح خودمان خطا را بررسی کنیم (مثلاً پارامتر `err` در error-first callback)؛ Promiseها خطا را به `.catch()` می‌رسانند؛ و در async/await، `await` خطا را throw می‌کند و `try...catch` آن را می‌گیرد. بقیه‌ی گزینه‌ها جای این سه را جابه‌جا کرده‌اند.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function getNumber() {
+        return 42;
+      }
+
+      const result = getNumber();
+      console.log(result instanceof Promise);
+      result.then((value) => console.log(value));
+    options:
+      - out: ["false", "42"]
+      - out: ["42", "42"]
+      - out: ["true", "42"]
+      - out: ["true", "Promise { 42 }"]
+    answer: 3
+    explain: |
+      تابع async همیشه یک Promise برمی‌گرداند، پس `result instanceof Promise` برابر `true` است. مقدارِ return‌شده (`42`) مقدارِ fulfilled این Promise است و `then` همان را دریافت می‌کند. گزینه‌های ۱ و ۲ فکر کرده‌اند `return 42` مستقیماً عدد برمی‌گرداند؛ گزینه‌ی ۴ فکر کرده `then` خودِ Promise را دریافت می‌کند.
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۵۸، نتیجه‌ی «فراموش کردن `await`» چیست؟
+    options:
+      - 'به جای مقدار مورد انتظار، یک Promise دریافت می‌کنیم'
+      - 'برنامه بلافاصله با SyntaxError متوقف می‌شود'
+      - 'تابع async دیگر Promise برنمی‌گرداند'
+      - 'کار ناهمگام اصلاً شروع نمی‌شود'
+    answer: 1
+    explain: |
+      اسلاید ۵۸: «Forgetting await: unexpected Promises instead of values». بدون `await` متغیر خودِ Promise را نگه می‌دارد (مثلاً `Promise { <pending> }`)، نه مقدارِ نهایی را. ننوشتنِ `await` خطای نحوی نیست (گزینه‌ی ۲)، روی خروجی تابع async اثری ندارد (گزینه‌ی ۳) و کار ناهمگام هم شروع می‌شود؛ فقط کسی منتظرش نمی‌ماند (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      کد اسلاید ۵۶ را (با `console.log` به جای `console.error`) به‌تنهایی در یک فایل اجرا می‌کنیم. خروجی کدام است؟
+    check: output
+    code: |
+      async function getData() {
+        try {
+          const result = await fetchData();
+          console.log(result);
+        } catch (err) {
+          console.log("Error:", err.message);
+        }
+      }
+    options:
+      - out: "!! ReferenceError"
+      - out: ""
+      - out: "Error: fetchData is not defined"
+      - out: "Data received!"
+    answer: 2
+    explain: |
+      این کد فقط تابع `getData` را **تعریف** می‌کند و هیچ‌جا آن را صدا نمی‌زند؛ پس هیچ خطی از بدنه‌اش اجرا نمی‌شود و خروجی‌ای نداریم. اگر `getData()` را صدا می‌زدیم، چون `fetchData` تعریف نشده، `ReferenceError` داخل `try` رخ می‌داد و `catch` چاپ می‌کرد `Error: fetchData is not defined` (گزینه‌ی ۳)؛ یعنی حتی در آن حالت هم برنامه crash نمی‌کرد (گزینه‌ی ۱). گزینه‌ی ۴ هم به یک `fetchData` واقعی نیاز داشت.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function getValue() {
+        return Promise.resolve("inner");
+      }
+
+      getValue().then((v) => console.log(v));
+    options:
+      - out: "Promise { 'inner' }"
+      - out: "Promise { <pending> }"
+      - out: "inner"
+      - out: "undefined"
+    answer: 3
+    explain: |
+      اگر تابع async خودش یک Promise برگرداند، Promiseِ تابع **از آن پیروی می‌کند** و با همان مقدار fulfilled می‌شود؛ Promise داخل Promise نمی‌شود. پس `then` مقدار `"inner"` را می‌گیرد. گزینه‌های ۱ و ۲ فکر کرده‌اند `v` خودِ Promiseِ داخلی است؛ گزینه‌ی ۴ هم پایه‌ای ندارد، چون تابع مقداری را return کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function getUser() {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve({ name: "Ali" }), 100);
+        });
+      }
+
+      async function main() {
+        const user = getUser();
+        console.log(user);
+        console.log(user.name);
+      }
+
+      main();
+    options:
+      - out: ["{ name: 'Ali' }", "Ali"]
+      - out: ["Promise { <pending> }", "undefined"]
+      - out: ["Promise { <pending> }", "!! TypeError"]
+      - out: ["Promise { { name: 'Ali' } }", "Ali"]
+    answer: 2
+    explain: |
+      `await` فراموش شده، پس `user` خودِ Promise است که هنوز (تا ۱۰۰ میلی‌ثانیه‌ی بعد) pending است و Node.js آن را `Promise { <pending> }` چاپ می‌کند. Promise خاصیتی به نام `name` ندارد، پس `user.name` برابر `undefined` است؛ خطا هم نمی‌دهد، چون خودِ `user` تعریف شده است (برخلاف گزینه‌ی ۳). گزینه‌ی ۱ رفتارِ کدی است که `await getUser()` داشته باشد؛ گزینه‌ی ۴ فکر کرده Promise از قبل fulfilled شده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function job() {
+        console.log("job start");
+        await null;
+        console.log("job end");
+      }
+
+      console.log("before");
+      job();
+      console.log("after");
+    options:
+      - out: ["before", "job start", "job end", "after"]
+      - out: ["before", "after", "job start", "job end"]
+      - out: ["job start", "before", "after", "job end"]
+      - out: ["before", "job start", "after", "job end"]
+    answer: 4
+    explain: |
+      کدِ تابع async تا اولین `await` همگام اجرا می‌شود، پس بعد از `before` بلافاصله `job start` می‌آید. در `await`، تابع `job` متوقف می‌شود (حتی اگر منتظرِ `null` باشد) و کنترل به صدازننده برمی‌گردد که `after` را چاپ می‌کند؛ ادامه‌ی `job` بعد از تمام شدن کد همگام اجرا می‌شود: `job end`. گزینه‌ی ۱ فکر کرده `await` کل برنامه را نگه می‌دارد؛ گزینه‌ی ۲ فکر کرده تابع async از همان اول ناهمگام اجرا می‌شود؛ گزینه‌ی ۳ ترتیب صدا زدن‌ها را رعایت نکرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function fail() {
+        throw new Error("oops");
+      }
+
+      fail().catch((err) => console.log("caught:", err.message));
+      console.log("next");
+    options:
+      - out: ["next", "caught: oops"]
+      - out: ["caught: oops", "next"]
+      - out: "!! Error"
+      - out: ["next", "!! Error"]
+    answer: 1
+    explain: |
+      `throw` داخل تابع async برنامه را crash نمی‌کند؛ Promiseی را که تابع برمی‌گرداند rejected می‌کند و `.catch` آن را می‌گیرد (گزینه‌های ۳ و ۴ غلط‌اند). callbackِ `.catch` هم مثل همه‌ی callbackهای Promise ناهمگام است، پس اول `next` چاپ می‌شود و بعد `caught: oops` (گزینه‌ی ۲ این را رعایت نکرده است).
+
+  - level: medium
+    stem: |
+      نسخه‌ی اصلاح‌شده‌ی کد اسلاید ۵۶ را در حالتی اجرا می‌کنیم که `fetchData` rejected می‌شود. خروجی کدام است؟
+    check: output
+    code: |
+      function fetchData() {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            reject("Error occurred!");
+          }, 100);
+        });
+      }
+
+      async function getData() {
+        try {
+          const result = await fetchData();
+          console.log("result:", result);
+        } catch (err) {
+          console.log("Error:", err);
+        }
+        console.log("done");
+      }
+
+      getData();
+    options:
+      - out: ["result: Error occurred!", "done"]
+      - out: "Error: Error occurred!"
+      - out: ["Error: Error occurred!", "done"]
+      - out: "!! UnhandledPromiseRejection"
+    answer: 3
+    explain: |
+      Promise rejected می‌شود، پس `await fetchData()` خطا را همان‌جا throw می‌کند؛ خطِ `result:` اجرا نمی‌شود و اجرا به `catch` می‌پرد: `Error: Error occurred!`. بعد از `try...catch`، اجرای تابع به‌طور عادی ادامه پیدا می‌کند و `done` هم چاپ می‌شود (گزینه‌ی ۲ این را فراموش کرده است). گزینه‌ی ۱ فکر کرده `await` دلیلِ rejection را مثل یک مقدار برمی‌گرداند؛ گزینه‌ی ۴ غلط است، چون خطا با `try...catch` مدیریت شده است.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: SyntaxError
+    code: |
+      function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function start() {
+        await wait(100);
+        console.log("started");
+      }
+
+      start();
+    options:
+      - line: 2
+      - line: 10
+      - line: 0
+      - line: 6
+    answer: 4
+    explain: |
+      `await` فقط داخل تابع `async` مجاز است و `start` یک تابع معمولی است؛ پس خط ۶ خطای `SyntaxError: await is only valid in async functions and the top level bodies of modules` می‌دهد. این خطا هنگام خواندنِ (parse) فایل پیدا می‌شود، یعنی هیچ خطی اجرا نمی‌شود؛ نه خط ۱۰ (`start()`) به اجرا می‌رسد و نه خط ۲. برای رفع خطا کافی است بنویسیم `async function start()`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function f() {
+        const x = await 5;
+        console.log("x =", x);
+      }
+
+      f();
+      console.log("sync");
+    options:
+      - out: ["sync", "x = 5"]
+      - out: ["x = 5", "sync"]
+      - out: ["sync", "x = Promise { 5 }"]
+      - out: "!! SyntaxError"
+    answer: 1
+    explain: |
+      `await` روی مقداری که Promise نیست، همان مقدار را برمی‌گرداند (`x` برابر `5` است، نه یک Promise؛ پس گزینه‌ی ۳ غلط است). اما تابع باز هم در `await` مکث می‌کند و ادامه‌اش بعد از کد همگام اجرا می‌شود؛ پس اول `sync` و بعد `x = 5` (گزینه‌ی ۲ غلط است). نوشتنِ `await` روی یک مقدار معمولی هم مجاز است و خطای نحوی ندارد (گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function task(name) {
+        return new Promise((resolve) => {
+          console.log("start", name);
+          setTimeout(() => {
+            console.log("end", name);
+            resolve(name);
+          }, 100);
+        });
+      }
+
+      async function main() {
+        for (const name of ["A", "B"]) {
+          await task(name);
+        }
+        console.log("loop done");
+      }
+
+      main();
+    options:
+      - out: ["start A", "start B", "end A", "end B", "loop done"]
+      - out: ["start A", "loop done", "end A", "start B", "end B"]
+      - out: ["start A", "end A", "start B", "end B", "loop done"]
+      - out: ["loop done", "start A", "end A", "start B", "end B"]
+    answer: 3
+    explain: |
+      در هر دورِ حلقه، `await` حلقه را متوقف می‌کند تا کارِ همان دور تمام شود؛ پس `task("B")` تازه بعد از `end A` صدا زده می‌شود و `loop done` در آخر می‌آید. این همان «blocking awaits in loops» اسلاید ۵۸ است: کارها پشت سر هم اجرا می‌شوند (حدود ۲۰۰ میلی‌ثانیه به جای ۱۰۰). گزینه‌ی ۱ رفتارِ حالتِ هم‌زمان (`Promise.all`) است؛ گزینه‌های ۲ و ۴ فکر کرده‌اند حلقه منتظر `await` نمی‌ماند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟ (زمانِ اندازه‌گیری‌شده به نزدیک‌ترین مضرب ۱۰۰ گرد می‌شود.)
+    check: output
+    code: |
+      function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      async function main() {
+        const start = Date.now();
+        for (const ms of [300, 300, 300]) {
+          await wait(ms);
+        }
+        const elapsed = Date.now() - start;
+        console.log("about", Math.round(elapsed / 100) * 100, "ms");
+      }
+
+      main();
+    options:
+      - out: "about 300 ms"
+      - out: "about 900 ms"
+      - out: "about 0 ms"
+      - out: "about 600 ms"
+    answer: 2
+    explain: |
+      هر `await wait(300)` حلقه را ۳۰۰ میلی‌ثانیه نگه می‌دارد و انتظارِ بعدی تازه بعد از آن **شروع** می‌شود؛ پس زمان کل حدود ۳ × ۳۰۰ = ۹۰۰ میلی‌ثانیه است. اگر هر سه را با `await Promise.all([wait(300), wait(300), wait(300)])` هم‌زمان شروع می‌کردیم، حدود ۳۰۰ میلی‌ثانیه طول می‌کشید (گزینه‌ی ۱). گزینه‌ی ۳ فکر کرده حلقه منتظر نمی‌ماند (این رفتارِ `forEach` است) و گزینه‌ی ۴ هم پایه‌ای ندارد.
+
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      let user;
+
+      setTimeout(() => {
+        user = { name: "Sara" };
+      }, 100);
+
+      console.log("Hello, " + user.name);
+    options:
+      - line: 7
+      - line: 4
+      - line: 1
+      - line: 0
+    answer: 1
+    explain: |
+      کدِ همگام منتظر تایمر نمی‌ماند: وقتی خط ۷ اجرا می‌شود، callbackِ تایمر هنوز اجرا نشده و `user` هنوز `undefined` است؛ پس `user.name` خطای `TypeError: Cannot read properties of undefined` می‌دهد. خط ۴ تازه ۱۰۰ میلی‌ثانیه بعد اجرا می‌شد (در Node.js اصلاً به آنجا نمی‌رسیم، چون برنامه با همین خطا متوقف شده است) و خط ۱ هم یک تعریف معمولی است. این همان «Mixing sync & async code» اسلاید ۵۸ است: فرضِ غلط درباره‌ی زمان. استفاده از `user` باید داخل callbackِ تایمر (یا بعد از `await`) باشد.
+
+  - level: medium
+    stem: |
+      کدام گزینه با مقایسه‌ی اسلاید ۵۷ **مطابقت ندارد**؟
+    options:
+      - 'callbackها: تابعی را برای اجرای بعدی پاس می‌دهیم و ممکن است به «callback hell» تودرتو برسیم'
+      - 'Promiseها: مقداری در آینده را با وضعیت‌هایش نشان می‌دهند و با `.then()` / `.catch()` زنجیر می‌شوند'
+      - 'async/await: روی Promiseها ساخته شده، ظاهری شبیه کد همگام دارد و خواندنش آسان‌تر است'
+      - 'async/await: کد را واقعاً همگام می‌کند؛ یعنی تا تمام شدن `await` کل برنامه متوقف می‌ماند'
+    answer: 4
+    explain: |
+      گزینه‌ی ۴ نادرست است: async/await فقط **ظاهرِ** همگام دارد («looks synchronous»)، ولی واقعاً ناهمگام است؛ `await` فقط همان تابع async را متوقف می‌کند و بقیه‌ی برنامه (کدِ صدازننده، تایمرها، رویدادها) به کارشان ادامه می‌دهند. سه گزینه‌ی دیگر عینِ جمله‌های اسلاید ۵۷ هستند: callbackها «Pass a function to run later» و «callback hell»، Promiseها «future value with states» و «chain with .then() / .catch()»، و async/await «Built on Promises, but cleaner syntax» و «easier to read».
+
+  - level: medium
+    stem: |
+      کدام گزینه یک **async arrow function** معتبر تعریف می‌کند (یعنی بدون خطا اجرا می‌شود)؟
+    check: option-throws
+    want: ok
+    options:
+      - code: 'const load = () => async await Promise.resolve(1);'
+      - code: 'async const load = () => Promise.resolve(1);'
+      - code: 'const load = async () => await Promise.resolve(1);'
+      - code: 'const load = async => await Promise.resolve(1);'
+    answer: 3
+    explain: |
+      در arrow function، کلمه‌ی `async` **قبل از پرانتزِ پارامترها** می‌آید: `async () => ...`؛ و چون تابع async است، `await` در بدنه‌اش مجاز است. در گزینه‌ی ۱، `async` جای اشتباهی (داخل بدنه) آمده است؛ در گزینه‌ی ۲، `async` نمی‌تواند قبل از `const` بیاید، چون صفتِ تابع است نه متغیر؛ در گزینه‌ی ۴، `async` در واقع **اسم پارامتر** شده و تابع یک arrow function معمولی است، پس `await` در آن مجاز نیست. هر سه گزینه‌ی غلط خطای SyntaxError می‌دهند.
+
+  - level: medium
+    stem: |
+      در **Node.js**، خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function load() {
+        const data = await Promise.reject("network down");
+        console.log("data:", data);
+      }
+
+      load();
+      setTimeout(() => console.log("timer"), 100);
+      console.log("sync end");
+    options:
+      - out: ["sync end", "timer"]
+      - out: ["sync end", "!! UnhandledPromiseRejection"]
+      - out: "!! UnhandledPromiseRejection"
+      - out: ["data: undefined", "sync end", "timer"]
+    answer: 2
+    explain: |
+      `load()` تا `await` همگام اجرا می‌شود و همان‌جا مکث می‌کند؛ کد همگام ادامه می‌یابد و `sync end` چاپ می‌شود. سپس `await` خطا را throw می‌کند و چون نه `try...catch` هست و نه `.catch()`، Promiseِ `load()` rejected و **مدیریت‌نشده** می‌ماند؛ Node.js برنامه را متوقف می‌کند و تایمر هرگز اجرا نمی‌شود. این همان «Uncaught rejections: crashes if .catch() or try...catch missing» اسلاید ۵۸ است. گزینه‌ی ۱ فکر کرده خطا بی‌صدا نادیده گرفته می‌شود؛ گزینه‌ی ۳ فکر کرده crash قبل از کد همگام رخ می‌دهد؛ گزینه‌ی ۴ فکر کرده `await` برای Promiseِ rejected مقدار `undefined` برمی‌گرداند. (در مرورگر، پیام `Uncaught (in promise) network down` در کنسول می‌آید و `timer` هم چاپ می‌شود.)
+
+  - level: hard
+    stem: |
+      کد اسلاید ۵۶ را (با `console.log` به جای `console.error`) زیر نسخه‌ای از کد اسلاید ۵۵ گذاشته‌ایم و `getData()` را صدا زده‌ایم. خروجی کدام است؟
+    check: output
+    code: |
+      const fetchData = new Promise((resolve) => {
+        setTimeout(() => resolve("Data received!"), 100);
+      });
+
+      async function getData() {
+        try {
+          const result = await fetchData();
+          console.log(result);
+        } catch (err) {
+          console.log("Error:", err.message);
+        }
+      }
+
+      getData();
+    options:
+      - out: "Data received!"
+      - out: "!! TypeError"
+      - out: "Error: fetchData is not defined"
+      - out: "Error: fetchData is not a function"
+    answer: 4
+    explain: |
+      در اسلاید ۵۵، `fetchData` یک **شیء Promise** است، نه تابع؛ پس `fetchData()` خطای `TypeError: fetchData is not a function` می‌دهد. این خطا داخل `try` رخ داده، پس برنامه crash نمی‌کند (گزینه‌ی ۲ غلط است) و `catch` پیامش را چاپ می‌کند. `fetchData` تعریف شده است، پس پیامِ «is not defined» (گزینه‌ی ۳) هم نیست. برای گرفتنِ `Data received!` (گزینه‌ی ۱) باید یا بنویسیم `await fetchData` (بدون پرانتز)، یا `fetchData` را تابعی کنیم که Promise برمی‌گرداند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function task(name, ms) {
+        return new Promise((resolve) => {
+          console.log("start", name);
+          setTimeout(() => {
+            console.log("end", name);
+            resolve(name);
+          }, ms);
+        });
+      }
+
+      async function main() {
+        const results = await Promise.all([task("A", 200), task("B", 100)]);
+        console.log("results:", results);
+      }
+
+      main();
+    options:
+      - out: ["start A", "end A", "start B", "end B", "results: [ 'A', 'B' ]"]
+      - out: ["start A", "start B", "end B", "end A", "results: [ 'B', 'A' ]"]
+      - out: ["start A", "start B", "end B", "end A", "results: [ 'A', 'B' ]"]
+      - out: ["start A", "start B", "end A", "end B", "results: [ 'A', 'B' ]"]
+    answer: 3
+    explain: |
+      آرایه‌ی `[task("A", 200), task("B", 100)]` قبل از اجرای `Promise.all` ساخته می‌شود و هر دو executor همان لحظه اجرا می‌شوند: `start A` و `start B` (هر دو تایمر هم‌زمان شروع شده‌اند). B با ۱۰۰ میلی‌ثانیه زودتر تمام می‌شود و بعد A. نتیجه‌ی `Promise.all` به ترتیبِ **ورودی** است: `[ 'A', 'B' ]`. گزینه‌ی ۱ رفتارِ حلقه با `await` (پشت سر هم) است؛ گزینه‌ی ۲ ترتیب نتیجه را با ترتیب تمام شدن یکی گرفته؛ گزینه‌ی ۴ تأخیرها را نادیده گرفته است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      async function main() {
+        [1, 2, 3].forEach(async (n) => {
+          await wait(100);
+          console.log(n);
+        });
+        console.log("done");
+      }
+
+      main();
+    options:
+      - out: ["1", "2", "3", "done"]
+      - out: ["done", "1", "2", "3"]
+      - out: "done"
+      - out: "!! SyntaxError"
+    answer: 2
+    explain: |
+      `forEach` برای هر عضو callback را صدا می‌زند، ولی به Promiseی که callbackِ async برمی‌گرداند اهمیتی نمی‌دهد و منتظرش نمی‌ماند؛ پس `forEach` فوراً تمام می‌شود و `done` اول چاپ می‌شود. سه callback هم‌زمان ۱۰۰ میلی‌ثانیه صبر می‌کنند و بعد به ترتیب `1`، `2` و `3` را چاپ می‌کنند. گزینه‌ی ۱ فکر کرده `forEach` صبر می‌کند (برای این کار باید از `for...of` همراه با `await` استفاده کرد)؛ گزینه‌ی ۳ فکر کرده callbackها اصلاً اجرا نمی‌شوند؛ گزینه‌ی ۴ غلط است، چون callback خودش async است و `await` داخلش مجاز است.
+
+  - level: hard
+    stem: |
+      در **Node.js**، خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      async function main() {
+        try {
+          Promise.reject("no await");
+        } catch (err) {
+          console.log("caught:", err);
+        }
+        console.log("end");
+      }
+
+      main();
+    options:
+      - out: ["end", "!! UnhandledPromiseRejection"]
+      - out: ["caught: no await", "end"]
+      - out: "end"
+      - out: "caught: no await"
+    answer: 1
+    explain: |
+      `Promise.reject(...)` خطا را throw نمی‌کند؛ فقط یک Promiseِ rejected **می‌سازد**. چون `await` نشده، هیچ خطایی داخل `try` رخ نمی‌دهد و `catch` اجرا نمی‌شود (گزینه‌های ۲ و ۴ غلط‌اند). `end` چاپ می‌شود و کمی بعد Node.js متوجه می‌شود که این Promiseِ rejected هیچ handlerی ندارد و برنامه را با unhandled rejection متوقف می‌کند (گزینه‌ی ۳ این را نادیده گرفته است). اگر می‌نوشتیم `await Promise.reject("no await")`، خروجی `caught: no await` و `end` می‌شد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function failLater() {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => reject(new Error("late")), 100);
+        });
+      }
+
+      async function a() {
+        try {
+          return failLater();
+        } catch (err) {
+          return "caught";
+        }
+      }
+
+      a()
+        .then((value) => console.log("value:", value))
+        .catch((err) => console.log("rejected:", err.message));
+    options:
+      - out: "value: caught"
+      - out: "value: Promise { <pending> }"
+      - out: "value: undefined"
+      - out: "rejected: late"
+    answer: 4
+    explain: |
+      `return failLater()` بدون `await` فقط Promise را برمی‌گرداند و تابع همان لحظه از `try` بیرون می‌رود؛ وقتی ۱۰۰ میلی‌ثانیه بعد Promise rejected می‌شود، دیگر `try...catch`ِ تابع `a` در کار نیست. Promiseِ `a()` از Promiseِ برگردانده‌شده پیروی می‌کند و rejected می‌شود، پس `.catch` بیرونی اجرا می‌شود: `rejected: late`. اگر می‌نوشتیم `return await failLater()`، تابع داخل `try` منتظر می‌ماند و خروجی `value: caught` می‌شد (گزینه‌ی ۱). گزینه‌ی ۲ غلط است، چون Promiseِ تابع async از Promiseِ برگردانده‌شده پیروی می‌کند و Promise داخل Promise نمی‌شود؛ گزینه‌ی ۳ هم پایه‌ای ندارد، چون تابع مقداری را return کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let shown = "";
+
+      function search(query, ms) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve("results for " + query), ms);
+        });
+      }
+
+      async function onType(query, ms) {
+        const results = await search(query, ms);
+        shown = results;
+      }
+
+      onType("ab", 300);
+      onType("abc", 100);
+      setTimeout(() => console.log(shown), 500);
+    options:
+      - out: "results for abc"
+      - out: "results for ab"
+      - out: "Promise { <pending> }"
+      - out: ""
+    answer: 2
+    explain: |
+      هر دو جست‌وجو هم‌زمان شروع می‌شوند. جست‌وجوی `abc` (جدیدتر) بعد از ۱۰۰ میلی‌ثانیه تمام می‌شود و `shown` را `results for abc` می‌کند؛ اما جست‌وجوی `ab` (قدیمی‌تر) در ۳۰۰ میلی‌ثانیه تمام می‌شود و مقدار را **بازنویسی** می‌کند. پس در ۵۰۰ میلی‌ثانیه `results for ab` چاپ می‌شود: یک نتیجه‌ی کهنه! این یک **race condition** است (اسلاید ۵۸): کارهای async به ترتیبی غیر از ترتیب شروعشان تمام شده‌اند. گزینه‌ی ۱ فرض کرده جست‌وجوی جدیدتر همیشه برنده است؛ گزینه‌ی ۳ غلط است، چون `await` رشته‌ی نتیجه را در `results` گذاشته است؛ گزینه‌ی ۴ هم غلط است، چون تا ۵۰۰ میلی‌ثانیه هر دو جست‌وجو تمام شده‌اند و `shown` دیگر خالی نیست.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let total = 0;
+
+      async function add(n) {
+        await null;
+        total += n;
+      }
+
+      add(5);
+      add(10);
+      console.log("total:", total);
+      setTimeout(() => console.log("later:", total), 0);
+    options:
+      - out: ["total: 15", "later: 15"]
+      - out: ["total: 5", "later: 15"]
+      - out: ["total: 0", "later: 15"]
+      - out: ["total: 0", "later: 0"]
+    answer: 3
+    explain: |
+      هر دو `add` تا `await null` همگام اجرا می‌شوند و همان‌جا مکث می‌کنند؛ پس وقتی خطِ همگامِ `console.log("total:", total)` اجرا می‌شود، هنوز هیچ جمعی انجام نشده است: `total: 0`. ادامه‌ی هر دو تابع (`total += n`) کمی بعد و **قبل از** callbackِ تایمر اجرا می‌شود، پس تایمر `later: 15` را چاپ می‌کند. این همان «Mixing sync & async code» اسلاید ۵۸ است. گزینه‌ی ۱ فرض کرده `add` همگام تمام می‌شود؛ گزینه‌ی ۲ فکر کرده فقط اولین `add` کامل شده است؛ گزینه‌ی ۴ فکر کرده ادامه‌ی توابع async بعد از تایمر اجرا می‌شود (در درس بعد می‌بینیم که ادامه‌ی تابع بعد از `await null` در صف microtask قرار می‌گیرد که قبل از callbackِ `setTimeout` اجرا می‌شود).
+
+  - level: hard
+    stem: |
+      کدام گزینه **درست** است؟
+    options:
+      - 'کدی که در تابع async **قبل از** اولین `await` نوشته شده، هنگام صدا زدنِ تابع، بلافاصله و به صورت همگام اجرا می‌شود'
+      - '`await` کل برنامه را متوقف می‌کند تا Promise تمام شود و در این مدت هیچ کد دیگری اجرا نمی‌شود'
+      - 'اگر تابع async مقدار `5` را `return` کند، صدا زدنِ آن مستقیماً عدد `5` را برمی‌گرداند'
+      - 'اگر Promiseی که `await` شده rejected شود، `await` مقدار `undefined` برمی‌گرداند و اجرای تابع ادامه پیدا می‌کند'
+    answer: 1
+    explain: |
+      گزینه‌ی ۱ درست است: تابع async تا اولین `await` مثل یک تابع معمولی و همگام اجرا می‌شود و فقط از `await` به بعد ادامه‌اش به تعویق می‌افتد. گزینه‌ی ۲ غلط است؛ `await` فقط همان تابع را متوقف می‌کند و بقیه‌ی برنامه ادامه می‌دهد. گزینه‌ی ۳ غلط است؛ تابع async همیشه یک Promise برمی‌گرداند (Promiseی که با `5` fulfilled می‌شود). گزینه‌ی ۴ هم غلط است؛ در این حالت `await` خطا را throw می‌کند و اگر `try...catch` نباشد، Promiseِ تابع rejected می‌شود.
