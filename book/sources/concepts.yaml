@@ -1,0 +1,120 @@
+# Slide-concept checklist used by `npm run check`.
+# Each entry must be taught in the lessons of its chapter: every keyword must appear in at least one
+# lesson of that chapter ("a|b" = either alternative; matching is case-insensitive).
+# deck1 = "3- Introduction to JS.pdf", deck2 = "4 - JS in HTML.pdf", deck3 = "5- NodeJS & TS.pdf".
+
+# ---------------- deck 1 → chapter 1 ----------------
+- { deck: deck1, chapter: ch1, slide: p3, concept: "three layers: structure, style, behaviour", keywords: ["Structure", "Style", "Behaviour|Behavior"] }
+- { deck: deck1, chapter: ch1, slide: p5, concept: "Brendan Eich, 10 days, May 1995, Netscape", keywords: ["Brendan Eich", "Netscape", "1995|۱۹۹۵"] }
+- { deck: deck1, chapter: ch1, slide: p6, concept: "Mocha → LiveScript → JavaScript; JScript; ECMAScript ES1 (1997)", keywords: ["Mocha", "LiveScript", "JScript", "ES1", "1997|۱۹۹۷"] }
+- { deck: deck1, chapter: ch1, slide: p6, concept: "ECMAScript is the standard, JavaScript the language in practice", keywords: ["ECMAScript", "ECMA"] }
+- { deck: deck1, chapter: ch1, slide: p7, concept: "ES5 (2009), ES6/ES2015, annual release cycle", keywords: ["ES5", "ES6", "ES2015", "2009|۲۰۰۹", "ES2016"] }
+- { deck: deck1, chapter: ch1, slide: p8, concept: "transpiling with Babel or SWC", keywords: ["Babel", "SWC", "transpil"] }
+- { deck: deck1, chapter: ch1, slide: p9, concept: "features: high level, garbage collected, interpreted/JIT", keywords: ["High Level|high-level", "Garbage", "JIT"] }
+- { deck: deck1, chapter: ch1, slide: p9, concept: "features: multi-paradigm, prototype-based OO, first-class functions", keywords: ["paradigm", "Prototype", "First-class"] }
+- { deck: deck1, chapter: ch1, slide: p9, concept: "features: dynamic, single threaded, non-blocking event loop", keywords: ["Dynamic", "Single threaded|single-threaded", "Non-blocking|non-blocking", "event loop"] }
+- { deck: deck1, chapter: ch1, slide: p10, concept: "engines V8 and SpiderMonkey; parsed, optimized, compiled to machine code", keywords: ["V8", "SpiderMonkey", "machine code|کد ماشین"] }
+- { deck: deck1, chapter: ch1, slide: p11, concept: "environments provide APIs; browser = V8 + Web APIs, Node = V8 + system APIs", keywords: ["Web API", "Application Programming Interface", "System API"] }
+- { deck: deck1, chapter: ch1, slide: p12, concept: "Console API methods", keywords: ["console.log", "console.warn", "console.error", "console.table", "console.info"] }
+- { deck: deck1, chapter: ch1, slide: p13, concept: "where to code: DevTools, script tag, external file, playgrounds", keywords: ["DevTools", "<script", "src=", "CodePen", "JSFiddle", "StackBlitz"] }
+- { deck: deck1, chapter: ch1, slide: p14, concept: "console methods return undefined", keywords: ["console.log", "undefined"] }
+- { deck: deck1, chapter: ch1, slide: p15, concept: "7 primitives", keywords: ["primitive", "Symbol", "BigInt", "null", "undefined", "boolean"] }
+- { deck: deck1, chapter: ch1, slide: p16, concept: "BigInt beyond Number.MAX_SAFE_INTEGER; Symbol unique keys", keywords: ["MAX_SAFE_INTEGER", "Symbol(\"id\")|Symbol('id')"] }
+- { deck: deck1, chapter: ch1, slide: p17, concept: "objects, arrays with methods, functions are first-class objects", keywords: ["first-class", "key-value|کلید-مقدار|کلید و مقدار"] }
+- { deck: deck1, chapter: ch1, slide: p18, concept: "arithmetic operators incl. % and **; 1 + 1 meme", keywords: ["**", "%", "\"1\" + 1"] }
+- { deck: deck1, chapter: ch1, slide: p19, concept: "assignment operators", keywords: ["+=", "-=", "*=", "/=", "%="] }
+- { deck: deck1, chapter: ch1, slide: p20, concept: "explicit casting examples and \"5\" - 1", keywords: ["Number(\"42\")", "String(99)", "Boolean(1)", "\"5\" - 1", "2 * \"3\""] }
+- { deck: deck1, chapter: ch1, slide: p21, concept: "casting pitfalls", keywords: ["true + true", "null + 1", "undefined + 1", "[] == false", "[] == 0", "==="] }
+- { deck: deck1, chapter: ch1, slide: p21, concept: "sort meme: default sort compares strings", keywords: ["100000", "sort", "a - b"] }
+- { deck: deck1, chapter: ch1, slide: p22, concept: "coercion rules with string/numeric context and comparisons", keywords: ["'10' + 5|\"10\" + 5", "'10' - 5|\"10\" - 5", "'10' * 2|\"10\" * 2", "null == undefined", "false == 0"] }
+- { deck: deck1, chapter: ch1, slide: p23, concept: "let / const / var; const cannot be reassigned", keywords: ["let", "const", "var", "Assignment to constant variable"] }
+- { deck: deck1, chapter: ch1, slide: p24, concept: "both block-scoped; best practice const by default", keywords: ["block-scoped|block scope|بلاک"] }
+- { deck: deck1, chapter: ch1, slide: p25, concept: "blocks: let/const not accessible outside", keywords: ["ReferenceError", "is not defined"] }
+- { deck: deck1, chapter: ch1, slide: p26, concept: "global scope; globals become window properties", keywords: ["global", "window"] }
+- { deck: deck1, chapter: ch1, slide: p27, concept: "var problems: function-scoped, hoisting, redeclaration, global pollution", keywords: ["function-scoped|function scope", "redeclar|دوباره", "window"] }
+- { deck: deck1, chapter: ch1, slide: p28, concept: "closure keeps parent variables after the outer function ends; var pitfall", keywords: ["closure", "counter", "setTimeout"] }
+- { deck: deck1, chapter: ch1, slide: p29, concept: "control flow, You can vote! example", keywords: ["You can vote"] }
+- { deck: deck1, chapter: ch1, slide: p30, concept: "if / else / else if / switch", keywords: ["else if", "switch", "case", "break", "default"] }
+- { deck: deck1, chapter: ch1, slide: p31, concept: "comparison and logical operators", keywords: ["!==", ">=", "<=", "&&", "||"] }
+- { deck: deck1, chapter: ch1, slide: p32, concept: "loops: for, while, do...while, for...of, for...in", keywords: ["while", "do...while|do { ", "for...of|for (const", "for...in"] }
+- { deck: deck1, chapter: ch1, slide: p33, concept: "functions: parameters, return; keyword meme", keywords: ["return", "func", "fn", "def"] }
+- { deck: deck1, chapter: ch1, slide: p34, concept: "function declaration is hoisted; add(2, 3)", keywords: ["add(2, 3)"] }
+- { deck: deck1, chapter: ch1, slide: p35, concept: "arrow function not hoisted; multiply", keywords: ["multiply", "=>", "before initialization"] }
+- { deck: deck1, chapter: ch1, slide: p36, concept: "declaration vs arrow; own this vs inherited; IIFE meme", keywords: ["IIFE"] }
+- { deck: deck1, chapter: ch1, slide: p38, concept: "hoisting of var, function, class; TDZ", keywords: ["hoisting", "Temporal Dead Zone|TDZ", "class"] }
+- { deck: deck1, chapter: ch1, slide: p39, concept: "ES6 classes: constructor, new, Kermit example", keywords: ["constructor", "new User", "Kermit"] }
+- { deck: deck1, chapter: ch1, slide: p40, concept: "objects: properties and methods; almost everything is an object", keywords: ["propert", "method", "JSON"] }
+- { deck: deck1, chapter: ch1, slide: p41, concept: "object literals; Barry Allen example", keywords: ["Barry Allen"] }
+- { deck: deck1, chapter: ch1, slide: p42, concept: "destructuring with rename and defaults", keywords: ["firstName", "N/A", "primary"] }
+- { deck: deck1, chapter: ch1, slide: p44, concept: "this: global, methods, arrow lexical this, call/apply/bind", keywords: ["call", "apply", "bind", "Robert"] }
+- { deck: deck1, chapter: ch1, slide: p45, concept: "arrays: index from 0, mixed types, const array mutation", keywords: ["numbers.push(4)"] }
+- { deck: deck1, chapter: ch1, slide: p46, concept: "push/pop/shift/unshift, filter, forEach, find/findIndex, for...of", keywords: ["push", "pop", "shift", "unshift", "findIndex"] }
+- { deck: deck1, chapter: ch1, slide: p47, concept: "map returns a new array; reduce with accumulator", keywords: ["map", "reduce", "accumulator|acc"] }
+- { deck: deck1, chapter: ch1, slide: p48, concept: "students example with spread and parentheses", keywords: ["students", "78.5", "passed"] }
+- { deck: deck1, chapter: ch1, slide: p49, concept: "class activity: trace nums", keywords: ["doubled", "evens"] }
+- { deck: deck1, chapter: ch1, slide: p50, concept: "try/catch/finally/throw; JSON.parse bad json example", keywords: ["try", "catch", "finally", "throw", "bad json"] }
+- { deck: deck1, chapter: ch1, slide: p51, concept: "template literals: backticks, multi-line, interpolation", keywords: ["${", "Laptop"] }
+- { deck: deck1, chapter: ch1, slide: p52, concept: "JSON stringify/parse, pretty print", keywords: ["JSON.stringify", "JSON.parse", "null, 2", "alex@example.com"] }
+- { deck: deck1, chapter: ch1, slide: p53, concept: "single-threaded; synchronous vs asynchronous", keywords: ["single-threaded|single threaded", "asynchronous|Asynchronous"] }
+- { deck: deck1, chapter: ch1, slide: p54, concept: "callbacks, timers, callback hell", keywords: ["callback", "callback hell", "Data received"] }
+- { deck: deck1, chapter: ch1, slide: p55, concept: "Promise states, then/catch, always add catch", keywords: ["pending", "fulfilled", "rejected", ".then", ".catch", "Error occurred"] }
+- { deck: deck1, chapter: ch1, slide: p56, concept: "async/await built on promises; await inside async; try...catch", keywords: ["async", "await", "ES2017|ES8"] }
+- { deck: deck1, chapter: ch1, slide: p57, concept: "comparison of callbacks, promises, async/await", keywords: ["callback hell", "try...catch|try/catch"] }
+- { deck: deck1, chapter: ch1, slide: p58, concept: "async pitfalls: forgetting await, uncaught rejections, race conditions, awaits in loops", keywords: ["Promise { <pending> }", "race condition", "Promise.all"] }
+- { deck: deck1, chapter: ch1, slide: p59, concept: "class activity: task A/B/C ordering", keywords: ["C done", "Waiting...", "All finished"] }
+- { deck: deck1, chapter: ch1, slide: p60, concept: "class activity: race winner", keywords: ["Winner", "Math.random"] }
+- { deck: deck1, chapter: ch1, slide: bg, concept: "microtasks vs macrotasks", keywords: ["microtask", "macrotask|task queue"] }
+
+# ---------------- deck 2 → chapter 2 ----------------
+- { deck: deck2, chapter: ch2, slide: p3, concept: "three layers reminder", keywords: ["Structure", "Behaviour|Behavior"] }
+- { deck: deck2, chapter: ch2, slide: p4, concept: "objects, JSON, almost everything is an object", keywords: ["JSON", "object"] }
+- { deck: deck2, chapter: ch2, slide: p5, concept: "this rules reminder", keywords: ["this", "arrow"] }
+- { deck: deck2, chapter: ch2, slide: p6, concept: "async reminder: callbacks, promises, async/await", keywords: ["callback", "Promise", "async", "await"] }
+- { deck: deck2, chapter: ch2, slide: p7, concept: "markup languages HTML, XML, Markdown; hierarchical tree", keywords: ["XML", "Markdown", "parent", "child"] }
+- { deck: deck2, chapter: ch2, slide: p8, concept: "element nodes, text nodes, attributes", keywords: ["element node|Element node", "text node|Text node", "attribute"] }
+- { deck: deck2, chapter: ch2, slide: p9, concept: "DOM = Document Object Model", keywords: ["Document Object Model"] }
+- { deck: deck2, chapter: ch2, slide: p10, concept: "class activity: draw the DOM tree of sample.html", keywords: ["sampleclass", "SAMPLE PAGE"] }
+- { deck: deck2, chapter: ch2, slide: p11, concept: "root node document; Node class hierarchy", keywords: ["HTMLElement", "CharacterData", "HTMLDocument"] }
+- { deck: deck2, chapter: ch2, slide: p12, concept: "window → document → elements; DOM hierarchy diagram", keywords: ["navigator", "history", "location", "screen"] }
+- { deck: deck2, chapter: ch2, slide: p13, concept: "document: entry point, finder methods, create/remove/update", keywords: ["getElementById", "querySelector", "textContent"] }
+- { deck: deck2, chapter: ch2, slide: p14, concept: "console.log(heading) prints the element", keywords: ["heading"] }
+- { deck: deck2, chapter: ch2, slide: p16, concept: "querying methods", keywords: ["getElementsByClassName", "getElementsByTagName", "querySelectorAll"] }
+- { deck: deck2, chapter: ch2, slide: p17, concept: "class activity: sample.js selectors", keywords: ["nav-link", "input[type='text']|input[type=\"text\"]"] }
+- { deck: deck2, chapter: ch2, slide: p18, concept: "events: click, input, submit, keydown, load; addEventListener; multiple handlers", keywords: ["click", "input", "submit", "keydown", "load", "addEventListener"] }
+- { deck: deck2, chapter: ch2, slide: p19, concept: "Button Action example", keywords: ["Goodbye World", "style.color"] }
+- { deck: deck2, chapter: ch2, slide: p22, concept: "manipulating the DOM: text, HTML, styles", keywords: ["innerHTML", "textContent", "style"] }
+- { deck: deck2, chapter: ch2, slide: p23, concept: "createElement, innerText/innerHTML, setAttribute, appendChild/append, insertBefore", keywords: ["createElement", "innerText", "setAttribute", "appendChild", "append(", "insertBefore"] }
+- { deck: deck2, chapter: ch2, slide: p24, concept: "New Div example", keywords: ["Hello DOM!", "box"] }
+- { deck: deck2, chapter: ch2, slide: p27, concept: "remove, removeChild, replaceChild", keywords: ["remove()", "removeChild", "replaceChild"] }
+- { deck: deck2, chapter: ch2, slide: p28, concept: "Title Goes Away example", keywords: ["title", "remove"] }
+- { deck: deck2, chapter: ch2, slide: p31, concept: "getAttribute/removeAttribute, classList add/remove/toggle", keywords: ["getAttribute", "removeAttribute", "classList.add", "classList.remove", "toggle"] }
+- { deck: deck2, chapter: ch2, slide: p32, concept: "Change Image example", keywords: ["dambooldor"] }
+- { deck: deck2, chapter: ch2, slide: p35, concept: "forms: value, checked, submit/input, preventDefault, validation", keywords: [".value", ".checked", "preventDefault"] }
+- { deck: deck2, chapter: ch2, slide: p36, concept: "window: alert/confirm/prompt, location/history/navigator, timers, sizes", keywords: ["alert", "confirm", "prompt", "setTimeout", "setInterval", "innerWidth", "innerHeight", "scrollX", "scrollY"] }
+- { deck: deck2, chapter: ch2, slide: p37, concept: "class activity: alert vs prompt vs confirm; location; responsive", keywords: ["resize"] }
+- { deck: deck2, chapter: ch2, slide: p38, concept: "localStorage: persistent, setItem/getItem, 5–10 MB, same-origin, strings only, synchronous", keywords: ["localStorage", "setItem", "getItem", "same-origin|Same-origin", "MB"] }
+- { deck: deck2, chapter: ch2, slide: p39, concept: "sessionStorage: per tab, cleared when tab closes", keywords: ["sessionStorage"] }
+- { deck: deck2, chapter: ch2, slide: bg, concept: "event bubbling and delegation", keywords: ["bubbling", "stopPropagation", "delegation"] }
+
+# ---------------- deck 3 → chapter 3 ----------------
+- { deck: deck3, chapter: ch3, slide: p3, concept: "limitations of JavaScript", keywords: ["module", "single-threaded|Single-threaded|single threaded"] }
+- { deck: deck3, chapter: ch3, slide: p4, concept: "inception: AJAX, JSON, V8, server-side JavaScript", keywords: ["AJAX", "JSON", "V8"] }
+- { deck: deck3, chapter: ch3, slide: p5, concept: "Node.js: V8, event-driven non-blocking I/O, npm ecosystem", keywords: ["Node.js", "event-driven|Event-driven", "non-blocking|Non-blocking", "I/O"] }
+- { deck: deck3, chapter: ch3, slide: p6, concept: "Node.js features chart", keywords: ["Fast Data Streaming", "Highly Scalable", "Cross-Platform", "No Buffering"] }
+- { deck: deck3, chapter: ch3, slide: p7, concept: "async/await, ES modules, TypeScript, Express/NestJS/Fastify, cloud/edge; node_modules meme", keywords: ["NestJS", "Fastify", "Express", "node_modules"] }
+- { deck: deck3, chapter: ch3, slide: p8, concept: "external packages: reuse, trust, maintenance, dependency overload", keywords: ["dependenc"] }
+- { deck: deck3, chapter: ch3, slide: p9, concept: "npm registry and package.json", keywords: ["npm", "registry", "package.json"] }
+- { deck: deck3, chapter: ch3, slide: p10, concept: "npm commands and mirror", keywords: ["npm init", "npm install", "npm uninstall", "npm update", "npm run", "npm config set registry", "npm config get registry", ".npmrc"] }
+- { deck: deck3, chapter: ch3, slide: p11, concept: "npm scripts", keywords: ["scripts", "&&"] }
+- { deck: deck3, chapter: ch3, slide: p12, concept: "bundling: minification, tree-shaking, Webpack/Rollup/Parcel", keywords: ["minif", "tree-shaking|Tree-shaking|tree shaking", "Webpack", "Rollup", "Parcel"] }
+- { deck: deck3, chapter: ch3, slide: p13, concept: "popular packages I", keywords: ["React", "Lodash", "Axios", "Socket.io|Socket.IO"] }
+- { deck: deck3, chapter: ch3, slide: p14, concept: "popular packages II", keywords: ["Moment", "Day.js", "Jest", "Three.js", "Chalk", "Electron"] }
+- { deck: deck3, chapter: ch3, slide: p16, concept: "JS typing issues; \"5\" + 2", keywords: ["\"5\" + 2", "compile"] }
+- { deck: deck3, chapter: ch3, slide: p17, concept: "TypeScript: Microsoft 2012, Anders Hejlsberg, superset", keywords: ["Microsoft", "2012|۲۰۱۲", "Anders Hejlsberg", "Delphi", "superset"] }
+- { deck: deck3, chapter: ch3, slide: p18, concept: "annotations, const, union types, inference", keywords: ["let age: number = 25", "number | string", "infer"] }
+- { deck: deck3, chapter: ch3, slide: p19, concept: "interfaces: optional, readonly, extends, implements", keywords: ["interface", "readonly", "extends", "implements", "?:"] }
+- { deck: deck3, chapter: ch3, slide: p20, concept: "functions: typed params, optional/default, rest, arrow", keywords: ["createUser", "...hobbies"] }
+- { deck: deck3, chapter: ch3, slide: p21, concept: "classes: public/private/protected, extends, overriding", keywords: ["public", "private", "protected", "super"] }
+- { deck: deck3, chapter: ch3, slide: p22, concept: "generics: identity<T>", keywords: ["identity<number>|identity<T>", "<T>"] }
+- { deck: deck3, chapter: ch3, slide: p23, concept: "modules: named, default, mixed exports", keywords: ["export default", "import", "Named", "Default", "Mixed"] }
+- { deck: deck3, chapter: ch3, slide: p24, concept: "best practices: composition, SRP", keywords: ["composition", "Single Responsibility|SRP"] }
