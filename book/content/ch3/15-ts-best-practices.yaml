@@ -1,0 +1,497 @@
+id: ch3-ts-best-practices
+title: "بهترین شیوه‌ها (Best Practices) در TypeScript"
+slides: "NodeJS & TS، اسلاید ۲۴"
+lesson: |
+  ### بهترین شیوه یعنی چه؟
+
+  تا این‌جا **قانون‌های** TypeScript را یاد گرفتیم؛ قانون‌هایی که اگر رعایت نشوند، کامپایلر خطا می‌دهد. **Best practice** (بهترین شیوه) فرق دارد: کامپایلر مجبورت نمی‌کند و کدِ بد هم ممکن است بدون خطا کامپایل شود، ولی رعایتش باعث می‌شود پروژه‌ی بزرگ **قابل فهم، قابل تغییر و کم‌خطا** بماند (یادت هست در اسلایدهای ۳ و ۱۶ گفته شد نگه‌داری پروژه‌های بزرگ JavaScript سخت است). اسلاید ۲۴ پنج توصیه دارد:
+
+  1. Use **interfaces** to define contracts for classes and objects.
+  2. Prefer `readonly` and `private` for encapsulation and immutability.
+  3. Use inheritance sparingly; prefer composition when possible.
+  4. Leverage generics for reusable, type-safe code.
+  5. Keep classes small and focused; follow the Single Responsibility Principle (SRP).
+
+  ### ۱) interface به‌عنوان قرارداد (contract)
+
+  ::: analogy
+  پریز برق یک **استاندارد** دارد: هر وسیله‌ای که دوشاخه‌ی استاندارد داشته باشد (اتو، شارژر، یخچال) به آن وصل می‌شود و پریز اهمیتی نمی‌دهد سازنده‌ی وسیله کیست. interface همان استاندارد است: می‌گوید «هر کسی این اعضا را با این نوع‌ها داشته باشد، قابل استفاده است» و کاری به جزئیات پیاده‌سازی ندارد.
+  :::
+
+  ```ts
+  interface PaymentMethod {
+    pay(amount: number): string;
+  }
+  class CardPayment implements PaymentMethod {
+    pay(amount: number): string {
+      return `Paid ${amount} by card`;
+    }
+  }
+  class WalletPayment implements PaymentMethod {
+    pay(amount: number): string {
+      return `Paid ${amount} from wallet`;
+    }
+  }
+  // checkout depends on the contract, not on a concrete class
+  function checkout(method: PaymentMethod, total: number): void {
+    console.log(method.pay(total));
+  }
+  checkout(new CardPayment(), 100);                          // Paid 100 by card
+  checkout(new WalletPayment(), 50);                         // Paid 50 from wallet
+  checkout({ pay: (a: number) => `Paid ${a} in cash` }, 20); // Paid 20 in cash
+  ```
+
+  - تابع `checkout` فقط به **قرارداد** (`PaymentMethod`) وابسته است، نه به یک کلاس خاص. فردا اگر `CryptoPayment` اضافه شود، لازم نیست `checkout` حتی یک خط تغییر کند.
+  - قرارداد برای **اشیاء** هم هست: هر شیئی که متد `pay` با همین نوع را داشته باشد قبول است (خط آخر)، حتی اگر از هیچ کلاسی ساخته نشده باشد. شیئی که این قرارداد را رعایت نکند (مثلاً به‌جای `pay` متد `charge` داشته باشد) خطای کامپایل می‌گیرد.
+
+  ### ۲) `readonly` و `private` برای encapsulation و immutability
+
+  - **Encapsulation** (کپسوله‌سازی): داده‌ی داخلی شیء را پنهان کن و فقط از راه متدهای کنترل‌شده اجازه‌ی تغییر بده. با `private`.
+  - **Immutability** (تغییرناپذیری): چیزی که بعد از ساخته شدن نباید عوض شود، از اول غیرقابل‌تغییر تعریف شود. با `readonly`.
+
+  ```ts
+  class BankAccount {
+    private balance = 0;         // hidden: only changed through deposit()
+    readonly owner: string;      // fixed after construction
+    constructor(owner: string) {
+      this.owner = owner;
+    }
+    deposit(amount: number): void {
+      if (amount <= 0) throw new Error("Invalid amount");
+      this.balance += amount;
+    }
+    getBalance(): number {
+      return this.balance;
+    }
+  }
+  const acc = new BankAccount("Sara");
+  acc.deposit(200);
+  console.log(acc.owner, acc.getBalance()); // Sara 200
+  acc.balance = 1000000;  // Error TS2341: Property 'balance' is private and only accessible within class 'BankAccount'.
+  acc.owner = "Hacker";   // Error TS2540: Cannot assign to 'owner' because it is a read-only property.
+  ```
+
+  اگر `balance` عمومی بود، هر جای برنامه می‌توانست مقدارش را منفی یا نامعقول کند؛ با `private` تنها راه تغییرش `deposit` است که مبلغ نامعتبر را رد می‌کند.
+
+  برای آرایه‌ها هم نسخه‌ی فقط‌خواندنی داریم: `readonly string[]` (یا `ReadonlyArray<string>`). روی چنین آرایه‌ای فقط متدهایی مجازند که آرایه را **تغییر نمی‌دهند** و آرایه‌ی جدید می‌سازند:
+
+  ```ts
+  const days: readonly string[] = ["Sat", "Sun"];
+  const more = days.concat(["Mon"]);           // OK: returns a new array
+  const upper = days.map((d) => d.toUpperCase()); // OK: returns a new array
+  const sorted = [...days].sort();             // OK: sorts a copy
+  days.push("Mon");   // Error TS2339: Property 'push' does not exist on type 'readonly string[]'.
+  days[0] = "Fri";    // Error TS2542: Index signature in type 'readonly string[]' only permits reading.
+  days.sort();        // Error TS2339: Property 'sort' does not exist on type 'readonly string[]'.
+  ```
+
+  ::: trap دام تستی: `readonly` سطحی است
+  `private readonly items: string[] = []` فقط جلوی **عوض کردن خودِ property** (`this.items = []`، خطای TS2540) را می‌گیرد؛ تغییر محتوای همان آرایه (`this.items.push(...)` یا `this.items.length = 0`) مجاز است. برای قفل کردن محتوا باید نوع را هم `readonly string[]` کنی. یادت هم باشد `private` فقط در زمان کامپایل بررسی می‌شود.
+  :::
+
+  ### ۳) وراثت کم، ترکیب (composition) بیشتر
+
+  دو جور رابطه بین کلاس‌ها داریم:
+
+  | رابطه | معنی | مثال | ابزار |
+  |---|---|---|---|
+  | **is-a** («... یک ... است») | زیرنوعِ واقعی | دانشجو یک انسان است | وراثت (`extends`) |
+  | **has-a** («... یک ... دارد») | جزئی از آن است | خودرو یک موتور دارد | ترکیب (composition) |
+
+  **Composition** (ترکیب) یعنی به‌جای ارث بردن از یک کلاس، **یک شیء از آن را داخل کلاس خودت نگه داری** و کارها را به آن بسپاری. چرا اسلاید می‌گوید «از وراثت با احتیاط استفاده کن»؟
+
+  - `class Car extends Engine` یعنی «خودرو **یک** موتور است» که از نظر معنا غلط است و خودرو همه‌ی متدهای موتور را هم بی‌دلیل به ارث می‌برد.
+  - وراثت کلاس‌ها را **محکم به هم می‌چسباند**: تغییر کلاس والد ممکن است همه‌ی فرزندان را خراب کند، و زنجیره‌های عمیق وراثت فهمیدن کد را سخت می‌کنند.
+  - هر کلاس فقط **از یک کلاس** می‌تواند `extends` کند، ولی می‌تواند هر تعداد شیء را در خودش ترکیب کند.
+
+  ```ts
+  class Engine {
+    start(): string {
+      return "engine started";
+    }
+  }
+  class Radio {
+    play(): string {
+      return "music on";
+    }
+  }
+  // Composition: a Car HAS an Engine and a Radio
+  class Car {
+    private engine = new Engine();
+    private radio = new Radio();
+    drive(): void {
+      console.log(this.engine.start());
+      console.log(this.radio.play());
+      console.log("driving");
+    }
+  }
+  const car = new Car();
+  car.drive();                         // engine started / music on / driving
+  console.log(car instanceof Engine);  // false: a Car is not an Engine
+  ```
+
+  مثال کلاسیک دیگر: `class Stack<T> extends Array<T> {}` بدون خطا کامپایل می‌شود، ولی آن‌وقت پشته همه‌ی متدهای آرایه (`splice`، `shift`، `unshift` و ...) را دارد و هر کسی می‌تواند قانون LIFO را بشکند. با ترکیب (`private items: T[] = []` داخل کلاس، مثل `Stack<T>` در درس Generics) فقط `push` و `pop` بیرون دیده می‌شوند.
+
+  ### ۴) generics برای کد قابل استفاده‌ی دوباره و type-safe
+
+  به‌جای نوشتن `ProductRepository`، `UserRepository` و ... با کد تقریباً یکسان (تکرار)، یا یک کلاس با `any[]` (گم شدن نوع)، **یک** کلاس generic بنویس:
+
+  ```ts
+  interface Entity {
+    id: number;
+  }
+  class Repository<T extends Entity> {
+    private items: T[] = [];
+    add(item: T): void {
+      this.items.push(item);
+    }
+    findById(id: number): T | undefined {
+      return this.items.find((x) => x.id === id);
+    }
+  }
+  interface Product extends Entity {
+    title: string;
+  }
+  const products = new Repository<Product>();
+  products.add({ id: 1, title: "Book" });
+  console.log(products.findById(1)?.title); // Book
+  console.log(products.findById(2));        // undefined
+  products.add({ id: 2 });                  // Error TS2741: Property 'title' is missing
+  const names = new Repository<string>();   // Error TS2344: Type 'string' does not satisfy the constraint 'Entity'.
+  ```
+
+  (`?.` یعنی «اگر نتیجه `undefined` نبود، `title` را بخوان».) این‌جا سه توصیه با هم کار می‌کنند: interface (`Entity`) قرارداد است، generic (`<T extends Entity>`) کد را برای هر نوع موجودیتی قابل استفاده می‌کند و `private items` داده را کپسوله می‌کند.
+
+  ### ۵) کلاس‌های کوچک و متمرکز: Single Responsibility Principle (SRP)
+
+  **SRP** (اصل تک‌مسئولیتی) می‌گوید: **هر کلاس فقط یک مسئولیت داشته باشد**؛ یا به بیان دیگر، فقط **یک دلیل** برای تغییر کردن داشته باشد. کلاسی که همه‌کار می‌کند (به آن «god class» می‌گویند) بزرگ، شکننده و سخت‌آزمون می‌شود.
+
+  ```ts
+  // Bad: one class with four unrelated jobs
+  class UserManager {
+    validateEmail(email: string): boolean { return email.includes("@"); }
+    saveToDatabase(name: string): void { /* SQL code */ }
+    sendWelcomeEmail(email: string): void { /* SMTP code */ }
+    renderProfileHtml(name: string): string { return `<h1>${name}</h1>`; }
+  }
+
+  // Good: small, focused classes (each has one reason to change)
+  class EmailValidator {
+    isValid(email: string): boolean {
+      return email.includes("@");
+    }
+  }
+  class UserRepository {
+    save(name: string): void { /* database code only */ }
+  }
+  class WelcomeMailer {
+    send(email: string): void { /* email code only */ }
+  }
+  ```
+
+  اگر روزی فرمت ایمیل‌ها یا نوع پایگاه داده عوض شود، فقط **یک** کلاس کوچک تغییر می‌کند. کلاس‌های کوچک را بعداً می‌توان با **ترکیب** کنار هم گذاشت (مثلاً یک `UserService` که این سه را در خودش نگه می‌دارد).
+
+  ::: tip نکته: پنج توصیه در یک نگاه
+  | توصیه | چرا؟ | نمونه |
+  |---|---|---|
+  | interface = قرارداد | وابستگی به «شکل»، نه کلاس خاص | `checkout(method: PaymentMethod)` |
+  | `readonly` و `private` | جلوگیری از تغییر ناخواسته | `private balance`، `readonly owner` |
+  | ترکیب به‌جای وراثت | رابطه‌ی has-a، وابستگی کمتر | `Car` یک `Engine` دارد |
+  | generics | بدون تکرار و بدون `any` | `Repository<T>`، `Stack<T>` |
+  | SRP | کلاس کوچک، یک دلیل برای تغییر | `EmailValidator`، `UserRepository` |
+  :::
+
+  ::: trap دام تستی: «کامپایل می‌شود» یعنی «خوب طراحی شده»؟ نه!
+  `class Car extends Engine`، یک `UserManager` همه‌کاره یا یک `Stack` با `any[]` همگی **بدون خطا** کامپایل می‌شوند. در تست‌های این بخش سؤال این است که کدام طراحی **با توصیه‌های اسلاید ۲۴ سازگارتر** است، نه کدام کد خطا دارد.
+  :::
+
+  ::: summary
+  - interface را به‌عنوان قرارداد کلاس‌ها و اشیاء به کار ببر؛ کد را به قرارداد وابسته کن، نه به کلاس خاص.
+  - داده‌ی داخلی را `private` و چیزهای ثابت را `readonly` کن (TS2341 و TS2540 از بیرون)؛ `readonly` سطحی است و برای آرایه `readonly T[]` داریم.
+  - is-a → وراثت (با احتیاط)؛ has-a → ترکیب (ترجیح اسلاید).
+  - generics (مثل `Repository<T extends Entity>`) جای کد تکراری و `any` را می‌گیرد.
+  - SRP: هر کلاس یک مسئولیت؛ کلاس همه‌کاره را به چند کلاس کوچک بشکن.
+  :::
+questions:
+  - level: easy
+    stem: |
+      اسلاید ۲۴ می‌گوید «از interfaceها برای تعریف **قرارداد (contract)** برای کلاس‌ها و اشیاء استفاده کنید». منظور از قرارداد چیست؟
+    options:
+      - 'interface مشخص می‌کند یک کلاس یا شیء **چه اعضایی با چه نوعی** باید داشته باشد، بدون این‌که پیاده‌سازی آن‌ها را تعیین کند.'
+      - 'interface کد مشترک متدها را می‌نویسد تا کلاس‌ها آن را به ارث ببرند.'
+      - 'interface در زمان اجرا جلوی ساخته شدن اشیای نادرست را می‌گیرد.'
+      - 'interface کلاسی است که نمی‌توان از آن شیء ساخت، ولی متدهایش کامل پیاده‌سازی شده‌اند.'
+    answer: 1
+    explain: |
+      interface فقط «شکل» را تعریف می‌کند: اسم اعضا و نوعشان. هر کلاس (با `implements`) یا شیئی که این شکل را داشته باشد، قرارداد را رعایت کرده است. interface هیچ پیاده‌سازی‌ای ندارد که به ارث برسد (گزینه‌های ۲ و ۴) و چون در JavaScript خروجی کاملاً پاک می‌شود، هیچ بررسی‌ای در زمان اجرا انجام نمی‌دهد (گزینه‌ی ۳).
+  - level: easy
+    stem: |
+      در کدام جفت، رابطه‌ی درست «has-a» (… یک … دارد) است و طبق اسلاید ۲۴ بهتر است با **ترکیب (composition)** پیاده شود، نه وراثت؟
+    options:
+      - '`Student` و `Person` (دانشجو یک انسان است)'
+      - '`Dog` و `Animal` (سگ یک حیوان است)'
+      - '`Car` و `Engine` (خودرو یک موتور دارد)'
+      - '`Square` و `Shape` (مربع یک شکل است)'
+    answer: 3
+    explain: |
+      خودرو یک موتور **دارد** ولی خودش موتور **نیست**؛ پس `Car` باید یک شیء `Engine` را در خودش نگه دارد (composition)، نه این‌که از آن ارث ببرد. سه جفت دیگر رابطه‌ی «is-a» دارند (دانشجو یک انسان است، سگ یک حیوان است، مربع یک شکل است) که همان جایی است که وراثت معنا دارد.
+  - level: easy
+    stem: |
+      Single Responsibility Principle (SRP) که در اسلاید ۲۴ آمده، چه می‌گوید؟
+    options:
+      - 'هر کلاس باید فقط یک متد داشته باشد.'
+      - 'هر کلاس باید فقط **یک مسئولیت** (و در نتیجه فقط یک دلیل برای تغییر) داشته باشد.'
+      - 'از هر کلاس فقط یک شیء باید ساخته شود.'
+      - 'هر کلاس فقط باید از یک کلاس دیگر ارث ببرد.'
+    answer: 2
+    explain: |
+      SRP درباره‌ی **مسئولیت** است: یک کلاس باید یک کار مشخص انجام دهد (مثلاً فقط ذخیره در پایگاه داده)، پس فقط یک دلیل برای تغییر دارد. یک کلاس با یک مسئولیت می‌تواند چند متد داشته باشد (گزینه‌ی ۱). ساختن فقط یک شیء از کلاس (گزینه‌ی ۳) و محدودیت تک‌والدی بودن `extends` (گزینه‌ی ۴) مفاهیم دیگری هستند و ربطی به SRP ندارند.
+  - level: easy
+    stem: |
+      در کلاس `BankAccount`، property `balance` را `private` کرده‌ایم و فقط از طریق متد `deposit(amount)` (که مبلغ منفی یا صفر را رد می‌کند) تغییرش می‌دهیم. این کار نمونه‌ی کدام اصل است؟
+    options:
+      - 'وراثت؛ تا کلاس‌های فرزند بتوانند `balance` را مستقیم تغییر دهند.'
+      - 'generics؛ تا `balance` بتواند هر نوعی داشته باشد.'
+      - 'SRP؛ چون کلاس فقط یک property دارد.'
+      - 'کپسوله‌سازی (encapsulation)؛ تا کد بیرونی نتواند مستقیماً مقدار نامعتبری در `balance` بگذارد.'
+    answer: 4
+    explain: |
+      پنهان کردن داده‌ی داخلی با `private` و دادن یک راه کنترل‌شده برای تغییر آن (`deposit`)، تعریفِ **encapsulation** است. `private` اتفاقاً جلوی دسترسی کلاس‌های فرزند را هم می‌گیرد (گزینه‌ی ۱ غلط)، ربطی به نوع داده و generics ندارد (گزینه‌ی ۲) و SRP درباره‌ی تعداد مسئولیت‌هاست، نه تعداد propertyها (گزینه‌ی ۳).
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class BankAccount {
+        private balance = 0;
+        readonly owner: string;
+        constructor(owner: string) {
+          this.owner = owner;
+        }
+        deposit(amount: number): void {
+          if (amount <= 0) throw new Error("Invalid amount");
+          this.balance += amount;
+        }
+        getBalance(): number {
+          return this.balance;
+        }
+      }
+      const acc = new BankAccount("Sara");
+      acc.deposit(200);
+      console.log(acc.owner, acc.getBalance());
+      acc.balance = 1000000;
+    options:
+      - line: 9
+      - line: 16
+      - line: 17
+      - line: 18
+    answer: 4
+    explain: |
+      `balance` `private` فقط داخل خودِ کلاس قابل تغییر است؛ پس خط ۹ (داخل `deposit`) مجاز است ولی خط ۱۸ از بیرون کلاس است و خطای **TS2341** می‌دهد. این همان فایده‌ی encapsulation است: تنها راه تغییر موجودی، متد `deposit` با بررسی مبلغ است. خواندن `owner` `readonly` در خط ۱۷ و صدا زدن متد `public` در خط ۱۶ هم کاملاً مجازند.
+  - level: medium
+    stem: |
+      کدام دستور را می‌توان در جای خالی نوشت تا کد **بدون خطا** کامپایل شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      const days: readonly string[] = ["Sat", "Sun"];
+      // ____
+    prelude: |
+      const days: readonly string[] = ["Sat", "Sun"];
+    options:
+      - code: 'days.push("Mon");'
+      - code: 'days[0] = "Fri";'
+      - code: 'const more = days.concat(["Mon"]);'
+      - code: 'days.sort();'
+    answer: 3
+    explain: |
+      روی آرایه‌ی `readonly` فقط متدهایی وجود دارند که آرایه را تغییر نمی‌دهند؛ `concat` آرایه‌ی **جدیدی** برمی‌گرداند و `days` دست‌نخورده می‌ماند، پس مجاز است. `push` و `sort` آرایه را درجا تغییر می‌دهند و روی `readonly string[]` اصلاً وجود ندارند (خطای TS2339)، و نوشتن در خانه‌ی آرایه (`days[0] = ...`) هم خطای TS2542 می‌دهد.
+  - level: medium
+    stem: |
+      کلاس `UserManager` این چهار کار را انجام می‌دهد: بررسی درستی ایمیل، ذخیره‌ی کاربر در پایگاه داده، ارسال ایمیل خوش‌آمد و ساختن HTML صفحه‌ی پروفایل. طبق اسلاید ۲۴، بهترین اصلاح کدام است؟
+    options:
+      - 'کلاس را به چند کلاس کوچک و متمرکز تقسیم کنیم؛ مثلاً `EmailValidator`، `UserRepository`، `WelcomeMailer` و `ProfileView`.'
+      - 'همه را در همان کلاس نگه داریم ولی همه‌ی متدها را `private` کنیم.'
+      - 'یک کلاس پایه بسازیم و `UserManager` را از آن `extends` کنیم تا کد کوتاه‌تر شود.'
+      - 'همه‌ی propertyهای کلاس را `readonly` کنیم.'
+    answer: 1
+    explain: |
+      `UserManager` چهار مسئولیت دارد و با هر تغییر در ایمیل، پایگاه داده یا ظاهر صفحه باید عوض شود؛ این نقض **SRP** است. راه‌حل، شکستن آن به کلاس‌های کوچکی است که هر کدام یک مسئولیت دارند. `private` کردن متدها (گزینه‌ی ۲) فقط آن‌ها را غیرقابل‌استفاده می‌کند و مسئولیت‌ها را جدا نمی‌کند، وراثت (گزینه‌ی ۳) کلاس را کوچک‌تر نمی‌کند و فقط وابستگی اضافه می‌کند، و `readonly` (گزینه‌ی ۴) ربطی به تعداد مسئولیت‌ها ندارد.
+  - level: medium
+    stem: |
+      در یک پروژه به یک پشته (stack) برای عددها و یک پشته برای رشته‌ها نیاز داریم. طبق توصیه‌های اسلاید ۲۴ کدام طراحی بهتر است؟
+    options:
+      - 'دو کلاس جدا به اسم‌های `NumberStack` و `StringStack` با کد تقریباً یکسان.'
+      - 'یک کلاس `Stack` که آرایه‌ی داخلی‌اش از نوع `any[]` است.'
+      - 'یک کلاس `NumberStack` و یک کلاس `StringStack extends NumberStack`.'
+      - 'یک کلاس generic به شکل `class Stack<T>` و ساختن `new Stack<number>()` و `new Stack<string>()`.'
+    answer: 4
+    explain: |
+      «Leverage generics for reusable, type-safe code»: با `Stack<T>` کد فقط یک بار نوشته می‌شود و بررسی نوع هم حفظ می‌شود (`push("x")` روی `Stack<number>` خطای کامپایل دارد). گزینه‌ی ۱ کد تکراری می‌سازد، گزینه‌ی ۲ با `any` بررسی نوع را از دست می‌دهد، و گزینه‌ی ۳ وراثت بی‌معنی است (پشته‌ی رشته «یک» پشته‌ی عدد نیست) و نوع‌ها را هم با هم ناسازگار می‌کند.
+  - level: medium
+    stem: |
+      خروجی کد زیر چیست؟
+    check: ts-output
+    code: |
+      class Engine {
+        start(): string {
+          return "engine started";
+        }
+      }
+      class Car {
+        private engine = new Engine();
+        drive(): void {
+          console.log(this.engine.start());
+          console.log("driving");
+        }
+      }
+      const car = new Car();
+      car.drive();
+      console.log(car instanceof Engine);
+    options:
+      - out: ["engine started", "driving", "true"]
+      - out: ["engine started", "driving", "false"]
+      - out: ["driving", "false"]
+      - out: ["!! TypeError"]
+    answer: 2
+    explain: |
+      `Car` یک شیء `Engine` را **در خودش دارد** (composition) و `drive` کار روشن کردن را به آن می‌سپارد؛ پس اول `engine started` و بعد `driving` چاپ می‌شود. ولی `Car` از `Engine` ارث نبرده، پس `car instanceof Engine` برابر `false` است (رابطه has-a است، نه is-a). گزینه‌ی ۱ ترکیب را با وراثت اشتباه گرفته، گزینه‌ی ۳ فراموش کرده `this.engine.start()` هم چاپ می‌شود، و چون `engine` کنار اعلانش مقدار گرفته خطایی (گزینه‌ی ۴) رخ نمی‌دهد.
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Engine {
+        start(): string {
+          return "engine started";
+        }
+      }
+      class Car {
+        private engine = new Engine();
+        drive(): string {
+          return this.engine.start() + ", driving";
+        }
+      }
+      const car = new Car();
+      console.log(car.drive());
+      console.log(car.start());
+    options:
+      - line: 9
+      - line: 13
+      - line: 14
+      - line: 0
+    answer: 3
+    explain: |
+      با ترکیب، `Car` فقط متدهایی را دارد که خودش تعریف کرده (`drive`)؛ متدهای `Engine` به `Car` منتقل نمی‌شوند. پس `car.start()` در خط ۱۴ خطای **TS2339** (`Property 'start' does not exist on type 'Car'`) می‌دهد. خط ۹ مجاز است چون داخل کلاس از شیء `engine` خودش استفاده می‌کند. این دقیقاً فایده‌ی ترکیب است: فقط چیزهایی بیرون دیده می‌شوند که لازم است (اگر `Car` از `Engine` ارث می‌برد، `car.start()` هم مجاز می‌شد).
+  - level: medium
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      interface PaymentMethod {
+        pay(amount: number): string;
+      }
+      class CardPayment implements PaymentMethod {
+        pay(amount: number): string {
+          return `Paid ${amount} by card`;
+        }
+      }
+      function checkout(method: PaymentMethod, total: number): void {
+        console.log(method.pay(total));
+      }
+      checkout(new CardPayment(), 100);
+      checkout({ pay: (a: number) => `Paid ${a} in cash` }, 20);
+      checkout({ charge: (a: number) => `Charged ${a}` }, 30);
+    options:
+      - line: 4
+      - line: 12
+      - line: 13
+      - line: 14
+    answer: 4
+    explain: |
+      `checkout` هر چیزی را که قرارداد `PaymentMethod` را رعایت کند می‌پذیرد: هم شیء کلاس `CardPayment` (خط ۱۲) و هم یک شیء ساده که متد `pay` با همان نوع دارد (خط ۱۳)، حتی بدون کلاس. اما شیء خط ۱۴ به‌جای `pay` متد `charge` دارد و قرارداد را نقض می‌کند؛ خطای **TS2353** (`'charge' does not exist in type 'PaymentMethod'`) می‌گیرد. خط ۴ هم پیاده‌سازی درستِ قرارداد است.
+  - level: hard
+    stem: |
+      کدام خط کد زیر خطای کامپایل دارد؟
+    check: tsc-line
+    code: |
+      class Cart {
+        private readonly items: string[] = [];
+        add(item: string): void {
+          this.items.push(item);
+        }
+        clear(): void {
+          this.items.length = 0;
+        }
+        reset(): void {
+          this.items = [];
+        }
+      }
+    options:
+      - line: 4
+      - line: 7
+      - line: 10
+      - line: 0
+    answer: 3
+    explain: |
+      `readonly` **سطحی** است: فقط جلوی مقداردهی دوباره‌ی خودِ property را می‌گیرد؛ پس `this.items = []` در خط ۱۰ (که بیرون از constructor است) خطای **TS2540** می‌دهد. اما خطوط ۴ و ۷ property را عوض نمی‌کنند، بلکه **محتوای** همان آرایه را تغییر می‌دهند، که مجاز است. اگر بخواهیم محتوا هم قفل شود، باید نوع را `readonly string[]` تعریف کنیم.
+  - level: hard
+    stem: |
+      با تعریف‌های زیر، کدام گزینه **خطای کامپایل** دارد؟
+    check: option-tsc
+    code: |
+      interface Entity {
+        id: number;
+      }
+      class Repository<T extends Entity> {
+        private items: T[] = [];
+        add(item: T): void {
+          this.items.push(item);
+        }
+      }
+      interface Product extends Entity {
+        title: string;
+      }
+    prelude: |
+      interface Entity {
+        id: number;
+      }
+      class Repository<T extends Entity> {
+        private items: T[] = [];
+        add(item: T): void {
+          this.items.push(item);
+        }
+      }
+      interface Product extends Entity {
+        title: string;
+      }
+    options:
+      - code: 'const r = new Repository<string>();'
+      - code: 'new Repository<Product>().add({ id: 1, title: "Book" });'
+      - code: 'new Repository<Entity>().add({ id: 2 });'
+      - code: 'new Repository<{ id: number; name: string }>().add({ id: 3, name: "Pen" });'
+    answer: 1
+    explain: |
+      قید `T extends Entity` یعنی آرگومان نوع باید حداقل یک `id` عددی داشته باشد. `string` چنین شکلی ندارد و خطای **TS2344** (`Type 'string' does not satisfy the constraint 'Entity'`) می‌دهد. `Product` (که `Entity` را extend کرده)، خودِ `Entity` و حتی یک نوع ناشناس که `id: number` دارد (گزینه‌ی ۴) همگی قید را رعایت می‌کنند. ترکیب interface + generic + `private` همان چیزی است که اسلاید ۲۴ توصیه می‌کند.
+  - level: hard
+    stem: |
+      کدام طراحی با توصیه‌های اسلاید ۲۴ **در تضاد** است؟
+    options:
+      - 'تعریف interface `Logger` و نوشتن تابع‌هایی که به‌جای یک کلاس مشخص، هر `Logger`ی را بپذیرند.'
+      - 'ساختن زنجیره‌ی وراثت عمیق (`D extends C`، `C extends B`، `B extends A`) فقط برای این‌که چند متد دوباره استفاده شود.'
+      - '`readonly` کردن شناسه‌ی (`id`) یک شیء که بعد از ساخته شدن نباید عوض شود.'
+      - 'نوشتن یک کلاس `Cache<T>` به‌جای دو کلاس جداگانه‌ی `StringCache` و `NumberCache`.'
+    answer: 2
+    explain: |
+      اسلاید ۲۴ می‌گوید «Use inheritance sparingly; prefer composition»؛ زنجیره‌ی عمیق وراثت فقط برای استفاده‌ی دوباره از چند متد، کلاس‌ها را محکم به هم می‌چسباند و فهم کد را سخت می‌کند؛ بهتر است آن متدها در یک کلاس کمکی قرار بگیرند و با ترکیب استفاده شوند. گزینه‌ی ۱ همان «interface به‌عنوان قرارداد»، گزینه‌ی ۳ همان «ترجیح `readonly` برای تغییرناپذیری» و گزینه‌ی ۴ همان «generics برای کد reusable» است.
+  - level: hard
+    stem: |
+      برنامه‌نویسی پشته را این‌طور نوشته است: `class Stack<T> extends Array<T> {}`. این کد بدون خطا کامپایل می‌شود. طبق توصیه‌های اسلاید ۲۴، مشکل اصلی این طراحی چیست؟
+    options:
+      - '`Stack` همه‌ی متدهای آرایه (مثل `splice`، `shift` و `unshift`) را به ارث می‌برد و هر کسی می‌تواند قانون LIFO را بشکند؛ ترکیب (یک آرایه‌ی `private` داخل کلاس) فقط متدهای لازم را بیرون نشان می‌دهد.'
+      - 'در TypeScript نمی‌توان از کلاس‌های آماده‌ای مثل `Array` ارث برد.'
+      - 'وراثت باعث می‌شود generic بودن `Stack<T>` از بین برود و همه‌چیز `any` شود.'
+      - 'با `extends Array` دیگر نمی‌توان `push` و `pop` را روی پشته صدا زد.'
+    answer: 1
+    explain: |
+      پشته باید فقط از بالا عضو بگیرد و پس بدهد؛ ولی با `extends Array` تمام رابط آرایه (مثلاً `splice(0, 1)` یا `unshift`) هم در دسترس است و قانون پشته را می‌شکند. با **ترکیب** (`private items: T[] = []` و فقط متدهای `push`/`pop`) این مشکل پیش نمی‌آید. گزینه‌ی ۲ غلط است چون این کد واقعاً کامپایل می‌شود، گزینه‌ی ۳ غلط است چون `Array<T>` خودش generic است، و گزینه‌ی ۴ برعکس است: `push` و `pop` دقیقاً از `Array` به ارث رسیده‌اند.

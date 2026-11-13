@@ -1,0 +1,642 @@
+id: ch1-casting
+title: "تبدیل نوع صریح (Casting)"
+slides: "Introduction to JS، اسلاید ۲۰"
+lesson: |
+  فرض کن از سفر برگشته‌ای و چند اسکناس دلار در جیبت داری، اما مغازه‌ی سر کوچه فقط ریال قبول می‌کند. چه می‌کنی؟ به صرافی می‌روی و **خودت صریحاً** می‌گویی: «لطفاً این را به ریال تبدیل کن». در برنامه‌نویسی هم همین اتفاق زیاد می‌افتد: مقداری داریم که از یک نوع است (مثلاً رشته‌ی `"42"` که کاربر در یک فرم تایپ کرده)، ولی برای کارمان نوع دیگری لازم داریم (عدد `42` تا بتوانیم با آن حساب کنیم).
+
+  ### Casting چیست؟
+  طبق اسلاید ۲۰، **casting** (تبدیل نوع؛ یعنی تبدیل یک مقدار از یک نوع داده به نوعی دیگر) در JavaScript دو شکل دارد:
+
+  1. **Explicit casting** (تبدیل صریح): خودمان با صدا زدن توابع `Number()`، `String()` و `Boolean()` درخواست تبدیل می‌کنیم؛ درست مثل رفتن به صرافی.
+  2. **Implicit casting** یا **type coercion** (تبدیل ضمنی یا خودکار): خود JavaScript وسط یک عملیات، بدون اینکه ما چیزی بخواهیم، نوع را عوض می‌کند. این موضوعِ درس بعد است و اینجا فقط پیش‌نمایشش را می‌بینیم.
+
+  کد اسلاید ۲۰:
+
+  ```js
+  // Explicit casting: we ask for the conversion ourselves
+  console.log(Number("42")); // 42   (string -> number)
+  console.log(String(99));   // "99" (number -> string)
+  console.log(Boolean(1));   // true (number -> boolean)
+
+  // Implicit casting (type coercion): JavaScript converts on its own
+  console.log("5" + 1);      // "51"
+  console.log(2 * "3");      // 6
+  ```
+
+  ::: note قرارداد این کتاب درباره‌ی گیومه‌ها
+  `console.log` رشته‌ها را **بدون** گیومه چاپ می‌کند؛ یعنی `console.log(String(99))` در کنسول فقط `99` نشان می‌دهد. ما در توضیحِ کنار کد (comment) رشته‌ها را داخل گیومه می‌نویسیم (`"99"`) تا معلوم باشد نتیجه رشته است، نه عدد. در گزینه‌های تست‌های «خروجی کد» دقیقاً همان چیزی آمده که کنسول چاپ می‌کند.
+  :::
+
+  #### فعالیت کلاسی اسلاید ۲۰: حاصل `"5" - 1` چیست؟
+  جواب: عدد `4`. عملگر `-` برای رشته‌ها هیچ معنایی ندارد (چیزی به اسم «تفریق رشته» نداریم)، پس JavaScript رشته‌ی `"5"` را به عدد `5` تبدیل می‌کند و `5 - 1` می‌شود `4`. در مقابل، `+` برای رشته‌ها معنا دارد (چسباندن یا concatenation)، برای همین `"5" + 1` می‌شود `"51"`. جزئیات این رفتار را در درس بعد (Type coercion) می‌خوانیم.
+
+  ```js
+  console.log("5" - 1);          // 4 (a number)
+  console.log(typeof ("5" - 1)); // "number"
+  console.log("5" + 1);          // "51" (a string)
+  ```
+
+  ### تبدیل به عدد: `Number(x)`
+  `Number` تبدیل‌کننده‌ای **سخت‌گیر** است: یا **کل** رشته یک عدد معتبر است، یا نتیجه `NaN` (Not a Number؛ یعنی «عدد معتبری نیست») می‌شود. جدول زیر را با دقت بخوان؛ بیشتر تست‌ها از همین‌جا طرح می‌شوند:
+
+  | مقدار ورودی | `Number(...)` | چرا؟ |
+  |---|---|---|
+  | `"42"` | `42` | رشته‌ی عددی معتبر |
+  | `"3.14"` | `3.14` | عدد اعشاری هم قبول است |
+  | `"  12  "` | `12` | فاصله‌های ابتدا و انتها نادیده گرفته می‌شوند |
+  | `""` و `" "` | `0` | رشته‌ی خالی (یا فقط فاصله) صفر حساب می‌شود |
+  | `"12px"` | `NaN` | حتی یک کاراکتر غیرعددی کل تبدیل را خراب می‌کند |
+  | `"abc"` | `NaN` | اصلاً عدد نیست |
+  | `true` / `false` | `1` / `0` | |
+  | `null` | `0` | «هیچ» به صفر تبدیل می‌شود |
+  | `undefined` | `NaN` | «تعریف‌نشده» عدد معتبری ندارد |
+  | `[]` | `0` | آرایه‌ی خالی ← رشته‌ی `""` ← `0` |
+  | `[5]` | `5` | ← رشته‌ی `"5"` ← `5` |
+  | `[1, 2]` | `NaN` | ← رشته‌ی `"1,2"` ← `NaN` (ویرگول جزو عدد نیست) |
+  | `{}` | `NaN` | ← رشته‌ی `"[object Object]"` ← `NaN` |
+
+  آرایه‌ها و شیءها (object) مستقیم به عدد تبدیل نمی‌شوند: **اول به رشته** تبدیل می‌شوند و بعد آن رشته به عدد. آرایه به رشته‌ای تبدیل می‌شود که عناصرش با ویرگول به هم چسبیده‌اند و هر شیء ساده به `"[object Object]"`.
+
+  ```js
+  console.log(Number(""));        // 0
+  console.log(Number("  12  "));  // 12
+  console.log(Number("12px"));    // NaN
+  console.log(Number(null));      // 0
+  console.log(Number(undefined)); // NaN
+  console.log(Number(true));      // 1
+  console.log(Number([]));        // 0
+  console.log(Number([5]));       // 5
+  console.log(Number([1, 2]));    // NaN
+  console.log(Number({}));        // NaN
+  ```
+
+  ### `parseInt` و `parseFloat`: خواندن از ابتدای رشته
+  این دو تابع **آسان‌گیر**ند: رشته را از سمت چپ کاراکتربه‌کاراکتر می‌خوانند، به **اولین کاراکتر نامعتبر** که برسند می‌ایستند و هر چه تا آنجا خوانده‌اند را برمی‌گردانند. اگر همان کاراکتر اول نامعتبر باشد، نتیجه `NaN` است.
+
+  - `parseInt` (parse integer؛ یعنی «عدد صحیح را بخوان») فقط رقم می‌خواند و به نقطه‌ی اعشار که برسد می‌ایستد؛ پس بخش اعشاری را **دور می‌ریزد** و گرد نمی‌کند!
+  - `parseFloat` (یعنی «عدد اعشاری را بخوان») اولین نقطه‌ی اعشار را هم می‌پذیرد.
+
+  ```js
+  console.log(parseInt("12px"));    // 12   (stops at "p")
+  console.log(parseInt("3.9"));     // 3    (stops at "."; no rounding!)
+  console.log(parseFloat("3.9kg")); // 3.9  (stops at "k")
+  console.log(parseInt("abc"));     // NaN  (the first character is already invalid)
+  console.log(parseInt("px12"));    // NaN  (it must START with a number)
+  console.log(parseInt("  42  "));  // 42   (leading spaces are skipped)
+  console.log(parseInt(""));        // NaN  (but Number("") is 0!)
+  ```
+
+  مقایسه‌ی سه تابع (این جدول را حفظ کن):
+
+  | ورودی | `Number` | `parseInt` | `parseFloat` |
+  |---|---|---|---|
+  | `"42"` | `42` | `42` | `42` |
+  | `"3.9"` | `3.9` | `3` | `3.9` |
+  | `"12px"` | `NaN` | `12` | `12` |
+  | `"3.9kg"` | `NaN` | `3` | `3.9` |
+  | `""` | `0` | `NaN` | `NaN` |
+  | `"abc"` | `NaN` | `NaN` | `NaN` |
+
+  ::: info بیشتر بدانیم
+  `parseInt` یک ورودی دوم اختیاری هم دارد به نام **radix** (مبنای عدد): `parseInt("ff", 16)` برابر `255` و `parseInt("101", 2)` برابر `5` است. در کدهای واقعی معمولاً برای اطمینان می‌نویسند `parseInt(text, 10)`.
+  :::
+
+  ### تبدیل به رشته: `String(x)` و `toString()`
+  تبدیل به رشته ساده‌ترین تبدیل است: تقریباً هر مقدار همان‌طور که «دیده می‌شود» به متن تبدیل می‌شود.
+
+  ```js
+  console.log(String(99));        // "99"
+  console.log(String(true));      // "true"
+  console.log(String(null));      // "null"
+  console.log(String(undefined)); // "undefined"
+  console.log(String([1, 2]));    // "1,2"  (elements joined with commas)
+  console.log(String([]));        // ""     (an empty string)
+  console.log(String({}));        // "[object Object]"
+  console.log((123).toString());  // "123"
+  ```
+
+  راه دوم، متد `toString()` است که روی خود مقدار صدا زده می‌شود: `(123).toString()` یا `n.toString()`. دو نکته درباره‌اش:
+
+  - روی `null` و `undefined` **کار نمی‌کند** و خطای `TypeError` می‌دهد (مثلاً `null.toString()`)؛ اما `String(null)` بی‌خطر است و `"null"` می‌دهد.
+  - برای عددی که مستقیم در کد نوشته شده، پرانتز لازم است: `(123).toString()`. اگر بنویسی `123.toString()`، JavaScript نقطه را نقطه‌ی اعشارِ عدد فرض می‌کند و خطای نحوی (SyntaxError) می‌دهد. روی یک متغیر مشکلی نیست: `n.toString()`.
+
+  ### تبدیل به boolean: `Boolean(x)`، مقدارهای truthy و falsy
+  در JavaScript فقط **۸ مقدار** هنگام تبدیل به boolean، `false` می‌شوند. به این‌ها **falsy** (شبه‌نادرست) می‌گوییم:
+
+  `false`، `0`، `-0`، `0n` (صفرِ BigInt)، `""` (رشته‌ی خالی)، `null`، `undefined`، `NaN`
+
+  **هر** مقدار دیگری **truthy** (شبه‌درست) است و `true` می‌شود؛ حتی این‌ها که ظاهرشان گول‌زننده است: `"0"`، `"false"`، `" "` (رشته‌ای که فقط یک فاصله دارد)، `[]` (آرایه‌ی خالی)، `{}` (شیء خالی)، `-1` و `Infinity`.
+
+  ::: analogy
+  falsyها را مثل یک «لیست سیاه» ۸ نفره دمِ در یک مهمانی تصور کن: نگهبان فقط همین ۸ نفر را راه نمی‌دهد و بقیه، با هر ظاهری، وارد می‌شوند. رشته‌ی `"0"` شبیه عدد `0` است، ولی اسمش در لیست سیاه نیست؛ یک رشته‌ی غیرخالی است، پس truthy است.
+  :::
+
+  ```js
+  console.log(Boolean(1));       // true  (slide 20)
+  console.log(Boolean(0));       // false
+  console.log(Boolean(""));      // false (empty string)
+  console.log(Boolean(" "));     // true  (a space is a character!)
+  console.log(Boolean("0"));     // true  (non-empty string)
+  console.log(Boolean("false")); // true  (non-empty string)
+  console.log(Boolean([]));      // true  (every array/object is truthy)
+  console.log(Boolean({}));      // true
+  console.log(Boolean(null));    // false
+  console.log(Boolean(NaN));     // false
+  ```
+
+  این همان تبدیلی است که شرط `if` پشت پرده انجام می‌دهد: `if (x)` یعنی «اگر `x` truthy است». (درباره‌ی `if` در درس «دستورهای شرطی» مفصل می‌خوانیم.)
+
+  ### میان‌برها: `+x`، `!!x` و `x + ""`
+  برنامه‌نویس‌های JavaScript اغلب به جای نوشتن نام تابع از این میان‌برها استفاده می‌کنند و تو باید بتوانی آن‌ها را بخوانی:
+
+  | میان‌بر | معادل | مثال |
+  |---|---|---|
+  | `+x` (unary plus؛ علامت مثبتِ تک‌عملوندی) | `Number(x)` | `+"42"` ← `42`، `+""` ← `0`، `+true` ← `1`، `+"3.5px"` ← `NaN` |
+  | `!!x` (دو بار نقیض) | `Boolean(x)` | `!!"hello"` ← `true`، `!!0` ← `false` |
+  | `x + ""` | `String(x)` | `5 + ""` ← `"5"` |
+
+  `!!x` چطور کار می‌کند؟ عملگر `!` (NOT) مقدار را به boolean تبدیل و برعکس می‌کند؛ `!` دوم دوباره برعکسش می‌کند. پس `!!"hello"` یعنی `!false`، یعنی `true`.
+
+  ```js
+  console.log(+"42", +"", +true, +"3.5px"); // 42 0 1 NaN
+  console.log(!!"hello", !!0, !!"0");       // true false true
+  console.log(5 + "", typeof (5 + ""));     // "5" "string"
+  ```
+
+  ### `NaN`: «عدد نیست»ی که نوعش number است!
+  `NaN` (کوتاه‌شده‌ی Not a Number) نتیجه‌ی یک تبدیل یا محاسبه‌ی عددیِ **شکست‌خورده** است: `Number("abc")`، `0 / 0`، `"abc" * 2` یا `undefined + 1`. سه ویژگی عجیب دارد:
+
+  1. `typeof NaN` برابر `"number"` است! `NaN` یک مقدار خاص از نوع number است که معنایش «عدد نامعتبر» است.
+  2. **مسری** است: هر محاسبه‌ی ریاضی با `NaN` نتیجه‌اش `NaN` است (`NaN + 1` ← `NaN`).
+  3. با **هیچ** چیز، حتی خودش، برابر نیست: `NaN === NaN` برابر `false` است (در درس «عملگرهای مقایسه و منطقی» بیشتر می‌بینیم). پس برای تشخیصش نمی‌توان از `===` کمک گرفت.
+
+  برای تشخیص `NaN` دو تابع داریم که فرق مهمی با هم دارند:
+
+  - `isNaN(x)` (تابع قدیمی و سراسری): **اول** `x` را با `Number` به عدد تبدیل می‌کند و **بعد** می‌پرسد «نتیجه `NaN` است؟». پس `isNaN("abc")` برابر `true` است، چون `"abc"` به `NaN` تبدیل می‌شود.
+  - `Number.isNaN(x)` (از ES6): **هیچ تبدیلی** انجام نمی‌دهد و فقط وقتی `true` می‌دهد که `x` واقعاً خودِ مقدار `NaN` باشد. پس `Number.isNaN("abc")` برابر `false` است؛ `"abc"` یک رشته است، نه `NaN`.
+
+  ```js
+  console.log(typeof NaN);          // "number"
+  console.log(isNaN("abc"));        // true  ("abc" -> NaN)
+  console.log(Number.isNaN("abc")); // false (a string is not the NaN value)
+  console.log(isNaN(""));           // false ("" -> 0)
+  console.log(isNaN(undefined));    // true  (undefined -> NaN)
+  console.log(Number.isNaN(NaN));   // true
+  console.log(Number.isNaN(0 / 0)); // true
+  ```
+
+  ::: tip
+  هر چیزی که از ورودی کاربر می‌آید (مقدار یک فیلد فرم یا جواب `prompt`) **رشته** است. قبل از محاسبه صریحاً تبدیلش کن: اگر کل ورودی باید عدد باشد `Number(input)`، و اگر عدد در ابتدای متن آمده (مثل `"12px"`) `parseInt`/`parseFloat`. برای تشخیص `NaN` هم همیشه `Number.isNaN` را ترجیح بده.
+  :::
+
+  ::: trap
+  - `Number("")` برابر `0` است، ولی `parseInt("")` برابر `NaN`.
+  - `parseInt("3.9")` برابر `3` است، نه `4` (گرد نمی‌کند، فقط می‌بُرد).
+  - `Boolean("0")` و `Boolean("false")` هر دو `true` هستند (رشته‌ی غیرخالی)، ولی `Boolean("")` برابر `false` است.
+  - `Number(" ")` برابر `0` است، ولی `Boolean(" ")` برابر `true`.
+  - `typeof NaN` برابر `"number"` است، نه `"NaN"`.
+  - `isNaN("abc")` برابر `true` است، ولی `Number.isNaN("abc")` برابر `false`.
+  - `String(null)` می‌شود `"null"`، اما `null.toString()` خطای `TypeError` می‌دهد.
+  :::
+
+  ::: info بیشتر بدانیم
+  `Number`، `String` و `Boolean` را برای تبدیل همیشه **بدون** `new` صدا بزن. `new Number(5)` یک شیء «پوشاننده» (wrapper object) می‌سازد که `typeof` آن `"object"` است، نه `"number"`.
+  :::
+
+  ::: summary
+  | تبدیل | تابع صریح | میان‌بر | نکته‌ی کلیدی |
+  |---|---|---|---|
+  | به عدد | `Number(x)` | `+x` | سخت‌گیر: `"12px"` ← `NaN`؛ `""`، `null` و `[]` ← `0`؛ `undefined` ← `NaN` |
+  | به عدد (از ابتدای متن) | `parseInt` / `parseFloat` | — | تا اولین کاراکتر نامعتبر می‌خواند؛ `""` ← `NaN` |
+  | به رشته | `String(x)` | `x + ""` | `[1, 2]` ← `"1,2"`؛ `{}` ← `"[object Object]"` |
+  | به boolean | `Boolean(x)` | `!!x` | فقط ۸ مقدار falsy داریم؛ بقیه truthy‌اند |
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۰، **casting** در JavaScript به چه معناست؟
+    options:
+      - ذخیره کردن یک مقدار در یک متغیر تازه
+      - تبدیل یک مقدار از یک نوع داده به نوعی دیگر
+      - بررسی نوع یک مقدار با عملگر `typeof`
+      - چاپ یک مقدار در کنسول با `console.log`
+    answer: 2
+    explain: |
+      Casting یعنی تبدیل نوع یک مقدار، مثل `Number("42")` که رشته را به عدد `42` تبدیل می‌کند. ذخیره در متغیر (گزینه‌ی ۱) فقط انتساب است و نوع را عوض نمی‌کند؛ `typeof` (گزینه‌ی ۳) فقط نوع را **گزارش** می‌کند و چیزی را تبدیل نمی‌کند؛ `console.log` (گزینه‌ی ۴) هم فقط مقدار را نمایش می‌دهد.
+
+  - level: easy
+    stem: |
+      کدام عبارت یک تبدیل نوع **صریح** (explicit casting) است؟
+    options:
+      - '`"5" + 1`'
+      - '`2 * "3"`'
+      - '`"5" - 1`'
+      - '`String(99)`'
+    answer: 4
+    explain: |
+      در تبدیل صریح، خود برنامه‌نویس با صدا زدن `Number()`، `String()` یا `Boolean()` تبدیل را درخواست می‌کند؛ `String(99)` عدد را صریحاً به رشته‌ی `"99"` تبدیل می‌کند. سه گزینه‌ی دیگر نمونه‌ی **تبدیل ضمنی** (type coercion) هستند: در آن‌ها JavaScript خودش وسط عملیات نوع را عوض می‌کند و به ترتیب `"51"`، `6` و `4` به دست می‌آید.
+
+  - level: easy
+    stem: |
+      حاصل `Number("42")` کدام است؟
+    check: value
+    expr: 'Number("42")'
+    options:
+      - value: '"42"'
+      - value: 'NaN'
+      - value: '42'
+      - value: 'undefined'
+    answer: 3
+    explain: |
+      `Number` رشته‌ی عددیِ معتبر `"42"` را به **عدد** `42` تبدیل می‌کند (مثال اسلاید ۲۰). گزینه‌ی ۱ همان رشته‌ی ورودی است و تبدیلی در آن رخ نداده؛ `NaN` (گزینه‌ی ۲) فقط وقتی به دست می‌آید که رشته عدد معتبری نباشد، مثل `"42px"`؛ و `undefined` (گزینه‌ی ۴) هیچ ربطی به این تبدیل ندارد.
+
+  - level: easy
+    stem: |
+      فعالیت کلاسی اسلاید ۲۰: حاصل `"5" - 1` کدام است؟
+    check: value
+    expr: '"5" - 1'
+    options:
+      - value: '4'
+      - value: '"51"'
+      - value: '"4"'
+      - value: 'NaN'
+    answer: 1
+    explain: |
+      عملگر `-` برای رشته‌ها معنایی ندارد، پس JavaScript رشته‌ی `"5"` را به عدد `5` تبدیل می‌کند و حاصل **عدد** `4` است. گزینه‌ی ۲ رفتار `+` است (`"5" + 1` می‌شود `"51"`)؛ گزینه‌ی ۳ مقدار درست را دارد ولی نوعش را اشتباهاً رشته فرض کرده؛ `NaN` (گزینه‌ی ۴) وقتی پیش می‌آمد که رشته عددی نبود، مثل `"abc" - 1`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(Number(""));
+      console.log(Number("  12  "));
+      console.log(Number("12px"));
+    options:
+      - out: ["0", "12", "NaN"]
+      - out: ["NaN", "12", "12"]
+      - out: ["0", "NaN", "12"]
+      - out: ["NaN", "NaN", "NaN"]
+    answer: 1
+    explain: |
+      `Number` رشته‌ی خالی را `0` می‌کند و فاصله‌های ابتدا و انتها را نادیده می‌گیرد، پس `"  12  "` می‌شود `12`؛ اما `"12px"` به خاطر `px` عدد معتبری نیست و `NaN` می‌شود. گزینه‌ی ۲ دقیقاً رفتار `parseInt` است، نه `Number` (`parseInt("")` برابر `NaN` و `parseInt("12px")` برابر `12` است). گزینه‌ی ۳ فاصله‌ها را نامعتبر و `px` را بی‌اثر فرض کرده و گزینه‌ی ۴ فکر کرده رشته‌ی خالی و رشته‌ی فاصله‌دار هم عدد نمی‌شوند.
+
+  - level: medium
+    stem: |
+      کدام گزینه **نادرست** است؟
+    check: claims
+    want: false
+    options:
+      - text: '`Number(null)` برابر `0` است.'
+        expr: 'Number(null)'
+        equals: '0'
+      - text: '`Number(true)` برابر `1` است.'
+        expr: 'Number(true)'
+        equals: '1'
+      - text: '`Number(undefined)` برابر `0` است.'
+        expr: 'Number(undefined)'
+        equals: '0'
+      - text: '`Number([])` برابر `0` است.'
+        expr: 'Number([])'
+        equals: '0'
+    answer: 3
+    explain: |
+      `undefined` به `NaN` تبدیل می‌شود، نه `0`؛ پس گزینه‌ی ۳ نادرست است. سه گزینه‌ی دیگر درست‌اند: `null` (یعنی «عمداً هیچ») صفر می‌شود، `true` یک می‌شود و آرایه‌ی خالی اول به رشته‌ی `""` و بعد به `0` تبدیل می‌شود. همین تفاوت `null` و `undefined` ریشه‌ی دام معروف `null + 1` برابر `1` ولی `undefined + 1` برابر `NaN` است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(Number([]));
+      console.log(Number([5]));
+      console.log(Number([1, 2]));
+      console.log(Number({}));
+    options:
+      - out: ["NaN", "5", "3", "NaN"]
+      - out: ["0", "5", "12", "0"]
+      - out: ["NaN", "NaN", "NaN", "NaN"]
+      - out: ["0", "5", "NaN", "NaN"]
+    answer: 4
+    explain: |
+      آرایه‌ها و شیءها اول به رشته تبدیل می‌شوند: `[]` ← `""` ← `0`؛ `[5]` ← `"5"` ← `5`؛ `[1, 2]` ← `"1,2"` که به خاطر ویرگول عدد معتبری نیست ← `NaN`؛ و `{}` ← `"[object Object]"` ← `NaN`. گزینه‌ی ۱ فکر کرده عناصر آرایه با هم جمع می‌شوند، گزینه‌ی ۲ فکر کرده ویرگول حذف می‌شود و شیء خالی صفر است، و گزینه‌ی ۳ فکر کرده هیچ آرایه‌ای به عدد تبدیل نمی‌شود.
+
+  - level: hard
+    stem: |
+      حاصل کدام عبارت `NaN` **نیست**؟
+    check: claims
+    want: false
+    options:
+      - text: '`Number("12px")`'
+        expr: 'Number("12px")'
+        equals: 'NaN'
+      - text: '`Number(undefined)`'
+        expr: 'Number(undefined)'
+        equals: 'NaN'
+      - text: '`Number(" ")`'
+        expr: 'Number(" ")'
+        equals: 'NaN'
+      - text: '`Number({})`'
+        expr: 'Number({})'
+        equals: 'NaN'
+    answer: 3
+    explain: |
+      رشته‌ای که فقط فاصله دارد، بعد از کنار گذاشتن فاصله‌ها رشته‌ی خالی است و `Number` آن را `0` می‌کند (هر چند `Boolean(" ")` برابر `true` است!). بقیه همگی `NaN` می‌دهند: `"12px"` کاراکتر غیرعددی دارد، `undefined` همیشه `NaN` می‌شود و `{}` اول به `"[object Object]"` و بعد به `NaN` تبدیل می‌شود.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(parseInt("12px"));
+      console.log(parseInt("3.9"));
+      console.log(parseFloat("3.9kg"));
+      console.log(parseInt("abc"));
+    options:
+      - out: ["12", "4", "3.9", "NaN"]
+      - out: ["NaN", "3", "NaN", "NaN"]
+      - out: ["12", "3", "3.9", "NaN"]
+      - out: ["12", "3", "3.9", "0"]
+    answer: 3
+    explain: |
+      `parseInt` و `parseFloat` از ابتدای رشته می‌خوانند و در اولین کاراکتر نامعتبر می‌ایستند: `"12px"` ← `12`. `parseInt` به نقطه که برسد می‌ایستد، پس `"3.9"` ← `3` (گرد نمی‌کند؛ گزینه‌ی ۱ اشتباهاً گرد کرده). `parseFloat` نقطه را می‌پذیرد، پس `3.9`. و `"abc"` از همان کاراکتر اول نامعتبر است، پس `NaN` (نه `0`؛ گزینه‌ی ۴). گزینه‌ی ۲ رفتار سخت‌گیرانه‌ی `Number` را به این دو تابع نسبت داده است.
+
+  - level: medium
+    stem: |
+      در جای خالی کد زیر کدام تابع قرار گیرد تا خروجی `3.9` شود؟
+    check: option-output
+    code: |
+      console.log(____("3.9kg"));
+    expect: "3.9"
+    options:
+      - text: '`parseInt`'
+        code: 'console.log(parseInt("3.9kg"));'
+      - text: '`Number`'
+        code: 'console.log(Number("3.9kg"));'
+      - text: '`String`'
+        code: 'console.log(String("3.9kg"));'
+      - text: '`parseFloat`'
+        code: 'console.log(parseFloat("3.9kg"));'
+    answer: 4
+    explain: |
+      `parseFloat` از ابتدای رشته `3.9` را می‌خواند و به `k` که می‌رسد متوقف می‌شود. `parseInt` همان اول در نقطه‌ی اعشار می‌ایستد و `3` می‌دهد؛ `Number` به خاطر `kg` کل رشته را نامعتبر می‌داند و `NaN` می‌دهد؛ `String` هم همان رشته‌ی `3.9kg` را بدون تغییر برمی‌گرداند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(Number(""), parseInt(""));
+      console.log(Number("3.9"), parseInt("3.9"));
+      console.log(Number("12px"), parseInt("12px"));
+    options:
+      - out: ["0 0", "3.9 4", "NaN 12"]
+      - out: ["0 NaN", "3.9 3", "NaN 12"]
+      - out: ["NaN NaN", "3.9 3", "12 12"]
+      - out: ["0 NaN", "4 3", "NaN NaN"]
+    answer: 2
+    explain: |
+      `Number` سخت‌گیر است و کل رشته را می‌سنجد: `""` ← `0`، `"3.9"` ← `3.9` و `"12px"` ← `NaN`. `parseInt` از ابتدا می‌خواند: رشته‌ی خالی چیزی برای خواندن ندارد ← `NaN`؛ در `"3.9"` به نقطه می‌رسد ← `3`؛ و در `"12px"` تا `p` می‌خواند ← `12`. گزینه‌ی ۱ رشته‌ی خالی را برای `parseInt` صفر و `3.9` را گرد کرده، گزینه‌ی ۳ رفتار دو تابع را جابه‌جا کرده و گزینه‌ی ۴ فکر کرده `Number` گرد می‌کند و `parseInt` هم مثل `Number` سخت‌گیر است.
+
+  - level: easy
+    stem: |
+      حاصل `typeof String(99)` کدام است؟
+    check: value
+    expr: 'typeof String(99)'
+    options:
+      - value: '"number"'
+      - value: '"string"'
+      - value: '"object"'
+      - value: '"undefined"'
+    answer: 2
+    explain: |
+      `String(99)` عدد `99` را به رشته‌ی `"99"` تبدیل می‌کند و `typeof` هر رشته `"string"` است. گزینه‌ی ۱ فرض کرده تبدیلی رخ نداده؛ `"object"` (گزینه‌ی ۳) فقط برای `new String(99)` درست بود که یک شیء پوشاننده می‌سازد، نه برای `String(99)` بدون `new`؛ و نتیجه هم تعریف‌نشده نیست (گزینه‌ی ۴).
+
+  - level: medium
+    stem: |
+      حاصل `String(null)` کدام است؟
+    check: value
+    expr: 'String(null)'
+    options:
+      - value: '""'
+      - value: '"null"'
+      - value: 'null'
+      - text: 'خطای `TypeError`'
+        value: '!! TypeError'
+    answer: 2
+    explain: |
+      `String` هر مقداری را، حتی `null` و `undefined`، بی‌خطر به متن تبدیل می‌کند: `String(null)` ← `"null"`. گزینه‌ی ۱ «هیچ» را رشته‌ی خالی فرض کرده؛ گزینه‌ی ۳ خود مقدار `null` است و تبدیلی در آن رخ نداده؛ و خطای `TypeError` (گزینه‌ی ۴) مخصوص `null.toString()` است، نه `String(null)`.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(String([1, 2]));
+      console.log(String({}));
+      console.log(String([]).length);
+    options:
+      - out: ["1,2", "[object Object]", "0"]
+      - out: ["[1, 2]", "{}", "2"]
+      - out: ["12", "[object Object]", "0"]
+      - out: ["1,2", "object", "1"]
+    answer: 1
+    explain: |
+      آرایه به رشته‌ای تبدیل می‌شود که عناصرش با ویرگول (بدون فاصله و بدون کروشه) به هم چسبیده‌اند: `"1,2"`. هر شیء ساده به `"[object Object]"` تبدیل می‌شود. آرایه‌ی خالی هم به رشته‌ی خالی `""` تبدیل می‌شود که `length` آن (تعداد کاراکترها) `0` است. گزینه‌ی ۲ فکر کرده شکل نوشتاری کد حفظ می‌شود، گزینه‌ی ۳ ویرگول را حذف کرده و گزینه‌ی ۴ حاصل تبدیل شیء را اشتباه گرفته است.
+
+  - level: hard
+    stem: |
+      اجرای کد زیر در کدام خط با خطا متوقف می‌شود؟
+    check: error-line
+    errorName: TypeError
+    code: |
+      const a = String(null);
+      const b = (123).toString();
+      const c = String(undefined);
+      const d = null.toString();
+      console.log(a, b, c, d);
+    options:
+      - line: 1
+      - line: 2
+      - line: 4
+      - line: 0
+    answer: 3
+    explain: |
+      `String(null)` و `String(undefined)` بی‌خطرند و `"null"` و `"undefined"` می‌دهند، پس خط ۱ (و خط ۳) مشکلی ندارد. در خط ۲ عدد داخل پرانتز است، پس `.toString()` درست کار می‌کند و `"123"` می‌دهد. اما `null` هیچ متدی ندارد و `null.toString()` در خط ۴ خطای `TypeError: Cannot read properties of null` می‌دهد؛ پس گزینه‌ی «بدون خطا» هم نادرست است.
+
+  - level: easy
+    stem: |
+      کدام مقدار **falsy** است (یعنی `Boolean` آن `false` می‌شود)؟
+    check: claims
+    options:
+      - text: '`"0"`'
+        expr: 'Boolean("0")'
+        equals: 'false'
+      - text: '`" "`'
+        expr: 'Boolean(" ")'
+        equals: 'false'
+      - text: '`[]`'
+        expr: 'Boolean([])'
+        equals: 'false'
+      - text: '`NaN`'
+        expr: 'Boolean(NaN)'
+        equals: 'false'
+    answer: 4
+    explain: |
+      `NaN` یکی از ۸ مقدار falsy است (`false`، `0`، `-0`، `0n`، `""`، `null`، `undefined`، `NaN`). `"0"` و `" "` رشته‌های **غیرخالی**‌اند (اولی یک کاراکتر صفر و دومی یک کاراکتر فاصله دارد)، پس truthy هستند؛ آرایه‌ی خالی `[]` هم مثل هر شیء دیگری truthy است.
+
+  - level: medium
+    stem: |
+      کدام گزینه **درست** است؟
+    check: claims
+    options:
+      - text: '`Boolean("false")` برابر `false` است.'
+        expr: 'Boolean("false")'
+        equals: 'false'
+      - text: '`Boolean(" ")` برابر `true` است.'
+        expr: 'Boolean(" ")'
+        equals: 'true'
+      - text: '`Boolean(0n)` برابر `true` است.'
+        expr: 'Boolean(0n)'
+        equals: 'true'
+      - text: '`Boolean({})` برابر `false` است.'
+        expr: 'Boolean({})'
+        equals: 'false'
+    answer: 2
+    explain: |
+      رشته‌ی `" "` یک کاراکتر (فاصله) دارد، پس خالی نیست و truthy است. `"false"` هم یک رشته‌ی غیرخالی است و `Boolean` آن `true` می‌شود؛ محتوای متن اصلاً مهم نیست (گزینه‌ی ۱). `0n` (صفرِ BigInt) یکی از falsyهاست (گزینه‌ی ۳) و هر شیء، حتی شیء خالی `{}`، truthy است (گزینه‌ی ۴).
+
+  - level: easy
+    stem: |
+      کدام عبارت همیشه همان نتیجه‌ی `Number(x)` را می‌دهد؟
+    options:
+      - '`!!x`'
+      - '`+x`'
+      - '`x + ""`'
+      - '`-x`'
+    answer: 2
+    explain: |
+      عملگر `+` تک‌عملوندی (unary plus) مقدار را دقیقاً با همان قواعد `Number` به عدد تبدیل می‌کند؛ مثلاً `+"42"` ← `42` و `+""` ← `0`. `!!x` معادل `Boolean(x)` است (گزینه‌ی ۱) و `x + ""` معادل `String(x)` (گزینه‌ی ۳). `-x` (گزینه‌ی ۴) هم عدد می‌دهد، اما **قرینه‌ی** آن را؛ مثلاً `-"42"` برابر `-42` است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(!!"0", !!"", !![], !!NaN);
+    options:
+      - out: "true false true false"
+      - out: "false false false false"
+      - out: "false false true false"
+      - out: "true false false false"
+    answer: 1
+    explain: |
+      `!!x` همان `Boolean(x)` است. `"0"` رشته‌ای غیرخالی است ← `true`؛ `""` خالی است ← `false`؛ `[]` مثل هر آرایه‌ای truthy است ← `true`؛ و `NaN` falsy است ← `false`. گزینه‌ی ۳ رشته‌ی `"0"` را با عدد `0` اشتباه گرفته، گزینه‌ی ۴ آرایه‌ی خالی را falsy فرض کرده و گزینه‌ی ۲ فکر کرده `!!` همیشه `false` می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(+"", +"3.5", +"3.5px", +true, +[]);
+    options:
+      - out: "0 3.5 NaN 1 0"
+      - out: "NaN 3.5 3 1 NaN"
+      - out: "0 3.5 3.5 true 0"
+      - out: "NaN 3.5 NaN 1 0"
+    answer: 1
+    explain: |
+      unary plus (`+x`) دقیقاً مثل `Number(x)` عمل می‌کند: `""` ← `0`، `"3.5"` ← `3.5`، `"3.5px"` ← `NaN` (سخت‌گیر است و برخلاف `parseFloat` تکه‌ی اول را برنمی‌دارد)، `true` ← `1` و `[]` ← `""` ← `0`. گزینه‌های ۲ و ۴ رشته‌ی خالی را `NaN` فرض کرده‌اند (و گزینه‌ی ۲ رفتار `parseInt` را هم به `+` نسبت داده)؛ گزینه‌ی ۳ رفتار `parseFloat` را به `+` نسبت داده و `true` را تبدیل‌نشده چاپ کرده است.
+
+  - level: hard
+    stem: |
+      کدام مقدار در شرط `if` **truthy** است و در عین حال `Number` آن برابر `0` می‌شود؟
+    check: claims
+    options:
+      - text: '`""`'
+        expr: 'Boolean("") && Number("") === 0'
+        equals: 'true'
+      - text: '`null`'
+        expr: 'Boolean(null) && Number(null) === 0'
+        equals: 'true'
+      - text: '`"1"`'
+        expr: 'Boolean("1") && Number("1") === 0'
+        equals: 'true'
+      - text: '`"0"`'
+        expr: 'Boolean("0") && Number("0") === 0'
+        equals: 'true'
+    answer: 4
+    explain: |
+      `"0"` یک رشته‌ی غیرخالی است، پس truthy است؛ اما وقتی به عدد تبدیل شود `0` می‌شود. `""` و `null` هم به `0` تبدیل می‌شوند، ولی خودشان falsy هستند؛ `"1"` truthy است، ولی به `1` تبدیل می‌شود. همین دوگانگی (truthy بودن ولی صفر شدن) ریشه‌ی دام‌هایی مثل `"0" == false` برابر `true` در درس بعد است.
+
+  - level: easy
+    stem: |
+      حاصل `typeof NaN` کدام است؟
+    check: value
+    expr: 'typeof NaN'
+    options:
+      - value: '"NaN"'
+      - value: '"undefined"'
+      - value: '"number"'
+      - value: '"object"'
+    answer: 3
+    explain: |
+      با اینکه `NaN` مخفف Not a Number است، یک مقدار خاص از نوع **number** است و `typeof` آن `"number"` است. نوعی به اسم `"NaN"` در JavaScript وجود ندارد (گزینه‌ی ۱)؛ `NaN` تعریف‌نشده نیست (گزینه‌ی ۲) و شیء هم نیست (گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      console.log(isNaN("abc"));
+      console.log(Number.isNaN("abc"));
+      console.log(isNaN(""));
+      console.log(Number.isNaN(NaN));
+    options:
+      - out: ["true", "true", "true", "true"]
+      - out: ["true", "false", "true", "true"]
+      - out: ["false", "false", "false", "true"]
+      - out: ["true", "false", "false", "true"]
+    answer: 4
+    explain: |
+      `isNaN` اول ورودی را به عدد تبدیل می‌کند: `"abc"` ← `NaN` پس `true`؛ اما `""` ← `0` که `NaN` نیست، پس `false` (گزینه‌ی ۲ همین را اشتباه کرده). `Number.isNaN` هیچ تبدیلی انجام نمی‌دهد: `"abc"` یک رشته است نه مقدار `NaN`، پس `false` (گزینه‌ی ۱ این تفاوت را نادیده گرفته)؛ فقط خودِ `NaN` جواب `true` می‌گیرد. گزینه‌ی ۳ هم فکر کرده `isNaN` مثل `Number.isNaN` بدون تبدیل کار می‌کند.
+
+  - level: hard
+    stem: |
+      کدام گزینه **درست** است؟
+    check: claims
+    options:
+      - text: '`isNaN("12")` برابر `true` است.'
+        expr: 'isNaN("12")'
+        equals: 'true'
+      - text: '`Number.isNaN("abc")` برابر `true` است.'
+        expr: 'Number.isNaN("abc")'
+        equals: 'true'
+      - text: '`typeof Number("abc")` برابر `"number"` است.'
+        expr: 'typeof Number("abc")'
+        equals: '"number"'
+      - text: '`isNaN(undefined)` برابر `false` است.'
+        expr: 'isNaN(undefined)'
+        equals: 'false'
+    answer: 3
+    explain: |
+      `Number("abc")` برابر `NaN` است و `typeof NaN` برابر `"number"`؛ پس گزینه‌ی ۳ درست است. `"12"` به عدد معتبر `12` تبدیل می‌شود، پس `isNaN("12")` برابر `false` است (گزینه‌ی ۱). `Number.isNaN` رشته را تبدیل نمی‌کند، پس برای `"abc"` جواب `false` است (گزینه‌ی ۲). `undefined` به `NaN` تبدیل می‌شود، پس `isNaN(undefined)` برابر `true` است (گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      مقدار `age` از یک فیلد فرم خوانده شده است. خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const age = "20"; // values read from form fields are strings
+      console.log(age + 1);
+      console.log(Number(age) + 1);
+      console.log(+age + 1);
+      console.log(parseInt(age) + "1");
+    options:
+      - out: ["201", "21", "21", "201"]
+      - out: ["21", "21", "21", "21"]
+      - out: ["201", "21", "201", "201"]
+      - out: ["201", "21", "21", "21"]
+    answer: 1
+    explain: |
+      در اولین چاپ، `age` رشته است و `+` با رشته یعنی چسباندن، پس `"201"` (گزینه‌ی ۲ فکر کرده JavaScript خودش جمع ریاضی انجام می‌دهد). در چاپ دوم و سوم، `Number(age)` و `+age` هر دو عدد `20` می‌دهند و جمع با `1` می‌شود `21` (گزینه‌ی ۳ فکر کرده `+age` رشته می‌ماند). در چاپ آخر، `parseInt(age)` عدد `20` است، اما با **رشته‌ی** `"1"` جمع شده، پس دوباره چسباندن رخ می‌دهد و `"201"` چاپ می‌شود (گزینه‌ی ۴ این را ندیده است).
