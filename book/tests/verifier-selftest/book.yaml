@@ -1,0 +1,20 @@
+title: کتاب جامع درسنامه و تست برنامه‌نویسی وب
+pdfTitle: کتاب درسنامه و تست برنامه‌نویسی وب (CE 40419)
+kicker: ویژه‌ی آمادگی کوییز
+subtitle: "JavaScript، کار با DOM، Node.js و TypeScript — از صفر تا تسلط"
+course: Web Programming · CE 40419
+university: دانشگاه صنعتی شریف
+coverCode: |
+  console.log("5" + 1);     // ?
+  console.log("5" - 1);     // ?
+  console.log([] == false); // ?
+coverNote: "نمونه‌ی آزمایشی"
+guide: guide.md
+chapters:
+  - id: ch1
+    dir: ch1
+    number: 1
+    title: مقدمه‌ای بر JavaScript
+    source: 3- Introduction to JS.pdf
+    intro: |
+      این فصل یک **نمونه‌ی آزمایشی** است.
