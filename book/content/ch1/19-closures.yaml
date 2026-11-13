@@ -1,0 +1,973 @@
+id: ch1-closures
+title: "Closure (بستار)"
+slides: "Introduction to JS، اسلاید ۲۸"
+lesson: |
+  ### تابعی با کوله‌پشتی
+  فرض کن تابعی داخل تابع دیگری «متولد» می‌شود. موقع تولد، یک **کوله‌پشتی** به او می‌دهند که داخلش متغیرهای اطرافش (متغیرهای تابع والد) قرار دارد. حالا این تابع هر جا برود (از تابع والد بیرون فرستاده شود، به `setTimeout` داده شود یا در یک آرایه ذخیره شود)، کوله‌پشتی‌اش را هم با خودش می‌برد و هر وقت لازم داشت از متغیرهای داخلش استفاده می‌کند؛ حتی اگر کار تابع والد مدت‌ها پیش تمام شده باشد. به این «تابع به‌همراه کوله‌پشتی‌اش» **closure** (بستار؛ تابعی که متغیرهای محیطِ تعریفش را به خاطر می‌سپارد) می‌گوییم.
+
+  ### پیش‌نیاز: lexical scope (محدوده‌ی واژگانی)
+  در درس‌های قبل دیدیم که هر متغیر فقط داخل scope (محدوده‌ی) خودش در دسترس است. وقتی تابع‌ها داخل هم نوشته می‌شوند، یک قاعده‌ی ساده حاکم است: **هر تابع به متغیرهای خودش، متغیرهای تابع‌هایی که داخلشان نوشته شده و متغیرهای سراسری (global) دسترسی دارد**؛ ولی برعکسش ممکن نیست و تابع بیرونی متغیرهای تابع درونی را نمی‌بیند.
+
+  ```js
+  const greeting = "Hello";             // global
+
+  function outer() {
+    const name = "Sara";                // local to outer
+    function inner() {
+      const mark = "!";                 // local to inner
+      console.log(greeting + ", " + name + mark); // inner sees all three
+    }
+    inner();
+    console.log(typeof mark);           // "undefined": outer cannot see inside inner
+  }
+
+  outer();
+  // Hello, Sara!
+  // undefined
+  ```
+
+  وقتی `inner` به نام `name` می‌رسد، اول بین متغیرهای خودش می‌گردد؛ پیدا نمی‌کند، پس یک لایه بیرون‌تر (`outer`) را نگاه می‌کند و پیدا می‌کند. برای `greeting` تا لایه‌ی سراسری بالا می‌رود. به این زنجیره‌ی جست‌وجو **scope chain** (زنجیره‌ی scopeها) می‌گویند.
+
+  کلمه‌ی **lexical** (واژگانی؛ یعنی مربوط به متن کد) نکته‌ی اصلی را می‌گوید: **جایی که تابع نوشته شده** تعیین می‌کند چه چیزهایی را می‌بیند، نه جایی که صدا زده می‌شود:
+
+  ```js
+  const x = "global";
+
+  function printX() {
+    console.log(x);
+  }
+
+  function run() {
+    const x = "local";
+    printX(); // global (printX was WRITTEN at the top level, so it sees the global x)
+  }
+
+  run();
+  ```
+
+  `printX` در سطح بالای فایل نوشته شده، پس فقط `x` سراسری را می‌شناسد؛ اینکه داخل `run` صدا زده شده، هیچ اهمیتی ندارد.
+
+  ### Closure چیست؟ (اسلاید ۲۸)
+  اسلاید ۲۸ این‌طور تعریف می‌کند:
+
+  - **A closure is when a function keeps access to its parent's variables** (A function that remembers variables from its outer scope): closure یعنی تابعی که دسترسی به متغیرهای تابع والدش را **نگه می‌دارد**؛ تابعی که متغیرهای scope بیرونی‌اش را «به خاطر می‌سپارد».
+  - **Keeps access even after the outer function ends**: این دسترسی **حتی بعد از تمام شدن تابع بیرونی** باقی می‌ماند.
+  - **Used for encapsulation, state, and callbacks**: برای کپسوله‌سازی (پنهان کردن داده)، نگه‌داری وضعیت (state) و callbackها استفاده می‌شود.
+  - **Common in JS and other functional languages**: در JavaScript و دیگر زبان‌های تابعی (functional) رایج است.
+  - **BEWARE OF PITFALL**: closureها وقتی با `var` ترکیب شوند، می‌توانند مشکل‌ساز شوند (آخر همین درس).
+
+  بند دوم مهم‌ترین بخش است. معمولاً وقتی اجرای یک تابع تمام می‌شود، متغیرهای محلی‌اش از بین می‌روند. ولی اگر تابعی که داخل آن ساخته شده هنوز زنده باشد و به آن متغیرها نیاز داشته باشد، JavaScript آن‌ها را نگه می‌دارد.
+
+  ### کد اسلاید ۲۸: شمارنده
+
+  ```js title=sample.js
+  function counter() {
+    let count = 0;
+    return function() {
+      count++;
+      return count;
+    };
+  }
+
+  const c = counter();
+  console.log(c()); // 1
+  console.log(c()); // 2
+  ```
+
+  قدم‌به‌قدم:
+
+  1. `const c = counter();`: تابع `counter` اجرا می‌شود، متغیر `count` را با مقدار `0` می‌سازد، یک تابع بی‌نام (anonymous) می‌سازد و **همان تابع** را برمی‌گرداند. حالا کار `counter` تمام شده است.
+  2. `c` حالا **تابع درونی** است، نه یک عدد! تابعی که در کوله‌پشتی‌اش متغیر `count` را دارد (`typeof c` برابر `"function"` است).
+  3. اولین `c()`: `count` از `0` به `1` می‌رسد و `1` برگردانده می‌شود.
+  4. دومین `c()`: **همان** `count` از `1` به `2` می‌رسد و `2` برگردانده می‌شود. شمارنده یادش مانده است!
+
+  `count` نه سراسری است و نه با هر `c()` از نو ساخته می‌شود؛ فقط در کوله‌پشتی `c` زندگی می‌کند و هیچ کد دیگری مستقیم به آن دسترسی ندارد. اگر بیرون از `counter` بنویسی `console.log(count)`، خطای `ReferenceError: count is not defined` می‌گیری.
+
+  ### هر بار صدا زدن، یک closure تازه و مستقل
+  هر بار که `counter()` را صدا بزنی، یک `count` **جدید** ساخته می‌شود و تابع جدیدی با کوله‌پشتی جدید برمی‌گردد. دو شمارنده هیچ وضعیتی را با هم شریک نیستند (با همان تابع `counter` اسلاید):
+
+  ```js
+  const c1 = counter();
+  const c2 = counter();
+  console.log(c1()); // 1
+  console.log(c1()); // 2
+  console.log(c2()); // 1 (c2 has its own count)
+  console.log(c1()); // 3
+  ```
+
+  ::: analogy
+  `counter` مثل دستگاهی است که «شمارنده‌ی دستی» تولید می‌کند. هر بار دکمه‌ی دستگاه را بزنی (`counter()`)، یک شمارنده‌ی نو با عدد صفر تحویل می‌گیری. اگر روی شمارنده‌ی اول ده بار کلیک کنی، عدد شمارنده‌ی دوم تکان نمی‌خورد.
+  :::
+
+  ### closure خودِ متغیر را نگه می‌دارد، نه عکسی از مقدارش
+  کوله‌پشتی یک **عکس (snapshot)** از مقدارها نیست؛ خودِ متغیرها داخلش هستند. پس اگر متغیر بعداً تغییر کند، closure **مقدار جدید** را می‌بیند:
+
+  ```js
+  let color = "red";
+  const showColor = () => console.log(color);
+  color = "blue";
+  showColor(); // blue (the closure reads the CURRENT value of color)
+  ```
+
+  همین‌طور تابع درونی می‌تواند متغیر بیرونی را **تغییر** دهد (مثل `count++` در شمارنده) و این تغییر را همه‌ی توابعی که آن متغیر را در کوله‌پشتی دارند می‌بینند.
+
+  ::: note پارامترها هم متغیرند
+  پارامترهای یک تابع، متغیرهای محلی همان تابع‌اند. وقتی تابع را صدا می‌زنی، **مقدار فعلی** آرگومان در پارامتر ریخته می‌شود و closure به همان پارامتر وصل است، نه به متغیری که بیرون از تابع داشتی:
+
+  ```js
+  function remember(value) {
+    return () => value; // captures the PARAMETER variable "value"
+  }
+
+  let n = 1;
+  const getN = remember(n); // the current value of n (1) is copied into the parameter
+  n = 99;
+  console.log(getN()); // 1
+  ```
+  :::
+
+  ### کاربرد ۱: encapsulation (کپسوله‌سازی؛ پنهان کردن داده)
+  با closure می‌توانیم متغیری بسازیم که **فقط** از طریق چند تابع مشخص قابل خواندن و تغییر باشد؛ یعنی یک **متغیر خصوصی (private)**. در مثال زیر، `createCounter` یک شیء (object؛ مجموعه‌ای از جفت‌های «کلید: مقدار» که در درس «اشیاء» کامل می‌خوانیم) با دو تابع برمی‌گرداند:
+
+  ```js
+  function createCounter() {
+    let count = 0; // private: only the two functions below can reach it
+
+    return {
+      increment: () => {
+        count++;
+      },
+      getValue: () => count,
+    };
+  }
+
+  const counter = createCounter();
+  counter.increment();
+  counter.increment();
+  console.log(counter.getValue()); // 2
+  console.log(counter.count);      // undefined (no direct access to count)
+  ```
+
+  هیچ کدی بیرون از `createCounter` نمی‌تواند `count` را مستقیم بخواند یا خراب کند (مثلاً منفی‌اش کند)؛ فقط `increment` و `getValue` کلید کوله‌پشتی را دارند. دقت کن که هر دو تابع در **یک** اجرای `createCounter` ساخته شده‌اند، پس **یک `count` مشترک** دارند.
+
+  ### کاربرد ۲: state (نگه‌داری وضعیت) و function factory
+  closure به تابع «حافظه» می‌دهد. یک الگوی رایج، **function factory** (کارخانه‌ی تابع؛ تابعی که تابع می‌سازد و برمی‌گرداند) است:
+
+  ```js
+  function makeMultiplier(factor) {
+    return (n) => n * factor; // remembers its own factor
+  }
+
+  const double = makeMultiplier(2);
+  const triple = makeMultiplier(3);
+  console.log(double(5)); // 10
+  console.log(triple(5)); // 15
+  ```
+
+  `double` و `triple` از یک کارخانه آمده‌اند، ولی چون هر صدا زدن `makeMultiplier` یک closure جدید می‌سازد، هر کدام `factor` مخصوص خودش را دارد.
+
+  ### کاربرد ۳: callbackها
+  **callback** (تابعی که به تابع دیگری داده می‌شود تا بعداً صدا زده شود) تقریباً همیشه یک closure است. تابع `setTimeout(fn, ms)` تابع `fn` را **بعداً** اجرا می‌کند (حداقل `ms` میلی‌ثانیه بعد؛ جزئیاتش را در درس‌های بخش ناهمگام همین فصل می‌خوانیم). فعلاً همین یک نکته را بدان: callback حتی با تأخیر `0` هم فقط **بعد از تمام شدن کل کد همگام (synchronous) فعلی** اجرا می‌شود:
+
+  ```js
+  setTimeout(() => console.log("timer"), 0);
+  console.log("sync");
+  // sync
+  // timer
+  ```
+
+  وقتی callback بالاخره اجرا می‌شود، تابعی که آن را ساخته مدت‌هاست تمام شده؛ ولی callback به لطف closure هنوز متغیرهای آن را دارد:
+
+  ```js
+  function greetLater(name) {
+    setTimeout(() => {
+      console.log("Hello, " + name); // the callback still remembers name
+    }, 1000);
+    console.log("greetLater finished");
+  }
+
+  greetLater("Ali");
+  // greetLater finished
+  // (one second later) Hello, Ali
+  ```
+
+  ### «رایج در JS و زبان‌های تابعی»
+  closure در JavaScript کاملاً طبیعی است، چون توابع **first-class** هستند (یکی از ویژگی‌های JavaScript در اسلاید ۹): می‌شود آن‌ها را در متغیر ریخت، به تابع دیگر داد و از تابع برگرداند. زبان‌های **functional** (تابعی) مثل Haskell و Lisp و بیشتر زبان‌های مدرن (مثل Python، Kotlin و Swift) هم closure دارند.
+
+  ::: info بیشتر بدانیم: closure و حافظه
+  JavaScript حافظه را خودکار مدیریت می‌کند (garbage collection؛ یکی دیگر از ویژگی‌های اسلاید ۹). متغیری که در کوله‌پشتی یک closure زنده است، پاک نمی‌شود؛ وقتی دیگر هیچ ارجاعی به آن closure نماند، متغیرهایش هم قابل پاک شدن می‌شوند.
+  :::
+
+  ### BEWARE OF PITFALL: closure و `var` در حلقه
+  این معروف‌ترین تست closure است:
+
+  ```js
+  for (var i = 0; i < 3; i++) {
+    setTimeout(() => console.log(i), 0);
+  }
+  // 3
+  // 3
+  // 3
+  ```
+
+  انتظار داشتی `0`، `1`، `2` ببینی؟ دو دلیل دست به دست هم می‌دهند:
+
+  1. **`var` فقط یک متغیر می‌سازد.** `var` بلوک حلقه را نمی‌شناسد (function-scoped است)، پس در کل اجرای حلقه فقط **یک** `i` وجود دارد و هر سه callback **همان یک** `i` را در کوله‌پشتی دارند (یادت باشد: closure خودِ متغیر را نگه می‌دارد، نه عکسی از مقدارش).
+  2. **callbackها بعد از تمام شدن حلقه اجرا می‌شوند.** `setTimeout` فقط زمان‌بندی می‌کند؛ اجرای واقعی بعد از تمام شدن کد همگام است.
+
+  | لحظه | مقدار `i` | چه اتفاقی می‌افتد؟ |
+  |---|---|---|
+  | تکرار اول | `0` | callback اول زمان‌بندی می‌شود (اجرا نمی‌شود) |
+  | تکرار دوم | `1` | callback دوم زمان‌بندی می‌شود |
+  | تکرار سوم | `2` | callback سوم زمان‌بندی می‌شود |
+  | بعد از آخرین `i++` | `3` | شرط `3 < 3` نادرست است و حلقه تمام می‌شود |
+  | بعد از پایان کد همگام | `3` | هر سه callback اجرا می‌شوند و همان `i` مشترک را می‌خوانند: `3`، `3`، `3` |
+
+  #### راه‌حل ۱: `let`
+
+  ```js
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => console.log(i), 0);
+  }
+  // 0
+  // 1
+  // 2
+  ```
+
+  وقتی `let` در **سرآیند (header)** حلقه‌ی `for` باشد، JavaScript برای **هر تکرار یک binding (نسخه‌ی) جدید** از `i` می‌سازد که با مقدار همان تکرار شروع می‌شود. پس هر callback، `i` مخصوص تکرار خودش را در کوله‌پشتی دارد. این ساده‌ترین و توصیه‌شده‌ترین راه‌حل است.
+
+  #### راه‌حل ۲: IIFE (روش قدیمی، پیش از `let`)
+  **IIFE** (Immediately Invoked Function Expression؛ تابعی که همان لحظه‌ی تعریف صدا زده می‌شود، مثل پنل سوم میم اسلاید ۳۶) برای هر تکرار یک scope تازه می‌سازد:
+
+  ```js
+  for (var i = 0; i < 3; i++) {
+    (function (j) {
+      setTimeout(() => console.log(j), 0); // j belongs to this IIFE call only
+    })(i);
+  }
+  // 0
+  // 1
+  // 2
+  ```
+
+  در هر تکرار، IIFE با مقدار فعلی `i` صدا زده می‌شود و آن مقدار در پارامتر `j` ریخته می‌شود. چون هر بار صدا زدن تابع، متغیرهای محلی جدید خودش را دارد، سه `j` جداگانه با مقدارهای `0`، `1` و `2` ساخته می‌شود.
+
+  #### همین دام، بدون `setTimeout`: آرایه‌ای از توابع
+  مشکل از خود `setTimeout` نیست؛ از «یک متغیر مشترک + اجرای دیرتر» است. اینجا توابع در یک آرایه ذخیره می‌شوند (`push` یک عنصر به انتهای آرایه اضافه می‌کند؛ درس «آرایه‌ها») و بعد از تمام شدن حلقه صدا زده می‌شوند:
+
+  ```js
+  var fns = [];
+  for (var i = 0; i < 3; i++) {
+    fns.push(function () {
+      return i;
+    });
+  }
+  console.log(fns[0](), fns[1](), fns[2]()); // 3 3 3
+  ```
+
+  با `for (let i = 0; ...)` همین کد `0 1 2` چاپ می‌کند.
+
+  #### چه چیزهایی مشکل را حل **نمی‌کنند**؟
+  کپی کردن `i` در یک `var` دیگر فایده‌ای ندارد، چون `var j` هم فقط **یک** متغیر مشترک است:
+
+  ```js
+  for (var i = 0; i < 3; i++) {
+    var j = i; // still ONE shared j (var is function-scoped)
+    setTimeout(() => console.log(j), 0);
+  }
+  // 2
+  // 2
+  // 2
+  ```
+
+  `let` هم فقط وقتی binding جدید می‌سازد که **در سرآیند حلقه** تعریف شود؛ `let` بیرون از حلقه یعنی باز هم یک متغیر مشترک:
+
+  ```js
+  let i; // ONE binding, declared outside the loop header
+  for (i = 0; i < 3; i++) {
+    setTimeout(() => console.log(i), 0);
+  }
+  // 3
+  // 3
+  // 3
+  ```
+
+  اما `let copy = i;` **داخل** بدنه‌ی حلقه مشکل را حل می‌کند، چون `let` در هر تکرار یک متغیر جدید در بلوک بدنه می‌سازد:
+
+  ```js
+  for (var i = 0; i < 3; i++) {
+    let copy = i; // a NEW copy in every iteration (block-scoped)
+    setTimeout(() => console.log(copy), 0);
+  }
+  // 0
+  // 1
+  // 2
+  ```
+
+  ::: tip
+  - closure = تابع + متغیرهای محیطی که در آن **نوشته** شده (lexical scope)؛ حتی بعد از تمام شدن تابع بیرونی.
+  - closure به **متغیر** وصل است، نه به مقدار لحظه‌ی ساخته شدن؛ تغییرات بعدی دیده می‌شوند.
+  - هر بار صدا زدن تابع بیرونی، متغیرهای جدید و closure مستقل می‌سازد؛ ولی توابعی که در **یک** اجرا ساخته شده‌اند، متغیرها را با هم شریک‌اند.
+  - برای ساختن متغیر خصوصی، آن را داخل یک تابع تعریف کن و فقط توابعی را که به آن نیاز دارند برگردان.
+  - در حلقه‌ها همیشه از `let` استفاده کن.
+  :::
+
+  ::: trap
+  - حلقه‌ی `for (var i ...)` با `setTimeout` یا آرایه‌ای از توابع: همه مقدار نهایی `i` را چاپ می‌کنند. با `let` در سرآیند حلقه: `0`، `1`، `2`.
+  - مقدار نهایی را دقیق حساب کن: در `for (var i = 1; i <= 3; i++)` حلقه وقتی `i` برابر `4` شود تمام می‌شود، پس همه `4` می‌بینند، نه `3`.
+  - `var j = i;` داخل بدنه و `let k;` بیرون از سرآیند حلقه مشکل را حل نمی‌کنند؛ `let copy = i;` داخل بدنه حل می‌کند.
+  - IIFE فقط وقتی کمک می‌کند که مقدار را به‌عنوان **پارامتر** بگیرد؛ IIFE بدون پارامتر که داخلش `i` را بخواند، باز همان `i` مشترک را می‌بیند.
+  - `const c = counter();` یعنی `c` یک **تابع** است، نه عدد. و `counter()()` همیشه `1` می‌دهد، چون هر بار شمارنده‌ی تازه‌ای ساخته می‌شود.
+  - متغیر خصوصی closure با ویژگی هم‌نام شیء فرق دارد: `obj.count = 100` یک ویژگی جدید می‌سازد و به `count` داخل closure دست نمی‌زند.
+  :::
+
+  ::: summary
+  - closure یعنی تابعی که متغیرهای scope بیرونی (والد) را به خاطر می‌سپارد و حتی بعد از پایان تابع بیرونی به آن‌ها دسترسی دارد (اسلاید ۲۸).
+  - کاربردها: encapsulation (متغیر خصوصی)، state (شمارنده، function factory) و callbackها.
+  - کد اسلاید ۲۸: `c()` اول `1` و بعد `2` برمی‌گرداند.
+  - دام `var`: یک متغیر مشترک + اجرای دیرتر = همه مقدار آخر را می‌بینند. راه‌حل: `let` در سرآیند حلقه یا IIFE با پارامتر.
+  :::
+questions:
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۸، **closure** چیست؟
+    options:
+      - 'تابعی که برنامه را می‌بندد و اجرای آن را متوقف می‌کند.'
+      - 'تابعی که هنگام ساخته شدن، یک کپی ثابت (snapshot) از مقدار متغیرهای بیرونی برمی‌دارد و تغییرات بعدی آن‌ها را نمی‌بیند.'
+      - 'تابعی که به متغیرهای scope بیرونی (والد) خود دسترسی دارد و این دسترسی را حتی بعد از تمام شدن تابع بیرونی هم حفظ می‌کند.'
+      - 'تابعی که هیچ دسترسی‌ای به متغیرهای بیرون از خودش ندارد.'
+    answer: 3
+    explain: |
+      طبق اسلاید ۲۸، closure یعنی تابعی که دسترسی به متغیرهای تابع والدش (scope بیرونی) را **نگه می‌دارد**، حتی بعد از اینکه اجرای تابع بیرونی تمام شده باشد. گزینه‌ی ۲ تصور غلط رایجی است: closure از مقدارها عکس (snapshot) نمی‌گیرد، بلکه به خودِ متغیرها وصل است و تغییرات بعدی را می‌بیند. گزینه‌ی ۱ از معنی لغوی close (بستن) گمراه شده و گزینه‌ی ۴ دقیقاً برعکس تعریف است.
+
+  - level: easy
+    stem: |
+      در JavaScript، اینکه یک تابع به کدام متغیرها دسترسی دارد (**lexical scope**)، با چه چیزی تعیین می‌شود؟
+    options:
+      - 'جایی که تابع **صدا زده** می‌شود.'
+      - 'ترتیب زمانی صدا زدن توابع هنگام اجرا.'
+      - 'نوع داده‌ی متغیرها.'
+      - 'جایی که تابع در متن کد **نوشته (تعریف)** شده است.'
+    answer: 4
+    explain: |
+      کلمه‌ی lexical (واژگانی) یعنی «مربوط به متن کد»: اینکه یک تابع کدام متغیرها را می‌بیند، با **جایی که در کد نوشته شده** تعیین می‌شود. جایی که صدا زده می‌شود (گزینه‌ی ۱) یا ترتیب صدا زدن‌ها در زمان اجرا (گزینه‌ی ۲) تأثیری در scope آن ندارد، و نوع داده‌ی متغیرها (گزینه‌ی ۳) هم ربطی به دسترسی ندارد.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const site = "Sharif";
+      function outer() {
+        const course = "Web";
+        function inner() {
+          console.log(course + " @ " + site);
+        }
+        inner();
+      }
+      outer();
+    options:
+      - out: "undefined @ Sharif"
+      - out: "Web @ Sharif"
+      - out: ["!! ReferenceError"]
+      - out: "Web @ undefined"
+    answer: 2
+    explain: |
+      `inner` داخل `outer` نوشته شده، پس به متغیرهای خودش، متغیرهای `outer` (یعنی `course`) و متغیرهای سراسری (`site`) دسترسی دارد؛ جست‌وجوی هر نام از درونی‌ترین scope شروع می‌شود و لایه‌به‌لایه بیرون می‌رود (scope chain). پس `Web @ Sharif` چاپ می‌شود. گزینه‌های ۱ و ۴ فکر کرده‌اند تابع درونی فقط یکی از این دو لایه را می‌بیند و گزینه‌ی ۳ فکر کرده تابع درونی اصلاً به متغیرهای بیرونی دسترسی ندارد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      const label = "global";
+      function makePrinter() {
+        const label = "maker";
+        return function () {
+          console.log(label);
+        };
+      }
+      function run() {
+        const label = "runner";
+        const print = makePrinter();
+        print();
+      }
+      run();
+    options:
+      - out: "global"
+      - out: "maker"
+      - out: "runner"
+      - out: "undefined"
+    answer: 2
+    explain: |
+      تابع بی‌نامی که `makePrinter` برمی‌گرداند، داخل `makePrinter` **نوشته شده**، پس `label` را در scope همان تابع پیدا می‌کند: `"maker"`. اینکه بعداً داخل `run` صدا زده شده (جایی که `label` برابر `"runner"` است) اهمیتی ندارد، چون scope با محل نوشتن تعیین می‌شود (lexical scope؛ رد گزینه‌ی ۳). `label` سراسری هم با `label` نزدیک‌تر (داخل `makePrinter`) پنهان شده است (رد گزینه‌ی ۱). `undefined` هم غلط است، چون نام در زنجیره‌ی scope پیدا می‌شود.
+
+  - level: easy
+    stem: |
+      خروجی کد اسلاید ۲۸ کدام است؟
+    check: output
+    code: |
+      function counter() {
+        let count = 0;
+        return function() {
+          count++;
+          return count;
+        };
+      }
+
+      const c = counter();
+      console.log(c());
+      console.log(c());
+    options:
+      - out: ["1", "1"]
+      - out: ["0", "1"]
+      - out: ["!! ReferenceError"]
+      - out: ["1", "2"]
+    answer: 4
+    explain: |
+      `counter()` متغیر `count` را با `0` می‌سازد و تابع درونی را برمی‌گرداند. اولین `c()` همان `count` را `1` می‌کند و برمی‌گرداند؛ دومین `c()` **همان** متغیر را `2` می‌کند. گزینه‌ی ۱ فکر کرده `count` با هر `c()` از نو ساخته می‌شود (در حالی که فقط یک بار، هنگام اجرای `counter()`، ساخته شده است). گزینه‌ی ۲ فکر کرده مقدار قبل از افزایش برگردانده می‌شود، ولی `return count` بعد از `count++` اجرا می‌شود. گزینه‌ی ۳ فکر کرده `count` با تمام شدن `counter` از بین رفته است.
+
+  - level: easy
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function counter() {
+        let count = 0;
+        return function() {
+          count++;
+          return count;
+        };
+      }
+
+      const c = counter();
+      console.log(typeof c);
+    options:
+      - out: "number"
+      - out: "function"
+      - out: "undefined"
+      - out: "object"
+    answer: 2
+    explain: |
+      `counter()` یک **تابع** برمی‌گرداند (همان `function() { count++; return count; }`)، نه عدد. پس `c` تابعی است که `count` را در کوله‌پشتی‌اش دارد و `typeof c` برابر `"function"` است. گزینه‌ی ۱ فکر کرده `c` همان مقدار `count` است؛ ولی `count` فقط با صدا زدن `c()` برگردانده می‌شود. `undefined` و `object` هم غلط‌اند: `counter` واقعاً چیزی برگردانده و `typeof` برای توابع `"function"` می‌دهد.
+
+  - level: easy
+    stem: |
+      در کد اسلاید ۲۸، بعد از اجرای `const c = counter();` کار تابع `counter` تمام شده است. سرنوشت متغیر `count` چیست؟
+    options:
+      - 'زنده می‌ماند، چون تابع برگردانده‌شده (`c`) هنوز به آن ارجاع دارد.'
+      - 'حذف می‌شود و `c()` بعدی خطای `ReferenceError` می‌دهد.'
+      - 'با هر بار صدا زدن `c()` دوباره از `0` شروع می‌شود.'
+      - 'به یک متغیر سراسری (global) تبدیل می‌شود که همه‌جا در دسترس است.'
+    answer: 1
+    explain: |
+      اسلاید ۲۸: «Keeps access even after the outer function ends». وقتی `counter` تمام می‌شود، معمولاً متغیرهای محلی‌اش پاک می‌شوند؛ ولی چون تابع برگردانده‌شده (`c`) هنوز به `count` نیاز دارد، JavaScript آن را زنده نگه می‌دارد. برای همین `c()` بار دوم `2` می‌دهد، نه خطا (رد گزینه‌ی ۲) و نه دوباره `1` (رد گزینه‌ی ۳). `count` سراسری هم نمی‌شود (رد گزینه‌ی ۴): بیرون از `counter` با نام `count` قابل دسترسی نیست و فقط از راه `c` به آن می‌رسیم.
+
+  - level: easy
+    stem: |
+      کدام خط کد زیر خطا می‌دهد؟
+    check: error-line
+    errorName: ReferenceError
+    code: |
+      function counter() {
+        let count = 0;
+        return function () {
+          count++;
+          return count;
+        };
+      }
+      const c = counter();
+      c();
+      console.log(c());
+      console.log(count);
+    options:
+      - line: 0
+      - line: 4
+      - line: 10
+      - line: 11
+    answer: 4
+    explain: |
+      `count` متغیر محلی `counter` است و فقط تابع درونی (از طریق closure) به آن دسترسی دارد. در scope سراسری هیچ متغیری به نام `count` وجود ندارد، پس خط ۱۱ خطای `ReferenceError: count is not defined` می‌دهد. خط‌های ۴ و ۱۰ مشکلی ندارند: تابع درونی `count` را از کوله‌پشتی‌اش می‌خواند و خط ۱۰ عدد `2` را چاپ می‌کند. این همان encapsulation است: داده فقط از راه تابع در دسترس است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function counter() {
+        let count = 0;
+        return function () {
+          count++;
+          return count;
+        };
+      }
+      const a = counter();
+      const b = counter();
+      a();
+      a();
+      console.log(a(), b(), counter()());
+    options:
+      - out: "3 4 5"
+      - out: "1 1 1"
+      - out: "3 1 2"
+      - out: "3 1 1"
+    answer: 4
+    explain: |
+      هر بار صدا زدن `counter()` یک `count` **جدید** و یک closure مستقل می‌سازد. `a` سه بار صدا زده شده (دو بار بیرون و یک بار داخل `console.log`)، پس `3` برمی‌گرداند. `b` شمارنده‌ی خودش را دارد و اولین صدا زدنش `1` است. `counter()()` یک شمارنده‌ی کاملاً تازه می‌سازد و همان لحظه یک بار صدایش می‌زند: `1`. گزینه‌ی ۱ فکر کرده همه یک `count` مشترک دارند، گزینه‌ی ۲ صدا زدن‌های `a()` بیرون از `console.log` را نادیده گرفته، و گزینه‌ی ۳ فکر کرده `counter()()` شمارنده‌ی `b` را ادامه می‌دهد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function setup() {
+        let msg = "first";
+        const say = () => console.log(msg);
+        msg = "second";
+        return say;
+      }
+      const fn = setup();
+      fn();
+    options:
+      - out: "first"
+      - out: "undefined"
+      - out: "second"
+      - out: ["!! ReferenceError"]
+    answer: 3
+    explain: |
+      closure از مقدار متغیر عکس نمی‌گیرد؛ به **خودِ متغیر** `msg` وصل است. `say` وقتی ساخته شد که `msg` برابر `"first"` بود، ولی قبل از اینکه صدا زده شود، `msg` به `"second"` تغییر کرد. وقتی `fn()` اجرا می‌شود، مقدار **فعلی** `msg` را می‌خواند: `second`. گزینه‌ی ۱ همان تصور غلط «snapshot» است و گزینه‌های ۲ و ۴ فکر کرده‌اند بعد از تمام شدن `setup` متغیرهایش از بین رفته‌اند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function makeGreeter(greeting) {
+        return (name) => greeting + ", " + name;
+      }
+      let g = "Hi";
+      const greeter = makeGreeter(g);
+      g = "Bye";
+      console.log(greeter("Ali"));
+    options:
+      - out: "Hi, Ali"
+      - out: "Bye, Ali"
+      - out: "undefined, Ali"
+      - out: ["!! ReferenceError"]
+    answer: 1
+    explain: |
+      `greeting` پارامتر `makeGreeter` است؛ یعنی یک متغیر محلی جداگانه که هنگام صدا زدن، **مقدار فعلی** `g` (یعنی `"Hi"`) در آن ریخته شده است. closure به همین پارامتر وصل است، نه به `g`؛ پس تغییر بعدی `g` به `"Bye"` روی `greeting` اثری ندارد و `Hi, Ali` چاپ می‌شود. گزینه‌ی ۲ فکر کرده closure به `g` وصل است (closure به متغیرِ داخل scope خودش، یعنی `greeting`، وصل است). گزینه‌های ۳ و ۴ هم فکر کرده‌اند پارامتر بعد از تمام شدن `makeGreeter` از بین رفته است.
+
+  - level: medium
+    stem: |
+      کدام عبارت درباره‌ی closureها **نادرست** است؟
+    options:
+      - 'هر بار صدا زدن تابع بیرونی، مجموعه‌ی جدید و مستقلی از متغیرهای محلی (و در نتیجه closure جدیدی) می‌سازد.'
+      - 'closure حتی بعد از تمام شدن تابع بیرونی، به متغیرهای آن دسترسی دارد.'
+      - 'تابع درونی می‌تواند متغیر بیرونی را هم بخواند و هم تغییر دهد.'
+      - 'closure هنگام ساخته شدن، یک کپی ثابت از مقدار متغیرهای بیرونی برمی‌دارد و تغییرات بعدی آن‌ها را نمی‌بیند.'
+    answer: 4
+    explain: |
+      عبارت ۴ نادرست است: closure از مقدارها کپی ثابت (snapshot) نمی‌گیرد؛ به خودِ متغیرها وصل است و اگر متغیر بعداً تغییر کند، closure مقدار جدید را می‌بیند. بقیه درست‌اند: هر بار صدا زدن تابع بیرونی متغیرهای جدیدی می‌سازد (مثل دو شمارنده‌ی مستقل)، دسترسی بعد از تمام شدن تابع بیرونی باقی می‌ماند (اسلاید ۲۸)، و تابع درونی می‌تواند متغیر بیرونی را تغییر دهد (مثل `count++` در کد اسلاید).
+
+  - level: easy
+    stem: |
+      طبق اسلاید ۲۸، closureها برای کدام کارها استفاده می‌شوند؟
+    options:
+      - 'encapsulation (کپسوله‌سازی)، نگه‌داری state (وضعیت) و callbackها'
+      - 'تبدیل نوع داده‌ها و مقایسه با `==`'
+      - 'hoisting متغیرها و جلوگیری از TDZ'
+      - 'اجرای هم‌زمان چند thread و سریع‌تر کردن حلقه‌ها'
+    answer: 1
+    explain: |
+      اسلاید ۲۸: «Used for encapsulation, state, and callbacks»؛ یعنی پنهان کردن داده (متغیر خصوصی)، نگه‌داری وضعیت (مثل شمارنده) و callbackها (مثل تابعی که به `setTimeout` داده می‌شود). تبدیل نوع و `==` (گزینه‌ی ۲) موضوع coercion است، hoisting و TDZ (گزینه‌ی ۳) موضوع درس دیگری است، و JavaScript تک‌نخی (single threaded) است و closure هیچ thread جدیدی نمی‌سازد (گزینه‌ی ۴).
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function createWallet() {
+        let balance = 0;
+        return {
+          deposit: (amount) => {
+            balance += amount;
+          },
+          getBalance: () => balance,
+        };
+      }
+      const w = createWallet();
+      w.deposit(50);
+      w.deposit(20);
+      w.balance = 1000;
+      console.log(w.getBalance(), w.balance);
+    options:
+      - out: "1000 1000"
+      - out: "70 undefined"
+      - out: "1070 1000"
+      - out: "70 1000"
+    answer: 4
+    explain: |
+      `balance` متغیر محلی `createWallet` است و فقط `deposit` و `getBalance` از طریق closure به آن دسترسی دارند: بعد از دو واریز، `70`. خط `w.balance = 1000` یک **ویژگی (property) جدید** به نام `balance` روی شیء `w` می‌سازد که هیچ ارتباطی با متغیر خصوصی ندارد؛ پس `w.balance` برابر `1000` است و `getBalance()` همچنان `70` برمی‌گرداند. گزینه‌ی ۱ فکر کرده این خط متغیر خصوصی را عوض می‌کند (دقیقاً همان چیزی که encapsulation جلویش را می‌گیرد)، گزینه‌ی ۲ خط ساختن ویژگی را نادیده گرفته، و گزینه‌ی ۳ این دو مقدار را با هم جمع کرده است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function createCounter() {
+        let count = 0;
+        return {
+          inc: () => {
+            count++;
+            return count;
+          },
+          reset: () => {
+            count = 0;
+          },
+        };
+      }
+      const c = createCounter();
+      c.inc();
+      c.inc();
+      c.reset();
+      console.log(c.inc());
+    options:
+      - out: "3"
+      - out: "0"
+      - out: "1"
+      - out: ["!! TypeError"]
+    answer: 3
+    explain: |
+      `inc` و `reset` در **یک** اجرای `createCounter` ساخته شده‌اند، پس هر دو به **یک** `count` مشترک دسترسی دارند. دو بار `inc` آن را `2` می‌کند، `reset` همان متغیر را `0` می‌کند و `inc` بعدی آن را `1` می‌کند و برمی‌گرداند. گزینه‌ی ۱ فکر کرده هر تابع کپی جداگانه‌ای از `count` دارد و `reset` روی شمارنده‌ی `inc` اثری ندارد؛ گزینه‌ی ۲ فکر کرده `inc` مقدار قبل از افزایش را برمی‌گرداند؛ گزینه‌ی ۴ هم غلط است، چون هر دو ویژگی واقعاً تابع‌اند و صدا زدنشان مشکلی ندارد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function makeMultiplier(factor) {
+        return function (n) {
+          return n * factor;
+        };
+      }
+      const double = makeMultiplier(2);
+      const triple = makeMultiplier(3);
+      console.log(double(5), triple(5), double(triple(2)));
+    options:
+      - out: "10 15 12"
+      - out: "15 15 18"
+      - out: "10 10 8"
+      - out: "10 15 6"
+    answer: 1
+    explain: |
+      هر صدا زدن `makeMultiplier` یک closure جدید با `factor` مخصوص خودش می‌سازد: `double` همیشه `factor = 2` و `triple` همیشه `factor = 3` را می‌بیند. پس `double(5) = 10` و `triple(5) = 15`. در عبارت آخر اول `triple(2) = 6` حساب می‌شود و بعد `double(6) = 12`. گزینه‌ی ۲ فکر کرده آخرین `factor` (یعنی `3`) بین همه مشترک شده، گزینه‌ی ۳ فکر کرده اولین `factor` باقی مانده، و گزینه‌ی ۴ صدا زدن بیرونی `double` را جا انداخته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function once(fn) {
+        let done = false;
+        return () => {
+          if (!done) {
+            done = true;
+            fn();
+          }
+        };
+      }
+      const init = once(() => console.log("init!"));
+      init();
+      init();
+      init();
+    options:
+      - out: ["init!", "init!", "init!"]
+      - out: ["init!"]
+      - out: ""
+      - out: ["!! TypeError"]
+    answer: 2
+    explain: |
+      `once` یک closure برمی‌گرداند که متغیر `done` (و پارامتر `fn`) را به خاطر می‌سپارد. در اولین `init()`، `done` هنوز `false` است؛ پس `true` می‌شود، `fn` اجرا می‌شود و `init!` چاپ می‌شود. در صدا زدن‌های دوم و سوم، **همان** `done` حالا `true` است و چیزی چاپ نمی‌شود. گزینه‌ی ۱ فکر کرده `done` با هر صدا زدن دوباره `false` می‌شود (در حالی که فقط یک بار، هنگام اجرای `once`، ساخته شده)، گزینه‌ی ۳ فکر کرده `fn` بعد از تمام شدن `once` دیگر در دسترس نیست، و گزینه‌ی ۴ هم غلط است، چون `fn` یک تابع واقعی است که در کوله‌پشتی closure مانده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      let total = 0;
+      function makeAdder(step) {
+        return () => {
+          total += step;
+          return total;
+        };
+      }
+      const add5 = makeAdder(5);
+      const add10 = makeAdder(10);
+      add5();
+      add10();
+      console.log(add5(), total);
+    options:
+      - out: "10 0"
+      - out: "20 15"
+      - out: "20 20"
+      - out: "10 20"
+    answer: 3
+    explain: |
+      `total` یک متغیر سراسری است و **هر دو** closure به همان یک `total` دسترسی دارند؛ ولی هر کدام `step` مخصوص خودش را دارد (`5` و `10`). مراحل: `add5()` ← `total = 5`؛ `add10()` ← `total = 15`؛ داخل `console.log` اول `add5()` اجرا می‌شود ← `total = 20` و `20` برمی‌گرداند؛ بعد `total` خوانده می‌شود که `20` است. گزینه‌ی ۱ فکر کرده هر closure کپی جداگانه‌ای از `total` گرفته و متغیر سراسری دست‌نخورده می‌ماند. گزینه‌ی ۲ فکر کرده `total` قبل از اجرای `add5()` خوانده می‌شود، در حالی که آرگومان‌ها از چپ به راست ارزیابی می‌شوند. گزینه‌ی ۴ فکر کرده `add5` مجموع جداگانه‌ی خودش را دارد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function greetLater(name) {
+        setTimeout(() => console.log("Hello, " + name), 0);
+        console.log("scheduled: " + name);
+      }
+      greetLater("Ali");
+      greetLater("Sara");
+    options:
+      - out: ["scheduled: Ali", "Hello, Ali", "scheduled: Sara", "Hello, Sara"]
+      - out: ["scheduled: Ali", "scheduled: Sara", "Hello, Sara", "Hello, Sara"]
+      - out: ["scheduled: Ali", "scheduled: Sara", "Hello, Ali", "Hello, Sara"]
+      - out: ["scheduled: Ali", "scheduled: Sara", "Hello, undefined", "Hello, undefined"]
+    answer: 3
+    explain: |
+      هر صدا زدن `greetLater` اول یک callback را برای بعد زمان‌بندی می‌کند و بلافاصله `scheduled: ...` را چاپ می‌کند. callbackهای `setTimeout` (حتی با تأخیر `0`) فقط بعد از تمام شدن کل کد همگام اجرا می‌شوند؛ پس اول هر دو `scheduled` و بعد هر دو `Hello` چاپ می‌شوند (رد گزینه‌ی ۱). هر صدا زدن `greetLater` پارامتر `name` مخصوص خودش را دارد و هر callback، `name` همان صدا زدن را به خاطر می‌سپارد: اول `Ali` و بعد `Sara` (رد گزینه‌ی ۲). گزینه‌ی ۴ هم فکر کرده بعد از تمام شدن `greetLater` پارامترهایش از بین رفته‌اند؛ در حالی که این دقیقاً همان کاری است که closure انجام می‌دهد: «Keeps access even after the outer function ends».
+
+  - level: easy
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «طبق هشدار BEWARE OF PITFALL در اسلاید ۲۸، closureها وقتی با ______ ترکیب شوند، می‌توانند مشکل‌ساز شوند.»
+    options:
+      - '`let`'
+      - '`const`'
+      - 'arrow function'
+      - '`var`'
+    answer: 4
+    explain: |
+      متن اسلاید ۲۸: «BEWARE OF PITFALL: But closures can cause problems when combined with *var*». دلیلش این است که `var` بلوک (مثلاً بدنه‌ی حلقه) را نمی‌شناسد و فقط یک متغیر مشترک می‌سازد، پس همه‌ی closureها همان یک متغیر را می‌بینند. `let` و `const` برعکس، block-scoped هستند و دقیقاً راه‌حل این مشکل‌اند؛ arrow function هم مشکلی ایجاد نمی‌کند.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => console.log(i), 0);
+      }
+      console.log("after loop:", i);
+    options:
+      - out: ["after loop: 3", "3", "3", "3"]
+      - out: ["after loop: 3", "0", "1", "2"]
+      - out: ["0", "1", "2", "after loop: 3"]
+      - out: ["after loop: 2", "2", "2", "2"]
+    answer: 1
+    explain: |
+      حلقه سه callback را **زمان‌بندی** می‌کند ولی اجرا نمی‌کند. بعد از حلقه، `i` (که با `var` تعریف شده و بیرون حلقه هم در دسترس است) برابر `3` است و خط آخر `after loop: 3` را چاپ می‌کند. فقط بعد از تمام شدن کد همگام، سه callback اجرا می‌شوند و هر سه **همان یک** `i` مشترک را می‌خوانند: `3`. گزینه‌ی ۲ فکر کرده هر callback مقدار `i` لحظه‌ی ساخته شدنش را نگه داشته (رفتار `let`)، گزینه‌ی ۳ فکر کرده callbackها با تأخیر `0` فوراً اجرا می‌شوند، و گزینه‌ی ۴ آخرین مقدار داخل حلقه (`2`) را با مقدار نهایی `i` اشتباه گرفته است.
+
+  - level: medium
+    stem: |
+      کد `for (var i = 0; i < 3; i++) { setTimeout(() => console.log(i), 0); }` سه بار عدد `3` را چاپ می‌کند. دلیل اصلی کدام است؟
+    options:
+      - '`setTimeout` همیشه آخرین مقدار هر متغیر را کپی می‌کند و به callback می‌دهد.'
+      - 'arrow functionها به متغیرهای حلقه دسترسی ندارند و مقدار پیش‌فرض می‌گیرند.'
+      - 'فقط **یک** متغیر `i` (function-scoped) وجود دارد که هر سه callback به آن دسترسی دارند، و callbackها بعد از تمام شدن حلقه اجرا می‌شوند؛ وقتی `i` به `3` رسیده است.'
+      - 'تأخیر `0` میلی‌ثانیه مجاز نیست و حلقه سه بار دیگر تکرار می‌شود.'
+    answer: 3
+    explain: |
+      دو دلیل با هم: (۱) `var` function-scoped است، پس در کل حلقه فقط **یک** `i` وجود دارد و هر سه callback همان را در closure دارند؛ (۲) callbackهای `setTimeout` بعد از تمام شدن حلقه اجرا می‌شوند، وقتی `i` به `3` رسیده است. گزینه‌ی ۱ غلط است: `setTimeout` چیزی را کپی نمی‌کند و اتفاقاً مشکل این است که **هیچ** کپی‌ای ساخته نمی‌شود. گزینه‌ی ۲ غلط است، چون arrow function مثل هر تابع دیگری به متغیرهای بیرونی دسترسی دارد. گزینه‌ی ۴ هم ساختگی است؛ تأخیر `0` مجاز است و حلقه فقط سه بار اجرا می‌شود.
+
+  - level: medium
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+
+      «وقتی `i` با `let` در سرآیند (header) حلقه‌ی `for` تعریف شود، JavaScript برای **هر تکرار** ______ می‌سازد؛ برای همین هر closure مقدار همان تکرار را می‌بیند.»
+    options:
+      - 'یک binding (نسخه‌ی) جدید از `i`'
+      - 'یک متغیر سراسری (global) مشترک برای همه‌ی تکرارها'
+      - 'یک `var` جدید که به بالای تابع hoist می‌شود'
+      - 'یک snapshot ثابت از مقدار `i` در لحظه‌ی پایان حلقه'
+    answer: 1
+    explain: |
+      وقتی `let` در سرآیند `for` باشد، JavaScript برای هر تکرار یک **binding (نسخه‌ی) جدید** از `i` می‌سازد که با مقدار همان تکرار شروع می‌شود؛ برای همین با `let` خروجی `0`، `1`، `2` است. گزینه‌ی ۲ دقیقاً برعکس است (یک متغیر مشترک، رفتار `var` است). گزینه‌ی ۳ غلط است، چون `let` هرگز به `var` تبدیل نمی‌شود و block-scoped می‌ماند. گزینه‌ی ۴ هم غلط است: closure از مقدارها عکس نمی‌گیرد، و اگر همه یک snapshot از مقدار پایانی داشتند، همه یک عدد را چاپ می‌کردند.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => console.log("var", i), 0);
+      }
+      for (let j = 0; j < 3; j++) {
+        setTimeout(() => console.log("let", j), 0);
+      }
+    options:
+      - out: ["var 3", "var 3", "var 3", "let 0", "let 1", "let 2"]
+      - out: ["var 0", "var 1", "var 2", "let 0", "let 1", "let 2"]
+      - out: ["var 3", "let 0", "var 3", "let 1", "var 3", "let 2"]
+      - out: ["var 3", "var 3", "var 3", "let 3", "let 3", "let 3"]
+    answer: 1
+    explain: |
+      همه‌ی callbackها تأخیر `0` دارند و به همان ترتیبی که زمان‌بندی شده‌اند اجرا می‌شوند: اول سه callback حلقه‌ی اول، بعد سه callback حلقه‌ی دوم (رد گزینه‌ی ۳ که آن‌ها را درهم چیده است). callbackهای حلقه‌ی `var` همگی یک `i` مشترک دارند که بعد از حلقه `3` است؛ ولی حلقه‌ی `let` برای هر تکرار یک `j` جدید می‌سازد، پس `0`، `1`، `2` چاپ می‌شود. گزینه‌ی ۲ فکر کرده `var` هم مقدار هر تکرار را نگه می‌دارد و گزینه‌ی ۴ فکر کرده `let` هم مثل `var` یک متغیر مشترک دارد.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      for (var i = 0; i < 3; i++) {
+        ((n) => {
+          setTimeout(() => console.log(n * 10), 0);
+        })(i);
+      }
+      console.log("loop done, i =", i);
+    options:
+      - out: ["0", "10", "20", "loop done, i = 3"]
+      - out: ["loop done, i = 3", "30", "30", "30"]
+      - out: ["loop done, i = 2", "0", "10", "20"]
+      - out: ["loop done, i = 3", "0", "10", "20"]
+    answer: 4
+    explain: |
+      در هر تکرار، IIFE (تابعی که همان لحظه صدا زده می‌شود) با مقدار فعلی `i` اجرا می‌شود و آن مقدار در پارامتر `n` ریخته می‌شود؛ هر صدا زدن `n` مخصوص خودش را دارد (`0`، `1`، `2`) و callback همان `n` را به خاطر می‌سپارد. اول کد همگام تمام می‌شود: `i` (یک `var` که بیرون حلقه هم در دسترس است) برابر `3` است و `loop done, i = 3` چاپ می‌شود؛ بعد callbackها `0`، `10` و `20` را چاپ می‌کنند. گزینه‌ی ۱ فکر کرده callbackها قبل از خط آخر اجرا می‌شوند، گزینه‌ی ۲ فکر کرده IIFE مشکل `var` را حل نمی‌کند، و گزینه‌ی ۳ مقدار نهایی `i` را اشتباه گفته است.
+
+  - level: medium
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      var a = [];
+      var b = [];
+      for (var i = 0; i < 3; i++) {
+        a.push(() => i);
+      }
+      for (let j = 0; j < 3; j++) {
+        b.push(() => j);
+      }
+      console.log(a[1](), b[1]());
+    options:
+      - out: "1 1"
+      - out: "3 1"
+      - out: "3 3"
+      - out: "1 3"
+    answer: 2
+    explain: |
+      در حلقه‌ی اول، همه‌ی توابع آرایه‌ی `a` یک `i` مشترک (`var`) دارند که بعد از حلقه `3` شده است؛ پس `a[1]()` هم `3` برمی‌گرداند. در حلقه‌ی دوم، `let` برای هر تکرار یک `j` جدید می‌سازد و تابع دوم (`b[1]`) `j` تکرار دوم یعنی `1` را دارد. گزینه‌ی ۱ فکر کرده `var` هم مقدار هر تکرار را نگه می‌دارد، گزینه‌ی ۳ فکر کرده `let` هم مشترک است، و گزینه‌ی ۴ رفتار دو حلقه را جابه‌جا کرده است. این دام به `setTimeout` ربطی ندارد: کافی است تابع **بعد از** تمام شدن حلقه صدا زده شود.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      for (var i = 0; i < 3; i++) {
+        let copy = i;
+        setTimeout(() => console.log(copy), 0);
+      }
+    options:
+      - out: ["3", "3", "3"]
+      - out: ["0", "1", "2"]
+      - out: ["2", "2", "2"]
+      - out: ["!! ReferenceError"]
+    answer: 2
+    explain: |
+      گرچه `i` با `var` تعریف شده و مشترک است، داخل بدنه‌ی حلقه `let copy = i` در هر تکرار یک متغیر **جدید** (block-scoped) با مقدار همان لحظه‌ی `i` می‌سازد. هر callback، `copy` تکرار خودش را به خاطر می‌سپارد، پس `0`، `1`، `2` چاپ می‌شود. گزینه‌ی ۱ فکر کرده callbackها هنوز `i` را می‌خوانند؛ گزینه‌ی ۳ (`2`، `2`، `2`) خروجیِ حالتی است که به جای `let copy` بنویسیم `var copy`؛ و گزینه‌ی ۴ غلط است، چون هر `copy` قبل از اجرای callback مقدار گرفته و callback بیرون از بلوک نیست که به آن دسترسی نداشته باشد.
+
+  - level: hard
+    stem: |
+      کدام قطعه‌کد اعداد `0`، `1` و `2` را (هر کدام در یک خط) چاپ می‌کند؟
+    check: option-output
+    expect: "0\n1\n2"
+    options:
+      - code: |
+          for (var i = 0; i < 3; i++) {
+            var j = i;
+            setTimeout(() => console.log(j), 0);
+          }
+      - code: |
+          for (var i = 0; i < 3; i++) {
+            (function () {
+              setTimeout(() => console.log(i), 0);
+            })();
+          }
+      - code: |
+          for (var i = 0; i < 3; i++) {
+            (function (k) {
+              setTimeout(() => console.log(k), 0);
+            })(i);
+          }
+      - code: |
+          let i;
+          for (i = 0; i < 3; i++) {
+            setTimeout(() => console.log(i), 0);
+          }
+    answer: 3
+    explain: |
+      فقط در گزینه‌ی ۳ هر تکرار متغیر مستقلی می‌سازد: IIFE مقدار فعلی `i` را به‌عنوان **پارامتر** `k` می‌گیرد و هر callback، `k` مخصوص خودش را دارد. گزینه‌ی ۱ `2`، `2`، `2` چاپ می‌کند: `var j` هم function-scoped است و فقط یک `j` مشترک وجود دارد که آخرین مقدارش `2` است. گزینه‌ی ۲ با اینکه IIFE دارد، `i` را به‌عنوان پارامتر نگرفته و همان `i` مشترک را می‌خواند: `3`، `3`، `3`. گزینه‌ی ۴ هم `3`، `3`، `3` چاپ می‌کند: `let i` بیرون از سرآیند حلقه تعریف شده، پس فقط یک binding وجود دارد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      for (var i = 1; i <= 3; i++) {
+        setTimeout(() => console.log(i), i * 100);
+      }
+    options:
+      - out: ["1", "2", "3"]
+      - out: ["3", "3", "3"]
+      - out: ["4", "4", "4"]
+      - out: ["0", "1", "2"]
+    answer: 3
+    explain: |
+      شرط حلقه `i <= 3` است، پس حلقه با `i = 1`، `2` و `3` اجرا می‌شود و وقتی `i` به `4` برسد متوقف می‌شود. تأخیرها (`100`، `200` و `300` میلی‌ثانیه) همان لحظه‌ی زمان‌بندی و با مقدار فعلی `i` حساب می‌شوند، ولی **بدنه‌ی** callbackها دیرتر اجرا می‌شود و `i` مشترک را می‌خواند که حالا `4` است. گزینه‌ی ۱ فکر کرده هر callback مقدار تکرار خودش را دارد (رفتار `let`)، گزینه‌ی ۲ مقدار نهایی را مثل حلقه‌ی معروف `i < 3` حساب کرده، و گزینه‌ی ۴ شروع حلقه را `0` فرض کرده است.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function a(x) {
+        return function (y) {
+          return function (z) {
+            return x + y + z;
+          };
+        };
+      }
+      console.log(a(1)(2)(3));
+      console.log(a("1")(2)(3));
+    options:
+      - out: ["6", "123"]
+      - out: ["6", "6"]
+      - out: ["6", "15"]
+      - out: ["6", "NaN"]
+    answer: 1
+    explain: |
+      هر لایه یک closure است: درونی‌ترین تابع به `x` (از `a`)، `y` (از تابع وسط) و `z` (پارامتر خودش) دسترسی دارد، حتی بعد از اینکه دو تابع بیرونی تمام شده‌اند. `a(1)(2)(3)` یعنی `1 + 2 + 3 = 6`. در `a("1")(2)(3)` جمع از چپ به راست انجام می‌شود: `"1" + 2` رشته‌ی `"12"` و بعد `"12" + 3` رشته‌ی `"123"` می‌شود (type coercion). گزینه‌ی ۲ coercion را نادیده گرفته، گزینه‌ی ۳ فرض کرده `2 + 3` اول حساب می‌شود، و گزینه‌ی ۴ فکر کرده جمع رشته و عدد `NaN` می‌دهد.
+
+  - level: hard
+    stem: |
+      خروجی کد زیر کدام است؟
+    check: output
+    code: |
+      function makeCounter() {
+        return increment;
+        var count = 0;
+        function increment() {
+          count++;
+          return count;
+        }
+      }
+      const inc = makeCounter();
+      console.log(inc());
+      console.log(inc());
+    options:
+      - out: ["1", "2"]
+      - out: ["NaN", "NaN"]
+      - out: ["!! ReferenceError"]
+      - out: ["undefined", "undefined"]
+    answer: 2
+    explain: |
+      ترکیب hoisting و closure: داخل `makeCounter`، تابع `increment` (function declaration) کامل hoist می‌شود و `count` (`var`) با مقدار `undefined`. خط `return increment` تابع را برمی‌گرداند و خط `var count = 0` **هرگز** اجرا نمی‌شود. `increment` از طریق closure به همان `count` دسترسی دارد که `undefined` است؛ `count++` آن را به عدد تبدیل می‌کند و حاصل `NaN` است. بار بعد هم `NaN + 1` همان `NaN` است. گزینه‌ی ۱ فرض کرده `count = 0` اجرا شده، گزینه‌ی ۳ فکر کرده `count` یا `increment` به خاطر قرار گرفتن بعد از `return` وجود ندارند، و گزینه‌ی ۴ فراموش کرده که `++` مقدار را به عدد تبدیل می‌کند.
