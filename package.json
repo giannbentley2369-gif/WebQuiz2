@@ -1,0 +1,28 @@
+{
+  "name": "web-programming-quiz-book",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Persian (Farsi) study and test-prep book for CE 40419 Web Programming: Intro to JS, JS in HTML (DOM), Node.js & TypeScript",
+  "scripts": {
+    "verify": "node book/scripts/verify.mjs",
+    "check": "node book/scripts/check.mjs",
+    "build:html": "node book/scripts/build.mjs --html-only",
+    "build": "node book/scripts/build.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "highlight.js": "^11.12.0",
+    "js-yaml": "^5.5.0",
+    "jsdom": "^31.0.1",
+    "markdown-it": "^15.0.3",
+    "markdown-it-container": "^4.0.0",
+    "pdfjs-dist": "^6.5.438",
+    "puppeteer-core": "^25.17.0",
+    "typescript": "^7.0.2",
+    "vazirmatn": "^33.0.3"
+  }
+}
