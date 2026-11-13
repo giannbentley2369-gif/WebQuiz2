@@ -1,0 +1,742 @@
+id: ch2-create
+title: "ساختن و افزودن عناصر جدید"
+slides: "JS in HTML، اسلایدهای ۲۳ تا ۲۶"
+lesson: |
+  تا این‌جا یاد گرفتیم عنصرهایی را که **از قبل** در صفحه هستند پیدا کنیم و متن یا ظاهرشان را عوض کنیم. اما در خیلی از صفحه‌ها باید چیزی را **از صفر** بسازیم: یک آیتم تازه در لیست کارها، یک پیام خطا زیر فرم، یک کارت محصول جدید و… . در این درس می‌بینیم JavaScript چطور یک عنصر (element) تازه می‌سازد و آن را در درخت DOM (همان مدل درختیِ صفحه که مرورگر از روی HTML می‌سازد) جا می‌دهد.
+
+  ::: analogy
+  ساختن عنصر جدید مثل ساختن یک قطعه‌ی لگو در دستت است. قطعه وجود دارد و رنگ و شکل دارد، ولی تا آن را به ساختمان لگو **نچسبانی** جزو ساختمان نیست و کسی آن را در ساختمان نمی‌بیند. در DOM هم `createElement` قطعه را می‌سازد و متدهایی مثل `appendChild` آن را به درخت صفحه می‌چسبانند.
+  :::
+
+  ### چهار قدمِ ساختن یک عنصر
+
+  اسلاید ۲۳ کل کار را این‌طور خلاصه می‌کند:
+
+  1. **ساختن**: `document.createElement("tag")`
+  2. **گذاشتن محتوا**: `.innerText` یا `.innerHTML` (یا `.textContent`)
+  3. **تنظیم attributeها** (ویژگی‌های داخل تگ، مثل `id` و `class`): `.setAttribute("name", "value")`
+  4. **افزودن به صفحه**: `.appendChild()` یا `.append()`؛ و برای گذاشتن قبل از یک عنصر دیگر: `.insertBefore()`
+
+  و در آخر این کارها را با رویدادها (event) ترکیب می‌کنیم تا صفحه با کلیک و تایپ کاربر تغییر کند.
+
+  #### قدم ۱: ساختن با `createElement`
+
+  ```js
+  const p = document.createElement("p");   // a brand-new <p> element
+  console.log(p.tagName);       // "P"
+  console.log(p.isConnected);   // false -> it is not in the page yet
+  console.log(p.parentNode);    // null  -> it has no parent yet
+  ```
+
+  - ورودی فقط **نام تگ** است، بدون `<` و `>`. `createElement("div")` درست است ولی `createElement("<div>")` خطای `InvalidCharacterError` می‌دهد.
+  - خروجی یک شیء عنصر واقعی است (مثلاً `HTMLParagraphElement`) که همه‌ی propertyها و متدهای یک عنصر معمولی را دارد.
+  - این عنصر فعلاً فقط در **حافظه** است: پدر ندارد، `isConnected` (آیا به سند وصل است؟) برابر `false` است و روی صفحه دیده نمی‌شود.
+
+  #### قدم ۲: گذاشتن محتوا
+
+  ```js
+  const div = document.createElement("div");
+  div.innerText = "Hello DOM!";          // plain text (this is what slide 24 uses)
+  div.textContent = "Hello DOM!";        // plain text as well
+  div.innerHTML = "<b>Hello</b> DOM!";   // parsed as HTML: a real <b> element is created
+  ```
+
+  همان‌طور که در درس مربوط به `textContent` و `innerHTML` دیدیم، `innerHTML` رشته را **به‌عنوان کد HTML تفسیر می‌کند** و تگ‌ها را به عنصر تبدیل می‌کند، ولی `textContent` و `innerText` متن را **همان‌طور که هست** می‌گذارند (اگر در متن `<b>` باشد، خودِ این علامت‌ها روی صفحه دیده می‌شوند). برای متنی که کاربر وارد کرده همیشه `textContent` (یا `innerText`) را انتخاب کن تا کسی نتواند HTML یا اسکریپت مخرب در صفحه‌ات تزریق کند.
+
+  #### قدم ۳: تنظیم attributeها
+
+  ```js
+  div.setAttribute("class", "box");   // <div class="box">
+  div.setAttribute("id", "msg");      // <div class="box" id="msg">
+  ```
+
+  برای کلاس سه راه رایج داریم (جزئیاتشان در درس «ویژگی‌ها و کلاس‌ها» می‌آید):
+
+  | روش | کار |
+  |---|---|
+  | `div.setAttribute("class", "box")` | کل attribute کلاس را برابر `"box"` می‌گذارد |
+  | `div.className = "box"` | همان کار، با property رشته‌ای `className` |
+  | `div.classList.add("box")` | کلاس `box` را **اضافه** می‌کند و کلاس‌های قبلی را نگه می‌دارد |
+
+  property مربوط به کلاس `className` نام دارد، نه `class`، چون `class` در JavaScript یک کلمه‌ی رزروشده است.
+
+  #### قدم ۴: افزودن به درخت
+
+  **`appendChild`: یک گره، به‌عنوان آخرین فرزند.** `parent.appendChild(node)` گره (node) را **آخرین فرزند** `parent` می‌کند و **همان گره را برمی‌گرداند**:
+
+  ```js
+  const list = document.querySelector("ul");
+  const li = document.createElement("li");
+  li.textContent = "Milk";
+  const result = list.appendChild(li);
+  console.log(result === li);   // true
+  ```
+
+  `appendChild` فقط **یک** آرگومان می‌گیرد و آن هم باید یک **گره** باشد. اگر رشته بدهی (`list.appendChild("Milk")`) خطای `TypeError` می‌گیری.
+
+  **`append`: چند گره و رشته با هم.**
+
+  ```js
+  const box = document.querySelector("#box");
+  const b = document.createElement("b");
+  b.textContent = "World";
+  box.append("Hello ", b, "!");   // strings become text nodes
+  console.log(box.innerHTML);     // Hello <b>World</b>!
+  ```
+
+  `append` جدیدتر و راحت‌تر است: هر تعداد آرگومان می‌گیرد، هر رشته را به یک **گره‌ی متنی** (text node؛ گره‌ای که فقط متن است و تگ ندارد) جداگانه تبدیل می‌کند و **چیزی برنمی‌گرداند** (`undefined`).
+
+  | | `appendChild(node)` | `append(...items)` |
+  |---|---|---|
+  | تعداد آرگومان | دقیقاً یکی | هر تعداد |
+  | رشته قبول می‌کند؟ | خیر (`TypeError`) | بله؛ هر رشته یک text node می‌شود |
+  | مقدار برگشتی | همان گره‌ی اضافه‌شده | `undefined` |
+  | محل افزودن | آخرین فرزند | آخرِ فرزندان، به همان ترتیب آرگومان‌ها |
+
+  `document.body` میان‌بُری برای عنصر `<body>` است؛ پس `document.body.appendChild(div)` یعنی «div را آخرین فرزند body کن».
+
+  **`insertBefore`: افزودن قبل از یک فرزند مشخص.**
+
+  ```js
+  parent.insertBefore(newNode, referenceNode);
+  ```
+
+  - روی **پدر** صدا زده می‌شود، نه روی گره‌ی مرجع.
+  - ترتیب آرگومان‌ها را این‌طور به خاطر بسپار: «**این** (گره‌ی جدید) را بگذار **قبلِ آن** (گره‌ی مرجع)».
+  - گره‌ی مرجع باید **فرزند مستقیم** همان پدر باشد؛ وگرنه خطای `NotFoundError` رخ می‌دهد.
+  - اگر مرجع `null` باشد، `insertBefore` درست مثل `appendChild` گره را به **انتها** اضافه می‌کند.
+  - مقدار برگشتی همان گره‌ی درج‌شده است.
+
+  ```html
+  <ul id="list"><li>A</li><li id="c">C</li></ul>
+  ```
+
+  ```js
+  const list = document.getElementById("list");
+  const b = document.createElement("li");
+  b.textContent = "B";
+  list.insertBefore(b, document.getElementById("c"));   // A, B, C
+
+  const first = document.createElement("li");
+  first.textContent = "Start";
+  list.insertBefore(first, list.firstChild);            // Start, A, B, C
+  ```
+
+  #### متدهای مدرن: `prepend`، `before` و `after`
+
+  | متد | گره‌ی جدید کجا می‌رود؟ |
+  |---|---|
+  | `parent.prepend(x)` | **اولین** فرزند `parent` |
+  | `parent.append(x)` | **آخرین** فرزند `parent` |
+  | `el.before(x)` | هم‌سطحِ (sibling) `el`، درست **قبل** از آن |
+  | `el.after(x)` | هم‌سطحِ `el`، درست **بعد** از آن |
+
+  این چهار متد مثل `append` چند گره یا رشته می‌گیرند و `undefined` برمی‌گردانند. توجه کن که `prepend` و `append` روی **پدر** صدا زده می‌شوند ولی `before` و `after` روی **خودِ عنصر مرجع**.
+
+  #### گره‌ی متنی با `createTextNode`
+
+  ```js
+  const text = document.createTextNode("<b>Hi</b>");
+  document.body.appendChild(text);   // shows the characters <b>Hi</b>, no bold element
+  ```
+
+  `document.createTextNode` یک گره‌ی متنی می‌سازد. چون یک **گره** است، `appendChild` آن را قبول می‌کند. محتوایش هیچ‌وقت HTML تفسیر نمی‌شود؛ این همان کاری است که `append("…")` پشت صحنه با رشته‌ها می‌کند.
+
+  ### جابه‌جا کردن، نه کپی کردن!
+
+  هر گره در هر لحظه فقط **یک جا** در درخت می‌تواند باشد. اگر گره‌ای را که الان در صفحه است دوباره append یا insert کنی، از جای قبلی **برداشته می‌شود** و به جای جدید **منتقل** می‌شود؛ کپی ساخته نمی‌شود.
+
+  ```html
+  <ul id="todo"><li id="task">Read slides</li></ul>
+  <ul id="done"></ul>
+  ```
+
+  ```js
+  const task = document.getElementById("task");
+  document.getElementById("done").appendChild(task);   // moved, not copied
+  console.log(document.getElementById("todo").children.length); // 0
+  console.log(document.getElementById("done").children.length); // 1
+  ```
+
+  برای کپی واقعی از `cloneNode` استفاده کن:
+
+  - `el.cloneNode(true)`: کپی **عمیق** (deep)؛ خود عنصر به‌همراه همه‌ی فرزندان و متن داخلش.
+  - `el.cloneNode()` یا `el.cloneNode(false)`: کپی **سطحی** (shallow)؛ فقط خود تگ و attributeهایش، بدون فرزندان و حتی بدون متن.
+
+  کپی، attributeها و از جمله `id` را هم کپی می‌کند؛ پس اگر عنصر اصلی `id` داشت، `id` کپی را عوض کن تا دو عنصر با یک `id` نداشته باشی. listenerهایی که با `addEventListener` به عنصر اصلی وصل شده‌اند کپی **نمی‌شوند**.
+
+  ### مثال اسلایدهای ۲۴ تا ۲۶: New Div!
+
+  ```html lines title=doc.html
+  <!DOCTYPE html>
+  <html>
+  <body>
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+      <script>
+          const btn = document.querySelector('button');
+          btn.addEventListener('click', () => {
+              const div = document.createElement("div");
+              div.innerText = "Hello DOM!";
+              div.setAttribute("class", "box");
+              document.body.appendChild(div);
+          });
+      </script>
+  </body>
+  </html>
+  ```
+
+  خط به خط:
+
+  - **خط ۷:** اولین `<button>` صفحه را پیدا می‌کنیم.
+  - **خط ۸:** به رویداد `click` آن یک listener (تابع شنونده) وصل می‌کنیم.
+  - **خط ۹:** در **هر** کلیک یک `<div>` **تازه** ساخته می‌شود (هنوز روی صفحه نیست).
+  - **خط ۱۰:** متن داخلش `Hello DOM!` می‌شود.
+  - **خط ۱۱:** کلاس `box` را به آن می‌دهیم؛ حالا `<div class="box">Hello DOM!</div>` داریم.
+  - **خط ۱۲:** آن را آخرین فرزند `<body>` می‌کنیم و از همین لحظه روی صفحه دیده می‌شود.
+
+  **نتیجه (اسلایدهای ۲۵ و ۲۶):** قبل از کلیک فقط عنوان «Hello World» و دکمه‌ی «CLICK ME!» دیده می‌شود. بعد از کلیک، درست زیر دکمه یک خط تازه با متن «Hello DOM!» ظاهر می‌شود. چون `<div>` عنصری بلوکی (block؛ عنصری که از خط جدید شروع می‌شود و کل عرض را می‌گیرد) است، در خط جدید می‌آید.
+
+  دو نکته‌ی ظریف این مثال:
+
+  - div در واقع **بعد از تگ `<script>`** به body اضافه می‌شود (آخرین فرزند body)، ولی چون `<script>` چیزی روی صفحه نشان نمی‌دهد، div درست زیر دکمه دیده می‌شود.
+  - چون `createElement` **داخل** listener است، هر کلیک یک div **جدید** می‌سازد: بعد از ۳ کلیک، ۳ خط «Hello DOM!» داریم. برای `.box` در این مثال CSSی تعریف نشده، پس کلاس فعلاً اثر ظاهری ندارد و فقط نشان می‌دهد attribute چطور تنظیم می‌شود.
+
+  ### ترکیب با رویدادها: یک لیست کار ساده
+
+  ```html
+  <input id="task" placeholder="New task">
+  <button id="add">Add</button>
+  <ul id="list"></ul>
+  ```
+
+  ```js
+  const input = document.getElementById("task");
+  const list = document.getElementById("list");
+
+  document.getElementById("add").addEventListener("click", () => {
+    if (input.value.trim() === "") return;   // ignore empty tasks
+    const li = document.createElement("li");
+    li.textContent = input.value;            // safe: plain text
+    list.appendChild(li);
+    input.value = "";                        // clear the box for the next task
+  });
+  ```
+
+  ### ساختن لیست از روی یک آرایه
+
+  ```js
+  const fruits = ["Apple", "Banana", "Cherry"];
+  const ul = document.createElement("ul");
+
+  fruits.forEach((name) => {
+    const li = document.createElement("li");
+    li.textContent = name;
+    ul.appendChild(li);
+  });
+
+  document.body.appendChild(ul);
+  console.log(ul.children.length);   // 3
+  ```
+
+  راه کوتاه‌تر: با `map` آرایه‌ای از عنصرها بساز و همه را با spread (`...`؛ پخش کردن عضوهای آرایه به‌صورت آرگومان‌های جدا) یک‌جا به `append` بده:
+
+  ```js
+  const items = fruits.map((name) => {
+    const li = document.createElement("li");
+    li.textContent = name;
+    return li;
+  });
+  ul.append(...items);   // append accepts many nodes at once
+  ```
+
+  راه سوم ساختن یک رشته‌ی HTML و دادن آن به `innerHTML` است: `ul.innerHTML = fruits.map((f) => "<li>" + f + "</li>").join("")`. کوتاه است، ولی اگر داده از کاربر بیاید خطرناک است و هر بار کل محتوای قبلی را دور می‌ریزد و از نو می‌سازد.
+
+  ::: tip
+  - `createElement` فقط **می‌سازد**؛ تا `append`، `appendChild`، `insertBefore`، `prepend`، `before` یا `after` صدا نزنی، چیزی روی صفحه نمی‌آید.
+  - `appendChild`: دقیقاً یک **گره**، و خروجی‌اش همان گره است. `append`: چند گره یا رشته، و خروجی‌اش `undefined` است.
+  - `parent.insertBefore(جدید, مرجع)` روی **پدر** صدا زده می‌شود؛ مرجعِ `null` یعنی «به انتها اضافه کن».
+  - برای «اولین فرزند کردن» دو راه داری: `parent.prepend(x)` یا `parent.insertBefore(x, parent.firstChild)`.
+  :::
+
+  ::: trap
+  - اگر `createElement` را **بیرون** از listener بنویسی و داخل listener فقط `appendChild` کنی، با هر کلیک **همان یک عنصر** جابه‌جا می‌شود و تعداد عنصرها زیاد نمی‌شود!
+  - `list.appendChild("text")` خطای `TypeError` می‌دهد، ولی `list.append("text")` درست کار می‌کند.
+  - `const x = list.append(li); x.textContent = "…";` خطا می‌دهد، چون `x` برابر `undefined` است. با `appendChild` همین کد درست است.
+  - `createElement("<p>")` غلط است (`InvalidCharacterError`)؛ فقط نام تگ را بده: `createElement("p")`.
+  - اگر خروجی `map` را **بدون** `join("")` به `innerHTML` بدهی، آرایه با **کاما** به رشته تبدیل می‌شود و کاماها هم روی صفحه می‌آیند.
+  - append کردنِ گره‌ای که در صفحه هست آن را **منتقل** می‌کند، نه کپی؛ برای کپی `cloneNode(true)` لازم است.
+  :::
+
+  ::: summary
+  ساختن: `createElement` (یا `createTextNode` برای متن خالی) ← محتوا: `textContent`/`innerText`/`innerHTML` ← attribute: `setAttribute` یا `className`/`classList` ← افزودن: `appendChild`/`append` (آخر)، `prepend` (اول)، `insertBefore`/`before`/`after` (وسط). هر گره فقط یک جا در درخت دارد و افزودن دوباره یعنی جابه‌جایی.
+  :::
+questions:
+  - level: easy
+    stem: بلافاصله بعد از اجرای `const li = document.createElement("li");` کدام گزینه درست است؟
+    options:
+      - یک `<li>` به انتهای `<body>` اضافه می‌شود و روی صفحه دیده می‌شود.
+      - اولین `<li>` موجود در صفحه پیدا و در `li` ذخیره می‌شود.
+      - یک عنصر `<li>` تازه در حافظه ساخته می‌شود که تا به درخت DOM اضافه نشود روی صفحه نمی‌آید.
+      - یک `<li>` خالی به‌عنوان آخرین فرزندِ اولین `<ul>` صفحه قرار می‌گیرد.
+    answer: 3
+    explain: |
+      `createElement` فقط یک عنصر **جدید** در حافظه می‌سازد؛ این عنصر پدر ندارد و تا وقتی با متدی مثل `appendChild` یا `append` به درخت اضافه نشود دیده نمی‌شود. گزینه‌های ۱ و ۴ فرض کرده‌اند افزودن خودکار انجام می‌شود که درست نیست، و گزینه‌ی ۲ کارِ `querySelector("li")` را توصیف می‌کند (پیدا کردن، نه ساختن).
+
+  - level: easy
+    stem: خروجی کد زیر در مرورگر کدام است؟
+    check: dom-output
+    html: |
+      <p>Old paragraph</p>
+    code: |
+      const p = document.createElement("p");
+      p.textContent = "New paragraph";
+      console.log(p.isConnected, document.querySelectorAll("p").length);
+    options:
+      - out: "true 2"
+      - out: "false 1"
+      - out: "false 2"
+      - out: "true 1"
+    answer: 2
+    explain: |
+      پاراگراف جدید ساخته و متن‌دار شده ولی به صفحه اضافه نشده است؛ پس `isConnected` برابر `false` است و `querySelectorAll("p")` فقط همان یک `<p>` قدیمی صفحه را پیدا می‌کند. گزینه‌های ۱ و ۳ فرض کرده‌اند `createElement` یا مقداردهی `textContent` عنصر را خودکار وارد صفحه می‌کند؛ گزینه‌ی ۴ هم با شمارش درست، `isConnected` را اشتباه گفته است.
+
+  - level: medium
+    stem: کدام دستور هنگام اجرا در مرورگر **خطا** می‌دهد؟
+    options:
+      - '`document.createElement("section")`'
+      - '`document.createElement("<div>")`'
+      - '`document.body.append("Hi", "!")`'
+      - '`document.body.insertBefore(document.createElement("p"), null)`'
+    answer: 2
+    explain: |
+      ورودی `createElement` فقط نام تگ است؛ علامت‌های `<` و `>` در نام تگ مجاز نیستند و مرورگر خطای `InvalidCharacterError` می‌دهد. گزینه‌ی ۱ یک `<section>` می‌سازد، گزینه‌ی ۳ دو گره‌ی متنی به انتهای body اضافه می‌کند (`append` رشته قبول می‌کند) و در گزینه‌ی ۴ مرجعِ `null` یعنی افزودن به انتها، که کاملاً مجاز است.
+
+  - level: easy
+    stem: 'می‌خواهیم عنصر `div` که با `createElement` ساخته‌ایم به‌عنوان آخرین فرزند `<body>` روی صفحه بیاید. در جای خالی `document.body.______(div);` کدام گزینه قرار می‌گیرد؟'
+    options:
+      - '`createElement`'
+      - '`querySelector`'
+      - '`setAttribute`'
+      - '`appendChild`'
+    answer: 4
+    explain: |
+      `appendChild` گره را آخرین فرزندِ عنصری می‌کند که روی آن صدا زده شده (این‌جا `<body>`)؛ این همان خط آخرِ مثال اسلاید ۲۴ است. `createElement` روی `document` صدا زده می‌شود و عنصر **می‌سازد**، `querySelector` عنصر **پیدا** می‌کند و `setAttribute` دو آرگومان (نام و مقدار attribute) می‌گیرد و چیزی به صفحه اضافه نمی‌کند.
+
+  - level: easy
+    stem: کدام جمله درباره‌ی `append` و `appendChild` **درست** است؟
+    options:
+      - '`append` می‌تواند چند گره و رشته را یک‌جا اضافه کند، ولی `appendChild` فقط یک گره می‌گیرد.'
+      - '`appendChild` رشته‌ها را خودکار به گره‌ی متنی تبدیل می‌کند.'
+      - '`append` گره‌ی اضافه‌شده را برمی‌گرداند، پس می‌توان پشت آن `.textContent` نوشت.'
+      - هر دو متد گره را به‌عنوان اولین فرزند پدر اضافه می‌کنند.
+    answer: 1
+    explain: |
+      `append(...items)` هر تعداد گره یا رشته می‌گیرد و رشته‌ها را به text node تبدیل می‌کند؛ `appendChild(node)` فقط یک گره می‌گیرد. گزینه‌ی ۲ برعکس است: `appendChild` با رشته خطای `TypeError` می‌دهد. گزینه‌ی ۳ هم غلط است، چون `append` مقدار `undefined` برمی‌گرداند (این `appendChild` است که خود گره را برمی‌گرداند). هر دو متد به **انتها** اضافه می‌کنند، نه ابتدا؛ برای ابتدا `prepend` داریم.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"></ul>
+    code: |
+      const list = document.querySelector("#list");
+      list.append(document.createElement("li"), "note", "!");
+      console.log(list.children.length, list.childNodes.length);
+    options:
+      - out: "1 3"
+      - out: "3 3"
+      - out: "1 1"
+      - out: "1 2"
+    answer: 1
+    explain: |
+      `append` برای **هر** رشته یک text node جداگانه می‌سازد؛ پس `<ul>` یک فرزندِ عنصری (`<li>`) و دو گره‌ی متنی (`"note"` و `"!"`) دارد. `children` فقط عنصرها را می‌شمارد (۱) و `childNodes` همه‌ی گره‌ها را (۳). گزینه‌ی ۲ گره‌های متنی را عنصر حساب کرده، گزینه‌ی ۳ فکر کرده رشته‌ها اضافه نمی‌شوند و گزینه‌ی ۴ دو رشته را در یک گره ادغام کرده است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul></ul>
+    code: |
+      const ul = document.querySelector("ul");
+      const first = ul.appendChild(document.createElement("li"));
+      first.textContent = "One";
+      console.log(ul.textContent);
+      const second = ul.append(document.createElement("li"));
+      second.textContent = "Two";
+      console.log(ul.textContent);
+    options:
+      - out: ["One", "OneTwo"]
+      - out: ["One", "!! TypeError"]
+      - out: ["!! TypeError"]
+      - out: ["One", "One"]
+    answer: 2
+    explain: |
+      `appendChild` خودِ گره را برمی‌گرداند، پس `first` همان `<li>` است و خط اول `One` چاپ می‌شود. اما `append` مقدار `undefined` برمی‌گرداند؛ پس `second` برابر `undefined` است و `undefined.textContent = "Two"` خطای `TypeError` می‌دهد و اجرا متوقف می‌شود. گزینه‌ی ۱ فکر کرده `append` هم گره را برمی‌گرداند، گزینه‌ی ۳ خطا را از همان ابتدا دانسته و گزینه‌ی ۴ فرض کرده مقداردهی به `undefined` بی‌صدا نادیده گرفته می‌شود.
+
+  - level: medium
+    stem: اجرای کدام خط از کد زیر باعث خطا می‌شود؟
+    check: dom-output
+    lines: true
+    html: |
+      <div id="box"></div>
+    code: |
+      const box = document.getElementById("box");
+      const p = document.createElement("p");
+      box.append("Title: ", p);
+      console.log("A");
+      box.insertBefore(document.createTextNode("!"), null);
+      console.log("B");
+      box.appendChild("Done");
+      console.log("C");
+    options:
+      - text: خط ۳
+        out: ["!! TypeError"]
+      - text: خط ۵
+        out: ["A", "!! TypeError"]
+      - text: خط ۷
+        out: ["A", "B", "!! TypeError"]
+      - text: هیچ خطایی رخ نمی‌دهد
+        out: ["A", "B", "C"]
+    answer: 3
+    explain: |
+      خط ۳ مجاز است، چون `append` هم رشته و هم گره می‌گیرد. در خط ۵ هم آرگومان اول یک گره است و مرجعِ `null` یعنی افزودن به انتها، پس مشکلی نیست. اما در خط ۷ به `appendChild` یک **رشته** داده شده و این متد فقط Node قبول می‌کند؛ پس `TypeError` رخ می‌دهد و `"C"` هرگز چاپ نمی‌شود. اگر به‌جای آن `box.append("Done")` یا `box.appendChild(document.createTextNode("Done"))` می‌نوشتیم، خطایی نبود.
+
+  - level: easy
+    stem: کدام دستور یک **گره‌ی متنی** (text node) می‌سازد که بعداً بتوان آن را با `appendChild` به صفحه اضافه کرد؟
+    options:
+      - '`document.createElement("text")`'
+      - '`document.createText("Hello")`'
+      - '`document.textNode("Hello")`'
+      - '`document.createTextNode("Hello")`'
+    answer: 4
+    explain: |
+      متد درست `document.createTextNode(text)` است و خروجی‌اش یک گره است، پس `appendChild` آن را قبول می‌کند. گزینه‌ی ۱ یک **عنصر** با تگ عجیبِ `<text>` می‌سازد، نه گره‌ی متنی. متدهای گزینه‌های ۲ و ۳ اصلاً وجود ندارند و صدا زدنشان خطای `TypeError` (is not a function) می‌دهد.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="box"></div>
+    code: |
+      const box = document.getElementById("box");
+      box.appendChild(document.createTextNode("<b>Hi</b>"));
+      console.log(box.children.length, box.textContent);
+    options:
+      - out: "1 Hi"
+      - out: "1 <b>Hi</b>"
+      - out: "0 Hi"
+      - out: "0 <b>Hi</b>"
+    answer: 4
+    explain: |
+      محتوای یک گره‌ی متنی هیچ‌وقت به‌عنوان HTML تفسیر نمی‌شود؛ پس عنصر `<b>` ساخته نمی‌شود (`children.length` برابر ۰) و خودِ نویسه‌های `<b>Hi</b>` متنِ box می‌شوند. گزینه‌های ۱ و ۳ فرض کرده‌اند تگ تفسیر شده است (این رفتار `innerHTML` است) و گزینه‌ی ۲ عنصر را ساخته‌شده فرض کرده ولی متن را خام گزارش کرده که با هم تناقض دارد.
+
+  - level: easy
+    stem: '`ul` یک لیست است و `oldLi` یکی از فرزندان مستقیم آن. کدام دستور، `newLi` را درست **قبل از** `oldLi` قرار می‌دهد؟'
+    options:
+      - '`ul.insertBefore(oldLi, newLi)`'
+      - '`ul.insertBefore(newLi, oldLi)`'
+      - '`oldLi.insertBefore(newLi)`'
+      - '`newLi.insertBefore(ul, oldLi)`'
+    answer: 2
+    explain: |
+      `insertBefore` روی **پدر** صدا زده می‌شود و ترتیب آرگومان‌ها «اول گره‌ی جدید، بعد مرجع» است: `ul.insertBefore(newLi, oldLi)`. گزینه‌ی ۱ آرگومان‌ها را جابه‌جا کرده (و چون `newLi` فرزند `ul` نیست خطای `NotFoundError` می‌دهد). گزینه‌ی ۳ متد را روی خودِ مرجع صدا زده و گزینه‌ی ۴ روی گره‌ی جدید؛ در هر دو، پدرِ درست مشخص نشده است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li><li>C</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const b = document.createElement("li");
+      b.textContent = "B";
+      list.insertBefore(b, list.children[1]);
+      console.log(list.textContent);
+    options:
+      - out: "BAC"
+      - out: "ACB"
+      - out: "AC"
+      - out: "ABC"
+    answer: 4
+    explain: |
+      `list.children[1]` همان `<li>C</li>` است و `insertBefore` گره‌ی جدید را درست **قبل** از آن می‌گذارد؛ پس ترتیب A، B، C می‌شود و `textContent` متن همه را پشت سر هم می‌دهد: `ABC`. گزینه‌ی ۱ فکر کرده درج در ابتدای لیست انجام می‌شود، گزینه‌ی ۲ آن را مثل `appendChild` در انتها گذاشته و گزینه‌ی ۳ فراموش کرده که `insertBefore` واقعاً گره را به صفحه اضافه می‌کند.
+
+  - level: medium
+    stem: 'می‌خواهیم `newItem` **اولین** فرزندِ `list` شود. در جای خالی `list.insertBefore(newItem, ______);` کدام گزینه قرار می‌گیرد؟'
+    options:
+      - '`null`'
+      - '`list.firstChild`'
+      - '`list.lastChild`'
+      - '`list`'
+    answer: 2
+    explain: |
+      گره‌ی جدید قبل از **اولین** فرزند فعلی قرار می‌گیرد، پس خودش اولین فرزند می‌شود: `list.insertBefore(newItem, list.firstChild)` (معادل `list.prepend(newItem)`). اگر لیست خالی باشد `firstChild` برابر `null` است و درج در انتها همان درج در ابتداست، پس باز هم درست کار می‌کند. گزینه‌ی ۱ همیشه به **انتها** اضافه می‌کند، گزینه‌ی ۳ گره را قبل از آخرین فرزند می‌گذارد و گزینه‌ی ۴ خطای `NotFoundError` می‌دهد، چون `list` فرزند خودش نیست.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <div id="box"><p>P1</p></div>
+      <span id="s">S</span>
+    code: |
+      const box = document.getElementById("box");
+      const s = document.getElementById("s");
+      box.insertBefore(document.createElement("em"), null);
+      console.log(box.children.length);
+      box.insertBefore(document.createElement("b"), s);
+      console.log(box.children.length);
+    options:
+      - out: ["2", "!! NotFoundError"]
+      - out: ["2", "3"]
+      - out: ["!! TypeError"]
+      - out: ["1", "!! NotFoundError"]
+    answer: 1
+    explain: |
+      در خط سوم مرجع `null` است، پس `<em>` به انتهای box اضافه می‌شود و تعداد فرزندان ۲ می‌شود. در خط پنجم مرجع (`s`) فرزند `box` **نیست** (هم‌سطح آن است)، پس مرورگر خطای `NotFoundError` می‌دهد. گزینه‌ی ۲ فرض کرده مرجع می‌تواند هر عنصری باشد، گزینه‌ی ۳ فکر کرده `null` مجاز نیست و گزینه‌ی ۴ اثرِ درجِ اول را نادیده گرفته است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="list"><li id="b">B</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const b = document.getElementById("b");
+      const make = (t) => {
+        const li = document.createElement("li");
+        li.textContent = t;
+        return li;
+      };
+      b.before(make("A"));
+      b.after(make("C"));
+      list.prepend(make("0"));
+      console.log(list.textContent);
+    options:
+      - out: "A0BC"
+      - out: "ABC0"
+      - out: "0ABC"
+      - out: "0BAC"
+    answer: 3
+    explain: |
+      `b.before(A)` عنصر A را درست قبل از B می‌گذارد (A، B)، `b.after(C)` عنصر C را بعد از B (A، B، C) و `list.prepend(0)` عنصر 0 را **اولین** فرزند لیست می‌کند؛ نتیجه `0ABC` است. گزینه‌ی ۲ فکر کرده `prepend` به انتها اضافه می‌کند، گزینه‌ی ۱ آن را قبل از B گذاشته و گزینه‌ی ۴ معنای `before` و `after` را جابه‌جا فهمیده است.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="todo"><li id="task">Read slides</li></ul>
+      <ul id="done"></ul>
+    code: |
+      const task = document.getElementById("task");
+      document.getElementById("done").appendChild(task);
+      console.log(
+        document.getElementById("todo").children.length,
+        document.getElementById("done").children.length
+      );
+    options:
+      - out: "0 1"
+      - out: "1 1"
+      - out: "1 0"
+      - out: "0 0"
+    answer: 1
+    explain: |
+      `task` از قبل در صفحه (داخل `#todo`) است. append کردن یک گره‌ی موجود آن را از جای قبلی **برمی‌دارد** و به جای جدید **منتقل** می‌کند؛ پس `#todo` خالی می‌شود و `#done` یک فرزند پیدا می‌کند. گزینه‌ی ۲ تصور کرده کپی ساخته می‌شود، گزینه‌ی ۳ فکر کرده چون عنصر جای دیگری است اضافه نمی‌شود و گزینه‌ی ۴ فکر کرده عنصر گم می‌شود.
+
+  - level: medium
+    stem: کدام جمله درباره‌ی افزودن عناصر **نادرست** است؟
+    options:
+      - اگر عنصری را که الان در صفحه است دوباره با `appendChild` به جای دیگری اضافه کنیم، یک کپی از آن ساخته می‌شود و نسخه‌ی قبلی سر جایش می‌ماند.
+      - '`insertBefore(node, null)` گره را به انتهای فرزندان پدر اضافه می‌کند.'
+      - '`appendChild` همان گره‌ای را که اضافه کرده برمی‌گرداند.'
+      - '`append` رشته‌ها را به گره‌ی متنی تبدیل می‌کند و اضافه می‌کند.'
+    answer: 1
+    explain: |
+      هر گره فقط یک جا در درخت دارد؛ افزودن دوباره‌ی یک گره‌ی موجود آن را **منتقل** می‌کند و کپی نمی‌سازد (برای کپی باید `cloneNode` صدا زده شود). پس گزینه‌ی ۱ نادرست و پاسخ است. گزینه‌های ۲، ۳ و ۴ همگی رفتار واقعی این متدها هستند.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="a"><li id="x">X</li></ul>
+      <ul id="b"></ul>
+    code: |
+      const x = document.getElementById("x");
+      const deep = x.cloneNode(true);
+      const shallow = x.cloneNode();
+      document.getElementById("b").append(deep, shallow);
+      console.log(
+        document.getElementById("a").children.length,
+        document.getElementById("b").children.length
+      );
+      console.log(deep.textContent, shallow.textContent === "");
+    options:
+      - out: ["0 2", "X true"]
+      - out: ["1 2", "X false"]
+      - out: ["0 2", "X false"]
+      - out: ["1 2", "X true"]
+    answer: 4
+    explain: |
+      `cloneNode` کپی می‌سازد و عنصر اصلی سر جایش می‌ماند؛ پس `#a` هنوز ۱ فرزند دارد و دو کپی به `#b` اضافه می‌شوند (۲). کپی عمیق (`true`) متن داخلی `X` را هم دارد، ولی کپی سطحی فقط خود تگ `<li>` است و متنش خالی است؛ پس `true` چاپ می‌شود. گزینه‌های ۱ و ۳ کپی را با جابه‌جایی اشتباه گرفته‌اند و گزینه‌های ۲ و ۳ فکر کرده‌اند کپی سطحی متن را هم دارد.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟ (یادآوری `children` یک HTMLCollection **زنده** است؛ یعنی با هر تغییر در DOM به‌روز می‌شود.)
+    check: dom-output
+    html: |
+      <ul id="list"><li>A</li><li>B</li><li>C</li></ul>
+    code: |
+      const list = document.getElementById("list");
+      const items = list.children;
+      const z = document.createElement("li");
+      z.textContent = "Z";
+      list.insertBefore(z, items[1]);
+      list.insertBefore(items[0], null);
+      console.log([...list.children].map((li) => li.textContent).join(""));
+    options:
+      - out: "AZBCA"
+      - out: "AZBC"
+      - out: "ZBCA"
+      - out: "ZABC"
+    answer: 3
+    explain: |
+      ابتدا Z قبل از `items[1]` (یعنی B) درج می‌شود: A، Z، B، C. حالا `items[0]` هنوز A است و `insertBefore(A, null)` آن را به انتها **منتقل** می‌کند (کپی نمی‌سازد): Z، B، C، A. گزینه‌ی ۱ تصور کرده A کپی می‌شود، گزینه‌ی ۲ مرجعِ `null` را بی‌اثر دانسته و گزینه‌ی ۴ فکر کرده Z قبل از A درج شده است.
+
+  - level: easy
+    stem: در مثال «New Div!» اسلاید ۲۴، کاربر **یک بار** روی دکمه‌ی «CLICK ME!» کلیک می‌کند. طبق تصویر اسلاید ۲۶، صفحه چه شکلی می‌شود؟
+    options:
+      - عنوان «Hello World» با «Hello DOM!» جایگزین می‌شود.
+      - «Hello DOM!» بالای عنوان «Hello World» ظاهر می‌شود.
+      - عنوان و دکمه سر جایشان می‌مانند و زیر دکمه یک خط تازه با متن «Hello DOM!» ظاهر می‌شود.
+      - هیچ تغییری دیده نمی‌شود، چون برای کلاس `box` هیچ CSSی تعریف نشده است.
+    answer: 3
+    explain: |
+      `document.body.appendChild(div)` یک div تازه را **آخرین فرزند** body می‌کند؛ عنوان دست نمی‌خورد و چون div یک عنصر بلوکی است، در خط جدیدی زیر دکمه نمایش داده می‌شود. گزینه‌ی ۱ رفتار تغییر `textContent` عنوان را توصیف می‌کند، گزینه‌ی ۲ رفتار `prepend` را، و گزینه‌ی ۴ اشتباه است چون نبودن CSS فقط ظاهر خاصی به div نمی‌دهد، ولی متنش طبق معمول دیده می‌شود.
+
+  - level: medium
+    stem: صفحه‌ی زیر همان کد اسلاید ۲۴ است. کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی کدام است؟
+    check: dom-output
+    html: |
+      <h1 id="title">Hello World</h1>
+      <button>CLICK ME!</button>
+    code: |
+      const btn = document.querySelector('button');
+      btn.addEventListener('click', () => {
+          const div = document.createElement("div");
+          div.innerText = "Hello DOM!";
+          div.setAttribute("class", "box");
+          document.body.appendChild(div);
+      });
+    events:
+      - { type: click, target: "button", times: 3 }
+    after: |
+      console.log(document.querySelectorAll(".box").length, document.body.lastElementChild.tagName);
+    eventsNote: 'بعد از سه کلیک، این دستور در کنسول اجرا می‌شود: `console.log(document.querySelectorAll(".box").length, document.body.lastElementChild.tagName);`'
+    options:
+      - out: "1 DIV"
+      - out: "3 DIV"
+      - out: "3 SCRIPT"
+      - out: "0 SCRIPT"
+    answer: 2
+    explain: |
+      `createElement` داخل listener است، پس هر کلیک یک div **جدید** با کلاس `box` می‌سازد؛ بعد از سه کلیک سه `.box` داریم. `appendChild` هر div را آخرین فرزند body می‌کند، یعنی بعد از تگ `<script>`؛ پس آخرین عنصرِ body یک `DIV` است. گزینه‌ی ۱ فکر کرده فقط یک div ساخته می‌شود، گزینه‌ی ۳ تصور کرده div قبل از script قرار می‌گیرد و گزینه‌ی ۴ اثر کلیک‌ها را نادیده گرفته است.
+
+  - level: hard
+    stem: کاربر **سه بار** روی دکمه کلیک می‌کند. خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <button>Add</button>
+    code: |
+      const btn = document.querySelector("button");
+      const div = document.createElement("div");
+      div.textContent = "Hello DOM!";
+      btn.addEventListener("click", () => {
+        document.body.appendChild(div);
+        console.log(document.querySelectorAll("div").length);
+      });
+    events:
+      - { type: click, target: "button", times: 3 }
+    options:
+      - out: ["1", "2", "3"]
+      - out: ["0", "1", "2"]
+      - out: ["1", "1", "1"]
+      - out: ["1", "!! TypeError"]
+    answer: 3
+    explain: |
+      این‌بار `createElement` **بیرون** از listener و فقط یک بار اجرا شده است؛ پس در کل یک div وجود دارد. کلیک اول آن را به body اضافه می‌کند و کلیک‌های بعدی همان div را دوباره append می‌کنند که فقط آن را به انتهای body **جابه‌جا** می‌کند؛ تعداد divها همیشه ۱ می‌ماند. گزینه‌ی ۱ اشتباه رایج است (فکر کردن به کپی شدن)، گزینه‌ی ۲ ترتیب اجرا را غلط فهمیده و گزینه‌ی ۴ تصور کرده append دوباره‌ی یک گره خطاست.
+
+  - level: hard
+    stem: 'کاربر این کارها را به ترتیب انجام می‌دهد: در کادر متن `Read` را تایپ می‌کند و Add را می‌زند؛ دوباره Add را می‌زند (کادر خالی است)؛ `Write` را تایپ می‌کند و Add را می‌زند. خروجی کدام است؟'
+    check: dom-output
+    html: |
+      <input id="task">
+      <button id="add">Add</button>
+      <ul id="list"></ul>
+    code: |
+      const input = document.getElementById("task");
+      const list = document.getElementById("list");
+      document.getElementById("add").addEventListener("click", () => {
+        if (input.value.trim() === "") return;
+        const li = document.createElement("li");
+        li.textContent = input.value;
+        list.prepend(li);
+        input.value = "";
+      });
+    events:
+      - { type: input, target: "#task", value: "Read" }
+      - { type: click, target: "#add" }
+      - { type: click, target: "#add" }
+      - { type: input, target: "#task", value: "Write" }
+      - { type: click, target: "#add" }
+    after: |
+      console.log(list.children.length, list.firstElementChild.textContent);
+    eventsNote: 'در پایان این دستور اجرا می‌شود: `console.log(list.children.length, list.firstElementChild.textContent);`'
+    options:
+      - out: "3 Write"
+      - out: "3 Read"
+      - out: "2 Read"
+      - out: "2 Write"
+    answer: 4
+    explain: |
+      بعد از اولین Add، `Read` اضافه و کادر خالی می‌شود. کلیک دوم به شرط `trim() === ""` می‌خورد و `return` می‌کند، پس آیتم خالی ساخته نمی‌شود. کلیک سوم `Write` را با `prepend` به **ابتدای** لیست می‌برد؛ پس ۲ آیتم داریم و اولی `Write` است. گزینه‌های ۱ و ۲ کلیک با کادر خالی را هم شمرده‌اند و گزینه‌های ۲ و ۳ `prepend` را با افزودن به انتها اشتباه گرفته‌اند.
+
+  - level: medium
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul id="menu"></ul>
+    code: |
+      const data = ["HTML", "CSS", "JS"];
+      const ul = document.getElementById("menu");
+      data.forEach((item, i) => {
+        const li = document.createElement("li");
+        li.textContent = i + 1 + ". " + item;
+        ul.appendChild(li);
+      });
+      console.log(ul.children.length, ul.lastElementChild.textContent);
+    options:
+      - out: "3 21. JS"
+      - out: "3 3. JS"
+      - out: "1 3. JS"
+      - out: "3 2. JS"
+    answer: 2
+    explain: |
+      `forEach` برای هر عضو یک `<li>` تازه می‌سازد و به انتهای لیست اضافه می‌کند؛ پس ۳ فرزند داریم. در آخرین دور `i` برابر ۲ است و عبارت از چپ به راست حساب می‌شود: `2 + 1` برابر عدد `3` و بعد `"3. JS"`. گزینه‌ی ۱ فکر کرده `+` از همان ابتدا رشته می‌چسباند، گزینه‌ی ۳ تصور کرده هر `appendChild` قبلی‌ها را پاک می‌کند و گزینه‌ی ۴ اندیسِ صفرمبنا را بدون `+ 1` در نظر گرفته است.
+
+  - level: hard
+    stem: خروجی کد زیر کدام است؟
+    check: dom-output
+    html: |
+      <ul></ul>
+    code: |
+      const fruits = ["Apple", "Banana"];
+      const ul = document.querySelector("ul");
+      ul.innerHTML = fruits.map((f) => "<li>" + f + "</li>");
+      console.log(ul.children.length, ul.textContent);
+    options:
+      - out: "2 Apple,Banana"
+      - out: "2 AppleBanana"
+      - out: "1 Apple,Banana"
+      - out: "0 <li>Apple</li>,<li>Banana</li>"
+    answer: 1
+    explain: |
+      `map` یک **آرایه** برمی‌گرداند و `innerHTML` آن را به رشته تبدیل می‌کند؛ تبدیل آرایه به رشته عضوها را با **کاما** به هم می‌چسباند: `"<li>Apple</li>,<li>Banana</li>"`. مرورگر این را تفسیر می‌کند: دو `<li>` واقعی و یک گره‌ی متنیِ `","` بینشان؛ پس ۲ فرزند عنصری داریم و متن کل `Apple,Banana` است. گزینه‌ی ۲ کاما را فراموش کرده (این نتیجه با `join("")` به دست می‌آید)، گزینه‌ی ۳ کل رشته را یک عنصر دانسته و گزینه‌ی ۴ فکر کرده `innerHTML` تگ‌ها را تفسیر نمی‌کند.
