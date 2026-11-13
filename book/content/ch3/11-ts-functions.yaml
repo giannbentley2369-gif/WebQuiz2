@@ -1,0 +1,741 @@
+id: ch3-ts-functions
+title: "توابع در TypeScript"
+slides: "NodeJS & TS، اسلاید ۲۰"
+lesson: |
+  تابع‌ها قلب هر برنامه‌اند. در JavaScript هر تابعی را می‌شد با هر تعداد آرگومان و با هر نوعی صدا زد و اشتباه‌ها فقط در زمان اجرا معلوم می‌شد. اسلاید ۲۰ نشان می‌دهد TypeScript چطور به تابع‌ها نوع اضافه می‌کند. در این درس هم حالت strict را فرض می‌کنیم.
+
+  ::: analogy
+  یک تابع را مثل **دستگاه آب‌میوه‌گیری** تصور کن: روی دهانه‌ی ورودی نوشته «فقط پرتقال» و روی خروجی نوشته «آب پرتقال». TypeScript نگهبانی است که نمی‌گذارد کسی سنگ در دستگاه بیندازد و به کسی که منتظر آب پرتقال است، چیز دیگری تحویل بدهد.
+  :::
+
+  ### ۱. پارامترهای نوع‌دار و نوع خروجی
+  بولت اول اسلاید: تابع‌ها **typed parameters** (پارامترهای نوع‌دار) و **return type** (نوع مقدار برگشتی) دارند تا ایمن باشند. نوع هر پارامتر بعد از نامش و نوع خروجی بعد از پرانتز بسته نوشته می‌شود:
+
+  ```ts
+  function add(a: number, b: number): number {
+    return a + b;
+  }
+  console.log(add(2, 3)); // 5
+  ```
+
+  حالا tsc هر فراخوانی را بررسی می‌کند:
+
+  ```ts
+  function add(a: number, b: number): number {
+    return a + b;
+  }
+  add("2", 3);  // Error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+  add(1);       // Error TS2554: Expected 2 arguments, but got 1.
+  add(1, 2, 3); // Error TS2554: Expected 2 arguments, but got 3.
+  ```
+
+  برخلاف JavaScript (که آرگومانِ جاافتاده را `undefined` می‌کرد و آرگومان اضافه را نادیده می‌گرفت)، در TypeScript **تعداد آرگومان‌ها** هم بررسی می‌شود.
+
+  بدنه‌ی تابع هم باید با نوع خروجی جور باشد:
+
+  ```ts
+  function label(n: number): string {
+    return n; // Error TS2322: Type 'number' is not assignable to type 'string'.
+  }
+  function sign(x: number): string { // Error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+    if (x > 0) return "positive";
+    if (x < 0) return "negative";
+  }
+  ```
+
+  در `sign` اگر `x` صفر باشد، تابع به هیچ `return`ی نمی‌رسد و `undefined` برمی‌گرداند؛ tsc همین را تشخیص می‌دهد و خطا را روی سطر تعریف تابع (جایی که نوع خروجی نوشته شده) گزارش می‌کند.
+
+  #### نوع void
+  اگر تابع هیچ مقداری برنمی‌گرداند، نوع خروجی‌اش **`void`** («هیچ مقداری») است:
+
+  ```ts
+  function logIt(msg: string): void {
+    console.log("LOG: " + msg);
+  }
+  const result = logIt("hi"); // prints: LOG: hi
+  console.log(result);        // undefined
+  ```
+
+  در زمان اجرا، تابعی که `return` ندارد `undefined` برمی‌گرداند. برگرداندن یک مقدار از تابع `void` هم خطاست؛ مثلاً `return 5;` در چنین تابعی خطای `Type 'number' is not assignable to type 'void'` دارد.
+
+  #### استنتاج نوع خروجی (return type inference)
+  اگر نوع خروجی را ننویسی، TypeScript آن را از روی `return`ها **استنتاج** می‌کند:
+
+  ```ts
+  function multiply(a: number, b: number) { // inferred return type: number
+    return a * b;
+  }
+  const n: number = multiply(2, 3); // OK
+  const s: string = multiply(2, 3); // Error TS2322: Type 'number' is not assignable to type 'string'.
+  ```
+
+  اما نوع **پارامترهای** یک تابع معمولی را نمی‌تواند حدس بزند (یک استثنا را در بخش ۶ می‌بینیم). در حالت strict، پارامتر بی‌نوع خطا دارد، چون به‌طور ضمنی `any` می‌شد (به این قاعده noImplicitAny می‌گویند):
+
+  ```ts
+  function half(n) { // Error TS7006: Parameter 'n' implicitly has an 'any' type.
+    return n / 2;
+  }
+  ```
+
+  ### ۲. مثال اسلاید ۲۰: تابع createUser
+  کد خود اسلاید (فایل `weee.ts`):
+
+  ```ts title=weee.ts
+  function createUser(
+    name: string,
+    age: number,
+    ...hobbies: string[]
+  ): { name: string; age: number; hobbies: string[] } {
+    return {
+      name,
+      age,
+      hobbies,
+    };
+  }
+
+  const user = createUser("Alice", 30, "Reading", "Cycling");
+  console.log(user);
+  ```
+
+  خروجی:
+
+  ```text
+  { name: 'Alice', age: 30, hobbies: [ 'Reading', 'Cycling' ] }
+  ```
+
+  خط به خط:
+  - `name: string` و `age: number` دو پارامتر اجباری‌اند.
+  - `...hobbies: string[]` یک **rest parameter** است (توضیح کامل در بخش ۵): همه‌ی آرگومان‌های بعدی را در یک آرایه‌ی رشته‌ای جمع می‌کند. اینجا `"Reading"` و `"Cycling"` در `hobbies` قرار می‌گیرند.
+  - `): { name: string; age: number; hobbies: string[] }` نوع خروجی است: شیئی با سه ویژگی. این نوع همان‌جا (inline) نوشته شده و اعضایش با `;` از هم جدا شده‌اند؛ به‌جایش می‌شد یک interface هم تعریف کرد.
+  - `return { name, age, hobbies, };` از **shorthand property** (خلاصه‌نویسی ویژگی) استفاده می‌کند: `name` یعنی `name: name`. ویرگول آخر (trailing comma) هم مجاز است.
+
+  JavaScriptی که tsc از این فایل می‌سازد، همان کد بدون نوع‌هاست:
+
+  ```js title=weee.js
+  "use strict";
+  function createUser(name, age, ...hobbies) {
+      return {
+          name,
+          age,
+          hobbies,
+      };
+  }
+  const user = createUser("Alice", 30, "Reading", "Cycling");
+  console.log(user);
+  ```
+
+  چند فراخوانی دیگر از همین تابع:
+
+  | فراخوانی | نتیجه |
+  |---|---|
+  | `createUser("Bob", 25)` | `{ name: 'Bob', age: 25, hobbies: [] }`؛ بدون آرگومان اضافه، `hobbies` آرایه‌ی **خالی** است |
+  | `createUser("Ali")` | خطای TS2555: `Expected at least 2 arguments, but got 1.` |
+  | `createUser("Ali", "20")` | خطای TS2345: `"20"` رشته است، نه عدد |
+  | `createUser("Ali", 20, "Chess", 5)` | خطای TS2345: هر آرگومانِ rest باید رشته باشد |
+
+  به کلمه‌ی `at least` (دست‌کم) در پیام دقت کن: چون rest parameter هر تعدادی آرگومان می‌پذیرد، tsc فقط حداقل تعداد را می‌گوید.
+
+  ### ۳. پارامتر اختیاری (optional parameter)
+  بولت دوم اسلاید: تابع‌ها می‌توانند پارامتر **اختیاری** و **پیش‌فرض** داشته باشند. پارامتر اختیاری با `?` بعد از نامش مشخص می‌شود و اگر فرستاده نشود، مقدارش `undefined` است؛ پس نوعش داخل تابع `string | undefined` است:
+
+  ```ts
+  function greet(person: string, greeting?: string): string {
+    if (greeting === undefined) {
+      return `Hello, ${person}`;
+    }
+    return `${greeting}, ${person}`;
+  }
+  console.log(greet("Ali"));          // Hello, Ali
+  console.log(greet("Ali", "Salam")); // Salam, Ali
+  ```
+
+  - `greet()` خطا دارد: `Expected 1-2 arguments, but got 0.` (یعنی «یک تا دو آرگومان»).
+  - استفاده‌ی مستقیم از پارامتر اختیاری بدون بررسی (مثلاً `greeting.toUpperCase()`) خطای `'greeting' is possibly 'undefined'` دارد.
+  - **پارامتر اختیاری باید بعد از پارامترهای اجباری بیاید:**
+
+  ```ts
+  function wrongOrder(a?: number, b: number) {} // Error TS1016: A required parameter cannot follow an optional parameter.
+  ```
+
+  ### ۴. پارامتر پیش‌فرض (default parameter)
+  به پارامتر می‌شود یک **مقدار پیش‌فرض** داد. اگر آرگومان فرستاده نشود (یا `undefined` فرستاده شود)، همان مقدار به کار می‌رود:
+
+  ```ts
+  function greet2(person: string, greeting = "Hi"): string {
+    return `${greeting}, ${person}`;
+  }
+  console.log(greet2("Ali"));            // Hi, Ali
+  console.log(greet2("Ali", "Salam"));   // Salam, Ali
+  console.log(greet2("Ali", undefined)); // Hi, Ali  (undefined triggers the default)
+  console.log(greet2("Ali", ""));        // , Ali    (an empty string is a real value)
+  ```
+
+  - پارامتر پیش‌فرض خودبه‌خود **اختیاری** است و نوعش از روی مقدار پیش‌فرض استنتاج می‌شود؛ پس `greet2("Ali", 5)` خطا دارد، چون `5` رشته نیست.
+  - یک پارامتر نمی‌تواند هم `?` داشته باشد و هم مقدار پیش‌فرض: `b?: number = 5` خطای `Parameter cannot have question mark and initializer` دارد.
+  - برخلاف `?` که در خروجی پاک می‌شود، مقدار پیش‌فرض یک امکان خودِ JavaScript است و در خروجی می‌ماند: `function greet2(person, greeting = "Hi")`.
+
+  ::: info بیشتر بدانیم
+  اگر پارامتر پیش‌فرض **قبل از** یک پارامتر اجباری بیاید، دیگر اختیاری حساب نمی‌شود و برای استفاده از مقدار پیش‌فرض باید صریحاً `undefined` بفرستی:
+
+  ```ts
+  function f(a = 1, b: number): number {
+    return a + b;
+  }
+  f(undefined, 5); // OK: returns 6
+  f(5);            // Error TS2554: Expected 2 arguments, but got 1.
+  ```
+  :::
+
+  ### ۵. پارامتر rest (rest parameter)
+  بولت سوم اسلاید: **rest parameter** (پارامترِ «بقیه») برای تابع‌هایی است که **تعداد آرگومان‌هایشان متغیر است** (variable-length arguments). سه نقطه‌ی `...` قبل از نام پارامتر یعنی «همه‌ی آرگومان‌های باقی‌مانده را در یک آرایه جمع کن»:
+
+  ```ts
+  function sum(...nums: number[]): number {
+    return nums.reduce((total, n) => total + n, 0);
+  }
+  console.log(sum());            // 0  (nums is an empty array)
+  console.log(sum(1, 2, 3));     // 6
+  console.log(sum(...[10, 20])); // 30 (spread an array into the arguments)
+  ```
+
+  قاعده‌ها:
+  - نوع rest parameter باید **آرایه** باشد (`number[]`)؛ نوشتن `...nums: number` خطای `A rest parameter must be of an array type` دارد.
+  - rest parameter باید **آخرین** پارامتر باشد و هر تابع فقط یکی از آن می‌تواند داشته باشد:
+
+  ```ts
+  function badRest(...hobbies: string[], name: string) {} // Error TS1014: A rest parameter must be last in a parameter list.
+  ```
+
+  - اگر هیچ آرگومان اضافه‌ای فرستاده نشود، مقدار rest parameter آرایه‌ی **خالی** `[]` است، نه `undefined`.
+  - `...` در **تعریف** تابع یعنی rest (جمع کردن آرگومان‌ها در آرایه)، اما `...` در **فراخوانی** (مثل `sum(...[10, 20])`) یعنی spread (پخش کردن آرایه به آرگومان‌های جدا).
+
+  ### ۶. arrow function و استنتاج نوع
+  بولت آخر اسلاید: **arrow function**ها (تابع‌های پیکانی) نحو کوتاه‌تری دارند و از **type inference** (استنتاج نوع) خوب استفاده می‌کنند:
+
+  ```ts
+  const add = (a: number, b: number) => a + b; // return type inferred: number
+  const square = (n: number): number => n * n; // explicit return type
+  console.log(add(2, 3), square(4));           // 5 16
+  ```
+
+  ```ts
+  const add = (a: number, b: number) => a + b;
+  const s: string = add(1, 2); // Error TS2322: Type 'number' is not assignable to type 'string'.
+  ```
+
+  **contextual typing** (نوع‌دهی از روی زمینه): وقتی یک arrow function را جایی می‌دهی که نوعش معلوم است (مثلاً به `map`)، لازم نیست نوع پارامترش را بنویسی و خطای implicit any هم نمی‌گیری:
+
+  ```ts
+  const nums = [1, 2, 3];
+  const doubled = nums.map((n) => n * 2); // n is inferred as number
+  console.log(doubled);                   // [ 2, 4, 6 ]
+  ```
+
+  دقت کن: arrow function با بدنه‌ی `{ … }` باید `return` صریح داشته باشد؛ وگرنه چیزی برنمی‌گرداند:
+
+  ```ts
+  const triple = (x: number): number => { // Error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    x * 3;
+  };
+  ```
+
+  #### نوع تابع (function type)
+  می‌شود نوع یک متغیر را «تابع» تعیین کرد. نحوش شبیه arrow function است: `(پارامترها) => نوع خروجی`.
+
+  ```ts
+  let op: (a: number, b: number) => number;
+  op = (x, y) => x * y;  // OK: x and y get the type number from the context
+  op = (x, y) => x > y;  // Error TS2322: Type 'boolean' is not assignable to type 'number'.
+  op = (x: string) => 1; // Error TS2322: the parameter type does not match
+  op = (x) => x;         // OK: using fewer parameters is allowed
+  ```
+
+  ### ۷. جمع‌بندی خطاهای رایج تابع‌ها
+
+  | موقعیت | پیام tsc |
+  |---|---|
+  | نوع آرگومان اشتباه | `Argument of type 'string' is not assignable to parameter of type 'number'.` |
+  | تعداد آرگومان اشتباه | `Expected 2 arguments, but got 1.` یا `Expected 1-2 arguments, but got 0.` |
+  | آرگومان کم در تابعی که rest دارد | `Expected at least 2 arguments, but got 1.` |
+  | پارامتر اجباری بعد از اختیاری | `A required parameter cannot follow an optional parameter.` |
+  | rest parameter در وسط پارامترها | `A rest parameter must be last in a parameter list.` |
+  | برگرداندن مقدار با نوع اشتباه | `Type 'number' is not assignable to type 'string'.` |
+  | بعضی مسیرها `return` ندارند | `Function lacks ending return statement and return type does not include 'undefined'.` |
+  | پارامتر بی‌نوع (در strict) | `Parameter 'n' implicitly has an 'any' type.` |
+
+  ::: tip
+  - نوع پارامترها را همیشه بنویس؛ نوع خروجی را TypeScript معمولاً خودش درست استنتاج می‌کند، ولی نوشتنش کد را خواناتر و امن‌تر می‌کند.
+  - ترتیب درست پارامترها: اول اجباری‌ها، بعد اختیاری‌ها یا پیش‌فرض‌ها و در آخر rest parameter.
+  :::
+
+  ::: trap
+  - فقط `undefined` (یا نفرستادن آرگومان) مقدار پیش‌فرض را فعال می‌کند؛ رشته‌ی خالی یا `0` مقدار واقعی‌اند و جایگزین نمی‌شوند.
+  - rest parameter بدون آرگومان اضافه آرایه‌ی خالی `[]` است، نه `undefined`.
+  - `createUser("Ali")` پیام «at least» می‌دهد (به خاطر rest)، اما `add(1)` پیام `Expected 2 arguments` را.
+  - arrow function با بدنه‌ی `{ }` و بدون `return`، چیزی برنمی‌گرداند.
+  - در حالت strict، پارامتر بی‌نوع خطای implicit any دارد؛ مگر در callbackهایی مثل `map` که نوعشان از زمینه معلوم است.
+  :::
+
+  ::: summary
+  در TypeScript نوع پارامترها و نوع خروجی تابع نوشته می‌شود و tsc نوع و **تعداد** آرگومان‌ها را بررسی می‌کند. پارامتر اختیاری (`?`) و پیش‌فرض (`= value`) باید بعد از پارامترهای اجباری بیایند و فقط `undefined` مقدار پیش‌فرض را فعال می‌کند. rest parameter (`...name: T[]`) آرگومان‌های متغیر را در یک آرایه جمع می‌کند، باید آخرین پارامتر باشد و بدون آرگومان اضافه `[]` است. arrow functionها نوع خروجی (و در callbackها نوع پارامترها) را استنتاج می‌کنند و تابعی که چیزی برنمی‌گرداند نوع خروجی `void` دارد.
+  :::
+questions:
+  - level: easy
+    stem: با فرض تابع زیر، کدام فراخوانی خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &add |
+      function add(a: number, b: number): number {
+        return a + b;
+      }
+    code: *add
+    options:
+      - code: 'add(2, 3);'
+      - code: 'add("2", 3);'
+      - code: 'add(2.5, -1);'
+      - code: 'add(0, 0);'
+    answer: 2
+    explain: |
+      پارامتر `a` از نوع `number` است و `"2"` رشته است؛ پس خطای TS2345 می‌گیرد: `Argument of type 'string' is not assignable to parameter of type 'number'`. در JavaScript همین فراخوانی بی‌صدا `"23"` برمی‌گرداند. عدد اعشاری و منفی (گزینه‌ی ۳) و صفر (گزینه‌ی ۴) همه `number` معتبرند.
+
+  - level: easy
+    stem: خروجی کد اسلاید ۲۰ (کد زیر) پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function createUser(
+        name: string,
+        age: number,
+        ...hobbies: string[]
+      ): { name: string; age: number; hobbies: string[] } {
+        return {
+          name,
+          age,
+          hobbies,
+        };
+      }
+
+      const user = createUser("Alice", 30, "Reading", "Cycling");
+      console.log(user);
+    options:
+      - out: "{ name: 'Alice', age: 30, hobbies: [ 'Reading', 'Cycling' ] }"
+      - out: "{ name: 'Alice', age: 30, hobbies: 'Reading' }"
+      - out: "{ name: 'Alice', age: 30, hobbies: [ 'Reading' ] }"
+      - out: "[ 'Alice', 30, 'Reading', 'Cycling' ]"
+    answer: 1
+    explain: |
+      دو آرگومان اول به `name` و `age` می‌رسند و rest parameter یعنی `...hobbies` **همه‌ی** آرگومان‌های باقی‌مانده را در یک آرایه جمع می‌کند: `["Reading", "Cycling"]`. شیء برگشتی با shorthand property ساخته شده (`name` یعنی `name: name`). گزینه‌های ۲ و ۳ فکر کرده‌اند rest فقط یک آرگومان می‌گیرد. گزینه‌ی ۴ هم خروجی را آرایه گرفته، در حالی که تابع یک شیء برمی‌گرداند.
+
+  - level: medium
+    stem: خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function createUser(
+        name: string,
+        age: number,
+        ...hobbies: string[]
+      ): { name: string; age: number; hobbies: string[] } {
+        return { name, age, hobbies };
+      }
+      const u = createUser("Bob", 25);
+      console.log(u.hobbies, u.hobbies.length);
+    options:
+      - out: "[ undefined ] 1"
+      - out: "!! TypeError"
+      - out: "[] 0"
+      - out: "[ '' ] 1"
+    answer: 3
+    explain: |
+      وقتی هیچ آرگومانی برای rest parameter فرستاده نشود، مقدار آن یک آرایه‌ی **خالی** است، نه `undefined`؛ پس `[]` و طول `0` چاپ می‌شود. اگر `hobbies` برابر `undefined` بود، خواندن `length` آن TypeError می‌داد (گزینه‌ی ۲)، ولی این‌طور نیست. گزینه‌های ۱ و ۴ هم فکر کرده‌اند یک خانه‌ی خالی یا `undefined` در آرایه قرار می‌گیرد.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function createUser(
+        name: string,
+        age: number,
+        ...hobbies: string[]
+      ): { name: string; age: number; hobbies: string[] } {
+        return { name, age, hobbies };
+      }
+      createUser("Ali", 20);
+      createUser("Sara", 22, "Chess");
+      createUser("Reza", 25, "Music", 3);
+    options:
+      - { line: 8 }
+      - { line: 9 }
+      - { line: 10 }
+      - { line: 0 }
+    answer: 3
+    explain: |
+      نوع rest parameter `string[]` است، پس **هر** آرگومانی که بعد از `age` می‌آید باید رشته باشد. در خط ۱۰ عدد `3` آمده و خطای TS2345 رخ می‌دهد: `Argument of type 'number' is not assignable to parameter of type 'string'`. خط ۸ بدون hobby است که مجاز است (`hobbies` آرایه‌ی خالی می‌شود) و خط ۹ یک hobby رشته‌ای دارد.
+
+  - level: hard
+    stem: با فرض تابع زیر (مثال اسلاید ۲۰)، کدام فراخوانی خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &cu |
+      function createUser(
+        name: string,
+        age: number,
+        ...hobbies: string[]
+      ): { name: string; age: number; hobbies: string[] } {
+        return { name, age, hobbies };
+      }
+    code: *cu
+    options:
+      - code: 'createUser("Ali", 20);'
+      - code: 'createUser("Ali", 20, "A", "B", "C");'
+      - code: 'createUser("Ali", 20, ...["A", "B"]);'
+      - code: 'createUser("Ali");'
+    answer: 4
+    explain: |
+      `name` و `age` اجباری‌اند، پس فراخوانی با یک آرگومان خطای TS2555 دارد: `Expected at least 2 arguments, but got 1` (کلمه‌ی at least به خاطر rest parameter است). گزینه‌ی ۱ هیچ hobbyی ندارد که مجاز است. rest parameter هر تعداد رشته می‌پذیرد (گزینه‌ی ۲). در گزینه‌ی ۳ هم یک آرایه‌ی رشته‌ای با spread (`...`) پخش شده و هر عضوش یک آرگومان رشته‌ای می‌شود.
+
+  - level: easy
+    stem: |
+      در تعریف `function greet(person: string, greeting?: string)`، علامت `?` چه معنایی دارد؟
+    options:
+      - '`greeting` می‌تواند از هر نوعی باشد.'
+      - '`greeting` اختیاری است؛ اگر فرستاده نشود مقدارش `undefined` است و نوعش داخل تابع `string | undefined` است.'
+      - '`greeting` مقدار پیش‌فرض `""` (رشته‌ی خالی) دارد.'
+      - '`greeting` اجباری است ولی می‌تواند `null` باشد.'
+    answer: 2
+    explain: |
+      `?` بعد از نام پارامتر یعنی optional parameter: می‌شود تابع را با یک آرگومان صدا زد و آن وقت `greeting` برابر `undefined` است؛ به همین دلیل TypeScript نوعش را `string | undefined` می‌داند و استفاده‌ی بی‌بررسی از آن خطا دارد. `?` نوع را آزاد نمی‌کند (گزینه‌ی ۱)، مقدار پیش‌فرض نمی‌دهد (برای آن باید `= value` نوشت؛ گزینه‌ی ۳) و ربطی به `null` ندارد (گزینه‌ی ۴).
+
+  - level: easy
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function a(x: number, y?: number) {}
+      function b(x?: number, y?: number) {}
+      function c(x?: number, y: number) {}
+      function d(x: number, y = 5) {}
+    options:
+      - { line: 1 }
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 4 }
+    answer: 3
+    explain: |
+      پارامتر اجباری نمی‌تواند **بعد از** پارامتر اختیاری بیاید؛ در خط ۳ پارامتر اجباری `y` بعد از `x?` آمده و خطای TS1016 رخ می‌دهد: `A required parameter cannot follow an optional parameter`. خط ۱ ترتیب درست را دارد. در خط ۲ هر دو اختیاری‌اند که مجاز است. در خط ۴ هم پارامتر پیش‌فرض (که خودش اختیاری است) بعد از پارامتر اجباری آمده است.
+
+  - level: hard
+    stem: خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function greet(person: string, greeting = "Hi"): string {
+        return `${greeting}, ${person}`;
+      }
+      console.log(greet("Ali"));
+      console.log(greet("Sara", undefined));
+      console.log(greet("Reza", ""));
+    options:
+      - out: ["Hi, Ali", "Hi, Sara", ", Reza"]
+      - out: ["Hi, Ali", "undefined, Sara", ", Reza"]
+      - out: ["Hi, Ali", "Hi, Sara", "Hi, Reza"]
+      - out: ["Hi, Ali", "undefined, Sara", "Hi, Reza"]
+    answer: 1
+    explain: |
+      مقدار پیش‌فرض وقتی به کار می‌رود که آرگومان فرستاده نشود **یا** دقیقاً `undefined` باشد؛ پس هم `"Ali"` و هم `"Sara"` با `Hi` خوش‌آمد می‌گیرند. اما رشته‌ی خالی `""` یک مقدار واقعی است و پیش‌فرض را فعال نمی‌کند، پس خط سوم `, Reza` است. گزینه‌های ۲ و ۴ فکر کرده‌اند `undefined` صریح جای پیش‌فرض را می‌گیرد و گزینه‌های ۳ و ۴ فکر کرده‌اند هر مقدار falsy پیش‌فرض را فعال می‌کند.
+
+  - level: medium
+    stem: با فرض تابع زیر، کدام فراخوانی خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &rep |
+      function repeat(text: string, times = 2): string {
+        return text.repeat(times);
+      }
+    code: *rep
+    options:
+      - code: 'repeat("ab");'
+      - code: 'repeat("ab", 3);'
+      - code: 'repeat("ab", undefined);'
+      - code: 'repeat("ab", "3");'
+    answer: 4
+    explain: |
+      نوع `times` از روی مقدار پیش‌فرض `2` استنتاج شده و `number` است؛ پس رشته‌ی `"3"` خطای TS2345 می‌گیرد. پارامتر پیش‌فرض اختیاری است و می‌شود آن را نفرستاد (گزینه‌ی ۱) یا `undefined` فرستاد تا پیش‌فرض به کار برود (گزینه‌ی ۳). گزینه‌ی ۲ هم یک عدد معمولی می‌فرستد.
+
+  - level: easy
+    stem: |
+      کدام گزینه درباره‌ی rest parameter (مثل `...hobbies: string[]`) **درست** است؟
+    options:
+      - می‌تواند در هر جای فهرست پارامترها (اول، وسط یا آخر) بیاید.
+      - اگر هیچ آرگومان اضافه‌ای فرستاده نشود، مقدارش `undefined` است.
+      - همه‌ی آرگومان‌های باقی‌مانده را در یک آرایه جمع می‌کند و باید آخرین پارامتر باشد.
+      - یک تابع می‌تواند چند rest parameter داشته باشد.
+    answer: 3
+    explain: |
+      rest parameter آرگومان‌های متغیر (variable-length) را در یک آرایه جمع می‌کند و چون «بقیه»ی آرگومان‌ها را می‌گیرد، باید آخرین پارامتر باشد (وگرنه خطای TS1014). پس جایش آزاد نیست (گزینه‌ی ۱) و یک تابع هم فقط یک rest parameter دارد (گزینه‌ی ۴). بدون آرگومان اضافه، مقدارش آرایه‌ی خالی `[]` است، نه `undefined` (گزینه‌ی ۲).
+
+  - level: medium
+    stem: خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function sum(...nums: number[]): number {
+        return nums.reduce((total, n) => total + n, 0);
+      }
+      console.log(sum());
+      console.log(sum(1, 2, 3));
+      console.log(sum(...[10, 20]));
+    options:
+      - out: ["undefined", "6", "30"]
+      - out: ["0", "6", "30"]
+      - out: ["NaN", "6", "30"]
+      - out: ["0", "6", "!! TypeError"]
+    answer: 2
+    explain: |
+      `sum()` بدون آرگومان صدا زده شده، پس `nums` آرایه‌ی خالی است و `reduce` با مقدار اولیه‌ی `0` همان `0` را برمی‌گرداند. `sum(1, 2, 3)` برابر ۶ است. در خط آخر، `...` در فراخوانی یعنی spread: آرایه به دو آرگومان ۱۰ و ۲۰ پخش می‌شود و حاصل ۳۰ است (گزینه‌ی ۴ اشتباه فکر کرده آرایه را نمی‌شود پخش کرد). گزینه‌ی ۱ فکر کرده `nums` بدون آرگومان `undefined` است و گزینه‌ی ۳ فکر کرده جمعِ «هیچ عددی» `NaN` می‌شود؛ در حالی که `reduce` روی آرایه‌ی خالی همان مقدار اولیه یعنی `0` را برمی‌گرداند.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function log(level: string, ...messages: string[]) {}
+      function tag(...names: string[], color: string) {}
+      function count(...values: number[]) {}
+      function show(title: string, size = 1, ...items: string[]) {}
+    options:
+      - { line: 1 }
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 4 }
+    answer: 2
+    explain: |
+      rest parameter باید **آخرین** پارامتر باشد؛ در خط ۲ پارامتر `color` بعد از `...names` آمده و خطای TS1014 رخ می‌دهد: `A rest parameter must be last in a parameter list`. خط ۱ ترتیب درست را دارد. در خط ۳ rest تنها پارامتر است. در خط ۴ هم ترتیب «اجباری، پیش‌فرض، rest» کاملاً مجاز است.
+
+  - level: easy
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function log(msg: string): void {
+        console.log(msg);
+      }
+      function double(n: number): number {
+        return n * 2;
+      }
+      function label(n: number): string {
+        return n;
+      }
+    options:
+      - { line: 2 }
+      - { line: 5 }
+      - { line: 8 }
+      - { line: 0 }
+    answer: 3
+    explain: |
+      نوع خروجی `label` رشته اعلام شده، اما در خط ۸ یک عدد برگردانده می‌شود؛ پس خطای TS2322 دارد: `Type 'number' is not assignable to type 'string'`. تابع `log` با نوع `void` چیزی برنمی‌گرداند که درست است (خط ۲) و `double` هم عدد برمی‌گرداند (خط ۵).
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function sign(x: number): string {
+        if (x > 0) {
+          return "positive";
+        } else if (x < 0) {
+          return "negative";
+        }
+      }
+      console.log(sign(5));
+    options:
+      - { line: 1 }
+      - { line: 6 }
+      - { line: 8 }
+      - { line: 0 }
+    answer: 1
+    explain: |
+      اگر `x` صفر باشد، هیچ‌کدام از دو شرط برقرار نیست و تابع بدون `return` تمام می‌شود (یعنی `undefined` برمی‌گرداند)، در حالی که نوع خروجی `string` اعلام شده. tsc این را روی خط ۱ (محل نوع خروجی) گزارش می‌کند: TS2366، `Function lacks ending return statement and return type does not include 'undefined'`. مهم نیست که در خط ۸ با عدد ۵ صدا زده شده؛ tsc همه‌ی مسیرهای ممکن را بررسی می‌کند.
+
+  - level: hard
+    stem: در حالت strict، tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function square(n: number) {
+        return n * n;
+      }
+      function half(n) {
+        return n / 2;
+      }
+      const nums = [1, 2, 3].map((n) => n * 2);
+    options:
+      - { line: 1 }
+      - { line: 4 }
+      - { line: 7 }
+      - { line: 0 }
+    answer: 2
+    explain: |
+      در خط ۴ پارامتر `n` نوع ندارد و TypeScript هم راهی برای فهمیدن نوعش ندارد؛ در حالت strict این پارامتر به‌طور ضمنی `any` می‌شود که مجاز نیست: TS7006، `Parameter 'n' implicitly has an 'any' type`. در خط ۷ هم پارامتر arrow function نوع ندارد، اما چون به `map` روی آرایه‌ی عددی داده شده، نوعش از زمینه (contextual typing) `number` استنتاج می‌شود. در خط ۱ هم نبودن نوع خروجی مشکلی ندارد، چون نوع خروجی استنتاج می‌شود.
+
+  - level: medium
+    stem: خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function logIt(msg: string): void {
+        console.log("LOG: " + msg);
+      }
+      const result = logIt("hi");
+      console.log(result);
+    options:
+      - out: ["LOG: hi", "void"]
+      - out: ["LOG: hi", "null"]
+      - out: ["undefined", "LOG: hi"]
+      - out: ["LOG: hi", "undefined"]
+    answer: 4
+    explain: |
+      اول تابع اجرا می‌شود و `LOG: hi` چاپ می‌شود. تابعی که `return` ندارد در زمان اجرا `undefined` برمی‌گرداند؛ `void` فقط یک نوع در زمان کامپایل است و مقداری به نام `void` چاپ نمی‌شود (گزینه‌ی ۱). مقدار برگشتی هم `null` نیست (گزینه‌ی ۲) و ترتیب چاپ‌ها هم برعکس نمی‌شود (گزینه‌ی ۳).
+
+  - level: medium
+    stem: با فرض تعریف زیر، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &arrow 'const add = (a: number, b: number) => a + b;'
+    code: *arrow
+    options:
+      - code: 'const s: string = add(1, 2);'
+      - code: 'const r: number = add(1, 2);'
+      - code: 'const t = add(1, 2) * 10;'
+      - code: 'const u: string = String(add(1, 2));'
+    answer: 1
+    explain: |
+      برای arrow function نوع خروجی نوشته نشده، اما TypeScript آن را از `a + b` (جمع دو عدد) `number` استنتاج می‌کند؛ پس نسبت دادن حاصل به متغیر `string` خطای TS2322 دارد. گزینه‌ی ۲ و ۳ با عدد کار می‌کنند. در گزینه‌ی ۴ عدد اول با `String()` صریحاً به رشته تبدیل شده و بعد در متغیر رشته‌ای قرار گرفته است.
+
+  - level: hard
+    stem: با فرض تعریف زیر، کدام انتساب خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &op 'let op: (a: number, b: number) => number;'
+    code: *op
+    options:
+      - code: 'op = (x, y) => x * y;'
+      - code: 'op = (x: number) => x;'
+      - code: 'op = function (a, b) { return a - b; };'
+      - code: 'op = (x, y) => x > y;'
+    answer: 4
+    explain: |
+      `op` باید تابعی باشد که دو عدد بگیرد و **عدد** برگرداند. در گزینه‌ی ۴ حاصل `x > y` از نوع `boolean` است و خطای TS2322 دارد. در گزینه‌های ۱ و ۳ نوع پارامترها از روی نوع `op` (contextual typing) عدد استنتاج می‌شود و خروجی هم عدد است. گزینه‌ی ۲ هم مجاز است: تابعی که پارامتر کمتری می‌گیرد (و دومی را نادیده می‌گیرد) جای این نوع می‌نشیند.
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      const double = (n: number): number => n * 2;
+      const triple = (n: number): number => {
+        n * 3;
+      };
+      const square = (n: number) => {
+        return n * n;
+      };
+    options:
+      - { line: 1 }
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 5 }
+    answer: 2
+    explain: |
+      arrow function با بدنه‌ی `{ … }` فقط وقتی مقدار برمی‌گرداند که `return` صریح داشته باشد. در `triple` عبارت `n * 3` حساب می‌شود ولی برگردانده نمی‌شود، در حالی که نوع خروجی `number` اعلام شده؛ tsc خطای TS2355 را روی خط ۲ (محل نوع خروجی) گزارش می‌کند، نه روی خط ۳. خط ۱ بدنه‌ی بدون آکولاد دارد که خودش برمی‌گرداند و خط ۵ هم `return` صریح دارد.
+
+  - level: easy
+    stem: |
+      در جای خالی کدام گزینه قرار می‌گیرد؟
+      «نوع خروجی تابعی که هیچ مقداری برنمی‌گرداند (مثل تابعی که فقط چیزی چاپ می‌کند)، ...... است.»
+    options:
+      - '`void`'
+      - '`null`'
+      - '`empty`'
+      - '`none`'
+    answer: 1
+    explain: |
+      `void` یعنی «هیچ مقداری برنمی‌گردد»؛ مثل `function logIt(msg: string): void`. اگر نوع خروجی را `null` بنویسی، تابع باید واقعاً `null` برگرداند و بدون `return` خطا دارد. `empty` و `none` اصلاً نوع‌های TypeScript نیستند.
+
+  - level: hard
+    stem: با فرض تابع زیر، کدام فراخوانی **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    prelude: &fdef |
+      function f(a = 1, b: number): number {
+        return a + b;
+      }
+    code: *fdef
+    options:
+      - code: 'f(5);'
+      - code: 'f();'
+      - code: 'f(undefined, 5);'
+      - code: 'f(5, "5");'
+    answer: 3
+    explain: |
+      پارامتر پیش‌فرض `a` **قبل از** پارامتر اجباری `b` آمده، پس تابع همیشه به دو آرگومان نیاز دارد و `f(5)` و `f()` خطای `Expected 2 arguments` می‌گیرند (در `f(5)`، عدد ۵ به `a` می‌رسد، نه `b`). برای استفاده از مقدار پیش‌فرض باید صریحاً `undefined` فرستاد: `f(undefined, 5)` که حاصلش ۶ است. در گزینه‌ی ۴ هم `"5"` رشته است و با نوع `number` پارامتر `b` جور نیست.
+
+  - level: medium
+    stem: کدام گزینه **نادرست** است؟
+    check: option-tsc
+    want: error
+    prelude: |
+      type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+    options:
+      - text: پارامتر اختیاری با `?` بعد از نامش مشخص می‌شود و می‌توان آن را نفرستاد.
+        code: 'function f(a: number, b?: number) { return a; } f(1);'
+      - text: پارامتری که مقدار پیش‌فرض دارد، خودبه‌خود اختیاری است.
+        code: 'function f(a: number, b = 5) { return a + b; } f(1);'
+      - text: اگر نوع خروجی تابع نوشته نشود، TypeScript آن را از روی `return`ها استنتاج می‌کند.
+        code: 'function f(a: number) { return a * 2; } const check: Equal<ReturnType<typeof f>, number> = true;'
+      - text: 'یک پارامتر می‌تواند هم `?` داشته باشد و هم مقدار پیش‌فرض؛ مثل `b?: number = 5`.'
+        code: 'function f(a: number, b?: number = 5) { return a; }'
+    answer: 4
+    explain: |
+      `?` و مقدار پیش‌فرض را نمی‌شود با هم روی یک پارامتر گذاشت؛ tsc می‌گوید: `Parameter cannot have question mark and initializer`. لازم هم نیست، چون پارامتر پیش‌فرض خودش اختیاری است (گزینه‌ی ۲). گزینه‌ی ۱ تعریف درست پارامتر اختیاری است و گزینه‌ی ۳ همان return type inference است (نوع خروجی `a * 2` عدد استنتاج می‌شود).
+
+  - level: medium
+    stem: خروجی کد زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function info(name: string, age?: number): string {
+        if (age === undefined) {
+          return `${name}: unknown`;
+        }
+        return `${name}: ${age}`;
+      }
+      console.log(info("Sara"));
+      console.log(info("Sara", 0));
+    options:
+      - out: ["Sara: unknown", "Sara: 0"]
+      - out: ["Sara: undefined", "Sara: 0"]
+      - out: ["Sara: unknown", "Sara: unknown"]
+      - out: ["Sara: undefined", "Sara: unknown"]
+    answer: 1
+    explain: |
+      در فراخوانی اول `age` فرستاده نشده، پس `undefined` است و شرط برقرار می‌شود: `Sara: unknown`. در فراخوانی دوم `age` برابر `0` است که یک عدد واقعی است و با `=== undefined` برابر نیست؛ پس `Sara: 0` چاپ می‌شود. گزینه‌ی ۳ صفر را با «نبودن مقدار» یکی گرفته (اگر شرط `if (!age)` بود، همین اتفاق می‌افتاد). گزینه‌های ۲ و ۴ هم شرط `if` را نادیده گرفته‌اند.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function shout(text: string, suffix?: string): string {
+        if (suffix) {
+          return text.toUpperCase() + suffix.toUpperCase();
+        }
+        return text.toUpperCase() + suffix.length;
+      }
+    options:
+      - { line: 1 }
+      - { line: 3 }
+      - { line: 0 }
+      - { line: 5 }
+    answer: 4
+    explain: |
+      نوع پارامتر اختیاری `suffix` برابر `string | undefined` است. داخل `if (suffix)` نوعش به `string` باریک شده و خط ۳ مجاز است. اما در خط ۵ (بیرون از `if`) ممکن است `suffix` برابر `undefined` باشد و خواندن `length` آن خطای TS18048 دارد: `'suffix' is possibly 'undefined'`. خط ۱ هم یک تعریف درست است، چون پارامتر اختیاری بعد از پارامتر اجباری آمده است.
+
+  - level: medium
+    stem: با فرض تابع زیر، کدام فراخوانی **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    prelude: &add2 |
+      function add(a: number, b: number): number {
+        return a + b;
+      }
+    code: *add2
+    options:
+      - code: 'add(1);'
+      - code: 'add(1, 2, 3);'
+      - code: 'add(1, parseInt("2"));'
+      - code: 'add("1", 2);'
+    answer: 3
+    explain: |
+      `parseInt("2")` خروجی `number` دارد، پس گزینه‌ی ۳ دو آرگومان عددی می‌فرستد و درست است. در JavaScript فراخوانی با آرگومان کمتر یا بیشتر هم اجرا می‌شد، اما tsc تعداد آرگومان‌ها را هم بررسی می‌کند: گزینه‌ی ۱ خطای `Expected 2 arguments, but got 1` و گزینه‌ی ۲ خطای `Expected 2 arguments, but got 3` دارد. در گزینه‌ی ۴ هم `"1"` رشته است.
