@@ -1,0 +1,637 @@
+id: ch3-ts-types
+title: "متغیرها و انواع داده در TypeScript"
+slides: "NodeJS & TS، اسلاید ۱۸"
+lesson: |
+  در درس قبل دیدیم TypeScript همان JavaScript است به‌علاوه‌ی نوع‌ها. حالا وقتش است ببینیم این نوع‌ها را دقیقاً کجا و چطور می‌نویسیم. موضوع اسلاید ۱۸ متغیرهاست. یادآوری: در این کتاب فرض می‌کنیم حالت **strict** (سخت‌گیرانه) روشن است؛ همان پیش‌فرض `tsc --init`.
+
+  ::: analogy
+  متغیر را مثل یک ظرف با برچسب تصور کن. در JavaScript ظرف‌ها برچسب ندارند و هر چیزی داخلشان می‌رود. در TypeScript روی ظرف برچسب «فقط عدد» یا «فقط متن» می‌خورد و کامپایلر اجازه نمی‌دهد چیز دیگری داخلش بریزی.
+  :::
+
+  ### ۱. let و const با type annotation
+  طبق اسلاید ۱۸، متغیرها را دقیقاً مثل JavaScript با `let` و `const` تعریف می‌کنیم؛ فقط می‌توانیم (به‌طور اختیاری) بعد از نام متغیر یک دونقطه و نام نوع بنویسیم. به این بخش **type annotation** (برچسب نوع) می‌گویند:
+
+  ```text
+  let variableName: type = value;
+  ```
+
+  مثال خود اسلاید، `let age: number = 25;`، تضمین می‌کند که `age` همیشه عدد بماند:
+
+  ```ts
+  let age: number = 25;
+  age = 26;   // OK: still a number
+  age = "26"; // Error TS2322: Type 'string' is not assignable to type 'number'.
+  ```
+
+  پیام خطا را این‌طور بخوان: «نوع string را نمی‌شود به نوع number نسبت داد». این رایج‌ترین خطای TypeScript است و کدش `TS2322` است.
+
+  ### ۲. نوع‌های پایه
+
+  | نوع | مقدارهای مجاز | مثال |
+  |---|---|---|
+  | `number` | همه‌ی عددها: صحیح، اعشاری، منفی و حتی `NaN` | `let price: number = 9.5;` |
+  | `string` | متن، با `"…"` یا `'…'` یا `` `…` `` | `let city: string = "Tehran";` |
+  | `boolean` | فقط `true` یا `false` | `let isOpen: boolean = true;` |
+  | `null` و `undefined` | فقط خودِ همان مقدار | توضیح در بخش ۹ |
+
+  ::: note
+  نام نوع‌ها را با حرف **کوچک** بنویس: `number`، `string` و `boolean`. نوع‌های `Number` و `String` (با حرف بزرگ) مربوط به اشیای پوششی (wrapper) JavaScript‌اند و نباید به‌جای این‌ها به کار بروند.
+  :::
+
+  ### ۳. const: اتصال تغییرناپذیر (immutable binding)
+  اسلاید ۱۸ می‌گوید `const` یک **immutable binding** (اتصال تغییرناپذیر بین نام و مقدار) می‌سازد و جلوی **reassignment** (انتساب دوباره) را می‌گیرد. در JavaScript این اشتباه در زمان اجرا `TypeError` می‌داد؛ در TypeScript همان موقع کامپایل گزارش می‌شود:
+
+  ```ts
+  const PI = 3.14;
+  PI = 3; // Error TS2588: Cannot assign to 'PI' because it is a constant.
+  ```
+
+  دقت کن: `const` فقط خودِ متغیر را قفل می‌کند، **نه محتوای** آرایه یا شیئی که متغیر به آن اشاره می‌کند:
+
+  ```ts
+  const list = [1, 2];
+  list.push(3);  // OK: changing the contents is allowed
+  list[0] = 10;  // OK
+  list = [4, 5]; // Error TS2588: Cannot assign to 'list' because it is a constant.
+  ```
+
+  هر `const` هم باید هنگام تعریف مقدار بگیرد؛ نوشتن `const x: number;` خطا دارد ('const' declarations must be initialized).
+
+  ### ۴. استنتاج نوع (type inference)
+  آخرین بولت اسلاید ۱۸: اگر نوع را ننویسی، TypeScript **خودش آن را از روی مقدار اولیه تشخیص می‌دهد**. به این کار **type inference** (استنتاج نوع) می‌گویند. پس نوشتن نوع اختیاری است، ولی بررسی نوع همچنان انجام می‌شود:
+
+  ```ts
+  let city = "Tehran"; // inferred type: string
+  city = "Shiraz";     // OK
+  city = 42;           // Error TS2322: Type 'number' is not assignable to type 'string'.
+  ```
+
+  جدول زیر نوع استنتاج‌شده را در حالت‌های مهم نشان می‌دهد:
+
+  | تعریف | نوع استنتاج‌شده | توضیح |
+  |---|---|---|
+  | `let x = 5;` | `number` | با `let` نوع «عمومی» انتخاب می‌شود |
+  | `const y = 5;` | `5` | با `const` نوع **literal** (خودِ همان مقدار) |
+  | `let s = "hi";` | `string` | |
+  | `const g = "hi";` | `"hi"` | literal type |
+  | `let flag = true;` | `boolean` | |
+  | `let nums = [1, 2, 3];` | `number[]` | آرایه‌ی عددی |
+  | `const arr = [1, 2, 3];` | `number[]` | `const` روی آرایه هم `number[]` می‌دهد؛ محتوا قابل تغییر است |
+  | `let mixed = [1, "a"];` | `(string \| number)[]` | آرایه‌ای که هر خانه‌اش عدد یا رشته است |
+  | `const user = { name: "Ali" };` | `{ name: string }` | ویژگی‌های شیء هم نوع عمومی می‌گیرند |
+
+  چرا `const y = 5` نوع `5` می‌گیرد؟ چون `y` هرگز عوض نمی‌شود، TypeScript دقیق‌ترین نوع ممکن یعنی خودِ مقدار `5` را برایش در نظر می‌گیرد. اما `let x = 5` بعداً می‌تواند عدد دیگری بگیرد، پس نوعش `number` است.
+
+  کِی نوع را خودمان بنویسیم؟ (۱) وقتی متغیر را **بدون مقدار اولیه** تعریف می‌کنیم؛ (۲) وقتی نوعی **بازتر** از مقدار اولیه می‌خواهیم (مثلاً union). اگر متغیری بدون مقدار تعریف شود و پیش از مقداردهی خوانده شود، خطا می‌گیریم:
+
+  ```ts
+  let later: number;  // declared without a value
+  console.log(later); // Error TS2454: Variable 'later' is used before being assigned.
+  later = 10;
+  ```
+
+  ### ۵. آرایه‌ها
+  نوع آرایه را به دو شکل می‌نویسیم که **کاملاً معادل‌اند**: `number[]` و `Array<number>`.
+
+  ```ts
+  let scores: number[] = [18, 20];
+  let tags: Array<string> = ["ts", "js"];
+  scores.push(19.5); // OK
+  tags.push("node"); // OK
+  scores.push("19"); // Error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+  ```
+
+  ### ۶. Union type (نوع اجتماع)
+  طبق اسلاید ۱۸، TypeScript از **union type** (نوع اجتماع؛ «این یا آن») پشتیبانی می‌کند: `let id: number | string;` یعنی `id` می‌تواند عدد **یا** رشته باشد. علامت `|` را «یا» بخوان.
+
+  ```ts
+  let id: number | string;
+  id = 101;     // OK
+  id = "A-101"; // OK
+  id = true;    // Error TS2322: Type 'boolean' is not assignable to type 'string | number'.
+  ```
+
+  tsc در پیام خطا این union را `string | number` چاپ می‌کند؛ ترتیب اعضای union اهمیتی ندارد.
+
+  **استفاده از مقدار union:** روی یک مقدار union فقط کارهایی مجاز است که برای **همه‌ی** اعضای آن درست باشد. مثلاً `toString()` هم روی عدد هست هم روی رشته، اما `toUpperCase()` فقط مال رشته است:
+
+  ```ts
+  function show(id: number | string) {
+    console.log(id.toString());    // OK: both types have toString
+    console.log(id.toUpperCase()); // Error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  }
+  ```
+
+  راه‌حل، **narrowing** (باریک کردن نوع) است: با یک شرط مثل `typeof` به TypeScript نشان می‌دهیم در هر شاخه کدام نوع را داریم:
+
+  ```ts
+  function format(id: number | string): string {
+    if (typeof id === "string") {
+      return id.toUpperCase(); // here id is a string
+    }
+    return id.toFixed(1);      // here id is a number
+  }
+  console.log(format("a-7")); // A-7
+  console.log(format(5));     // 5.0
+  ```
+
+  union فقط در زمان کامپایل وجود دارد. در زمان اجرا، `typeof` نوع **واقعیِ** مقدار فعلی را برمی‌گرداند (`"number"` یا `"string"`)، نه چیزی مثل `"number | string"`.
+
+  ::: info بیشتر بدانیم
+  TypeScript آخرین مقداری را که به یک متغیر union داده‌ای هم دنبال می‌کند. مثلاً بعد از `let id: number | string = 5;` در خط‌های بعدی می‌داند `id` **فعلاً** عدد است و `id.toFixed(1)` را قبول می‌کند، ولی همچنان می‌توانی بعداً رشته در آن بگذاری. برای همین مثال‌های union را با پارامتر تابع می‌نویسیم که مقدارش از قبل معلوم نیست.
+  :::
+
+  ### ۷. Literal type (نوع لفظی)
+  نوع می‌تواند یک **مقدار مشخص** باشد؛ به آن **literal type** (نوع لفظی) می‌گویند. وقتی چند literal را با `|` ترکیب کنیم، فهرستی از مقدارهای مجاز ساخته‌ایم:
+
+  ```ts
+  let role: "admin" | "user" = "user";
+  role = "admin"; // OK
+  role = "guest"; // Error TS2322: Type '"guest"' is not assignable to type '"admin" | "user"'.
+  let dice: 1 | 2 | 3 | 4 | 5 | 6 = 3;
+  ```
+
+  نتیجه‌ی جالب: چون `const status = "ok"` نوع `"ok"` دارد، می‌شود آن را در متغیری از نوع `"ok" | "error"` گذاشت؛ اما `let message = "ok"` نوع `string` دارد و نمی‌شود.
+
+  ### ۸. any و unknown
+  - **`any`** (هر نوعی): بررسی نوع را برای آن مقدار **کاملاً خاموش** می‌کند. هر کاری با آن مجاز است و خطاها دوباره به زمان اجرا برمی‌گردند. فقط به‌عنوان راه فرار موقت (مثلاً هنگام تبدیل تدریجی یک پروژه) از آن استفاده کن.
+  - **`unknown`** (ناشناخته): نسخه‌ی امنِ `any`. هر مقداری را می‌پذیرد، اما **تا نوعش را با یک شرط مشخص نکنی** اجازه‌ی استفاده از آن را نمی‌دهد.
+
+  ```ts
+  let a: any = "hello";
+  a.toUpperCase(); // OK: no checking at all
+  a.foo.bar();     // also accepted by tsc, but crashes at runtime with a TypeError
+
+  let u: unknown = "hello";
+  u.toUpperCase(); // Error TS18046: 'u' is of type 'unknown'.
+  if (typeof u === "string") {
+    console.log(u.toUpperCase()); // OK: narrowed to string
+  }
+  ```
+
+  | | `any` | `unknown` |
+  |---|---|---|
+  | چه مقداری می‌گیرد؟ | هر مقداری | هر مقداری |
+  | استفاده‌ی مستقیم (صدا زدن متد و …) | مجاز، بدون هیچ بررسی | ممنوع تا وقتی narrowing نشود |
+  | نسبت دادن به متغیر نوع‌دار (`let n: number = …`) | مجاز | خطا (TS2322) |
+  | ایمنی | بررسی خاموش است | امن |
+
+  ### ۹. null و undefined در حالت strict
+  در حالت strict، `null` و `undefined` نوع‌های جداگانه‌اند و **خودبه‌خود** داخل `number` یا `string` جا نمی‌شوند. اگر متغیری ممکن است خالی باشد، باید صریحاً با union بگویی:
+
+  ```ts
+  let n1: number = null;         // Error TS2322: Type 'null' is not assignable to type 'number'.
+  let n2: number = undefined;    // Error TS2322: Type 'undefined' is not assignable to type 'number'.
+  let n3: number | null = null;  // OK
+  let nick: string | undefined;  // OK
+  ```
+
+  ### ۱۰. Tuple (چندتایی)
+  **tuple** (چندتایی) آرایه‌ای با **طول ثابت** است که نوع هر خانه‌اش جداگانه مشخص شده است:
+
+  ```ts
+  let pair: [string, number] = ["Ali", 20];
+  pair[0] = "Sara";     // OK: index 0 is a string
+  pair = [20, "Ali"];   // Error TS2322 (twice): the order of the types is wrong
+  console.log(pair[2]); // Error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+  ```
+
+  ::: tip
+  هر جا مقدار اولیه داری، بگذار TypeScript خودش نوع را تشخیص دهد (`let city = "Tehran";`). نوع را وقتی بنویس که مقدار اولیه نداری یا نوعی بازتر مثل `number | string` می‌خواهی.
+  :::
+
+  ::: trap
+  - `const` جلوی **انتساب دوباره** را می‌گیرد، نه تغییر محتوا: `const list = [1]; list.push(2);` مجاز است.
+  - نوع `const y = 5` برابر `5` (literal) است، نه `number`؛ اما `const arr = [1, 2]` باز هم `number[]` است.
+  - `string | number[]` یعنی «یک رشته **یا** یک آرایه‌ی عددی»، اما `(string | number)[]` یعنی «آرایه‌ای که هر خانه‌اش عدد یا رشته است». پرانتز مهم است!
+  - `any` بررسی را خاموش می‌کند؛ `unknown` تا قبل از narrowing اجازه‌ی هیچ استفاده‌ای نمی‌دهد.
+  - در حالت strict، `let n: number = null;` خطاست؛ باید بنویسی `number | null`.
+  :::
+
+  ::: summary
+  در TypeScript متغیرها را مثل JavaScript با `let` و `const` تعریف می‌کنیم و می‌توانیم با type annotation نوعشان را بنویسیم (`let age: number = 25;`). اگر ننویسیم، TypeScript نوع را از مقدار اولیه استنتاج می‌کند (`let` نوع عمومی می‌گیرد و `const` نوع literal). `const` جلوی انتساب دوباره را می‌گیرد، نه تغییر محتوا. آرایه‌ها `number[]` یا `Array<number>` نوشته می‌شوند. union مثل `number | string` چند نوع را مجاز می‌کند و با `typeof` باریک می‌شود. `any` بررسی را خاموش می‌کند و `unknown` نسخه‌ی امن آن است. در حالت strict، `null` و `undefined` فقط با union مجازند و tuple آرایه‌ای با طول و نوعِ ثابت برای هر خانه است.
+  :::
+questions:
+  - level: easy
+    stem: در دستور `let age: number = 25;` بخش `: number` چه نام دارد؟
+    options:
+      - type inference (استنتاج نوع)
+      - type annotation (برچسب نوع)
+      - union type (نوع اجتماع)
+      - type coercion (تبدیل نوع خودکار)
+    answer: 2
+    explain: |
+      دونقطه و نام نوع بعد از نام متغیر، **type annotation** است؛ یعنی خودمان نوع را صریح نوشته‌ایم. type inference برعکس آن است: وقتی نوع را نمی‌نویسیم و TypeScript خودش تشخیص می‌دهد. union type با علامت `|` ساخته می‌شود و type coercion تبدیل نوع خودکار JavaScript در زمان اجراست.
+
+  - level: easy
+    stem: با فرض تعریف زیر، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &age 'let age: number = 25;'
+    code: *age
+    options:
+      - code: 'age = 26;'
+      - code: 'age = age + 1;'
+      - code: 'age = 25.5;'
+      - code: 'age = "26";'
+    answer: 4
+    explain: |
+      `age` با annotation از نوع `number` است، پس رشته‌ی `"26"` (حتی با اینکه شبیه عدد است) قابل نسبت دادن نیست و خطای TS2322 می‌گیرد. گزینه‌ی ۲ مجاز است چون `age + 1` عدد است. نوع `number` عدد اعشاری را هم شامل می‌شود، پس گزینه‌ی ۳ هم درست است. TypeScript برخلاف JavaScript رشته را بی‌صدا به عدد تبدیل نمی‌کند.
+
+  - level: easy
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      let count = 1;
+      count = 2;
+      const PI = 3.14;
+      PI = 3;
+      console.log(count, PI);
+    options:
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 4 }
+      - { line: 0 }
+    answer: 3
+    explain: |
+      `const` یک immutable binding می‌سازد و انتساب دوباره به آن ممنوع است؛ پس خط ۴ خطای TS2588 دارد (Cannot assign to 'PI' because it is a constant). خط ۲ مجاز است چون `count` با `let` تعریف شده و مقدار جدید هم عدد است. خط ۳ یک تعریف معمولی است.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      const list = [1, 2];
+      list.push(3);
+      list[0] = 10;
+      list = [4, 5];
+    options:
+      - { line: 4 }
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 0 }
+    answer: 1
+    explain: |
+      `const` فقط جلوی **انتساب دوباره** به خودِ متغیر را می‌گیرد؛ پس تغییر محتوای آرایه با `push` (خط ۲) یا تغییر یک خانه (خط ۳) کاملاً مجاز است. فقط خط ۴ که می‌خواهد یک آرایه‌ی جدید به `list` نسبت دهد خطای TS2588 دارد. کسی که فکر کند `const` آرایه را «یخ‌زده» می‌کند، اشتباهاً خط ۲ را انتخاب می‌کند.
+
+  - level: easy
+    stem: با فرض تعریف زیر (مثال اسلاید ۱۸)، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &uid 'let id: number | string;'
+    code: *uid
+    options:
+      - code: 'id = 101;'
+      - code: 'id = "A-101";'
+      - code: 'id = true;'
+      - code: 'id = -5;'
+    answer: 3
+    explain: |
+      union type `number | string` یعنی `id` می‌تواند عدد **یا** رشته باشد؛ پس گزینه‌های ۱، ۲ و ۴ مجازند (عدد منفی هم `number` است). اما `true` از نوع `boolean` است که جزو این union نیست و خطای TS2322 می‌گیرد: Type 'boolean' is not assignable to type 'string | number'.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      let city = "Tehran";
+      city = "Shiraz";
+      let year = 1403;
+      city = year;
+    options:
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 0 }
+      - { line: 4 }
+    answer: 4
+    explain: |
+      هیچ annotationی نوشته نشده، ولی TypeScript از مقدار اولیه نوع `city` را `string` و نوع `year` را `number` استنتاج می‌کند (type inference). خط ۲ رشته را در رشته می‌گذارد و مجاز است. خط ۴ می‌خواهد یک عدد را در متغیر رشته‌ای بگذارد و خطای TS2322 می‌گیرد. گزینه‌ی «بدون خطا» طرز فکر JavaScript است که نوع متغیر را آزاد می‌داند.
+
+  - level: hard
+    stem: کدام گزینه **بدون خطا** کامپایل می‌شود؟ (نوع `5` یعنی «فقط و فقط عدد ۵».)
+    check: option-tsc
+    want: ok
+    options:
+      - code: 'let x = 5; const five: 5 = x;'
+      - code: 'let s = "hi"; const h: "hi" = s;'
+      - code: 'const y = 5; const five: 5 = y;'
+      - code: 'const n = 5; n = 6;'
+    answer: 3
+    explain: |
+      متغیری که با `const` و یک مقدار ساده تعریف شود، نوع **literal** می‌گیرد؛ پس نوع `y` دقیقاً `5` است و در متغیری از نوع `5` جا می‌شود. اما `let x = 5` نوع عمومی `number` می‌گیرد و هر `number`ی لزوماً ۵ نیست، پس گزینه‌ی ۱ خطا دارد. گزینه‌ی ۲ به همین دلیل خطا دارد (`string` به `"hi"` نسبت داده نمی‌شود). گزینه‌ی ۴ هم انتساب دوباره به `const` است.
+
+  - level: medium
+    stem: TypeScript نوع متغیر `x` را در کد زیر چه تشخیص می‌دهد؟
+    check: option-tsc
+    want: ok
+    code: 'let x = [1, 2, 3];'
+    prelude: |
+      type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+      let x = [1, 2, 3];
+    options:
+      - text: '`[1, 2, 3]`'
+        code: 'const check: Equal<typeof x, [1, 2, 3]> = true;'
+      - text: '`any[]`'
+        code: 'const check: Equal<typeof x, any[]> = true;'
+      - text: '`number`'
+        code: 'const check: Equal<typeof x, number> = true;'
+      - text: '`number[]`'
+        code: 'const check: Equal<typeof x, number[]> = true;'
+    answer: 4
+    explain: |
+      از روی مقدار اولیه، TypeScript نوع `x` را «آرایه‌ای از عددها» یعنی `number[]` تشخیص می‌دهد؛ پس بعداً می‌شود هر عددی را `push` کرد ولی رشته را نه. نوع `[1, 2, 3]` یک tuple با مقدارهای ثابت است و TypeScript برای آرایه‌ی معمولی چنین نوعی نمی‌سازد. `any[]` یعنی بدون بررسی، که اینجا لازم نیست چون همه‌ی خانه‌ها عددند. `number` هم نوع یک عدد تنهاست، نه آرایه.
+
+  - level: easy
+    stem: کدام نوع **دقیقاً** با `number[]` معادل است؟
+    check: option-tsc
+    want: ok
+    prelude: |
+      type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+    options:
+      - text: '`[number]`'
+        code: 'const check: Equal<[number], number[]> = true;'
+      - text: '`Array<number>`'
+        code: 'const check: Equal<Array<number>, number[]> = true;'
+      - text: '`number | []`'
+        code: 'const check: Equal<number | [], number[]> = true;'
+      - text: '`Array[number]`'
+        code: 'const check: Equal<Array[number], number[]> = true;'
+    answer: 2
+    explain: |
+      `number[]` و `Array<number>` دو شیوه‌ی نوشتن یک نوع‌اند: آرایه‌ای با هر تعداد عدد. `[number]` یک tuple با دقیقاً **یک** عدد است. `number | []` یعنی «یک عدد یا یک آرایه‌ی خالی». `Array[number]` اصلاً نوشتن درستی نیست و tsc برایش خطا می‌دهد (برای Array باید نوع را داخل `<>` نوشت).
+
+  - level: medium
+    stem: با فرض تعریف‌های زیر، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &arrs |
+      let scores: number[] = [18, 20];
+      let tags: Array<string> = ["ts"];
+    code: *arrs
+    options:
+      - code: 'scores.push(19.5);'
+      - code: 'tags.push("node");'
+      - code: 'tags = [];'
+      - code: 'scores.push("19");'
+    answer: 4
+    explain: |
+      `scores` آرایه‌ای از عددهاست و `push` فقط عدد می‌پذیرد؛ رشته‌ی `"19"` خطای TS2345 می‌گیرد (Argument of type 'string' is not assignable to parameter of type 'number'). `19.5` یک `number` است (گزینه‌ی ۱). `Array<string>` همان `string[]` است و `"node"` را می‌پذیرد (گزینه‌ی ۲). نسبت دادن آرایه‌ی خالی به `tags` هم مجاز است، چون با `let` تعریف شده و آرایه‌ی خالی با `string[]` سازگار است (گزینه‌ی ۳).
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      function show(id: number | string) {
+        console.log(id.toString());
+        console.log(id.toUpperCase());
+        if (typeof id === "string") {
+          console.log(id.toUpperCase());
+        }
+      }
+    options:
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 5 }
+      - { line: 0 }
+    answer: 2
+    explain: |
+      روی مقداری از نوع `number | string` فقط کارهایی مجاز است که برای **هر دو** نوع درست باشد. `toString()` هم روی عدد هست هم روی رشته، پس خط ۲ مجاز است. `toUpperCase()` روی عدد وجود ندارد، پس خط ۳ خطای TS2339 دارد. در خط ۵، شرط `typeof id === "string"` نوع را به `string` باریک کرده (narrowing) و همان متد بدون خطاست.
+
+  - level: medium
+    stem: خروجی کد TypeScript زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      function format(value: number | string): string {
+        if (typeof value === "number") {
+          return value.toFixed(1);
+        }
+        return value.toUpperCase();
+      }
+      console.log(format(5));
+      console.log(format("ok"));
+    options:
+      - out: ["5", "OK"]
+      - out: ["5.0", "ok"]
+      - out: ["5.0", "OK"]
+      - out: ["5", "ok"]
+    answer: 3
+    explain: |
+      برای `5` شرط `typeof value === "number"` درست است و `toFixed(1)` عدد را با یک رقم اعشار به رشته‌ی `"5.0"` تبدیل می‌کند. برای `"ok"` شرط نادرست است و `toUpperCase()` حاصل `"OK"` را می‌دهد. گزینه‌ی ۱ اثر `toFixed(1)` را نادیده گرفته و گزینه‌های ۲ و ۴ اثر `toUpperCase()` را.
+
+  - level: medium
+    stem: با فرض تعریف زیر، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &role 'let role: "admin" | "user" = "user";'
+    code: *role
+    options:
+      - code: 'role = "admin";'
+      - code: 'role = "guest";'
+      - code: 'const r: string = role;'
+      - code: 'role = "user";'
+    answer: 2
+    explain: |
+      نوع `role` یک union از دو **literal type** است، یعنی فقط دو مقدار `"admin"` و `"user"` مجازند؛ `"guest"` با اینکه رشته است، جزو این فهرست نیست و خطای TS2322 می‌گیرد. گزینه‌های ۱ و ۴ مقدارهای مجازند. گزینه‌ی ۳ هم مجاز است، چون هر کدام از این دو literal یک `string` هم هست و می‌شود آن را در متغیر `string` گذاشت (برعکسش ممکن نیست).
+
+  - level: medium
+    stem: کدام گزینه درباره‌ی `any` و `unknown` **درست** است؟
+    options:
+      - هر دو بررسی نوع را به‌طور کامل خاموش می‌کنند.
+      - '`unknown` فقط می‌تواند مقدار `undefined` بگیرد.'
+      - هر مقداری را می‌توان در هر دو گذاشت؛ اما از مقدار `unknown` فقط پس از مشخص کردن نوعش (مثلاً با `typeof`) می‌شود استفاده کرد، در حالی که `any` هر استفاده‌ای را بدون بررسی می‌پذیرد.
+      - '`any` امن‌تر از `unknown` است، چون خطاهای بیشتری را پیدا می‌کند.'
+    answer: 3
+    explain: |
+      هر دو هر مقداری را قبول می‌کنند، اما رفتارشان هنگام **استفاده** فرق دارد: `any` بررسی را خاموش می‌کند و `unknown` تا وقتی با شرطی مثل `typeof` نوع را باریک نکنی، اجازه‌ی صدا زدن متد یا نسبت دادن به متغیر نوع‌دار را نمی‌دهد. پس گزینه‌ی ۱ فقط درباره‌ی `any` درست است. `unknown` هر مقداری می‌گیرد، نه فقط `undefined` (گزینه‌ی ۲). گزینه‌ی ۴ برعکس است: `unknown` امن‌تر است.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      let a: any = "hello";
+      let u: unknown = "hello";
+      console.log(a.toUpperCase());
+      console.log(u.toUpperCase());
+    options:
+      - { line: 2 }
+      - { line: 3 }
+      - { line: 4 }
+      - { line: 0 }
+    answer: 3
+    explain: |
+      نسبت دادن هر مقداری به `unknown` مجاز است (خط ۲)، اما استفاده از آن پیش از narrowing ممنوع است؛ پس خط ۴ خطای TS18046 دارد ('u' is of type 'unknown'). خط ۳ بدون خطاست چون `any` بررسی را کاملاً خاموش می‌کند. اگر خط ۴ داخل `if (typeof u === "string") { … }` بود، خطا برطرف می‌شد.
+
+  - level: hard
+    stem: کد TypeScript زیر بدون خطا کامپایل می‌شود. خروجی اجرای آن چیست؟
+    check: ts-output
+    code: |
+      let data: any = 42;
+      console.log("before");
+      data.toUpperCase();
+      console.log("after");
+    options:
+      - out: ["before", "!! TypeError"]
+      - out: ["before", "after"]
+      - out: ["before", "42", "after"]
+      - out: ["!! TypeError"]
+    answer: 1
+    explain: |
+      چون `data` از نوع `any` است، tsc هیچ بررسی‌ای انجام نمی‌دهد و کد کامپایل می‌شود. اما در زمان اجرا مقدار `data` عدد ۴۲ است که متد `toUpperCase` ندارد؛ پس پس از چاپ `before`، خط ۳ با `TypeError` متوقف می‌شود و `after` هرگز چاپ نمی‌شود. گزینه‌ی ۲ فکر کرده چون کامپایل موفق بوده، اجرا هم بی‌خطاست؛ این دقیقاً خطر `any` است. خط ۳ چیزی چاپ نمی‌کند (گزینه‌ی ۳) و خطا هم بعد از اجرای خط ۲ رخ می‌دهد، نه قبل از آن (گزینه‌ی ۴).
+
+  - level: medium
+    stem: در حالت strict، کدام تعریف **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    options:
+      - code: 'let a: number = null;'
+      - code: 'let b: string = undefined;'
+      - code: 'let d: boolean = null;'
+      - code: 'let c: number | null = null;'
+    answer: 4
+    explain: |
+      در حالت strict، `null` و `undefined` جزو نوع‌های `number`، `string` و `boolean` نیستند؛ پس سه گزینه‌ی اول خطای TS2322 دارند. اگر متغیری ممکن است خالی بماند، باید آن را صریحاً در union بیاوری: `number | null`.
+
+  - level: medium
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      let pair: [string, number] = ["Ali", 20];
+      pair[0] = "Sara";
+      pair[1] = 21;
+      console.log(pair[2]);
+    options:
+      - { line: 2 }
+      - { line: 4 }
+      - { line: 3 }
+      - { line: 0 }
+    answer: 2
+    explain: |
+      `[string, number]` یک tuple با **دقیقاً دو خانه** است: خانه‌ی ۰ رشته و خانه‌ی ۱ عدد. خط‌های ۲ و ۳ در هر خانه مقداری با نوع درست می‌گذارند. اما tuple خانه‌ی شماره‌ی ۲ ندارد، پس خط ۴ خطای TS2493 می‌گیرد (Tuple type '[string, number]' of length '2' has no element at index '2'). در JavaScript همین کار فقط `undefined` چاپ می‌کرد.
+
+  - level: easy
+    stem: با فرض تعریف زیر، کدام دستور خطای کامپایل دارد؟
+    check: option-tsc
+    prelude: &tup 'let user: [string, number];'
+    code: *tup
+    options:
+      - code: 'user = ["Ali", 20];'
+      - code: 'user = ["", 0];'
+      - code: 'user = ["Sara", -1];'
+      - code: 'user = [20, "Ali"];'
+    answer: 4
+    explain: |
+      در tuple **ترتیب** نوع‌ها مهم است: خانه‌ی اول باید رشته و خانه‌ی دوم عدد باشد. گزینه‌ی ۴ ترتیب را برعکس کرده و خطای TS2322 می‌گیرد. رشته‌ی خالی و عدد صفر یا منفی هم رشته و عدد معتبرند، پس سه گزینه‌ی دیگر مجازند.
+
+  - level: hard
+    stem: کدام گزینه **بدون خطا** کامپایل می‌شود؟
+    check: option-tsc
+    want: ok
+    options:
+      - code: 'let a: string | number[] = [1, "x"];'
+      - code: 'let b: (string | number)[] = [1, "x"];'
+      - code: 'let c: string[] | number[] = [1, "x"];'
+      - code: 'let d: number[] = [1, "x"];'
+    answer: 2
+    explain: |
+      `(string | number)[]` یعنی «آرایه‌ای که **هر خانه‌اش** می‌تواند عدد یا رشته باشد»، پس `[1, "x"]` در آن جا می‌شود. `string | number[]` (بدون پرانتز) یعنی «یک رشته **یا** یک آرایه‌ی تمام‌عددی». `string[] | number[]` یعنی «آرایه‌ای که یا همه‌اش رشته است یا همه‌اش عدد»؛ پس آرایه‌ی مخلوط در هیچ‌کدام جا نمی‌شود. `number[]` هم رشته‌ی `"x"` را نمی‌پذیرد.
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      let total: number;
+      let count = 0;
+      count++;
+      console.log(total + count);
+      total = 100;
+    options:
+      - { line: 1 }
+      - { line: 3 }
+      - { line: 0 }
+      - { line: 4 }
+    answer: 4
+    explain: |
+      تعریف یک متغیر `let` با نوع ولی بدون مقدار اولیه مجاز است (خط ۱)؛ این کار فقط برای `const` ممنوع است. اما در خط ۴ از `total` پیش از مقداردهی استفاده شده و tsc خطای TS2454 می‌دهد (Variable 'total' is used before being assigned). مقداردهی در خط ۵ دیر است. خط ۳ هم یک عملیات عددی عادی روی `count` است.
+
+  - level: hard
+    stem: کدام گزینه **نادرست** است؟
+    check: option-tsc
+    want: error
+    prelude: |
+      type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+    options:
+      - text: 'در `let x = 5;` نوع استنتاج‌شده‌ی `x` برابر `number` است.'
+        code: 'let x = 5; const check: Equal<typeof x, number> = true;'
+      - text: 'در `const y = 5;` نوع استنتاج‌شده‌ی `y` برابر `5` است.'
+        code: 'const y = 5; const check: Equal<typeof y, 5> = true;'
+      - text: 'در `let names = ["Ali", "Sara"];` نوع استنتاج‌شده‌ی `names` برابر `string[]` است.'
+        code: 'let names = ["Ali", "Sara"]; const check: Equal<typeof names, string[]> = true;'
+      - text: 'در `const arr = [1, 2];` چون `arr` با `const` تعریف شده، نمی‌توان با `push` عضوی به آن اضافه کرد.'
+        code: |
+          const arr = [1, 2];
+          // @ts-expect-error
+          arr.push(3);
+    answer: 4
+    explain: |
+      `const` فقط انتساب دوباره به `arr` را ممنوع می‌کند؛ نوع `arr` همان `number[]` است و `arr.push(3)` بدون خطا کامپایل و اجرا می‌شود؛ پس گزینه‌ی ۴ نادرست است. سه گزینه‌ی دیگر قاعده‌های درست type inference‌اند: `let` نوع عمومی (`number`) می‌گیرد، `const` با مقدار ساده نوع literal (`5`) و آرایه‌ی رشته‌ها نوع `string[]`.
+
+  - level: easy
+    stem: در جای خالی کدام نوع قرار گیرد تا کد زیر **بدون خطا** کامپایل شود؟
+    check: option-tsc
+    want: ok
+    code: |
+      let id: ______;
+      id = 101;
+      id = "A-101";
+    options:
+      - text: '`number`'
+        code: |
+          let id: number;
+          id = 101;
+          id = "A-101";
+      - text: '`string`'
+        code: |
+          let id: string;
+          id = 101;
+          id = "A-101";
+      - text: '`boolean`'
+        code: |
+          let id: boolean;
+          id = 101;
+          id = "A-101";
+      - text: '`number | string`'
+        code: |
+          let id: number | string;
+          id = 101;
+          id = "A-101";
+    answer: 4
+    explain: |
+      `id` یک بار عدد و یک بار رشته می‌گیرد، پس به union type `number | string` نیاز دارد (همان مثال اسلاید ۱۸). با `number` خط سوم و با `string` خط دوم خطا می‌دهد و با `boolean` هر دو خط.
+
+  - level: hard
+    stem: tsc در کدام خط کد زیر خطا گزارش می‌کند؟
+    check: tsc-line
+    code: |
+      const status = "ok";
+      let state: "ok" | "error" = status;
+      let message = "ok";
+      state = message;
+    options:
+      - { line: 4 }
+      - { line: 2 }
+      - { line: 0 }
+      - { line: 1 }
+    answer: 1
+    explain: |
+      `status` با `const` تعریف شده، پس نوعش literal یعنی `"ok"` است و در متغیری از نوع `"ok" | "error"` جا می‌شود (خط ۲ مجاز است). اما `message` با `let` تعریف شده و نوعش `string` است؛ هر رشته‌ای لزوماً `"ok"` یا `"error"` نیست، پس خط ۴ خطای TS2322 دارد. مقدار هر دو متغیر یکی است، ولی **نوعشان** فرق دارد.
+
+  - level: medium
+    stem: خروجی کد TypeScript زیر پس از کامپایل و اجرا چیست؟
+    check: ts-output
+    code: |
+      let id: number | string = 7;
+      console.log(typeof id);
+      id = "seven";
+      console.log(typeof id);
+    options:
+      - out: ["number | string", "number | string"]
+      - out: ["number", "string"]
+      - out: ["number", "number"]
+      - out: ["string", "string"]
+    answer: 2
+    explain: |
+      union type فقط در زمان کامپایل وجود دارد و در JavaScript خروجی پاک می‌شود. در زمان اجرا `typeof` نوع **مقدار فعلی** را برمی‌گرداند: اول `7` که `number` است و بعد `"seven"` که `string` است. گزینه‌ی ۱ فکر کرده union در زمان اجرا هم هست. گزینه‌ی ۳ فکر کرده نوع با اولین مقدار ثابت می‌ماند و گزینه‌ی ۴ آخرین نوع را برای هر دو خط در نظر گرفته است.
